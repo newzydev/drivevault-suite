@@ -1,6 +1,11 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.1.1
+  - Fixed: the Thai texts of "Check for updates" and the download were garbled.
+  - An empty release list now says that no releases have been published yet (it used to say "up to date").
+  - Release tags are the program folder name + version, e.g. drivevault-video-editor-pro-v1.0.1 (v1.1.0 looked for shorter names and found nothing).
+
 v1.1.0 (2026-11-07)
   New
   - "Check for updates" button: asks the GitHub Releases of newzydev/drivevault-suite which version of each program exists. It runs only when you press the button;

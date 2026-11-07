@@ -8,9 +8,9 @@ namespace dm::releases {
 
 // One published program release found in the GitHub "list releases" answer.
 struct Release {
-    QString slug;        // "video-editor"  (from the tag  <slug>-v<major.minor.patch>)
+    QString slug;        // "drivevault-video-editor-pro"  (the apps/ folder name, from the tag  <slug>-v<major.minor.patch>)
     QString version;     // "1.0.1"
-    QString tag;         // "video-editor-v1.0.1"
+    QString tag;         // "drivevault-video-editor-pro-v1.0.1"
     QString assetName;   // "DriveVault-Video-Editor-Pro-Setup-x64.exe"
     QString assetUrl;
     QString hashUrl;     // the "<assetName>.sha256" asset of the same release

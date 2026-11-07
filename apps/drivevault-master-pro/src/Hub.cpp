@@ -87,12 +87,12 @@ QList<Registered> readRegistry(const QString& root)
     return out;
 }
 
-// Release tags are "<slug>-v<x.y.z>"; the slug of every catalog program. Programs this hub does not know have no online updates.
+// Release tags are "<slug>-v<x.y.z>" where the slug is the program folder name below apps/ (drivevault-video-editor-pro ...). Programs this hub does not know have no online updates.
 QString slugForKey(const QString& key)
 {
-    if (key.compare(QLatin1String("VideoEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("video-editor");
-    if (key.compare(QLatin1String("ImageEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("image-editor");
-    if (key.compare(QLatin1String("AudioEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("audio-editor");
+    if (key.compare(QLatin1String("VideoEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-video-editor-pro");
+    if (key.compare(QLatin1String("ImageEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-image-editor-pro");
+    if (key.compare(QLatin1String("AudioEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-audio-editor-pro");
     return {};
 }
 

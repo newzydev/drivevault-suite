@@ -275,7 +275,7 @@ private slots:
         QFile feed(p("feed.json"));
         QVERIFY(feed.open(QIODevice::WriteOnly));
         feed.write(QJsonDocument(QJsonArray{QJsonObject{
-            {"tag_name", "video-editor-v2.0.0"}, {"draft", false}, {"prerelease", false}, {"html_url", "https://example.invalid"},
+            {"tag_name", "drivevault-video-editor-pro-v2.0.0"}, {"draft", false}, {"prerelease", false}, {"html_url", "https://example.invalid"},
             {"assets", QJsonArray{QJsonObject{{"name", name}, {"browser_download_url", url("rel/" + name)}, {"size", 1}},
                                   QJsonObject{{"name", name + ".sha256"}, {"browser_download_url", url("rel/" + name + ".sha256")}, {"size", 1}}}}}}).toJson());
         feed.close();

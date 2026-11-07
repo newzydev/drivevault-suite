@@ -3,7 +3,7 @@
 ; The program installers run this setup silently when Master Pro is missing or older, so it is always there before a program.
 
 #ifndef AppVersion
-  #define AppVersion "1.1.0"
+  #define AppVersion "1.1.1"
 #endif
 #ifndef StageDir
   #error StageDir must point at the deployed application folder (see scripts\package.ps1)
