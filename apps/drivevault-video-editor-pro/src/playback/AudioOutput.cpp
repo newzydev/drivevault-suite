@@ -65,6 +65,12 @@ bool AudioOutput::start(const QString& deviceName, int sampleRate, int latencyMs
                         QString* error)
 {
     stop();
+    // Automated tests set DV_NO_AUDIO=1 so that nothing is played aloud; the engine then uses its timer clock.
+    if (qEnvironmentVariableIntValue("DV_NO_AUDIO") != 0) {
+        if (error)
+            *error = QStringLiteral("Audio output is switched off (DV_NO_AUDIO)");
+        return false;
+    }
     auto impl = std::make_unique<Impl>();
     impl->sampleRate = sampleRate;
     impl->fill = std::move(fill);

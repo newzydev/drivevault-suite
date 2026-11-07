@@ -1,3 +1,4 @@
+import QtCore
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
@@ -25,12 +26,14 @@ ApplicationWindow {
     FileDialog {
         id: setupDialog
         title: Tr.s("browse")
+        currentFolder: StandardPaths.writableLocation(StandardPaths.DownloadLocation)     // fixed start folder (not the program folder)
         nameFilters: [Tr.s("setupFiles")]
         onAccepted: { const e = Hub.installFromFile(selectedFile.toString()); if (e !== "") win.showNotice(e) }
     }
     FolderDialog {
         id: folderDialog
         title: Tr.s("addFolder")
+        currentFolder: StandardPaths.writableLocation(StandardPaths.DownloadLocation)
         onAccepted: { const e = Hub.addInstallerFolder(selectedFolder.toString()); if (e !== "") win.showNotice(e) }
     }
     AboutDialog { id: aboutDialog }

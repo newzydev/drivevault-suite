@@ -17,3 +17,4 @@
 - Qt Test + custom message handler swallows `qInfo`; Qt Test output is lost when stdout is redirected - use `-o file,txt`. Print numbers with `fprintf(stderr, "PERF ...")`.
 - Tests must clean up: temp dirs (`QTemporaryDir`), registry keys, undo stack, settings overrides (`paths::setOverrideRoot`). A flaky test is a bug: find the cause (one was a thumbnail write failing under load).
 - New suites: `dv_add_test(tst_name)` in `tests/CMakeLists.txt`.
+- **Tests must be silent.** Every suite gets `DV_NO_AUDIO=1` from CMake (`AudioOutput::start` then refuses to open the sound device and the engine uses its timer clock). Never play audio aloud from a test, and set the variable yourself when you start the exe or a test binary by hand.

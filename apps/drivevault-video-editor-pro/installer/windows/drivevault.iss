@@ -32,6 +32,8 @@ VersionInfoProductName={#AppName}
 VersionInfoCompany={#AppPublisher}
 VersionInfoDescription={#AppName} Setup
 DefaultDirName={autopf}\DriveVault\Common\{#ProductFolder}
+; The folder is fixed (suite contract): no folder page. Only the command line /DIR can change it (tests, administrators).
+DisableDirPage=yes
 DefaultGroupName=DriveVault
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\{#AppExe}

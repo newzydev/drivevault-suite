@@ -12,4 +12,5 @@
 - Scripts source `shared\scripts\env.ps1` and use `$SuiteRoot` / `$DvRoot`. The gates in `package.ps1` run with `$ErrorActionPreference = 'Stop'` on purpose: a crash inside a gate must stop packaging.
 - When files are added to or removed from the package, update the owner rules in `license-audit.ps1` and `docs/THIRD-PARTY-NOTICES.txt` in the same change.
 - `package.ps1 -Sign` signs the exe and the installer with the certificate named in `DV_SIGN_PFX` / `DV_SIGN_THUMBPRINT`; without it the output says it is unsigned - keep that note.
+- `test-installer.ps1` exits with code 3 ("SKIPPED") when an all-users Master Pro (HKLM) is installed on the PC: the program installer would skip its Master step and the Master checks would fail for the wrong reason. Run it on a PC / VM without DriveVault (or set `DV_TEST_ALLOW_REAL_MASTER=1` knowing those checks will fail).
 - `test-installer.ps1` installs into the user's profile (`%LOCALAPPDATA%\Programs\DriveVault`) for the default-location check and removes everything again; it never needs administrator rights and never touches real user data.

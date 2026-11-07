@@ -21,6 +21,15 @@ $masterUninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall
 $masterExe = Join-Path $suiteDir 'DriveVaultMasterPro.exe'
 $results = @()
 
+# The test installs Master Pro itself. A real all-users Master Pro on this PC (HKLM) would make the program installer skip that step and
+# many checks fail for a reason that has nothing to do with the installer, so stop with a clear message instead (use a PC / VM without DriveVault).
+$realMaster = Get-ItemProperty 'HKLM:\Software\DriveVault\MasterPro' -ErrorAction SilentlyContinue
+if ($realMaster -and -not $env:DV_TEST_ALLOW_REAL_MASTER) {
+    Write-Host "SKIPPED: DriveVault Master Pro $($realMaster.Version) is installed for all users on this PC ($($realMaster.InstallDir))." -ForegroundColor Yellow
+    Write-Host 'The installer test needs a PC (or VM) without DriveVault, or uninstall DriveVault first. Set DV_TEST_ALLOW_REAL_MASTER=1 to run it anyway (Master Pro checks will fail).' -ForegroundColor Yellow
+    exit 3
+}
+
 function Check($name, $ok, $detail = '') {
     $script:results += [pscustomobject]@{ Check = $name; Result = $(if ($ok) { 'PASS' } else { 'FAIL' }); Detail = $detail }
 }

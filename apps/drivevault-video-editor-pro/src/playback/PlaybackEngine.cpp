@@ -261,8 +261,12 @@ void PlaybackEngine::play()
                                   &error);
     m_audioClock = ok;
     m_audioBackend = ok ? QStringLiteral("WinMM") : QStringLiteral("timer");
-    if (!ok)
-        qCWarning(lcProject) << "No audio output, using the system timer as clock:" << error;
+    if (!ok) {
+        if (qEnvironmentVariableIntValue("DV_NO_AUDIO") != 0)
+            qCInfo(lcProject) << "Audio output is switched off (DV_NO_AUDIO), using the system timer as clock";
+        else
+            qCWarning(lcProject) << "No audio output, using the system timer as clock:" << error;
+    }
     m_clock.start();
     m_statTimer.start();
     m_statFrames = 0;

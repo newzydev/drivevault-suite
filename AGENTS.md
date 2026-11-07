@@ -28,7 +28,12 @@ Planned (do not pretend they exist): Image Editor Pro, Audio Editor Pro. New pro
 - **Downloads and installs** (tools, models, packages) need the owner's explicit permission first; say what, from where and how big. Nothing in the apps downloads anything unless the user presses a button.
 - **Destructive actions** (deleting folders, uninstalling, overwriting) only when asked or clearly part of the task; look at the target first. Never touch the owner's projects / exports / user data.
 - **Scope**: do what was asked; keep changes small and consistent with the surrounding code (naming, comment density, idiom). Do not add speculative features.
-- **Verify before you say "done"**: build and run the relevant tests; for installer / packaging changes run `scripts\build-all.ps1` (or at least the app's `package.ps1` and `test-installer.ps1`).
+- **Verify before you say "done" - only what the change needs** (tests are slow and their output costs context):
+  1. Docs / agent files / comments only: no build. Run `check-agent-files.ps1` if a CLAUDE.md changed.
+  2. Code or QML of **one** app: that app's `scripts\build.ps1 -Test` only (never the other app, never packaging). A smoke start (exe `--screenshot` exits 0 and writes a picture) is enough proof that the program opens; do not drive long UI / export scenarios by hand.
+  3. Installer, packaging, `shared/scripts`, version resource or licence changes, and before a release the owner announces: `scripts\build-all.ps1` (or the app's `package.ps1` + `test-installer.ps1`). **Not** before every commit.
+  4. Redirect long output to a file (`cmd /c "... > %TEMP%\x.log 2>&1"`) and read only the tail or the failing lines. Run slow steps in the background.
+  5. **Silent**: tests and smoke starts must never play sound (`DV_NO_AUDIO=1`, already set by CMake for every test; set it yourself when starting an exe or test binary by hand).
 
 ## Commands (PowerShell 5.1, from the repository root)
 
@@ -68,7 +73,7 @@ Edit the templates (or the per-product section 6 in the script), run the script,
 
 **Branches.** Single branch `main` for now (the first commit `302e890` is on it); the remote is `origin` (GitHub, private).
 
-**Automatic commit and push.** When the work is finished and verified (build + tests of what changed; `scripts\build-all.ps1` for packaging / installer changes; `scripts\check-agent-files.ps1` passes), the agent commits and pushes to `origin main` on its own, without waiting for the owner:
+**Automatic commit and push.** When the work is finished and verified (the checks that "Verify before you say done" asks for this kind of change - not the full `build-all` every time; `scripts\check-agent-files.ps1` passes), the agent commits and pushes to `origin main` on its own, without waiting for the owner:
 - Stage only the files of this task (`git status` first; never `git add -A` blindly) - never `build/`, `dist/`, `.tools/`, certificates, keys or the owner's data. If something unexpected shows up as changed, leave it out and say so.
 - Bump the version and add the release-notes line first when the change needs it (rules below), then one commit per finished task with the message format below; end the message with the attribution line the session gives.
 - Never `--no-verify`, force push, `reset --hard`, `git init` or change branches without asking. If the push is rejected (remote has new commits), `git pull --rebase`, re-check, push again; stop and ask if there are conflicts.
@@ -89,7 +94,7 @@ Edit the templates (or the per-product section 6 in the script), run the script,
 | not compatible with what users have (project file or settings cannot be read any more, install layout / registry contract changes) | major | 1.1.0 -> 2.0.0 |
 - Any commit that changes what the program does bumps that program's version **in the same commit**. Docs / agent files / scripts / comments / tests only: no bump.
 - There is no bump script yet, so update **every** place by hand and check with a search for the old number (exclude `build/`, `dist/`, `.tools/`, `docs/spec/`): `CMakeLists.txt` (`project(... VERSION ...)`, the single source for the exe / version resource where used), `src/**/app.rc`, `installer/windows/*.iss` (the `#define AppVersion` default - the Video Editor one is only a fallback, `package.ps1` passes the real number; Master Pro's is the real one), `README.md`, user guides, `docs/release-notes.txt`, and the tests / `scripts/test-installer.ps1` that assert the number. Keep the Inno `AppId` unchanged.
-- The Video Editor installer carries Master Pro: when Master Pro's version changes, rebuild with `scripts\build-all.ps1` so both installers agree (`NeedMaster` installs the newer one).
+- The Video Editor installer carries Master Pro: when Master Pro's version changes, the installers must be rebuilt with `scripts\build-all.ps1` before the owner publishes a release, so both agree (`NeedMaster` installs the newer one) - not on every commit.
 - Add an entry at the **top** of the program's `docs/release-notes.txt` (`vX.Y.Z (YYYY-MM-DD): ...`) in the same commit; Keep the unsigned-installer note while installers are unsigned.
 - **Publishing a release** (what Master Pro's "Check for updates" reads; contract in `docs/suite-integration.md`). The owner does it on GitHub (Releases > Draft a new release; the `gh` CLI is not installed), after the version commit is pushed and `package.ps1` / `scripts\build-all.ps1` passed:
   1. Tag `<slug>-v<x.y.z>` on `main`, one per program release: `video-editor-v1.0.1`, `master-pro-v1.1.0` (not `v1.0.1` alone, because two programs share the repository). Title = program name + version; description = the new `release-notes.txt` entry.
