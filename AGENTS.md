@@ -90,8 +90,12 @@ Edit the templates (or the per-product section 6 in the script), run the script,
 - Any commit that changes what the program does bumps that program's version **in the same commit**. Docs / agent files / scripts / comments / tests only: no bump.
 - There is no bump script yet, so update **every** place by hand and check with a search for the old number (exclude `build/`, `dist/`, `.tools/`, `docs/spec/`): `CMakeLists.txt` (`project(... VERSION ...)`, the single source for the exe / version resource where used), `src/**/app.rc`, `installer/windows/*.iss` (the `#define AppVersion` default - the Video Editor one is only a fallback, `package.ps1` passes the real number; Master Pro's is the real one), `README.md`, user guides, `docs/release-notes.txt`, and the tests / `scripts/test-installer.ps1` that assert the number. Keep the Inno `AppId` unchanged.
 - The Video Editor installer carries Master Pro: when Master Pro's version changes, rebuild with `scripts\build-all.ps1` so both installers agree (`NeedMaster` installs the newer one).
-- Add an entry at the **top** of the program's `docs/release-notes.txt` (`vX.Y.Z (YYYY-MM-DD): ...`) in the same commit; Master Pro has no release notes file yet - create `apps/drivevault-master-pro/docs/release-notes.txt` at its first bump. Keep the unsigned-installer note while installers are unsigned.
-- Release tags are made by the owner in VS Code / GitHub, one per program release: `video-editor-v1.0.1`, `master-pro-v1.1.0` (not `v1.0.1` alone, because two programs share the repository). Put the installer's SHA-256 (printed by `package.ps1`) in the GitHub release notes.
+- Add an entry at the **top** of the program's `docs/release-notes.txt` (`vX.Y.Z (YYYY-MM-DD): ...`) in the same commit; Keep the unsigned-installer note while installers are unsigned.
+- **Publishing a release** (what Master Pro's "Check for updates" reads; contract in `docs/suite-integration.md`). The owner does it on GitHub (Releases > Draft a new release; the `gh` CLI is not installed), after the version commit is pushed and `package.ps1` / `scripts\build-all.ps1` passed:
+  1. Tag `<slug>-v<x.y.z>` on `main`, one per program release: `video-editor-v1.0.1`, `master-pro-v1.1.0` (not `v1.0.1` alone, because two programs share the repository). Title = program name + version; description = the new `release-notes.txt` entry.
+  2. Attach **both** files from the program's `dist\`: `DriveVault-<Name>-Setup-x64.exe` and `DriveVault-<Name>-Setup-x64.exe.sha256`, unchanged. Without the `.sha256` asset Master Pro ignores the release.
+  3. "Set as the latest release", not a pre-release or draft. The installer attached must be built from the tagged commit.
+  Agents never create tags or releases; they remind the owner of these steps when a version was bumped.
 - Say the new version number in the summary every time you finish a change that bumps it.
 
 ## Open items the owner knows about

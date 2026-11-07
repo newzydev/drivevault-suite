@@ -1,6 +1,12 @@
 #include "Hub.h"
 #include "WinUtil.h"
 
+#include <QCryptographicHash>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QSignalSpy>
+
 #include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -209,6 +215,157 @@ private slots:
         QVERIFY(again.installerFolders().contains(QDir::cleanPath(p("my installers"))));
         QCOMPARE(again.removeInstallerFolder(p("my installers")), QString());
         QVERIFY(!again.installerFolders().contains(QDir::cleanPath(p("my installers"))));
+    }
+
+    // ---- online updates (the feed and the "downloads" are local files here; no network is used) ----------------------------------
+    void releaseFeedIsParsedStrictly()
+    {
+        auto asset = [](const QString& name) { return QJsonObject{{"name", name}, {"browser_download_url", "https://github.com/x/y/releases/download/t/" + name}, {"size", 1000}}; };
+        auto release = [&](const QString& tag, bool draft, bool pre, const QJsonArray& assets) {
+            return QJsonObject{{"tag_name", tag}, {"draft", draft}, {"prerelease", pre}, {"html_url", "https://github.com/x/y/releases/tag/" + tag}, {"assets", assets}};
+        };
+        const QJsonArray both{asset("Setup.exe"), asset("Setup.exe.sha256")};
+        QJsonArray feed;
+        feed << release("video-editor-v1.0.1", false, false, both)
+             << release("video-editor-v1.10.0", false, false, both)             // 1.10 > 1.9 (numeric, not text)
+             << release("video-editor-v1.9.0", false, false, both)
+             << release("video-editor-v9.0.0", false, true, both)              // pre-release: ignored
+             << release("video-editor-v8.0.0", true, false, both)              // draft: ignored
+             << release("master-pro-v1.2.0", false, false, both)
+             << release("v3.0.0", false, false, both)                          // not <slug>-v<x.y.z>: ignored
+             << release("audio-editor-v1.0", false, false, both)               // not three numbers: ignored
+             << release("image-editor-v1.0.0", false, false, QJsonArray{asset("Setup.exe")});   // no .sha256 next to it: ignored
+        const auto found = releases::parse(QJsonDocument(feed).toJson());
+        QCOMPARE(found.size(), 2);
+        QCOMPARE(found.value("video-editor").version, QStringLiteral("1.10.0"));
+        QCOMPARE(found.value("video-editor").assetName, QStringLiteral("Setup.exe"));
+        QVERIFY(found.value("video-editor").hashUrl.endsWith("Setup.exe.sha256"));
+        QCOMPARE(found.value("master-pro").version, QStringLiteral("1.2.0"));
+        QVERIFY(releases::parse("not json").isEmpty());
+        QVERIFY(releases::parse("{}").isEmpty());
+
+        const QString h(64, QLatin1Char('A'));
+        QCOMPARE(releases::parseSha256(h + " *Setup.exe\r\n", "Setup.exe"), h.toLower());
+        QCOMPARE(releases::parseSha256(h, "Setup.exe"), h.toLower());
+        QVERIFY(releases::parseSha256(h + " *Other.exe", "Setup.exe").isEmpty());      // a hash for another file
+        QVERIFY(releases::parseSha256("abc *Setup.exe", "Setup.exe").isEmpty());
+        QVERIFY(releases::urlAllowed("https://github.com/a/b/releases/download/x", "https://github.com/a/b/releases/download/"));
+        QVERIFY(!releases::urlAllowed("https://evil.example/a/b/releases/download/x", "https://github.com/a/b/releases/download/"));
+        QVERIFY(!releases::urlAllowed("https://github.com/a/b", QString()));
+    }
+
+    void onlineUpdateIsCheckedDownloadedVerifiedAndRun()
+    {
+        const QString exe = fakeSetup(p("Program Files/DriveVault/DriveVault Video Editor Pro/DriveVaultVideoEditorPro.exe"));
+        const QString name = QStringLiteral("DriveVault-Video-Editor-Pro-Setup-x64.exe");
+        QFile::remove(p("app/installers/" + name));                 // left over from an earlier test: a local 2.0.0 setup would hide the online one
+        const QString served = fakeSetup(p("rel/" + name));         // what "GitHub" serves: the fake setup, version 2.0.0
+        QVERIFY(!exe.isEmpty() && !served.isEmpty());
+        QFile bytes(served);
+        QVERIFY(bytes.open(QIODevice::ReadOnly));
+        const QString goodHash = QString::fromLatin1(QCryptographicHash::hash(bytes.readAll(), QCryptographicHash::Sha256).toHex());
+        bytes.close();
+        auto writeHash = [&](const QString& hex) {
+            QFile f(p("rel/" + name + ".sha256"));
+            QVERIFY(f.open(QIODevice::WriteOnly | QIODevice::Truncate));
+            f.write(QStringLiteral("%1 *%2\n").arg(hex, name).toLatin1());
+        };
+        writeHash(goodHash);
+        auto url = [&](const QString& file) { return QUrl::fromLocalFile(p(file)).toString(); };
+        QFile feed(p("feed.json"));
+        QVERIFY(feed.open(QIODevice::WriteOnly));
+        feed.write(QJsonDocument(QJsonArray{QJsonObject{
+            {"tag_name", "video-editor-v2.0.0"}, {"draft", false}, {"prerelease", false}, {"html_url", "https://example.invalid"},
+            {"assets", QJsonArray{QJsonObject{{"name", name}, {"browser_download_url", url("rel/" + name)}, {"size", 1}},
+                                  QJsonObject{{"name", name + ".sha256"}, {"browser_download_url", url("rel/" + name + ".sha256")}, {"size", 1}}}}}}).toJson());
+        feed.close();
+        writeProduct("VideoEditorPro", {{"DisplayName", "DriveVault Video Editor Pro"}, {"Version", "1.0.0"}, {"InstallDir", QFileInfo(exe).absolutePath()},
+                                         {"Executable", exe}, {"Uninstaller", exe}});
+        qputenv("DM_FAKE_MARKER", p("online-marker.txt").toLocal8Bit());
+        qputenv("DM_FAKE_EXIT", "0");
+        QFile::remove(p("online-marker.txt"));
+
+        Hub::Options o = options();
+        o.releasesUrl = url("feed.json");
+        o.downloadPrefix = url("rel") + QLatin1Char('/');
+        Hub hub(o);
+        hub.setLanguage("en");
+        hub.setSilentInstalls(true);
+
+        // nothing online is known (and nothing is contacted) until the user checks
+        QVERIFY(!hub.onlineChecked());
+        QVERIFY(!find(hub, "drivevault.videoeditor").value("onlineUpdate").toBool());
+        QVERIFY(!hub.downloadAndInstall("drivevault.videoeditor").isEmpty());
+
+        QSignalSpy checked(&hub, &Hub::checkFinished);
+        QVERIFY(hub.checkForUpdates().isEmpty());
+        QVERIFY(hub.checking());
+        QVERIFY(!hub.checkForUpdates().isEmpty());                    // not twice at once
+        QTRY_COMPARE(checked.size(), 1);
+        QVERIFY(checked.first().first().toBool());
+        QVERIFY(hub.onlineChecked());
+        QVariantMap video = find(hub, "drivevault.videoeditor");
+        QVERIFY(video.value("onlineUpdate").toBool());
+        QCOMPARE(video.value("onlineVersion").toString(), QStringLiteral("2.0.0"));
+        QVERIFY(!video.value("onlineInstall").toBool());              // installed: it is an update, not an install
+        QVERIFY2(hub.message().contains("1 update"), qPrintable(hub.message()));
+        QCOMPARE(find(hub, "drivevault.audioeditor").value("onlineVersion").toString(), QString());
+
+        // a download whose checksum does not match is deleted and never started
+        writeHash(QString(64, QLatin1Char('0')));
+        QSignalSpy downloaded(&hub, &Hub::downloadFinished);
+        QVERIFY(hub.downloadAndInstall("drivevault.videoeditor").isEmpty());
+        QVERIFY(hub.busy());
+        QTRY_COMPARE(downloaded.size(), 1);
+        QVERIFY(!downloaded.first().first().toBool());
+        QVERIFY2(hub.message().contains("SHA-256"), qPrintable(hub.message()));
+        QVERIFY(!hub.busy());
+        QCOMPARE(hub.downloadProgress(), -1.0);
+        QVERIFY(!QFileInfo::exists(p("data/installers/" + name)));
+        QVERIFY(!QFileInfo::exists(p("data/installers/" + name + ".part")));
+        QVERIFY(!QFileInfo::exists(p("online-marker.txt")));
+
+        // the right checksum: downloaded, version resource checked, run silently, and the file removed after success
+        writeHash(goodHash);
+        downloaded.clear();
+        QSignalSpy finished(&hub, &Hub::taskFinished);
+        QVERIFY(hub.downloadAndInstall("drivevault.videoeditor").isEmpty());
+        QTRY_COMPARE(downloaded.size(), 1);
+        QVERIFY(downloaded.first().first().toBool());
+        QTRY_COMPARE(finished.size(), 1);
+        QCOMPARE(finished.first().first().toInt(), 0);
+        QFile marker(p("online-marker.txt"));
+        QVERIFY(marker.open(QIODevice::ReadOnly));
+        QVERIFY(QString::fromLocal8Bit(marker.readAll()).contains("/VERYSILENT"));
+        marker.close();
+        QVERIFY(!QFileInfo::exists(p("data/installers/" + name)));
+
+        // a download address that is not the official one is refused before anything is fetched
+        Hub::Options strict = options();
+        strict.releasesUrl = o.releasesUrl;                          // default downloadPrefix = the official GitHub address
+        Hub other(strict);
+        QSignalSpy checked2(&other, &Hub::checkFinished);
+        QVERIFY(other.checkForUpdates().isEmpty());
+        QTRY_COMPARE(checked2.size(), 1);
+        QVERIFY(!other.downloadAndInstall("drivevault.videoeditor").isEmpty());
+        QVERIFY(!other.busy());
+        qunsetenv("DM_FAKE_EXIT");
+        qunsetenv("DM_FAKE_MARKER");
+    }
+
+    void aFailedCheckSaysSoAndChangesNothing()
+    {
+        Hub::Options o = options();
+        o.releasesUrl = QUrl::fromLocalFile(p("no-such-feed.json")).toString();
+        Hub hub(o);
+        hub.setLanguage("en");
+        QSignalSpy checked(&hub, &Hub::checkFinished);
+        QVERIFY(hub.checkForUpdates().isEmpty());
+        QTRY_COMPARE(checked.size(), 1);
+        QVERIFY(!checked.first().first().toBool());
+        QVERIFY(!hub.checking());
+        QVERIFY(!hub.onlineChecked());
+        QVERIFY2(hub.message().contains("Could not check"), qPrintable(hub.message()));
     }
 
     void documentsAreOnlyLookedUpByPlainName()

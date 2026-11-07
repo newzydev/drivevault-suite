@@ -1,10 +1,14 @@
 #pragma once
 
+#include "Releases.h"
+
+#include <QMap>
 #include <QObject>
 #include <QString>
 #include <QStringList>
 #include <QVariantList>
 
+class QNetworkAccessManager;
 class QThread;
 
 namespace dm {
@@ -23,12 +27,18 @@ class Hub : public QObject {
     Q_PROPERTY(QString version READ version CONSTANT FINAL)
     Q_PROPERTY(QString buildNumber READ buildNumber CONSTANT FINAL)
     Q_PROPERTY(QString suiteDirectory READ suiteDirectory CONSTANT FINAL)
+    Q_PROPERTY(bool checking READ checking NOTIFY checkingChanged FINAL)                        // asking GitHub for releases
+    Q_PROPERTY(double downloadProgress READ downloadProgress NOTIFY downloadProgressChanged FINAL)   // 0..1 while downloading, -1 otherwise
+    Q_PROPERTY(bool onlineChecked READ onlineChecked NOTIFY productsChanged FINAL)
 
 public:
     struct Options {
         QString registryRoot = QStringLiteral("Software\\DriveVault");   // tests use another key
         QString dataDir;                                                  // settings; default %LOCALAPPDATA%\DriveVault\MasterPro
-        QString appDir;                                                   // where installers\ and licenses\ live; default: the program folder
+        QString appDir;
+        // Where the releases come from. The defaults are the official repository; tests point both at local files.
+        QString releasesUrl = QStringLiteral("https://api.github.com/repos/newzydev/drivevault-suite/releases?per_page=30");
+        QString downloadPrefix = QStringLiteral("https://github.com/newzydev/drivevault-suite/releases/download/");                                                   // where installers\ and licenses\ live; default: the program folder
     };
     explicit Hub(const Options& options, QObject* parent = nullptr);
     ~Hub() override;
@@ -42,6 +52,9 @@ public:
     QString version() const;
     QString buildNumber() const;
     QString suiteDirectory() const { return m_appDir; }
+    bool checking() const { return m_checking; }
+    double downloadProgress() const { return m_progress; }
+    bool onlineChecked() const { return m_onlineChecked; }
 
     // Re-reads the registry and the installer folders.
     Q_INVOKABLE void refresh();
@@ -51,6 +64,10 @@ public:
     Q_INVOKABLE QString uninstall(const QString& productId);                       // runs the product's own uninstaller
     Q_INVOKABLE QString installProduct(const QString& productId);                  // setup file found in an installer folder
     Q_INVOKABLE QString installFromFile(const QString& fileOrUrl);                 // setup file picked by the user
+    // Online (only when the user presses the button): asks GitHub Releases which versions exist, then downloads one setup file,
+    // checks its SHA-256 against the release's .sha256 file and its version resource, and runs it like any other setup file.
+    Q_INVOKABLE QString checkForUpdates();
+    Q_INVOKABLE QString downloadAndInstall(const QString& productId);
     Q_INVOKABLE QString addInstallerFolder(const QString& folderOrUrl);
     Q_INVOKABLE QString removeInstallerFolder(const QString& folder);
     Q_INVOKABLE QString openInstallersFolder();
@@ -71,6 +88,10 @@ signals:
     void messageChanged();
     void languageChanged();
     void taskFinished(int exitCode);
+    void checkingChanged();
+    void downloadProgressChanged();
+    void checkFinished(bool ok);
+    void downloadFinished(bool ok);
 
 private:
     struct Catalog;
@@ -79,6 +100,9 @@ private:
     void setMessage(const QString& m);
     QStringList userFolders() const;
     void saveFolders(const QStringList& folders);
+    QNetworkAccessManager* net();
+    void failDownload(const QString& why);
+    void startAssetDownload(const releases::Release& rel, const QString& productName, const QString& expectedHash);
 
     Options m_options;
     QString m_appDir;
@@ -90,6 +114,12 @@ private:
     bool m_busy = false;
     bool m_silent = false;
     int m_lastExit = 0;
+    QNetworkAccessManager* m_net = nullptr;
+    QMap<QString, releases::Release> m_online;     // best release per slug, from the last check
+    bool m_checking = false;
+    bool m_onlineChecked = false;
+    double m_progress = -1;
+    QString m_cleanupFile;                          // a downloaded setup file that is deleted after a successful run
 };
 
 } // namespace dm

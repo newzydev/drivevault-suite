@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS  Generates the licence texts of every app from the shared templates (shared\legal\EULA.en.txt / EULA.th.txt).
 .DESCRIPTION
   Writes, for each app:  apps\<app>\LICENSE.txt (English + Thai, shipped in the installer's licenses folder)
@@ -29,12 +29,14 @@ Export: the Software checks every exported file automatically, but you are respo
     @{
         Folder = 'drivevault-master-pro'; Name = 'DriveVault Master Pro'
         NotesEn = @'
-Master Pro lists, opens, installs, updates and uninstalls DriveVault programs only when you ask it to, and only with files on your computer: it does not download programs and it has no
-online store. It starts only setup files whose version information names DriveVault as the publisher. It does not verify digital signatures of setup files (installers may be unsigned),
+Master Pro lists, opens, installs, updates and uninstalls DriveVault programs only when you ask it to. It uses setup files on your computer; only when you press "Check for updates" does it contact GitHub
+(the releases of the DriveVault repository), and when you then choose to download, it fetches that one setup file and compares its SHA-256 checksum with the one published in the release before it runs.
+It has no online store and never downloads anything by itself. It starts only setup files whose version information names DriveVault as the publisher. It does not verify digital signatures of setup files (installers may be unsigned),
 so install only setup files that you obtained from a source you trust. Uninstalling a program never deletes your projects or exported files.
 '@
         NotesTh = @'
-Master Pro แสดง เปิด ติดตั้ง อัปเดต และถอนการติดตั้งโปรแกรม DriveVault เฉพาะเมื่อคุณสั่ง และใช้เฉพาะไฟล์ที่อยู่ในเครื่องของคุณ: ไม่ดาวน์โหลดโปรแกรมและไม่มีร้านค้าออนไลน์
+Master Pro แสดง เปิด ติดตั้ง อัปเดต และถอนการติดตั้งโปรแกรม DriveVault เฉพาะเมื่อคุณสั่ง โดยใช้ไฟล์ติดตั้งในเครื่องของคุณ เมื่อคุณกด "ตรวจหาอัปเดต" เท่านั้นจึงจะติดต่อ GitHub (รุ่นที่เผยแพร่ของที่เก็บ DriveVault)
+และเมื่อคุณเลือกดาวน์โหลด จะดึงไฟล์ติดตั้งนั้นไฟล์เดียวและเทียบค่า SHA-256 กับค่าที่ประกาศไว้ในรุ่นนั้นก่อนเปิด ไม่มีร้านค้าออนไลน์และไม่ดาวน์โหลดอะไรเองโดยอัตโนมัติ
 โดยจะเปิดเฉพาะไฟล์ติดตั้งที่ข้อมูลเวอร์ชันระบุว่าผู้เผยแพร่คือ DriveVault ไม่ตรวจลายเซ็นดิจิทัลของไฟล์ติดตั้ง (ตัวติดตั้งอาจยังไม่ได้เซ็น)
 ดังนั้นโปรดติดตั้งเฉพาะไฟล์ที่ได้จากแหล่งที่คุณเชื่อถือ การถอนการติดตั้งโปรแกรมจะไม่ลบโปรเจกต์หรือไฟล์ที่ส่งออกของคุณ
 '@

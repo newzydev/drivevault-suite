@@ -1,0 +1,23 @@
+DriveVault Master Pro - release notes
+=====================================
+
+v1.1.0 (2026-11-07)
+  New
+  - "Check for updates" button: asks the GitHub Releases of newzydev/drivevault-suite which version of each program exists. It runs only when you press the button;
+    nothing is checked or downloaded in the background.
+  - "Download version X and update / install": downloads the setup file from the official release address, compares its SHA-256 with the release's .sha256 file,
+    checks that it is the right DriveVault program and version, then runs it like any other setup file. The downloaded file is deleted after a successful run.
+  Changed
+  - The licence text (EULA) says that "Check for updates" contacts GitHub.
+  - Fixed: the Thai product section (6) of the licence text was shown garbled; the licence generator script is now saved with a byte order mark.
+  Notes
+  - Master Pro does not update itself; its setup file is installed by the program installers or run by hand.
+  - GitHub limits anonymous requests (60 per hour per connection): if the check says so, try again later.
+
+Known limitations
+  - Installers are not code-signed (a certificate has to be bought). Windows may show "Windows protected your PC": choose "More info" and then "Run anyway".
+    The SHA-256 check above protects against a damaged or swapped download, not against a compromised release.
+  - Not tested on a clean machine / VM.
+
+v1.0.0
+  - First release: lists, opens, installs, updates (from setup files on this PC) and uninstalls DriveVault programs; installed automatically by every program installer.

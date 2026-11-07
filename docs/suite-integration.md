@@ -1,6 +1,10 @@
 # DriveVault suite integration (for "DriveVault Master Pro" and future products)
 
-DriveVault Video Editor Pro is the first product of the suite (image editor, audio editor ... are planned). **DriveVault Master Pro** (repository `DriveVault Master Pro`, version 1.0.0) is the hub:
+**Online updates (Master Pro 1.1.0+).** Every program release is a GitHub Release of `newzydev/drivevault-suite` with the tag `<slug>-v<x.y.z>` (`video-editor`, `master-pro`, `image-editor`, `audio-editor`) and exactly these assets:
+the setup file `DriveVault-<Name>-Setup-x64.exe` and its `DriveVault-<Name>-Setup-x64.exe.sha256` (`<hex> *<file name>`, written by `package.ps1`). The release is not a draft or pre-release; the setup's version resource
+(`CompanyName` DriveVault, `ProductName` = the program, `ProductVersion` = the tag's version) must match. Master Pro reads it only when the user presses "Check for updates". Master Pro's own releases are published but never offered by the hub.
+
+DriveVault Video Editor Pro is the first product of the suite (image editor, audio editor ... are planned). **DriveVault Master Pro** (repository `DriveVault Master Pro`, version 1.1.0) is the hub:
 it lists, opens, installs, updates and uninstalls the programs, in the spirit of Creative Cloud. **Every product installer installs Master Pro first** (it carries
 the hub's setup inside and runs it silently when the hub is missing or older). This page is the contract that every product - and the hub - follows.
 

@@ -88,6 +88,12 @@ ApplicationWindow {
                 Text { text: Tr.s("language"); font.pixelSize: 12; color: Theme.textDisabled }
                 MButton { objectName: "langTh"; text: "ไทย"; variant: Hub.language === "th" ? "primary" : "secondary"; implicitWidth: 56; leftPadding: 8; rightPadding: 8; onClicked: Hub.language = "th" }
                 MButton { objectName: "langEn"; text: "EN"; variant: Hub.language === "en" ? "primary" : "secondary"; implicitWidth: 48; leftPadding: 8; rightPadding: 8; onClicked: Hub.language = "en" }
+                MButton {
+                    objectName: "checkUpdates"
+                    text: Hub.checking ? Tr.s("checking") : Tr.s("checkUpdates")
+                    enabled: !Hub.busy && !Hub.checking
+                    onClicked: { const e = Hub.checkForUpdates(); if (e !== "") win.showNotice(e) }
+                }
                 MButton { objectName: "refresh"; text: Tr.s("refresh"); onClicked: Hub.refresh() }
                 MButton { objectName: "about"; text: Tr.s("about"); variant: "ghost"; onClicked: aboutDialog.open() }
             }
@@ -150,13 +156,19 @@ ApplicationWindow {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 10
-                    BusyIndicator { running: Hub.busy; visible: Hub.busy; implicitWidth: 20; implicitHeight: 20 }
+                    BusyIndicator { running: Hub.busy || Hub.checking; visible: Hub.busy || Hub.checking; implicitWidth: 20; implicitHeight: 20 }
+                    ProgressBar {
+                        objectName: "downloadProgress"
+                        visible: Hub.downloadProgress >= 0
+                        value: Hub.downloadProgress
+                        implicitWidth: 140
+                    }
                     Text {
                         objectName: "statusText"
                         Layout.fillWidth: true
-                        text: Hub.busy ? Hub.message : win.notice
+                        text: Hub.busy || Hub.checking ? Hub.message : win.notice
                         font.pixelSize: 13
-                        color: Hub.busy ? Theme.accent : Theme.textSecondary
+                        color: Hub.busy || Hub.checking ? Theme.accent : Theme.textSecondary
                         elide: Text.ElideRight
                     }
                     Text { text: "v" + Hub.version; font.pixelSize: 12; color: Theme.textDisabled }

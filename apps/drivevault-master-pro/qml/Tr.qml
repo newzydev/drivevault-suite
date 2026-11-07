@@ -32,13 +32,18 @@ QtObject {
         "close": ["Close", "ปิด"],
         "notices": ["Third-party notices", "ประกาศของบุคคลที่สาม"],
         "aboutText": ["DriveVault Master Pro installs, opens and updates the DriveVault programs. It is installed automatically with the first program.", "DriveVault Master Pro ติดตั้ง เปิด และอัปเดตโปรแกรม DriveVault และถูกติดตั้งอัตโนมัติพร้อมโปรแกรมแรก"],
-        "honest": ["Only setup files on this computer are offered - there is no online store yet.", "แสดงเฉพาะไฟล์ติดตั้งที่อยู่ในเครื่องนี้ - ยังไม่มีร้านค้าออนไลน์"],
+        "honest": ["Programs are offered from setup files on this computer. Only when you press \"Check for updates\" does Master Pro contact GitHub (releases of the DriveVault repository); a download is checked against its SHA-256 before it runs. There is no online store.", "ติดตั้งจากไฟล์ติดตั้งในเครื่องนี้ Master Pro จะติดต่อ GitHub (รุ่นที่เผยแพร่ของที่เก็บ DriveVault) เฉพาะเมื่อคุณกด \"ตรวจหาอัปเดต\" และไฟล์ที่ดาวน์โหลดจะถูกตรวจ SHA-256 ก่อนเปิด ไม่มีร้านค้าออนไลน์"],
         "suiteFolder": ["Suite folder", "โฟลเดอร์ชุดโปรแกรม"],
         "language": ["Language", "ภาษา"],
         "confirmUninstall": ["Uninstall %1?", "ถอนการติดตั้ง %1 หรือไม่?"],
         "confirmText": ["The program's own uninstaller opens. Your projects are never deleted.", "ตัวถอนของโปรแกรมจะเปิดขึ้น โปรเจกต์ของคุณจะไม่ถูกลบ"],
         "cancel": ["Cancel", "ยกเลิก"],
-        "setupFiles": ["Setup files (*.exe)", "ไฟล์ติดตั้ง (*.exe)"]
+        "setupFiles": ["Setup files (*.exe)", "ไฟล์ติดตั้ง (*.exe)"],
+        "checkUpdates": ["Check for updates", "ตรวจหาอัปเดต"],
+        "checking": ["Checking…", "กำลังตรวจ…"],
+        "onlineUpdate": ["Download version %1 and update", "ดาวน์โหลดเวอร์ชัน %1 และอัปเดต"],
+        "onlineInstall": ["Download version %1 and install", "ดาวน์โหลดเวอร์ชัน %1 และติดตั้ง"],
+        "onlineHint": ["Newest online: version %1", "รุ่นล่าสุดออนไลน์: เวอร์ชัน %1"]
     })
     function s(key) {
         const e = table[key]

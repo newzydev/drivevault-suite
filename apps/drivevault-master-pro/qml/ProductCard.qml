@@ -79,7 +79,7 @@ Rectangle {
             Rectangle {
                 id: chip
                 objectName: "status_" + card.key
-                readonly property bool update: card.product.updateAvailable === true
+                readonly property bool update: card.product.updateAvailable === true || card.product.onlineUpdate === true
                 implicitWidth: chipText.implicitWidth + 20
                 implicitHeight: 24
                 radius: 12
@@ -144,6 +144,22 @@ Rectangle {
                 text: Tr.s("updateBtn")
                 enabled: !Hub.busy
                 onClicked: { const e = Hub.installProduct(card.product.id); if (e !== "") card.error(e) }
+            }
+            MButton {
+                objectName: "onlineUpdate_" + card.key
+                visible: card.product.onlineUpdate === true
+                variant: "primary"; tint: card.accent
+                text: Tr.s("onlineUpdate").replace("%1", card.product.onlineVersion)
+                enabled: !Hub.busy && !Hub.checking
+                onClicked: { const e = Hub.downloadAndInstall(card.product.id); if (e !== "") card.error(e) }
+            }
+            MButton {
+                objectName: "onlineInstall_" + card.key
+                visible: card.product.onlineInstall === true
+                variant: card.product.installerPath === "" ? "primary" : "secondary"; tint: card.accent
+                text: Tr.s("onlineInstall").replace("%1", card.product.onlineVersion)
+                enabled: !Hub.busy && !Hub.checking
+                onClicked: { const e = Hub.downloadAndInstall(card.product.id); if (e !== "") card.error(e) }
             }
             MButton {
                 objectName: "install_" + card.key

@@ -22,15 +22,16 @@ having the rights to the material you edit and export. The Software works on you
 4. PRIVACY
 The Software works offline. It does not collect usage data, has no telemetry and does not send personal data or your files anywhere. Settings, logs, auto-save copies and
 caches are stored on your computer (in %LOCALAPPDATA%\DriveVault) and are removed on request when you uninstall. The only time the Software uses the internet is when you
-yourself press a button that downloads something (for example a speech model); then the server you download from can see your connection like any website.
+yourself press a button that downloads or checks something (for example a speech model, or "Check for updates" in DriveVault Master Pro, which contacts GitHub); then the server you connect to can see your connection like any website.
 
 5. UPDATES AND THE DRIVEVAULT SUITE
 We may offer new versions, but we are not obliged to. A newer installer replaces the installed version. DriveVault Master Pro, which is installed together with every
 DriveVault program, manages the programs on your computer; it starts only setup files that identify DriveVault as their publisher and only when you ask it to.
 
 6. PRODUCT-SPECIFIC TERMS
-Master Pro lists, opens, installs, updates and uninstalls DriveVault programs only when you ask it to, and only with files on your computer: it does not download programs and it has no
-online store. It starts only setup files whose version information names DriveVault as the publisher. It does not verify digital signatures of setup files (installers may be unsigned),
+Master Pro lists, opens, installs, updates and uninstalls DriveVault programs only when you ask it to. It uses setup files on your computer; only when you press "Check for updates" does it contact GitHub
+(the releases of the DriveVault repository), and when you then choose to download, it fetches that one setup file and compares its SHA-256 checksum with the one published in the release before it runs.
+It has no online store and never downloads anything by itself. It starts only setup files whose version information names DriveVault as the publisher. It does not verify digital signatures of setup files (installers may be unsigned),
 so install only setup files that you obtained from a source you trust. Uninstalling a program never deletes your projects or exported files.
 
 7. THIRD-PARTY SOFTWARE
@@ -96,16 +97,17 @@ DriveVault Master Pro
 4. ความเป็นส่วนตัว
 ซอฟต์แวร์ทำงานแบบออฟไลน์ ไม่เก็บข้อมูลการใช้งาน ไม่มี telemetry และไม่ส่งข้อมูลส่วนบุคคลหรือไฟล์ของคุณไปที่ใด การตั้งค่า ไฟล์บันทึก สำเนาบันทึกอัตโนมัติ และแคชถูกเก็บในเครื่องของคุณ
 (ที่ %LOCALAPPDATA%\DriveVault) และจะถูกลบเมื่อคุณสั่งลบตอนถอนการติดตั้ง ซอฟต์แวร์ใช้อินเทอร์เน็ตเฉพาะเมื่อคุณกดปุ่มที่ดาวน์โหลดสิ่งใดสิ่งหนึ่งเอง (เช่น โมเดลเสียง)
-ซึ่งเซิร์ฟเวอร์ที่คุณดาวน์โหลดจากจะเห็นการเชื่อมต่อของคุณเหมือนเว็บไซต์ทั่วไป
+หรือตรวจสอบสิ่งใดสิ่งหนึ่งเอง (เช่น ปุ่ม "ตรวจหาอัปเดต" ใน DriveVault Master Pro ซึ่งติดต่อ GitHub) ซึ่งเซิร์ฟเวอร์ที่คุณเชื่อมต่อจะเห็นการเชื่อมต่อของคุณเหมือนเว็บไซต์ทั่วไป
 
 5. การอัปเดตและชุดโปรแกรม DriveVault
 เราอาจออกรุ่นใหม่ แต่ไม่มีหน้าที่ต้องทำ ตัวติดตั้งรุ่นใหม่จะแทนที่รุ่นที่ติดตั้งอยู่ DriveVault Master Pro ซึ่งติดตั้งพร้อมกับโปรแกรม DriveVault ทุกตัว
 เป็นตัวจัดการโปรแกรมในเครื่องของคุณ โดยจะเปิดเฉพาะไฟล์ติดตั้งที่ระบุว่า DriveVault เป็นผู้เผยแพร่ และเฉพาะเมื่อคุณสั่งเท่านั้น
 
 6. ข้อกำหนดเฉพาะผลิตภัณฑ์
-Master Pro à¹à¸ªà¸”à¸‡ à¹€à¸›à¸´à¸” à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ à¸­à¸±à¸›à¹€à¸”à¸• à¹à¸¥à¸°à¸–à¸­à¸™à¸à¸²à¸£à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¹‚à¸›à¸£à¹à¸à¸£à¸¡ DriveVault à¹€à¸‰à¸žà¸²à¸°à¹€à¸¡à¸·à¹ˆà¸­à¸„à¸¸à¸“à¸ªà¸±à¹ˆà¸‡ à¹à¸¥à¸°à¹ƒà¸Šà¹‰à¹€à¸‰à¸žà¸²à¸°à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¸­à¸¢à¸¹à¹ˆà¹ƒà¸™à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¸‚à¸­à¸‡à¸„à¸¸à¸“: à¹„à¸¡à¹ˆà¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹‚à¸›à¸£à¹à¸à¸£à¸¡à¹à¸¥à¸°à¹„à¸¡à¹ˆà¸¡à¸µà¸£à¹‰à¸²à¸™à¸„à¹‰à¸²à¸­à¸­à¸™à¹„à¸¥à¸™à¹Œ
-à¹‚à¸”à¸¢à¸ˆà¸°à¹€à¸›à¸´à¸”à¹€à¸‰à¸žà¸²à¸°à¹„à¸Ÿà¸¥à¹Œà¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¸—à¸µà¹ˆà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹€à¸§à¸­à¸£à¹Œà¸Šà¸±à¸™à¸£à¸°à¸šà¸¸à¸§à¹ˆà¸²à¸œà¸¹à¹‰à¹€à¸œà¸¢à¹à¸žà¸£à¹ˆà¸„à¸·à¸­ DriveVault à¹„à¸¡à¹ˆà¸•à¸£à¸§à¸ˆà¸¥à¸²à¸¢à¹€à¸‹à¹‡à¸™à¸”à¸´à¸ˆà¸´à¸—à¸±à¸¥à¸‚à¸­à¸‡à¹„à¸Ÿà¸¥à¹Œà¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ (à¸•à¸±à¸§à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¸­à¸²à¸ˆà¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¹€à¸‹à¹‡à¸™)
-à¸”à¸±à¸‡à¸™à¸±à¹‰à¸™à¹‚à¸›à¸£à¸”à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¹€à¸‰à¸žà¸²à¸°à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¹„à¸”à¹‰à¸ˆà¸²à¸à¹à¸«à¸¥à¹ˆà¸‡à¸—à¸µà¹ˆà¸„à¸¸à¸“à¹€à¸Šà¸·à¹ˆà¸­à¸–à¸·à¸­ à¸à¸²à¸£à¸–à¸­à¸™à¸à¸²à¸£à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¹‚à¸›à¸£à¹à¸à¸£à¸¡à¸ˆà¸°à¹„à¸¡à¹ˆà¸¥à¸šà¹‚à¸›à¸£à¹€à¸ˆà¸à¸•à¹Œà¸«à¸£à¸·à¸­à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¸ªà¹ˆà¸‡à¸­à¸­à¸à¸‚à¸­à¸‡à¸„à¸¸à¸“
+Master Pro แสดง เปิด ติดตั้ง อัปเดต และถอนการติดตั้งโปรแกรม DriveVault เฉพาะเมื่อคุณสั่ง โดยใช้ไฟล์ติดตั้งในเครื่องของคุณ เมื่อคุณกด "ตรวจหาอัปเดต" เท่านั้นจึงจะติดต่อ GitHub (รุ่นที่เผยแพร่ของที่เก็บ DriveVault)
+และเมื่อคุณเลือกดาวน์โหลด จะดึงไฟล์ติดตั้งนั้นไฟล์เดียวและเทียบค่า SHA-256 กับค่าที่ประกาศไว้ในรุ่นนั้นก่อนเปิด ไม่มีร้านค้าออนไลน์และไม่ดาวน์โหลดอะไรเองโดยอัตโนมัติ
+โดยจะเปิดเฉพาะไฟล์ติดตั้งที่ข้อมูลเวอร์ชันระบุว่าผู้เผยแพร่คือ DriveVault ไม่ตรวจลายเซ็นดิจิทัลของไฟล์ติดตั้ง (ตัวติดตั้งอาจยังไม่ได้เซ็น)
+ดังนั้นโปรดติดตั้งเฉพาะไฟล์ที่ได้จากแหล่งที่คุณเชื่อถือ การถอนการติดตั้งโปรแกรมจะไม่ลบโปรเจกต์หรือไฟล์ที่ส่งออกของคุณ
 
 7. ซอฟต์แวร์ของบุคคลที่สาม
 ซอฟต์แวร์มีส่วนประกอบของบุคคลที่สาม (เช่น Qt และ FFmpeg ภายใต้ GNU Lesser General Public License v3, whisper.cpp ภายใต้สัญญาอนุญาต MIT, ฟอนต์ภายใต้ SIL Open Font License

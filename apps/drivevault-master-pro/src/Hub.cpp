@@ -4,6 +4,7 @@
 #include "WinUtil.h"
 
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QDesktopServices>
 #include <QDir>
 #include <QElapsedTimer>
@@ -13,6 +14,9 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLocale>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QPointer>
 #include <QProcess>
 #include <QSettings>
@@ -20,6 +24,8 @@
 #include <QThread>
 #include <QUrl>
 #include <QVariantMap>
+
+#include <memory>
 
 #include <algorithm>
 
@@ -79,6 +85,15 @@ QList<Registered> readRegistry(const QString& root)
         }
     }
     return out;
+}
+
+// Release tags are "<slug>-v<x.y.z>"; the slug of every catalog program. Programs this hub does not know have no online updates.
+QString slugForKey(const QString& key)
+{
+    if (key.compare(QLatin1String("VideoEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("video-editor");
+    if (key.compare(QLatin1String("ImageEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("image-editor");
+    if (key.compare(QLatin1String("AudioEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("audio-editor");
+    return {};
 }
 
 QString toLocal(const QString& pathOrUrl)
@@ -200,6 +215,15 @@ void Hub::refresh()
         p["canInstall"] = !inst.isEmpty() && !installed;
         p["canUninstall"] = installed && !reg->uninstaller.isEmpty() && QFileInfo::exists(reg->uninstaller);
         p["broken"] = reg && !reg->exeExists;
+        // online release (only known after the user pressed "Check for updates"): offered when it is newer than the installed
+        // program and newer than any setup file that is already on this PC
+        const auto online = m_online.constFind(slugForKey(p.value("key").toString()));
+        const bool hasOnline = online != m_online.constEnd() && !p.value("planned").toBool();
+        const QString localVersion = inst.value("version").toString();
+        const bool newerThanLocal = hasOnline && (inst.isEmpty() || win::compareVersions(online->version, localVersion) > 0);
+        p["onlineVersion"] = hasOnline ? online->version : QString();
+        p["onlineUpdate"] = installed && newerThanLocal && win::compareVersions(online->version, reg->version) > 0;
+        p["onlineInstall"] = !installed && newerThanLocal;
     };
 
     QVariantList list;
@@ -287,6 +311,11 @@ QString Hub::run(const QString& file, const QString& arguments, const QString& w
         m_thread = nullptr;
         m_busy = false;
         m_lastExit = result->first;
+        if (!m_cleanupFile.isEmpty()) {          // a downloaded setup file is only kept when it did not work
+            if (result->first == 0)
+                QFile::remove(m_cleanupFile);
+            m_cleanupFile.clear();
+        }
         emit busyChanged();
         setMessage(result->second.isEmpty()
                        ? (result->first == 0 ? doneMessage
@@ -336,6 +365,175 @@ QString Hub::installProduct(const QString& id)
         return tr2(QStringLiteral("No setup file for this program was found in the installer folders."),
                    QStringLiteral("ไม่พบไฟล์ติดตั้งของโปรแกรมนี้ในโฟลเดอร์ติดตั้ง"));
     return installFromFile(setup);
+}
+
+QNetworkAccessManager* Hub::net()
+{
+    if (!m_net)
+        m_net = new QNetworkAccessManager(this);
+    return m_net;
+}
+
+namespace {
+QNetworkRequest makeRequest(const QString& url, const QString& accept)
+{
+    QNetworkRequest r{QUrl(url)};
+    r.setRawHeader("User-Agent", QByteArray("DriveVaultMasterPro/") + QByteArray(version::kVersion));
+    if (!accept.isEmpty())
+        r.setRawHeader("Accept", accept.toLatin1());
+    r.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);   // never https -> http
+    r.setTransferTimeout(30000);                                                                         // 30 s without data
+    return r;
+}
+} // namespace
+
+QString Hub::checkForUpdates()
+{
+    if (m_busy || m_checking)
+        return tr2(QStringLiteral("Another task is still running."), QStringLiteral("à¸¡à¸µà¸‡à¸²à¸™à¸­à¸·à¹ˆà¸™à¸à¸³à¸¥à¸±à¸‡à¸—à¸³à¸‡à¸²à¸™à¸­à¸¢à¸¹à¹ˆ"));
+    m_checking = true;
+    emit checkingChanged();
+    setMessage(tr2(QStringLiteral("Checking GitHub for new versionsâ€¦"), QStringLiteral("à¸à¸³à¸¥à¸±à¸‡à¸•à¸£à¸§à¸ˆà¸«à¸²à¹€à¸§à¸­à¸£à¹Œà¸Šà¸±à¸™à¹ƒà¸«à¸¡à¹ˆà¸ˆà¸²à¸ GitHubâ€¦")));
+    QNetworkReply* reply = net()->get(makeRequest(m_options.releasesUrl, QStringLiteral("application/vnd.github+json")));
+    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+        reply->deleteLater();
+        m_checking = false;
+        emit checkingChanged();
+        if (reply->error() != QNetworkReply::NoError) {
+            const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+            if (status == 403 || status == 429)
+                setMessage(tr2(QStringLiteral("GitHub is limiting requests from this connection. Try again in an hour."),
+                               QStringLiteral("GitHub à¸ˆà¸³à¸à¸±à¸”à¸ˆà¸³à¸™à¸§à¸™à¸„à¸³à¸‚à¸­à¸ˆà¸²à¸à¸à¸²à¸£à¹€à¸Šà¸·à¹ˆà¸­à¸¡à¸•à¹ˆà¸­à¸™à¸µà¹‰ à¸¥à¸­à¸‡à¹ƒà¸«à¸¡à¹ˆà¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡à¹ƒà¸™à¸­à¸µà¸à¸›à¸£à¸°à¸¡à¸²à¸“à¸«à¸™à¸¶à¹ˆà¸‡à¸Šà¸±à¹ˆà¸§à¹‚à¸¡à¸‡")));
+            else
+                setMessage(tr2(QStringLiteral("Could not check for updates: %1"), QStringLiteral("à¸•à¸£à¸§à¸ˆà¸«à¸²à¸­à¸±à¸›à¹€à¸”à¸•à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: %1")).arg(reply->errorString()));
+            emit checkFinished(false);
+            return;
+        }
+        m_online = releases::parse(reply->readAll());
+        m_onlineChecked = true;
+        refresh();
+        int updates = 0;
+        for (const QVariant& v : m_products)
+            if (v.toMap().value("onlineUpdate").toBool())
+                ++updates;
+        setMessage(updates > 0 ? tr2(QStringLiteral("%1 update(s) available."), QStringLiteral("à¸¡à¸µà¸­à¸±à¸›à¹€à¸”à¸• %1 à¸£à¸²à¸¢à¸à¸²à¸£")).arg(updates)
+                               : tr2(QStringLiteral("The installed programs are up to date."), QStringLiteral("à¹‚à¸›à¸£à¹à¸à¸£à¸¡à¸—à¸µà¹ˆà¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¹€à¸›à¹‡à¸™à¸£à¸¸à¹ˆà¸™à¸¥à¹ˆà¸²à¸ªà¸¸à¸”à¹à¸¥à¹‰à¸§")));
+        emit checkFinished(true);
+    });
+    return {};
+}
+
+void Hub::failDownload(const QString& why)
+{
+    m_busy = false;
+    m_progress = -1;
+    emit busyChanged();
+    emit downloadProgressChanged();
+    setMessage(why);
+    emit downloadFinished(false);
+}
+
+QString Hub::downloadAndInstall(const QString& id)
+{
+    if (m_busy || m_checking)
+        return tr2(QStringLiteral("Another task is still running."), QStringLiteral("à¸¡à¸µà¸‡à¸²à¸™à¸­à¸·à¹ˆà¸™à¸à¸³à¸¥à¸±à¸‡à¸—à¸³à¸‡à¸²à¸™à¸­à¸¢à¸¹à¹ˆ"));
+    const QVariantMap p = productById(id);
+    const auto it = m_online.constFind(slugForKey(p.value("key").toString()));
+    if (it == m_online.constEnd())
+        return tr2(QStringLiteral("No online version is known. Press \"Check for updates\" first."),
+                   QStringLiteral("à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸—à¸£à¸²à¸šà¹€à¸§à¸­à¸£à¹Œà¸Šà¸±à¸™à¸­à¸­à¸™à¹„à¸¥à¸™à¹Œ à¸à¸”à¸›à¸¸à¹ˆà¸¡ \"à¸•à¸£à¸§à¸ˆà¸«à¸²à¸­à¸±à¸›à¹€à¸”à¸•\" à¸à¹ˆà¸­à¸™"));
+    const releases::Release rel = *it;
+    if (!releases::urlAllowed(rel.assetUrl, m_options.downloadPrefix) || !releases::urlAllowed(rel.hashUrl, m_options.downloadPrefix))
+        return tr2(QStringLiteral("The release points to an address that is not the official download address. Nothing was downloaded."),
+                   QStringLiteral("à¹„à¸Ÿà¸¥à¹Œà¸‚à¸­à¸‡à¸£à¸¸à¹ˆà¸™à¸™à¸µà¹‰à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸­à¸¢à¸¹à¹ˆà¸—à¸µà¹ˆà¸—à¸µà¹ˆà¸­à¸¢à¸¹à¹ˆà¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¸—à¸²à¸‡à¸à¸²à¸£ à¸ˆà¸¶à¸‡à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”"));
+    if (rel.assetName.contains(QLatin1Char('/')) || rel.assetName.contains(QLatin1Char('\\')) || rel.assetName.contains(QLatin1String("..")))
+        return tr2(QStringLiteral("The release has an invalid file name."), QStringLiteral("à¸Šà¸·à¹ˆà¸­à¹„à¸Ÿà¸¥à¹Œà¸‚à¸­à¸‡à¸£à¸¸à¹ˆà¸™à¸™à¸µà¹‰à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡"));
+
+    m_busy = true;
+    m_progress = 0;
+    emit busyChanged();
+    emit downloadProgressChanged();
+    const QString name = p.value("name").toString();
+    setMessage(tr2(QStringLiteral("Getting the checksum of %1 %2â€¦"), QStringLiteral("à¸à¸³à¸¥à¸±à¸‡à¸­à¹ˆà¸²à¸™à¸„à¹ˆà¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸‚à¸­à¸‡ %1 %2â€¦")).arg(name, rel.version));
+    QNetworkReply* hashReply = net()->get(makeRequest(rel.hashUrl, QString()));
+    connect(hashReply, &QNetworkReply::finished, this, [this, hashReply, rel, name] {
+        hashReply->deleteLater();
+        if (hashReply->error() != QNetworkReply::NoError)
+            return failDownload(tr2(QStringLiteral("Could not download the checksum file: %1"), QStringLiteral("à¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸Ÿà¸¥à¹Œà¸„à¹ˆà¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: %1")).arg(hashReply->errorString()));
+        const QString expected = releases::parseSha256(QString::fromUtf8(hashReply->read(4096)), rel.assetName);
+        if (expected.isEmpty())
+            return failDownload(tr2(QStringLiteral("The checksum file of this release is not valid. Nothing was installed."),
+                                    QStringLiteral("à¹„à¸Ÿà¸¥à¹Œà¸„à¹ˆà¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸‚à¸­à¸‡à¸£à¸¸à¹ˆà¸™à¸™à¸µà¹‰à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡ à¸ˆà¸¶à¸‡à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡")));
+        startAssetDownload(rel, name, expected);
+    });
+    return {};
+}
+
+void Hub::startAssetDownload(const releases::Release& rel, const QString& productName, const QString& expectedHash)
+{
+    const QString dir = QDir::cleanPath(m_dataDir + QStringLiteral("/installers"));
+    QDir().mkpath(dir);
+    const QString target = dir + QLatin1Char('/') + rel.assetName;
+    auto file = std::make_shared<QFile>(target + QStringLiteral(".part"));
+    if (!file->open(QIODevice::WriteOnly | QIODevice::Truncate))
+        return failDownload(tr2(QStringLiteral("Could not write to %1."), QStringLiteral("à¹€à¸‚à¸µà¸¢à¸™à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆ %1 à¹„à¸¡à¹ˆà¹„à¸”à¹‰")).arg(dir));
+    setMessage(tr2(QStringLiteral("Downloading %1 %2â€¦"), QStringLiteral("à¸à¸³à¸¥à¸±à¸‡à¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸” %1 %2â€¦")).arg(productName, rel.version));
+    QNetworkReply* reply = net()->get(makeRequest(rel.assetUrl, QStringLiteral("application/octet-stream")));
+    connect(reply, &QNetworkReply::readyRead, this, [reply, file] { file->write(reply->readAll()); });
+    connect(reply, &QNetworkReply::downloadProgress, this, [this, rel](qint64 received, qint64 total) {
+        const qint64 whole = total > 0 ? total : rel.size;
+        m_progress = whole > 0 ? qBound(0.0, double(received) / double(whole), 1.0) : 0.0;
+        emit downloadProgressChanged();
+    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply, file, rel, productName, expectedHash, target] {
+        reply->deleteLater();
+        file->write(reply->readAll());
+        file->close();
+        const QString partName = file->fileName();
+        if (reply->error() != QNetworkReply::NoError) {
+            QFile::remove(partName);
+            return failDownload(tr2(QStringLiteral("Download failed: %1"), QStringLiteral("à¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: %1")).arg(reply->errorString()));
+        }
+        QFile check(partName);
+        QCryptographicHash sha(QCryptographicHash::Sha256);
+        if (!check.open(QIODevice::ReadOnly) || !sha.addData(&check)) {
+            QFile::remove(partName);
+            return failDownload(tr2(QStringLiteral("The downloaded file could not be read."), QStringLiteral("à¸­à¹ˆà¸²à¸™à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸¡à¹ˆà¹„à¸”à¹‰")));
+        }
+        check.close();
+        if (QString::fromLatin1(sha.result().toHex()) != expectedHash) {
+            QFile::remove(partName);
+            return failDownload(tr2(QStringLiteral("The checksum (SHA-256) of the download does not match. The file was deleted and nothing was installed."),
+                                    QStringLiteral("à¸„à¹ˆà¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸š (SHA-256) à¸‚à¸­à¸‡à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸¡à¹ˆà¸•à¸£à¸‡à¸à¸±à¸™ à¸¥à¸šà¹„à¸Ÿà¸¥à¹Œà¹à¸¥à¹‰à¸§à¹à¸¥à¸°à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡")));
+        }
+        QFile::remove(target);
+        if (!QFile::rename(partName, target)) {
+            QFile::remove(partName);
+            return failDownload(tr2(QStringLiteral("Could not save the downloaded file."), QStringLiteral("à¸šà¸±à¸™à¸—à¸¶à¸à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸¡à¹ˆà¹„à¸”à¹‰")));
+        }
+        // the file must be what the release says it is
+        const QString company = win::versionInfo(target, QStringLiteral("CompanyName"));
+        const QString product = win::versionInfo(target, QStringLiteral("ProductName"));
+        QString v = win::versionInfo(target, QStringLiteral("ProductVersion"));
+        if (v.isEmpty())
+            v = win::versionInfo(target, QStringLiteral("FileVersion"));
+        if (company.compare(QLatin1String("DriveVault"), Qt::CaseInsensitive) != 0 || product.compare(productName, Qt::CaseInsensitive) != 0
+            || win::compareVersions(v, rel.version) != 0) {
+            QFile::remove(target);
+            return failDownload(tr2(QStringLiteral("The downloaded file is not %1 %2. It was deleted."), QStringLiteral("à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ %1 %2 à¸¥à¸šà¹„à¸Ÿà¸¥à¹Œà¹à¸¥à¹‰à¸§")).arg(productName, rel.version));
+        }
+        m_busy = false;
+        m_progress = -1;
+        emit busyChanged();
+        emit downloadProgressChanged();
+        emit downloadFinished(true);
+        m_cleanupFile = target;
+        const QString error = installFromFile(target);
+        if (!error.isEmpty()) {
+            m_cleanupFile.clear();
+            setMessage(error);
+        }
+    });
 }
 
 QString Hub::addInstallerFolder(const QString& folderOrUrl)

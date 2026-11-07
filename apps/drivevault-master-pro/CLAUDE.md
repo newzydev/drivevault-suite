@@ -5,18 +5,19 @@ Every program installer installs this hub first (silently), so it is always pres
 
 ## Structure
 ```
-src/        Hub (registry scan, installers, tasks), WinUtil (version resources, ShellExecute, version compare), main.cpp, app.rc
+src/        Hub (registry scan, installers, tasks, online update), Releases (GitHub release list parser, SHA-256 file parser), WinUtil (version resources, ShellExecute, version compare), main.cpp, app.rc
 qml/        Main, ProductCard, AboutDialog, MButton, Theme (singleton), Tr (singleton: Thai / English table)
 tests/      tst_hub, tst_window, fake_setup (test double for a setup / uninstall program)
 installer/  master.iss + wizard pictures      scripts/  build, package, make-icon      docs/  notices, LGPL text
 ```
 
 ## Rules
-- **Honest scope**: no online catalog, no downloads, no auto-update exist. Image Editor Pro and Audio Editor Pro are listed as "Coming soon" because they do not exist. Do not add UI that implies otherwise.
+- **Honest scope**: online access exists **only** behind the user's button press: "Check for updates" (GitHub Releases list of `newzydev/drivevault-suite`) and "Download ... and update / install" (one setup file from the official release address). No background checks, no automatic downloads, no online store, no self-update of Master Pro. Image Editor Pro and Audio Editor Pro are listed as "Coming soon" because they do not exist. Do not add UI that implies otherwise.
+- **Online update safety** (`Hub::downloadAndInstall`, `Releases.cpp`): download only from `Options::downloadPrefix` (official release URL); the `.exe.sha256` asset is mandatory and the SHA-256 must match; then CompanyName = DriveVault, ProductName = the catalog program and ProductVersion = the release version, otherwise the file is deleted and nothing runs. Release tags are `<slug>-v<x.y.z>` (`video-editor`, `image-editor`, `audio-editor`; map in `slugForKey`); drafts / pre-releases are ignored. A new program that should get online updates needs its slug there. Tests use local files through `Options::releasesUrl` / `downloadPrefix`; the real exe never takes them from the command line. Signatures are still **not** verified - never call the SHA-256 check "signature verification"; it only catches a damaged or swapped download.
 - **Only DriveVault setup files are started** (version resource `CompanyName = DriveVault`). Signatures are **not** verified - never describe that as verification. Master Pro's own setup is never offered as an update.
 - Programs are found through `Software\DriveVault\Products\<Key>` in HKLM and HKCU (contract: `docs/suite-integration.md`). Catalog keys: `VideoEditorPro`, `ImageEditorPro`, `AudioEditorPro`; unknown keys are listed generically.
   A registry entry whose program file is gone is "broken" (Needs repair), never "installed".
-- Long work (running a setup / uninstaller) runs on a worker thread, one task at a time (`Hub::busy`); the UI must never block. Exit codes are shown, not hidden.
+- Long work (running a setup / uninstaller) runs on a worker thread, one task at a time (`Hub::busy`); the UI must never block. Exit codes are shown, not hidden. Network work (`QNetworkAccessManager`, async, 30 s inactivity timeout) runs on the main thread and sets `Hub::checking` or `busy` while it works.
 - Texts: every user-visible string is in `qml/Tr.qml` (Thai + English) or `Hub::tr2(en, th)`. Add both languages together.
 - UI: neutral dark surfaces + one accent per program (`product.accent`); Inter + Noto Sans Thai. Controls have `objectName`s that the tests use (`launch_<key>`, `install_<key>`, ...).
 - QML gotchas: ids of one file are not visible in another file (use signals); QVariantMap values that are empty strings must be `toString()`-ed or QML sees `undefined`.
