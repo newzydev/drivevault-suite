@@ -84,6 +84,7 @@ Rectangle {
 
     function report(error) { if (error !== "") App.toast(error, "warning") }
     function importMedia() { toolPanel.openImport() }
+    function showToolTab(key) { setPanel("media", true); toolPanel.selectTab(key) }
     function addSelectedMedia() { if (App.selectedMediaId !== "") toolPanel.media.addToTimeline(App.selectedMediaId) }
     function jumpMarker(forward) {
         const f = forward ? Projects.timeline.nextMarker(Projects.playheadFrame) : Projects.timeline.prevMarker(Projects.playheadFrame)

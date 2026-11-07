@@ -1,6 +1,13 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.2.0
+-------------
+  - Less duplication: the bar at the top now has only Home, Edit, Color and Export. Import, Audio, Effects and AI are tabs of the tool panel at the left only
+    (they were buttons in both places). The Media, Audio, Effects and AI workspaces and their View-menu entries are gone.
+  - A tab shows its content where the tab is: the AI tools now open in the left panel (they used to appear in the inspector at the right), and the audio
+    mixer lives in the Audio tab only (it was also in the inspector).
+
 Version 1.1.2
 -------------
   - Import: files chosen in the file dialog are accepted however the list arrives (a list inside a list used to give "Cannot import : file not found" with an empty

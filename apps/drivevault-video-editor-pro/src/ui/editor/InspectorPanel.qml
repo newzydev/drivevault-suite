@@ -104,7 +104,6 @@ Rectangle {
         Flickable {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: root.ws !== "ai"
             contentHeight: content.implicitHeight + 32
             clip: true
             boundsBehavior: Flickable.StopAtBounds
@@ -369,14 +368,6 @@ Rectangle {
                     }
                 }
 
-                // ---- mixer ---------------------------------------------------------------------------------
-                ParamSection {
-                    objectName: "sectionMixer"
-                    visible: Projects.isOpen && root.ws !== "color" && root.ws !== "effects"
-                    title: qsTr("Audio mixer")
-                    MixerSection {}
-                }
-
                 // ---- media -----------------------------------------------------------------------------
                 Heading { visible: root.hasSelection && root.mediaInfo.name !== undefined; text: qsTr("Media") }
                 InfoRows {
@@ -440,12 +431,6 @@ Rectangle {
                     ]
                 }
             }
-        }
-
-        AiPanel {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            visible: root.ws === "ai"
         }
     }
 }

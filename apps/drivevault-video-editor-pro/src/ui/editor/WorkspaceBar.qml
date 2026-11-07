@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import DriveVault.Backend
 
-// Workspace switcher: Home, Media, Edit, Color, Audio, Effects, AI, Export.
+// Workspace switcher: Home, Edit, Color, Export. (Import, Audio, Text, Effects, Transitions, Filters, Adjustment and AI are tabs of the tool panel at the left.)
 Rectangle {
     id: root
 
@@ -14,12 +14,8 @@ Rectangle {
 
     readonly property var items: [
         { key: "home",    icon: "home",     label: qsTr("Home") },
-        { key: "media",   icon: "film",     label: qsTr("Media") },
         { key: "edit",    icon: "scissors", label: qsTr("Edit") },
         { key: "color",   icon: "paint",    label: qsTr("Color") },
-        { key: "audio",   icon: "audio",    label: qsTr("Audio") },
-        { key: "effects", icon: "sparkles", label: qsTr("Effects") },
-        { key: "ai",      icon: "sparkle",  label: qsTr("AI") },
         { key: "export",  icon: "export",   label: qsTr("Export") }
     ]
 

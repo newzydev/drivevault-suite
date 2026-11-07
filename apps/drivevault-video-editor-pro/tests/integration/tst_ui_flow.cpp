@@ -134,7 +134,7 @@ private slots:
 
     void workspaceTabsSwitchWorkspaces()
     {
-        for (const char* ws : {"media", "color", "audio", "effects", "ai", "export", "edit"}) {
+        for (const char* ws : {"color", "export", "edit"}) {          // Import, Audio, Effects, AI ... are tabs of the tool panel, not workspaces in the bar
             click(QStringLiteral("ws_") + ws);
             QCOMPARE(m_ctx->controller.workspace(), QString::fromLatin1(ws));
         }
@@ -428,7 +428,7 @@ private slots:
         QCOMPARE(tl->durationFrames(), qint64(120));
 
         m_ctx->settings.set("aiEnabled", false);
-        click("ws_ai");
+        click("toolTab_ai");
         QTest::qWait(300);
         QVERIFY(item("aiEnable") != nullptr);
         click("aiEnable");                                             // the switch turns the AI tools on
@@ -473,7 +473,7 @@ private slots:
             QVERIFY2(!path.isEmpty() && QFileInfo::exists(path), name);
         }
         QVERIFY(m_ctx->systemInfo.documentPath("../LICENSE.txt").isEmpty());          // only plain file names are looked up
-        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.1.2"));
+        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.2.0"));
         QVERIFY(m_ctx->systemInfo.productName().contains("Video Editor Pro"));
     }
 

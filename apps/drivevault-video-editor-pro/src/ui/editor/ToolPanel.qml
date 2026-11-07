@@ -20,7 +20,7 @@ Rectangle {
         { key: "transitions", icon: "layers",   label: qsTr("Transitions") },
         { key: "filters",     icon: "paint",    label: qsTr("Filters") },
         { key: "adjust",      icon: "sliders",  label: qsTr("Adjustment") },
-        { key: "ai",          icon: "sparkles", label: qsTr("AI"), workspace: "ai" }
+        { key: "ai",          icon: "sparkles", label: qsTr("AI") }
     ]
     readonly property int tabIndex: { for (let i = 0; i < tabs.length; ++i) if (tabs[i].key === tab) return i; return 0 }
 
@@ -200,10 +200,7 @@ Rectangle {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
-                                    if (tabButton.modelData.workspace)
-                                        App.workspace = tabButton.modelData.workspace
-                                    else
-                                        root.selectTab(tabButton.modelData.key)
+                                    root.selectTab(tabButton.modelData.key)
                                 }
                             }
                         }
@@ -217,7 +214,7 @@ Rectangle {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: Math.min(root.tabIndex, 6)
+            currentIndex: root.tabIndex
 
             // 0 Import: the project media browser
             MediaPanel {
@@ -390,6 +387,11 @@ Rectangle {
                         }
                     }
                 }
+            }
+
+            // 7 AI: assistant, captions, silence, smart cuts, enhancement, tracking (offline); shown here, where its tab is
+            AiPanel {
+                id: aiPage
             }
         }
     }

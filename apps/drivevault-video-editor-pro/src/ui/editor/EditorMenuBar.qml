@@ -159,7 +159,7 @@ Rectangle {
 
             AppMenu {
                 title: qsTr("Effects")
-                AppMenuItem { text: qsTr("Effects Workspace"); onTriggered: App.workspace = "effects" }
+                AppMenuItem { text: qsTr("Effects Tab"); onTriggered: editor.showToolTab("effects") }
                 AppMenuItem { text: qsTr("Colour Workspace"); onTriggered: App.workspace = "color" }
                 AppMenuSeparator {}
                 AppMenu {
@@ -203,11 +203,8 @@ Rectangle {
                 title: qsTr("Window")
                 AppMenuItem { text: qsTr("Home"); onTriggered: root.homeRequested() }
                 AppMenuSeparator {}
-                AppMenuItem { text: qsTr("Media Workspace"); checkable: true; checked: App.workspace === "media"; onTriggered: App.workspace = "media" }
                 AppMenuItem { text: qsTr("Edit Workspace"); checkable: true; checked: App.workspace === "edit"; onTriggered: App.workspace = "edit" }
                 AppMenuItem { text: qsTr("Color Workspace"); checkable: true; checked: App.workspace === "color"; onTriggered: App.workspace = "color" }
-                AppMenuItem { text: qsTr("Audio Workspace"); checkable: true; checked: App.workspace === "audio"; onTriggered: App.workspace = "audio" }
-                AppMenuItem { text: qsTr("Effects Workspace"); checkable: true; checked: App.workspace === "effects"; onTriggered: App.workspace = "effects" }
                 AppMenuItem { text: qsTr("Export Workspace"); checkable: true; checked: App.workspace === "export"; onTriggered: App.workspace = "export" }
             }
 
