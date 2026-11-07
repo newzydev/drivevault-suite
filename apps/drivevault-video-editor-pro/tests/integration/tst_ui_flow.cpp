@@ -417,6 +417,49 @@ private slots:
         QCOMPARE(tl->clipCount(), clipsAtStart);
     }
 
+    void tracksCanBeAddedRenamedAndRemoved()
+    {
+        auto* projects = &m_ctx->projects;
+        auto* tl = projects->timeline();
+        auto* tracks = projects->tracks();
+        m_ctx->controller.setWorkspace("edit");
+        const int before = tracks->count();
+        auto rowOf = [&](const QString& id) {
+            const auto list = tracks->tracks();
+            for (int i = 0; i < list.size(); ++i)
+                if (list.at(i).id == id)
+                    return i;
+            return -1;
+        };
+        click("addVideoTrack");                                         // the buttons under the track names
+        QTRY_COMPARE_WITH_TIMEOUT(tracks->count(), before + 1, 3000);
+        click("addAudioTrack");
+        QTRY_COMPARE_WITH_TIMEOUT(tracks->count(), before + 2, 3000);
+        const int newVideo = rowOf("V3");
+        const int newAudio = rowOf("A3");
+        QVERIFY(newVideo >= 0 && newAudio >= 0);
+
+        tracks->setName(newVideo, QStringLiteral("B-roll"));            // rename (the dialog calls the same function)
+        QCOMPARE(tracks->nameAt(newVideo), QStringLiteral("B-roll"));
+
+        // a track with clips: removing it asks first; the clips go with it and the history is cleared
+        const QString mediaId = projects->media()->idForPath(media.filePath("clip.mp4"));
+        QVERIFY(!mediaId.isEmpty());
+        const int clipsBefore = tl->clipCount();
+        QCOMPARE(tl->addMedia(mediaId, newVideo, 0), QString());
+        QVERIFY(tl->trackUsed(newVideo));
+        QVERIFY(tracks->canRemove(newVideo));
+        QVERIFY(!projects->removeTrack(newVideo).isEmpty());            // the plain removal refuses a track with clips
+        QCOMPARE(projects->removeTrackWithClips(newVideo), QString());
+        QCOMPARE(tl->clipCount(), clipsBefore);
+        QVERIFY(!tl->canUndo());
+        QCOMPARE(rowOf("V3"), -1);
+
+        QCOMPARE(projects->removeTrack(rowOf("A3")), QString());         // an empty track goes at once
+        QCOMPARE(tracks->count(), before);
+        QVERIFY(!tracks->canRemove(rowOf("V1")) || tracks->count() > 2);   // the last video / audio track of a kind stays
+    }
+
     void aiWorkspaceFindsSilenceAndAppliesItOnlyAfterConfirmation()
     {
         auto* projects = &m_ctx->projects;
@@ -473,7 +516,7 @@ private slots:
             QVERIFY2(!path.isEmpty() && QFileInfo::exists(path), name);
         }
         QVERIFY(m_ctx->systemInfo.documentPath("../LICENSE.txt").isEmpty());          // only plain file names are looked up
-        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.2.0"));
+        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.3.0"));
         QVERIFY(m_ctx->systemInfo.productName().contains("Video Editor Pro"));
     }
 

@@ -141,7 +141,7 @@ int TrackListModel::addTrack(const QString& kind)
     if (kind == QLatin1String("subtitle")
         && std::any_of(m_tracks.begin(), m_tracks.end(), [](const TrackInfo& t) { return t.kind == QLatin1String("subtitle"); }))
         return -1;
-    if (m_tracks.size() >= 16)
+    if (m_tracks.size() >= 64)
         return -1;
 
     TrackInfo t;
@@ -165,14 +165,19 @@ int TrackListModel::addTrack(const QString& kind)
     return row;
 }
 
-bool TrackListModel::removeTrack(int row)
+bool TrackListModel::canRemove(int row) const
 {
     if (row < 0 || row >= m_tracks.size())
         return false;
     const QString kind = m_tracks.at(row).kind;
     const auto sameKind = std::count_if(m_tracks.begin(), m_tracks.end(), [&](const TrackInfo& t) { return t.kind == kind; });
-    if (sameKind <= 1 && kind != QLatin1String("subtitle"))
-        return false;   // a project always keeps at least one video and one audio track
+    return sameKind > 1 || kind == QLatin1String("subtitle");     // a project always keeps at least one video and one audio track
+}
+
+bool TrackListModel::removeTrack(int row)
+{
+    if (!canRemove(row))
+        return false;
     beginRemoveRows({}, row, row);
     m_tracks.removeAt(row);
     endRemoveRows();

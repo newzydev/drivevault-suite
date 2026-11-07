@@ -3596,209 +3596,248 @@
         <translation>ส่งออกซับไตเติล (.srt)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="84"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="128"/>
         <source>Rename marker</source>
         <translation>เปลี่ยนชื่อมาร์กเกอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="90"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="104"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="134"/>
         <source>Cancel</source>
         <translation>ยกเลิก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="91"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="109"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="135"/>
         <source>OK</source>
         <translation>ตกลง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="97"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="141"/>
         <source>Rename…</source>
         <translation>เปลี่ยนชื่อ…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="98"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="142"/>
         <source>Delete marker</source>
         <translation>ลบมาร์กเกอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="102"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="146"/>
         <source>Title</source>
         <translation>ชื่อเรื่อง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="103"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="147"/>
         <source>Lower third</source>
         <translation>แถบชื่อล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="104"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="148"/>
         <source>Caption</source>
         <translation>คำบรรยายภาพ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="106"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="150"/>
         <source>Subtitle at playhead</source>
         <translation>ซับไตเติลที่เพลย์เฮด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="107"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="151"/>
         <source>Import subtitles (.srt)…</source>
         <translation>นำเข้าซับไตเติล (.srt)…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="108"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="152"/>
         <source>Export subtitles (.srt)…</source>
         <translation>ส่งออกซับไตเติล (.srt)…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="110"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="154"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="164"/>
         <source>Add video track</source>
         <translation>เพิ่มแทร็กวิดีโอ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="111"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="155"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="165"/>
         <source>Add audio track</source>
         <translation>เพิ่มแทร็กเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="112"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="156"/>
         <source>Add subtitle track</source>
         <translation>เพิ่มแทร็กซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="117"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="166"/>
         <source>Remove track</source>
         <translation>ลบแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="119"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="162"/>
         <source>Lock / unlock</source>
         <translation>ล็อก / ปลดล็อก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="124"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="147"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="98"/>
+        <source>Rename track</source>
+        <translation>เปลี่ยนชื่อแทร็ก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="120"/>
+        <source>Delete this track?</source>
+        <translation>ลบแทร็กนี้หรือไม่?</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="121"/>
+        <source>The track still has clips. They are deleted together with the track, and this cannot be undone (the undo history is cleared).</source>
+        <translation>แทร็กนี้ยังมีคลิปอยู่ คลิปจะถูกลบพร้อมกับแทร็ก และย้อนกลับไม่ได้ (ประวัติการย้อนกลับจะถูกล้าง)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="122"/>
+        <source>Delete track</source>
+        <translation>ลบแทร็ก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="161"/>
+        <source>Rename track…</source>
+        <translation>เปลี่ยนชื่อแทร็ก…</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="171"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="194"/>
         <source>Split at Playhead</source>
         <translation>แยกคลิปที่เพลย์เฮด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="125"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="148"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="172"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="195"/>
         <source>Delete</source>
         <translation>ลบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="126"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="173"/>
         <source>Ripple Delete</source>
         <translation>ลบและปิดช่องว่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="128"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="175"/>
         <source>Cut</source>
         <translation>ตัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="129"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="176"/>
         <source>Copy</source>
         <translation>คัดลอก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="130"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="177"/>
         <source>Paste at Playhead</source>
         <translation>วางที่เพลย์เฮด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="132"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="179"/>
         <source>Group</source>
         <translation>จัดกลุ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="133"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="180"/>
         <source>Ungroup</source>
         <translation>เลิกจัดกลุ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="142"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="189"/>
         <source>Timeline</source>
         <translation>ไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="145"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="192"/>
         <source>Undo</source>
         <translation>เลิกทำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="146"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="193"/>
         <source>Redo</source>
         <translation>ทำซ้ำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="151"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="198"/>
         <source>Select</source>
         <translation>เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="151"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="198"/>
         <source>Ripple trim</source>
         <translation>ตัดแบบริปเปิล</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="152"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="199"/>
         <source>Roll edit</source>
         <translation>ม้วนจุดตัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="152"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="199"/>
         <source>Slip</source>
         <translation>สลิป</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="152"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="199"/>
         <source>Slide</source>
         <translation>สไลด์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="164"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="211"/>
         <source>Add marker</source>
         <translation>เพิ่มมาร์กเกอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="165"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="212"/>
         <source>Add titles, subtitles and tracks</source>
         <translation>เพิ่มชื่อเรื่อง ซับไตเติล และแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="171"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="218"/>
         <source>Snapping</source>
         <translation>การดูดติด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="174"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="221"/>
         <source>Zoom out</source>
         <translation>ซูมออก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="181"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="228"/>
         <source>Timeline zoom</source>
         <translation>ซูมไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="183"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="230"/>
         <source>Zoom in</source>
         <translation>ซูมเข้า</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="186"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="233"/>
         <source>Fit timeline</source>
         <translation>พอดีกับไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="453"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="366"/>
+        <source>Video</source>
+        <translation>วิดีโอ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="376"/>
+        <source>Audio</source>
+        <translation>เสียง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="533"/>
         <source>Drag media here to start editing</source>
         <translation>ลากสื่อมาวางที่นี่เพื่อเริ่มตัดต่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="462"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="542"/>
         <source>or double-click a media item to add it at the playhead.</source>
         <translation>หรือดับเบิลคลิกรายการสื่อเพื่อเพิ่มที่ตำแหน่งเพลย์เฮด</translation>
     </message>
@@ -3807,22 +3846,22 @@
         <translation type="vanished">รีเซ็ตการซูม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="215"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="262"/>
         <source>Tracks</source>
         <translation>แทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="285"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="333"/>
         <source>Toggle track visibility</source>
         <translation>สลับการแสดงแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="285"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="333"/>
         <source>Mute track</source>
         <translation>ปิดเสียงแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="296"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="344"/>
         <source>Lock track</source>
         <translation>ล็อกแทร็ก</translation>
     </message>
@@ -4888,6 +4927,7 @@
     </message>
     <message>
         <location filename="../../src/project/ProjectManager.cpp" line="400"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="411"/>
         <source>There is no such track.</source>
         <translation>ไม่มีแทร็กนี้</translation>
     </message>
@@ -4898,16 +4938,18 @@
     </message>
     <message>
         <location filename="../../src/project/ProjectManager.cpp" line="404"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="413"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="417"/>
         <source>A project needs at least one video and one audio track.</source>
         <translation>โปรเจกต์ต้องมีแทร็กวิดีโอและแทร็กเสียงอย่างน้อยอย่างละหนึ่งแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="411"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="425"/>
         <source>This media is not part of the project.</source>
         <translation>สื่อนี้ไม่ได้อยู่ในโปรเจกต์</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="413"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="427"/>
         <source>This media is used on the timeline. Remove its clips first.</source>
         <translation>สื่อนี้ถูกใช้บนไทม์ไลน์ ลบคลิปของมันก่อน</translation>
     </message>
@@ -4981,11 +5023,11 @@
         <location filename="../../src/timeline/TimelineModel.cpp" line="674"/>
         <location filename="../../src/timeline/TimelineModel.cpp" line="761"/>
         <location filename="../../src/timeline/TimelineModel.cpp" line="784"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="72"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="748"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="816"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="862"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="889"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="97"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="773"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="841"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="887"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="914"/>
         <source>The clip no longer exists.</source>
         <translation>คลิปนี้ไม่มีอยู่แล้ว</translation>
     </message>
@@ -4996,13 +5038,14 @@
         <location filename="../../src/timeline/TimelineModel.cpp" line="835"/>
         <location filename="../../src/timeline/TimelineModel.cpp" line="847"/>
         <location filename="../../src/timeline/TimelineModel.cpp" line="861"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="316"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="431"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="699"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="754"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="822"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="867"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="893"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="81"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="341"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="456"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="724"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="779"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="847"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="892"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="918"/>
         <source>The track is locked.</source>
         <translation>แทร็กถูกล็อก</translation>
     </message>
@@ -5040,7 +5083,7 @@
     <message>
         <location filename="../../src/timeline/TimelineModel.cpp" line="843"/>
         <location filename="../../src/timeline/TimelineModel.cpp" line="855"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="669"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="694"/>
         <source>Select a clip first.</source>
         <translation>เลือกคลิปก่อน</translation>
     </message>
@@ -5082,8 +5125,8 @@
     </message>
     <message>
         <location filename="../../src/timeline/TimelineAi.cpp" line="144"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="124"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="154"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="149"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="179"/>
         <source>Unknown parameter.</source>
         <translation>ไม่รู้จักพารามิเตอร์นี้</translation>
     </message>
@@ -5103,209 +5146,219 @@
         <translation>เพิ่มซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="126"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="70"/>
+        <source>There is no such track.</source>
+        <translation>ไม่มีแทร็กนี้</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="82"/>
+        <source>Delete track clips</source>
+        <translation>ลบคลิปของแทร็ก</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="151"/>
         <source>Change %1</source>
         <translation>เปลี่ยน %1</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="155"/>
         <location filename="../../src/timeline/TimelineTools.cpp" line="180"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="205"/>
         <source>Keyframe</source>
         <translation>คีย์เฟรม</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="179"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="204"/>
         <source>Unknown interpolation.</source>
         <translation>ไม่รู้จักการประมาณค่านี้</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="194"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="219"/>
         <source>Remove keyframes</source>
         <translation>ลบคีย์เฟรม</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="210"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="235"/>
         <source>Reset</source>
         <translation>รีเซ็ต</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="247"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="272"/>
         <source>Unknown curve.</source>
         <translation>ไม่รู้จักเส้นโค้งนี้</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="256"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="281"/>
         <source>Curves</source>
         <translation>เส้นโค้ง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="278"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="303"/>
         <source>The file was not found.</source>
         <translation>ไม่พบไฟล์</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="279"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="304"/>
         <source>Colour look</source>
         <translation>ลุคสี</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="287"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="312"/>
         <source>Audio fades</source>
         <translation>เฟดเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="297"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="322"/>
         <source>This transition is not available here.</source>
         <translation>ใช้ทรานซิชันนี้ที่นี่ไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="298"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="323"/>
         <source>Transition</source>
         <translation>ทรานซิชัน</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="314"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="339"/>
         <source>There is no suitable track.</source>
         <translation>ไม่มีแทร็กที่เหมาะสม</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="321"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="346"/>
         <source>Add title</source>
         <translation>เพิ่มชื่อเรื่อง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="342"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="367"/>
         <source>Lower third</source>
         <translation>แถบชื่อล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="349"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="374"/>
         <source>Caption</source>
         <translation>คำบรรยายภาพ</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="355"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="380"/>
         <source>Title</source>
         <translation>ชื่อเรื่อง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="374"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="399"/>
         <source>Edit title</source>
         <translation>แก้ไขชื่อเรื่อง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="410"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="429"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="435"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="454"/>
         <source>Add a subtitle track first.</source>
         <translation>กรุณาเพิ่มแทร็กซับไตเติลก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="435"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="460"/>
         <source>Cannot open the file: %1</source>
         <translation>เปิดไฟล์ไม่ได้: %1</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="469"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="494"/>
         <source>The file contains no subtitles.</source>
         <translation>ไฟล์นี้ไม่มีซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="507"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="532"/>
         <source>Import subtitles</source>
         <translation>นำเข้าซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="518"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="543"/>
         <source>There are no subtitles to export.</source>
         <translation>ไม่มีซับไตเติลให้ส่งออก</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="530"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="555"/>
         <source>Cannot save the file: %1</source>
         <translation>บันทึกไฟล์ไม่ได้: %1</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="565"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="590"/>
         <source>Marker %1</source>
         <translation>มาร์กเกอร์ %1</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="636"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="661"/>
         <source>Select at least two clips to group them.</source>
         <translation>เลือกอย่างน้อยสองคลิปเพื่อจัดกลุ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="643"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="668"/>
         <source>Group clips</source>
         <translation>จัดกลุ่มคลิป</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="660"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="685"/>
         <source>The selected clips are not grouped.</source>
         <translation>คลิปที่เลือกยังไม่ได้จัดกลุ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="661"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="686"/>
         <source>Ungroup clips</source>
         <translation>เลิกจัดกลุ่มคลิป</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="690"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="715"/>
         <source>There is nothing to paste.</source>
         <translation>ไม่มีสิ่งที่จะวาง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="697"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="722"/>
         <source>The track of the copied clip no longer exists.</source>
         <translation>แทร็กของคลิปที่คัดลอกไม่มีอยู่แล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="701"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="726"/>
         <source>The media of the copied clip is no longer in the project.</source>
         <translation>สื่อของคลิปที่คัดลอกไม่อยู่ในโปรเจกต์แล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="732"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="757"/>
         <source>Paste</source>
         <translation>วาง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="805"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="830"/>
         <source>Ripple trim</source>
         <translation>ตัดแบบริปเปิล</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="827"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="852"/>
         <source>There is no clip directly behind this one.</source>
         <translation>ไม่มีคลิปที่อยู่ติดหลังคลิปนี้</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="854"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="879"/>
         <source>Roll edit</source>
         <translation>ม้วนจุดตัด</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="869"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="894"/>
         <source>Stills and titles have no source to slip.</source>
         <translation>ภาพนิ่งและชื่อเรื่องไม่มีต้นฉบับให้สลิป</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="881"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="906"/>
         <source>Slip clip</source>
         <translation>สลิปคลิป</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="891"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="916"/>
         <source>Ungroup the clip first: slide works on a single clip.</source>
         <translation>กรุณาเลิกจัดกลุ่มก่อน: สไลด์ใช้กับคลิปเดี่ยวเท่านั้น</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="900"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="925"/>
         <source>Slide needs a clip directly before and after.</source>
         <translation>สไลด์ต้องมีคลิปติดอยู่ทั้งด้านหน้าและด้านหลัง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="919"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="944"/>
         <source>Slide clip</source>
         <translation>สไลด์คลิป</translation>
     </message>

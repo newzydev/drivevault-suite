@@ -74,7 +74,8 @@ public:
 
     // Tracks: new video tracks go on top of the video group, audio tracks at the bottom, one subtitle track on top.
     Q_INVOKABLE QString addTrack(const QString& kind);
-    Q_INVOKABLE QString removeTrack(int index);   // only empty tracks, never the last video / audio track
+    Q_INVOKABLE QString removeTrack(int index);                // only empty tracks, never the last video / audio track
+    Q_INVOKABLE QString removeTrackWithClips(int index);       // deletes the clips on the track too; clears the undo history
 
     // Removes media that is not used on the timeline.
     Q_INVOKABLE QString removeMedia(const QString& mediaId);

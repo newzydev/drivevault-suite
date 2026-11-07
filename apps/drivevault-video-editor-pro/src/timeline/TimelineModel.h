@@ -195,6 +195,8 @@ public:
     Q_INVOKABLE int trackCount() const { return int(m_tracks.size()); }
     Q_INVOKABLE bool mediaUsed(const QString& mediaId) const;
     Q_INVOKABLE bool trackUsed(int trackIndex) const;
+    Q_INVOKABLE QString deleteClipsOnTrack(int trackIndex);   // one undo step; the linked clips of other tracks go with them
+    Q_INVOKABLE void clearHistory();                          // forget undo / redo (after the track list changed)
     Q_INVOKABLE QVariantMap clipInfo(const QString& clipId) const;
     Q_INVOKABLE QString clipAt(int trackIndex, qint64 frame) const;
 

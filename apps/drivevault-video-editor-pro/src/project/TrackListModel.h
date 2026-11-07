@@ -28,6 +28,8 @@ public:
 
     // property is one of "muted", "locked", "visible", "solo".
     Q_INVOKABLE void toggle(int row, const QString& property);
+    Q_INVOKABLE bool canRemove(int row) const;
+    Q_INVOKABLE QString nameAt(int row) const { return row >= 0 && row < m_tracks.size() ? m_tracks.at(row).name : QString(); }     // a project keeps at least one video and one audio track
     Q_INVOKABLE void setName(int row, const QString& name);
     Q_INVOKABLE void setGain(int row, double db);
     Q_INVOKABLE void setPan(int row, double pan);

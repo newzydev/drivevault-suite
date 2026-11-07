@@ -64,6 +64,31 @@ bool TimelineModel::trackUsed(int trackIndex) const
     return std::any_of(m_clips.begin(), m_clips.end(), [&](const ClipData& c) { return c.trackId == id; });
 }
 
+QString TimelineModel::deleteClipsOnTrack(int trackIndex)
+{
+    if (trackIndex < 0 || trackIndex >= m_tracks.size())
+        return tr("There is no such track.");
+    const QString id = m_tracks.at(trackIndex).id;
+    QStringList ids;
+    for (const ClipData& c : m_clips)
+        if (c.trackId == id)
+            ids << c.id;
+    if (ids.isEmpty())
+        return {};
+    const QList<ClipData> targets = groupOfAll(ids);
+    for (const ClipData& t : targets)
+        if (trackLockedForClip(t))
+            return tr("The track is locked.");
+    push(tr("Delete track clips"), targets, {});
+    return {};
+}
+
+void TimelineModel::clearHistory()
+{
+    m_undo.clear();
+    emit undoStateChanged();
+}
+
 QString TimelineModel::editParams(const QString& clipId, const QString& text, const QString& mergeKey,
                                   const std::function<bool(ClipData&)>& mutate)
 {

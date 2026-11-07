@@ -405,6 +405,20 @@ QString ProjectManager::removeTrack(int index)
     return {};
 }
 
+QString ProjectManager::removeTrackWithClips(int index)
+{
+    if (!m_open || index < 0 || index >= m_tracks.count())
+        return tr("There is no such track.");
+    if (!m_tracks.canRemove(index))
+        return tr("A project needs at least one video and one audio track.");
+    if (const QString err = m_timeline.deleteClipsOnTrack(index); !err.isEmpty())
+        return err;
+    if (!m_tracks.removeTrack(index))
+        return tr("A project needs at least one video and one audio track.");
+    m_timeline.clearHistory();          // an undo could bring back clips of a track that no longer exists
+    return {};
+}
+
 QString ProjectManager::removeMedia(const QString& mediaId)
 {
     if (!m_library.contains(mediaId))

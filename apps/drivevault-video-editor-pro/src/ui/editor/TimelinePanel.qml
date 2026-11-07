@@ -79,6 +79,50 @@ Rectangle {
         nameFilters: [qsTr("SubRip subtitles (*.srt)")]
         onAccepted: root.report(root.tl.exportSrt(selectedFile.toString()))
     }
+    // ---- track rename / removal ------------------------------------------------------------------------------------------
+    property int trackRow: -1
+    function renameTrack(row) {
+        trackRow = row
+        trackNameDialog.open()
+    }
+    function removeTrackAt(row) {
+        trackRow = row
+        if (tl.trackUsed(row))
+            removeTrackDialog.open()
+        else
+            report(Projects.removeTrack(row))
+    }
+    AppDialog {
+        id: trackNameDialog
+        objectName: "trackNameDialog"
+        title: qsTr("Rename track")
+        implicitWidth: 380
+        onOpened: { trackNameField.text = root.trackRow >= 0 ? Projects.tracks.nameAt(root.trackRow) : ""; trackNameField.forceActiveFocus(); trackNameField.selectAll() }
+        AppTextField { id: trackNameField; objectName: "trackNameField"; Layout.fillWidth: true; onAccepted: trackNameOk.clicked() }
+        footerContent: [
+            Item { Layout.fillWidth: true },
+            AppButton { variant: "ghost"; text: qsTr("Cancel"); onClicked: trackNameDialog.close() },
+            AppButton {
+                id: trackNameOk
+                objectName: "trackNameOk"
+                variant: "primary"
+                text: qsTr("OK")
+                onClicked: {
+                    if (trackNameField.text.trim() !== "")
+                        Projects.tracks.setName(root.trackRow, trackNameField.text.trim())
+                    trackNameDialog.close()
+                }
+            }
+        ]
+    }
+    ConfirmDialog {
+        id: removeTrackDialog
+        title: qsTr("Delete this track?")
+        message: qsTr("The track still has clips. They are deleted together with the track, and this cannot be undone (the undo history is cleared).")
+        primaryText: qsTr("Delete track")
+        dangerPrimary: true
+        onPrimary: root.report(Projects.removeTrackWithClips(root.trackRow))
+    }
     AppDialog {
         id: markerDialog
         title: qsTr("Rename marker")
@@ -114,9 +158,12 @@ Rectangle {
     AppMenu {
         id: trackMenu
         property int row: -1
-        AppMenuItem { text: qsTr("Remove track"); enabled: trackMenu.row >= 0 && !root.tl.trackUsed(trackMenu.row)
-                      onTriggered: { const e = Projects.removeTrack(trackMenu.row); if (e !== "") App.toast(e, "warning") } }
+        AppMenuItem { objectName: "trackRename"; text: qsTr("Rename track…"); onTriggered: root.renameTrack(trackMenu.row) }
         AppMenuItem { text: qsTr("Lock / unlock"); onTriggered: Projects.tracks.toggle(trackMenu.row, "locked") }
+        AppMenuSeparator {}
+        AppMenuItem { text: qsTr("Add video track"); onTriggered: root.addTrack("video") }
+        AppMenuItem { text: qsTr("Add audio track"); onTriggered: root.addTrack("audio") }
+        AppMenuItem { objectName: "trackRemove"; text: qsTr("Remove track"); enabled: Projects.tracks.canRemove(trackMenu.row); onTriggered: root.removeTrackAt(trackMenu.row) }
     }
 
     AppMenu {
@@ -250,8 +297,9 @@ Rectangle {
                                 Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
                                 MouseArea {
                                     anchors.fill: parent
-                                    acceptedButtons: Qt.RightButton
-                                    onClicked: { trackMenu.row = header.index; trackMenu.popup() }
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                    onClicked: mouse => { if (mouse.button === Qt.RightButton) { trackMenu.row = header.index; trackMenu.popup() } }
+                                    onDoubleClicked: mouse => { if (mouse.button === Qt.LeftButton) root.renameTrack(header.index) }
                                 }
 
                                 RowLayout {
@@ -296,6 +344,38 @@ Rectangle {
                                         tip: qsTr("Lock track")
                                         onClicked: Projects.tracks.toggle(header.index, "locked")
                                     }
+                                }
+                            }
+                        }
+
+                        // add tracks without opening a menu
+                        Item {
+                            width: parent.width
+                            height: 44
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 10
+                                anchors.rightMargin: 6
+                                spacing: 6
+                                AppButton {
+                                    objectName: "addVideoTrack"
+                                    Layout.fillWidth: true
+                                    implicitHeight: 28
+                                    leftPadding: 6; rightPadding: 6
+                                    iconName: "plus"
+                                    text: qsTr("Video")
+                                    enabled: Projects.isOpen
+                                    onClicked: root.addTrack("video")
+                                }
+                                AppButton {
+                                    objectName: "addAudioTrack"
+                                    Layout.fillWidth: true
+                                    implicitHeight: 28
+                                    leftPadding: 6; rightPadding: 6
+                                    iconName: "plus"
+                                    text: qsTr("Audio")
+                                    enabled: Projects.isOpen
+                                    onClicked: root.addTrack("audio")
                                 }
                             }
                         }

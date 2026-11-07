@@ -1,6 +1,12 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.3.0
+-------------
+  - Tracks: the "+ Video" and "+ Audio" buttons under the track names add a track (up to 64); double-click a track name or use the right-click menu to rename it.
+  - Right-click menu of a track: Rename, Lock, Add video / audio track, Remove track. A track that still has clips can be removed too: after a confirmation its
+    clips are deleted with it (this cannot be undone, the undo history is cleared). The last video track and the last audio track always stay.
+
 Version 1.2.0
 -------------
   - Less duplication: the bar at the top now has only Home, Edit, Color and Export. Import, Audio, Effects and AI are tabs of the tool panel at the left only
