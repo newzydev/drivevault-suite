@@ -1,0 +1,19 @@
+DriveVault Master Pro - Third-party notices
+===========================================
+
+DriveVault Master Pro itself is proprietary software (see LICENSE.txt). It includes:
+
+1. Qt 6.8 (Core, Gui, Qml, Quick, Quick Controls 2, Quick Dialogs 2, Quick Layouts, Quick Templates 2, Network and plug-ins)
+   GNU Lesser General Public License v3 (LGPL-3.0)                              licenses\LGPL-3.0.txt
+   The Qt libraries are used as shared libraries (DLLs) and are not modified: you may replace them with another build of the same Qt version.
+   LGPL-3.0 incorporates the GNU GPL v3 terms by reference: https://www.gnu.org/licenses/gpl-3.0.txt
+   Qt source code: https://download.qt.io/archive/qt/6.8/6.8.3/  (a written offer for the source is available from DriveVault on request).
+
+2. Inter font and Noto Sans Thai font - SIL Open Font License 1.1               licenses\OFL-Inter.txt, licenses\OFL-NotoSansThai.txt
+
+3. Microsoft Visual C++ runtime (msvcp140*.dll, vcruntime140*.dll) - redistributed under the Microsoft Visual Studio license terms for
+   redistributable files. Installed next to the program (app-local).
+
+4. Inno Setup - used to create the installer; the installer carries Inno Setup's runtime (https://jrsoftware.org/files/is/license.txt).
+
+Trademarks belong to their owners. Qt is a registered trademark of The Qt Company Ltd.

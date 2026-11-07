@@ -1,0 +1,45 @@
+DriveVault Video Editor Pro - Third-party notices
+=================================================
+
+DriveVault Video Editor Pro itself is proprietary software (see LICENSE.txt). It includes the following third-party software.
+The full license texts are in the "licenses" folder next to this file. The machine-readable list of every shipped file
+(owner, license, SHA-256) is dependency-manifest.json in the same folder.
+
+1. Qt 6.8  -  GNU Lesser General Public License v3 (LGPL-3.0)           licenses\LGPL-3.0.txt
+   Qt Core, Gui, Qml, Quick, Quick Controls 2, Quick Dialogs 2, Quick Layouts, Quick Shapes, Quick Templates 2, Network,
+   OpenGL, Svg and their plug-ins. Copyright (C) The Qt Company Ltd. and other contributors.
+   The Qt libraries are used as shared libraries (DLLs) and are not modified: you may replace them with another build of the
+   same Qt version. LGPL-3.0 incorporates the GNU GPL v3 terms by reference: https://www.gnu.org/licenses/gpl-3.0.txt
+   Qt source code: https://download.qt.io/archive/qt/6.8/6.8.3/  (a written offer for the source is available from DriveVault on request).
+
+2. FFmpeg 8.1 (libavcodec, libavformat, libavutil, libswscale, libswresample)  -  LGPL v3     licenses\FFmpeg-LICENSE.txt
+   Shared build configured with --enable-version3 and WITHOUT --enable-gpl and WITHOUT --enable-nonfree (checked by the
+   license audit at packaging time). FFmpeg is dynamically linked; replace the DLLs with a compatible build if you wish.
+   Source: https://ffmpeg.org/download.html  and the builder's repository https://github.com/BtbN/FFmpeg-Builds
+   The FFmpeg DLLs of this build contain further libraries that are linked into them. Their licenses are those of the upstream projects
+   (permissive BSD / MIT / ISC / Apache-2.0 / MPL-2.0 or LGPL); the list below is taken from the build's configuration and
+   must be re-verified against the builder's own manifest at every FFmpeg update:
+     libaom, dav1d, rav1e, SVT-AV1, libvpx, libvvenc, libkvazaar, libuavs3d, libjxl, libwebp, openjpeg, libtheora, libvorbis, libopus,
+     libmp3lame, libtwolame, opencore-amr, libopenh264, libass, freetype, harfbuzz, fribidi, fontconfig, lcms2, zimg, libplacebo,
+     libxml2, zlib, liblzma, GMP, libssh, libsrt, librist, libbluray, libgme, libopenmpt, libsnappy, libsoxr, libzvbi, libvmaf, OpenAL.
+
+3. whisper.cpp / ggml (whisper-cli.exe and its DLLs, folder ai\whisper)  -  MIT      licenses\whisper.cpp-LICENSE.txt
+   Copyright (c) 2023-2026 The ggml authors. Runs as a separate program for automatic captions.
+   Speech models (OpenAI Whisper, ggml format, MIT) are NOT installed; you download or import them yourself.
+   Recognition results can contain errors.
+
+4. Inter font  and  Noto Sans Thai font  -  SIL Open Font License 1.1                 licenses\OFL-Inter.txt, licenses\OFL-NotoSansThai.txt
+
+5. Microsoft Visual C++ runtime (msvcp140*.dll, vcruntime140*.dll, vcomp140.dll)  -  redistributed under the Microsoft Visual Studio
+   license terms for redistributable files ("Microsoft Visual C++ Redistributable"). Installed next to the program (app-local).
+
+6. Inno Setup  -  used to create the installer only; the installer carries Inno Setup's runtime under the Inno Setup license
+   (https://jrsoftware.org/files/is/license.txt).
+
+Codecs and patents
+   H.264 / AAC and other formats may be covered by patents in some countries. The encoders used are the ones present in the
+   system (hardware encoders of the GPU driver, Windows Media Foundation) or the OpenH264 / FFmpeg AAC encoders of the FFmpeg build.
+   DriveVault does not grant any patent license; commercial distribution of encoded video may need licenses from the patent pools
+   (for example Via LA / Access Advance). Check this with your own legal advisor.
+
+Trademarks belong to their owners. Qt is a registered trademark of The Qt Company Ltd.

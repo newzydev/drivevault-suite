@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DriveVault Video Editor Pro - คู่มือการใช้งาน</title>
+<style>
+  :root { --brand:#8B5CF6; --bg:#101114; --panel:#181A20; --text:#F2F4F8; --muted:#A1A1AA; --line:#2A2D36; }
+  @media (prefers-color-scheme: light) { :root { --bg:#F4F5F9; --panel:#FFFFFF; --text:#14161B; --muted:#565B6B; --line:#D9DCE5; } }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.7 "Noto Sans Thai","Leelawadee UI","Segoe UI",sans-serif; }
+  header { padding:36px 6vw; background:linear-gradient(135deg,var(--brand),#5B21B6); color:#fff; }
+  header h1 { margin:0 0 6px; font-size:30px; } header p { margin:0; opacity:.9; }
+  main { max-width:880px; margin:0 auto; padding:24px 6vw 60px; }
+  h2 { margin-top:40px; padding-bottom:6px; border-bottom:2px solid var(--brand); }
+  table { border-collapse:collapse; width:100%; background:var(--panel); } td,th { border:1px solid var(--line); padding:6px 10px; text-align:left; }
+  kbd { background:var(--panel); border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; padding:1px 6px; font-size:13px; }
+  .note { background:var(--panel); border-left:4px solid var(--brand); padding:10px 14px; margin:14px 0; color:var(--muted); }
+  nav a { color:var(--brand); margin-right:14px; }
+</style>
+</head>
+<body>
+<header><h1>DriveVault Video Editor Pro</h1><p>คู่มือการใช้งาน - เวอร์ชัน 1.0.0 - <a style="color:#fff" href="user-guide.en.html">English</a></p></header>
+<main>
+<nav><a href="#start">เริ่มต้น</a><a href="#edit">การตัดต่อ</a><a href="#look">สีและเอฟเฟกต์</a><a href="#audio">เสียง</a><a href="#titles">ชื่อเรื่อง</a><a href="#export">ส่งออก</a><a href="#ai">เครื่องมือ AI</a><a href="#perf">ประสิทธิภาพ</a><a href="#keys">คีย์ลัด</a><a href="#help">แก้ปัญหา</a></nav>
+
+<h2 id="start">เริ่มต้นใช้งาน</h2>
+<div class="note"><b>คำเตือนของ Windows ตอนติดตั้ง:</b> ตัวติดตั้งยังไม่ได้เซ็นลายเซ็นดิจิทัล Windows จึงอาจแสดง "Windows protected your PC" ให้เลือก <b>More info</b> แล้วกด <b>Run anyway</b> ซึ่งหมายความเพียงว่า Windows ยังไม่รู้จักผู้เผยแพร่</div>
+<ol>
+<li>ที่หน้าแรกเลือก <b>โปรเจกต์ใหม่</b> ตั้งชื่อ และเลือกความละเอียดกับเฟรมเรต โปรเจกต์คือโฟลเดอร์ที่มีไฟล์ <code>.dvproj</code> หนึ่งไฟล์ ส่วนไฟล์สื่อยังอยู่ที่เดิม</li>
+<li><b>นำเข้าสื่อ</b> ด้วย <kbd>Ctrl</kbd>+<kbd>I</kbd> หรือลากไฟล์จาก Explorer เข้าหน้าต่าง (MP4, MOV, MKV, AVI, WebM, MP3, WAV, AAC, FLAC, PNG, JPG, WebP)</li>
+<li>ดับเบิลคลิกสื่อ (หรือลาก) เพื่อวางลงไทม์ไลน์</li>
+<li>ตัดต่อ แล้วเปิดพื้นที่ทำงาน <b>ส่งออก</b> (<kbd>Ctrl</kbd>+<kbd>M</kbd>)</li>
+</ol>
+<p>แท็บพื้นที่ทำงานใต้เมนูเปลี่ยนเฉพาะแผงที่เน้น: <b>สื่อ ตัดต่อ สี เสียง เอฟเฟกต์ AI ส่งออก</b></p>
+
+<h2 id="edit">การตัดต่อบนไทม์ไลน์</h2>
+<ul>
+<li><b>ย้าย</b>คลิปโดยลาก (ปิดการดูดติดด้วยปุ่มแม่เหล็ก) <b>ตัดหัวท้าย</b>โดยลากขอบ <b>แบ่งคลิป</b>ที่เพลย์เฮดด้วย <kbd>Ctrl</kbd>+<kbd>K</kbd></li>
+<li>วิดีโอกับเสียงของมันถูก<i>ผูก</i>กันและเคลื่อนไปด้วยกัน <kbd>Ctrl</kbd>+<kbd>G</kbd> จัดกลุ่มหลายคลิป</li>
+<li><b>เครื่องมือ</b>: <kbd>V</kbd> เลือก, <kbd>B</kbd> ตัดแบบริปเปิล, <kbd>N</kbd> ม้วนจุดตัด, <kbd>Y</kbd> สลิป, <kbd>U</kbd> สไลด์</li>
+<li><b>มาร์กเกอร์</b>: <kbd>M</kbd> เพิ่มที่เพลย์เฮด คลิกขวาที่มาร์กเกอร์บนไม้บรรทัดเพื่อเปลี่ยนชื่อหรือลบ <kbd>I</kbd> / <kbd>O</kbd> กำหนดช่วงเริ่ม/จบที่ใช้ตอนส่งออก</li>
+<li>แทร็ก: ปุ่ม <b>+</b> เพิ่มแทร็กวิดีโอ เสียง หรือซับไตเติล (คลิกขวาที่แทร็กเพื่อลบแทร็กที่ว่าง)</li>
+<li>เลิกทำได้ทุกอย่างด้วย <kbd>Ctrl</kbd>+<kbd>Z</kbd> บันทึกด้วย <kbd>Ctrl</kbd>+<kbd>S</kbd> และมีการบันทึกอัตโนมัติเบื้องหลัง</li>
+</ul>
+
+<h2 id="look">สี เอฟเฟกต์ ทรานซิชัน คีย์เฟรม</h2>
+<p>เลือกคลิปแล้วใช้ <b>อินสเปกเตอร์</b>: การแปลง (ความทึบ ตำแหน่ง ขนาด การหมุน), สี (การรับแสง คอนทราสต์ ความอิ่มตัว อุณหภูมิ โทน ลุค .cube), Lift/Gamma/Gain, เส้นโค้ง, เอฟเฟกต์ (เบลอ ความคมชัด ขอบมืด ครอบ) และทรานซิชัน (ครอสดิสโซลฟ์ จางผ่านดำ เฟด ปัด เลื่อน ซูม)</p>
+<p>เพชรเล็กๆ ข้างค่าคือ<b>คีย์เฟรม</b> กดเพื่อเพิ่ม/ลบที่เพลย์เฮด คลิกขวาเพื่อเลือกการประมาณค่าแบบเชิงเส้น นุ่มนวล หรือคงค่า</p>
+
+<h2 id="audio">เสียง</h2>
+<p>ระดับเสียงต่อคลิป เสียงทุ้ม/กลาง/แหลม นอยส์เกต และเฟดอยู่ในอินสเปกเตอร์ ส่วน <b>มิกเซอร์เสียง</b> มีเฟเดอร์ ซ้าย-ขวา เดี่ยว และปิดเสียงของทุกแทร็กเสียง พร้อมมิเตอร์ระดับเสียงรวม</p>
+
+<h2 id="titles">ชื่อเรื่องและซับไตเติล</h2>
+<p>ใช้เมนู <b>+</b> เหนือไทม์ไลน์เพื่อเพิ่มชื่อเรื่อง แถบชื่อล่าง คำบรรยาย หรือซับไตเติล เลือกแล้วแก้ข้อความ ฟอนต์ สี เส้นขอบ เงา และตำแหน่งได้ รองรับภาษาไทยและอังกฤษ นำเข้า/ส่งออกซับเป็น <b>.srt</b> ได้</p>
+
+<h2 id="export">ส่งออก</h2>
+<p>เลือก<b>พรีเซ็ต</b> (YouTube 1080p / 4K, Instagram / TikTok, เว็บ 720p, เก็บถาวร, เฉพาะเสียง) หรือกำหนดรูปแบบ ความละเอียด คุณภาพ และตัวเข้ารหัสเอง ส่งออกได้ทั้งซีเควนซ์ เฉพาะช่วงเริ่ม-จบ เฟรมเดียวเป็น PNG หรือเฉพาะเสียง (M4A) โปรแกรมตรวจไฟล์ที่ได้อัตโนมัติ (ขนาด เฟรมเรต ความยาว เสียง ภาพ) บันทึกพรีเซ็ตของคุณด้วย <b>บันทึกค่าปัจจุบัน</b></p>
+
+<h2 id="ai">เครื่องมือ AI (ไม่บังคับ ทำงานออฟไลน์)</h2>
+<p>เปิดพื้นที่ทำงาน <b>AI</b> แล้วเปิดสวิตช์ ไม่มีข้อมูลถูกส่งไปคลาวด์</p>
+<ul>
+<li><b>ซับอัตโนมัติ</b> (whisper.cpp): ต้องมีโมเดลเสียง กด <i>ดาวน์โหลด</i> ในตัวจัดการโมเดล (ครั้งเดียวที่โปรแกรมใช้อินเทอร์เน็ต และเมื่อคุณกดเท่านั้น) หรือนำเข้าไฟล์ <code>ggml-*.bin</code> แล้วเลือกภาษาและ <i>ถอดเสียงไทม์ไลน์</i> ตรวจข้อความทุกครั้ง: ซับอัตโนมัติอาจไม่แม่นยำ โดยเฉพาะเมื่อมีเสียงรบกวน เพลง หรือชื่อเฉพาะ</li>
+<li><b>ตรวจจับความเงียบ</b> ไฮไลต์ช่วงเงียบบนไทม์ไลน์ <i>ลบทั้งหมด</i> จะตัดออกจากทุกแทร็ก (เลิกทำได้)</li>
+<li><b>แนะนำจุดตัด</b> ทำเครื่องหมายการเปลี่ยนฉากและช่วงหยุด ไม่มีอะไรถูกตัดจนกว่าคุณจะกดแบ่ง</li>
+<li><b>ปรับปรุงเสียง</b> ลดเสียงรบกวนคงที่ (การประมวลผลสัญญาณ ไม่ใช่โครงข่ายประสาท) ในสำเนาของเสียง</li>
+<li><b>ติดตามวัตถุ</b> ตามกรอบสี่เหลี่ยม ใช้ทำให้คลิปนิ่ง หรือให้อีกคลิปตามวัตถุ</li>
+<li><b>ผู้ช่วย</b>: พิมพ์คำขอ เช่น "สร้างซับไทย" หรือ "หาช่วงที่เงียบ" เข้าใจเฉพาะชุดวลีที่กำหนด ไม่ใช่การสนทนาอิสระ</li>
+</ul>
+
+<h2 id="perf">ประสิทธิภาพ</h2>
+<p><b>ตั้งค่า &rarr; ประสิทธิภาพ</b>: คุณภาพพรีวิว (เต็ม/ครึ่ง/หนึ่งในสี่) ขีดจำกัดหน่วยความจำของแคชเฟรม และ<b>พร็อกซี</b> - ไฟล์ตัวแทนขนาดเล็กของวิดีโอใหญ่ที่ทำให้พรีวิวลื่น (สร้างจากอินสเปกเตอร์หรือหน้าประสิทธิภาพ การส่งออกใช้ไฟล์ต้นฉบับเสมอ) การถอดรหัสวิดีโอด้วย GPU เป็นโหมดทดลองและปิดไว้เป็นค่าเริ่มต้น</p>
+
+<h2 id="keys">คีย์ลัด</h2>
+<table>
+<tr><th>การทำงาน</th><th>คีย์</th></tr>
+<tr><td>ใหม่ / เปิด / บันทึก / บันทึกเป็น</td><td><kbd>Ctrl</kbd>+<kbd>N</kbd> / <kbd>O</kbd> / <kbd>S</kbd> / <kbd>Shift</kbd>+<kbd>S</kbd></td></tr>
+<tr><td>นำเข้าสื่อ / พื้นที่ส่งออก / ตั้งค่า</td><td><kbd>Ctrl</kbd>+<kbd>I</kbd> / <kbd>Ctrl</kbd>+<kbd>M</kbd> / <kbd>Ctrl</kbd>+<kbd>,</kbd></td></tr>
+<tr><td>เล่น/หยุด เฟรมก่อน/ถัดไป ต้น/ท้าย</td><td><kbd>Space</kbd>, <kbd>&larr;</kbd> <kbd>&rarr;</kbd>, <kbd>Home</kbd> <kbd>End</kbd></td></tr>
+<tr><td>แบ่ง ตัดต้น/ท้ายถึงเพลย์เฮด</td><td><kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>Q</kbd> / <kbd>W</kbd></td></tr>
+<tr><td>ลบ / ลบแบบริปเปิล</td><td><kbd>Del</kbd> / <kbd>Shift</kbd>+<kbd>Del</kbd></td></tr>
+<tr><td>ตัด/คัดลอก/วาง จัดกลุ่ม/เลิกกลุ่ม</td><td><kbd>Ctrl</kbd>+<kbd>X</kbd> <kbd>C</kbd> <kbd>V</kbd>, <kbd>Ctrl</kbd>+<kbd>G</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd></td></tr>
+<tr><td>เลิกทำ / ทำซ้ำ</td><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td></tr>
+<tr><td>เครื่องมือ</td><td><kbd>V</kbd> <kbd>B</kbd> <kbd>N</kbd> <kbd>Y</kbd> <kbd>U</kbd></td></tr>
+<tr><td>มาร์กเกอร์ ถัดไป/ก่อนหน้า จุดเริ่ม จุดจบ ล้างช่วง</td><td><kbd>M</kbd>, <kbd>Shift</kbd>+<kbd>M</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd>, <kbd>I</kbd>, <kbd>O</kbd>, <kbd>Alt</kbd>+<kbd>X</kbd></td></tr>
+<tr><td>ซูมไทม์ไลน์ เกี่ยวกับ</td><td><kbd>+</kbd> <kbd>-</kbd> (หรือ <kbd>Ctrl</kbd>+ล้อเมาส์), <kbd>F1</kbd></td></tr>
+</table>
+
+<h2 id="help">ตำแหน่งไฟล์และการแก้ปัญหา</h2>
+<table>
+<tr><td>โปรแกรม</td><td><code>C:\Program Files\DriveVault\Common\DriveVault Video Editor Pro</code> (ค่าเริ่มต้น สำหรับผู้ใช้ทุกคน)</td></tr>
+<tr><td>การตั้งค่า บันทึก สำเนาอัตโนมัติ แคช</td><td><code>%LOCALAPPDATA%\DriveVault\VideoEditorPro</code></td></tr>
+<tr><td>โปรเจกต์</td><td><code>Documents\DriveVault Projects</code></td></tr>
+<tr><td>ไฟล์ที่ส่งออก</td><td><code>Videos\DriveVault Exports</code></td></tr>
+</table>
+<ul>
+<li><b>คลิปมีเครื่องหมายสีแดง "ไม่พบไฟล์"</b>: ไฟล์สื่อถูกย้าย เลือกในแผงสื่อแล้วเชื่อมไฟล์ใหม่ (ทีละไฟล์หรือค้นหาในโฟลเดอร์)</li>
+<li><b>พรีวิวกระตุก</b>: ลดคุณภาพพรีวิว หรือสร้างพร็อกซีให้วิดีโอใหญ่</li>
+<li><b>ซับขึ้นว่า "ต้องมีโมเดล"</b>: ดาวน์โหลดหรือนำเข้าโมเดลเสียงในพื้นที่ทำงาน AI</li>
+<li><b>มีสิ่งผิดปกติ</b>: ช่วยเหลือ &rarr; เปิดโฟลเดอร์บันทึก เพื่อดูไฟล์ log</li>
+<li><b>ถอนการติดตั้ง</b>: การตั้งค่า Windows &rarr; แอป โปรเจกต์และไฟล์ส่งออกของคุณจะไม่ถูกลบ และตัวถอนจะถามก่อนลบการตั้งค่าและแคช</li>
+</ul>
+<div class="note">DriveVault Video Editor Pro เป็นซอฟต์แวร์กรรมสิทธิ์ ส่วนประกอบของบุคคลที่สามและสัญญาอนุญาตระบุไว้ที่ ช่วยเหลือ &rarr; ประกาศของบุคคลที่สาม</div>
+</main>
+</body>
+</html>

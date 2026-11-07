@@ -1,0 +1,46 @@
+DriveVault Video Editor Pro - Release notes
+==========================================
+
+Version 1.0.0  (first product release)
+--------------------------------------
+Status: release candidate quality. The installer is NOT code-signed yet (Windows SmartScreen will warn), and it has been
+tested on development machines and with automated install / uninstall tests, not on a separate clean PC or a virtual machine.
+
+DriveVault Master Pro (the suite hub, installed automatically)
+  - Every program installer installs DriveVault Master Pro first, into C:\Program Files\DriveVault, with the programs in sub folders
+    (C:\Program Files\DriveVault\Common\DriveVault Video Editor Pro). Master Pro lists the installed DriveVault programs, opens them, shows version / status
+    in each program's own colour, installs and updates programs from setup files on this PC and uninstalls them. It stays when a program is
+    uninstalled and cannot be uninstalled while any program is installed. There is no online catalog yet; Image Editor and Audio Editor are shown as "Coming soon".
+
+New in the installer (Phase 6)
+  - Installs by default to  C:\Program Files\DriveVault\Common\DriveVault Video Editor Pro  (all users, administrator rights asked once).
+    A per-user install (no administrator) is offered by the wizard; the default is then %LOCALAPPDATA%\Programs\DriveVault\Common\DriveVault Video Editor Pro.
+  - The program is self-contained: the Microsoft Visual C++ runtime is installed next to the program (earlier test installers
+    relied on the runtime already being present on the PC - fixed).
+  - Start Menu folder "DriveVault" (shared by future DriveVault programs), optional desktop shortcut, optional .dvproj association.
+  - Product manifest (product.json) and registry entry for the future "DriveVault Master Pro" hub.
+  - User guide (Thai / English), release notes and third-party notices in the Help menu.
+  - Smaller download: unused FFmpeg libraries (avdevice, avfilter) and the Visual C++ redistributable installer are no longer included.
+
+Feature summary (Phases 1-5)
+  - Import, thumbnails, waveforms, relink; multitrack timeline with linked clips, snapping, undo / redo, auto-save and crash recovery.
+  - Ripple / roll / slip / slide, copy / paste, groups, markers, In / Out, subtitle tracks.
+  - Inspector: transform, colour, lift / gamma / gain, curves, .cube looks, blur / sharpen / vignette / crop, keyframes, transitions.
+  - Titles, lower thirds, captions, SRT import / export. Per-clip audio (EQ, gate, fades), track mixer with meters.
+  - Export MP4 / MOV / MKV (H.264 + AAC), audio-only M4A, presets, In-Out range, PNG frame; validation of every exported file.
+  - AI (offline, optional): captions with whisper.cpp, silence detection and cutting, cut suggestions, noise reduction, tracking, assistant.
+  - Performance: frame cache with read-ahead, proxy editing, hardware detection.
+  - Thai / English user interface.
+
+Installing without a digital signature
+  The installers are not code-signed (a certificate has to be bought). Windows may therefore show a blue "Windows protected your PC" (SmartScreen) window or a
+  yellow "Unknown publisher" prompt. Choose "More info" and then "Run anyway" (or "Yes" in the administrator prompt). This only means that the publisher is not yet known to Windows;
+  the file's SHA-256 is published next to the installer (.sha256) so that you can check it.
+
+Known limitations
+  - Not code-signed. Not tested on a clean machine / VM.
+  - Automatic captions are not always accurate. The speech model is not part of the installer (download or import it).
+  - GPU video decoding is experimental and off by default (it was slower than the CPU on the test computer).
+  - Noise reduction is signal processing, not a neural network.
+  - Titles cannot be tracked or keyframed yet. No speed change / reverse, no nested sequences.
+  - See the User Guide and README for the complete list.

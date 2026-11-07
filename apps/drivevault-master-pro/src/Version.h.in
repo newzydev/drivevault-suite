@@ -1,0 +1,7 @@
+#pragma once
+
+namespace dm::version {
+inline constexpr const char* kProductName = "DriveVault Master Pro";
+inline constexpr const char* kVersion = "@PROJECT_VERSION@";
+inline constexpr const char* kBuildNumber = "@DM_BUILD_NUMBER@";
+} // namespace dm::version

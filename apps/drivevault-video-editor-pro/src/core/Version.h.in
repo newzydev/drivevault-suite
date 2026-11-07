@@ -1,0 +1,11 @@
+#pragma once
+
+namespace dv::version {
+inline constexpr const char* kProductName = "DriveVault Video Editor Pro";
+inline constexpr const char* kOrganization = "DriveVault";
+inline constexpr const char* kApplicationId = "com.drivevault.videoeditorpro";
+inline constexpr const char* kVersion = "@PROJECT_VERSION@";
+inline constexpr const char* kBuildNumber = "@DV_BUILD_NUMBER@";
+inline constexpr int kProjectSchemaVersion = 3;
+inline constexpr int kSettingsSchemaVersion = 1;
+} // namespace dv::version

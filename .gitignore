@@ -1,0 +1,16 @@
+# build output and installers
+build/
+dist/
+# portable toolchain and downloads (Qt, CMake, Ninja, Inno Setup, FFmpeg, whisper.cpp, speech models, Python): see README.md
+.tools/
+# local files
+*.user
+.vs/
+.vscode/
+.idea/
+CMakeUserPresets.json
+*.log
+# private signing material - never commit
+*.pfx
+*.p12
+*.snk

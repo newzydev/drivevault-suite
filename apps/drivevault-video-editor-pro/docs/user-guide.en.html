@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DriveVault Video Editor Pro - User Guide</title>
+<style>
+  :root { --brand:#8B5CF6; --bg:#101114; --panel:#181A20; --text:#F2F4F8; --muted:#A1A1AA; --line:#2A2D36; }
+  @media (prefers-color-scheme: light) { :root { --bg:#F4F5F9; --panel:#FFFFFF; --text:#14161B; --muted:#565B6B; --line:#D9DCE5; } }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.6 "Segoe UI","Noto Sans Thai",sans-serif; }
+  header { padding:36px 6vw; background:linear-gradient(135deg,var(--brand),#5B21B6); color:#fff; }
+  header h1 { margin:0 0 6px; font-size:30px; } header p { margin:0; opacity:.9; }
+  main { max-width:880px; margin:0 auto; padding:24px 6vw 60px; }
+  h2 { margin-top:40px; padding-bottom:6px; border-bottom:2px solid var(--brand); }
+  h3 { margin-top:24px; color:var(--brand); }
+  table { border-collapse:collapse; width:100%; background:var(--panel); } td,th { border:1px solid var(--line); padding:6px 10px; text-align:left; }
+  kbd { background:var(--panel); border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; padding:1px 6px; font-size:13px; }
+  .note { background:var(--panel); border-left:4px solid var(--brand); padding:10px 14px; margin:14px 0; color:var(--muted); }
+  nav a { color:var(--brand); margin-right:14px; }
+</style>
+</head>
+<body>
+<header><h1>DriveVault Video Editor Pro</h1><p>User Guide - version 1.0.0 - <a style="color:#fff" href="user-guide.th.html">ภาษาไทย</a></p></header>
+<main>
+<nav><a href="#start">Getting started</a><a href="#edit">Editing</a><a href="#look">Colour &amp; effects</a><a href="#audio">Audio</a><a href="#titles">Titles</a><a href="#export">Export</a><a href="#ai">AI tools</a><a href="#perf">Performance</a><a href="#keys">Shortcuts</a><a href="#help">Troubleshooting</a></nav>
+
+<h2 id="start">Getting started</h2>
+<div class="note"><b>Windows warning when installing:</b> the installer is not digitally signed yet, so Windows may show "Windows protected your PC". Choose <b>More info</b> and then <b>Run anyway</b>. This only means the publisher is not yet known to Windows.</div>
+<ol>
+<li>On the Home screen choose <b>New Project</b>, name it and pick the resolution and frame rate. The project is a folder with one <code>.dvproj</code> file; your media stay where they are.</li>
+<li><b>Import</b> media with <kbd>Ctrl</kbd>+<kbd>I</kbd> or drag files from Explorer into the window (MP4, MOV, MKV, AVI, WebM, MP3, WAV, AAC, FLAC, PNG, JPG, WebP).</li>
+<li>Double-click a media item (or drag it) to put it on the timeline.</li>
+<li>Edit, then open the <b>Export</b> workspace (<kbd>Ctrl</kbd>+<kbd>M</kbd>).</li>
+</ol>
+<p>Workspaces (the tabs under the menu) only change which panels are emphasised: <b>Media, Edit, Color, Audio, Effects, AI, Export</b>.</p>
+
+<h2 id="edit">Editing the timeline</h2>
+<ul>
+<li><b>Move</b> a clip by dragging it (snapping can be switched off with the magnet button). <b>Trim</b> by dragging its edges. <b>Split</b> at the playhead with <kbd>Ctrl</kbd>+<kbd>K</kbd>.</li>
+<li>Video and its audio are <i>linked</i> and move together. <kbd>Ctrl</kbd>+<kbd>G</kbd> groups several clips.</li>
+<li><b>Tools</b>: <kbd>V</kbd> select, <kbd>B</kbd> ripple trim, <kbd>N</kbd> roll edit, <kbd>Y</kbd> slip, <kbd>U</kbd> slide.</li>
+<li><b>Markers</b>: <kbd>M</kbd> adds one at the playhead; right-click a marker in the ruler to rename or delete it. <kbd>I</kbd> / <kbd>O</kbd> set the In / Out range used by Export.</li>
+<li>Tracks: the <b>+</b> button adds video, audio or subtitle tracks (right-click a track to remove an empty one).</li>
+<li>Everything can be undone with <kbd>Ctrl</kbd>+<kbd>Z</kbd>; the project is saved with <kbd>Ctrl</kbd>+<kbd>S</kbd> and auto-saved in the background.</li>
+</ul>
+
+<h2 id="look">Colour, effects, transitions, keyframes</h2>
+<p>Select a clip and use the <b>Inspector</b>: Transform (opacity, position, scale, rotation), Colour (exposure, contrast, saturation, temperature, tint, .cube look), Lift/Gamma/Gain, Curves, Effects (blur, sharpen, vignette, crop) and Transitions (cross dissolve, dip, fade, wipe, slide, zoom).</p>
+<p>The small diamond next to a value adds a <b>keyframe</b> at the playhead; right-click it to choose linear, ease or hold interpolation.</p>
+
+<h2 id="audio">Audio</h2>
+<p>Per-clip volume, bass / mid / treble, noise gate and fades are in the Inspector. The <b>Audio mixer</b> section has a fader, pan, solo and mute for every audio track and level meters for the master output.</p>
+
+<h2 id="titles">Titles and subtitles</h2>
+<p>Use the <b>+</b> menu above the timeline to add a title, lower third, caption or subtitle. Select it to edit the text, font, colour, outline, shadow and position. Thai and English text are supported. Subtitles can be imported from and exported to <b>.srt</b>.</p>
+
+<h2 id="export">Export</h2>
+<p>Choose a <b>preset</b> (YouTube 1080p / 4K, Instagram / TikTok, Web 720p, Archive, Audio only) or set format, resolution, quality and encoder yourself. You can export the whole sequence or only the In-to-Out range, a single frame as PNG, or the sound only (M4A). The finished file is checked automatically (size, frame rate, duration, audio, picture). Save your own presets with <b>Save current</b>.</p>
+
+<h2 id="ai">AI tools (optional, offline)</h2>
+<p>Open the <b>AI</b> workspace and switch the tools on. Nothing is sent to the cloud.</p>
+<ul>
+<li><b>Auto captions</b> (whisper.cpp): needs a speech model. Press <i>Download</i> in the model manager (the only time the program uses the internet, and only when you press it) or import a <code>ggml-*.bin</code> file. Then choose the language and <i>Transcribe timeline</i>. Check the text: automatic captions are not always accurate, especially with noise, music and names.</li>
+<li><b>Silence detection</b> highlights quiet passages on the timeline; <i>Remove all</i> cuts them out of every track (undoable).</li>
+<li><b>Smart cut suggestions</b> mark scene changes and pauses; nothing is cut until you press Split.</li>
+<li><b>Audio enhancement</b> reduces steady background noise (signal processing, not a neural network) in a copy of the audio.</li>
+<li><b>Object tracking</b> follows a rectangle; use it to stabilise a clip or make another clip follow the subject.</li>
+<li><b>Assistant</b>: type a request such as "create Thai subtitles" or "find the silent parts". It understands a fixed set of phrases, not free conversation.</li>
+</ul>
+
+<h2 id="perf">Performance</h2>
+<p><b>Settings &rarr; Performance</b>: preview quality (Full / Half / Quarter), the frame-cache memory limit, and <b>proxies</b> - small stand-ins for large videos that make the preview smooth (create them from the Inspector or the Performance page; export always uses your original files). GPU video decoding is experimental and off by default.</p>
+
+<h2 id="keys">Keyboard shortcuts</h2>
+<table>
+<tr><th>Action</th><th>Keys</th></tr>
+<tr><td>New / open / save / save as</td><td><kbd>Ctrl</kbd>+<kbd>N</kbd> / <kbd>O</kbd> / <kbd>S</kbd> / <kbd>Shift</kbd>+<kbd>S</kbd></td></tr>
+<tr><td>Import media / export workspace / settings</td><td><kbd>Ctrl</kbd>+<kbd>I</kbd> / <kbd>Ctrl</kbd>+<kbd>M</kbd> / <kbd>Ctrl</kbd>+<kbd>,</kbd></td></tr>
+<tr><td>Play / pause, previous / next frame, start / end</td><td><kbd>Space</kbd>, <kbd>&larr;</kbd> <kbd>&rarr;</kbd>, <kbd>Home</kbd> <kbd>End</kbd></td></tr>
+<tr><td>Split, trim start / end to playhead</td><td><kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>Q</kbd> / <kbd>W</kbd></td></tr>
+<tr><td>Delete / ripple delete</td><td><kbd>Del</kbd> / <kbd>Shift</kbd>+<kbd>Del</kbd></td></tr>
+<tr><td>Cut / copy / paste, group / ungroup</td><td><kbd>Ctrl</kbd>+<kbd>X</kbd> <kbd>C</kbd> <kbd>V</kbd>, <kbd>Ctrl</kbd>+<kbd>G</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd></td></tr>
+<tr><td>Undo / redo</td><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td></tr>
+<tr><td>Tools</td><td><kbd>V</kbd> <kbd>B</kbd> <kbd>N</kbd> <kbd>Y</kbd> <kbd>U</kbd></td></tr>
+<tr><td>Marker, next / previous marker, In, Out, clear range</td><td><kbd>M</kbd>, <kbd>Shift</kbd>+<kbd>M</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd>, <kbd>I</kbd>, <kbd>O</kbd>, <kbd>Alt</kbd>+<kbd>X</kbd></td></tr>
+<tr><td>Timeline zoom, about</td><td><kbd>+</kbd> <kbd>-</kbd> (or <kbd>Ctrl</kbd>+wheel), <kbd>F1</kbd></td></tr>
+</table>
+
+<h2 id="help">Where things are, and troubleshooting</h2>
+<table>
+<tr><td>Program</td><td><code>C:\Program Files\DriveVault\Common\DriveVault Video Editor Pro</code> (default for all users)</td></tr>
+<tr><td>Settings, logs, auto-save, cache</td><td><code>%LOCALAPPDATA%\DriveVault\VideoEditorPro</code></td></tr>
+<tr><td>Projects</td><td><code>Documents\DriveVault Projects</code></td></tr>
+<tr><td>Exports</td><td><code>Videos\DriveVault Exports</code></td></tr>
+</table>
+<ul>
+<li><b>A clip shows a red "missing" mark</b>: the media file moved. Select it in the media panel and relink it (single file or search a folder).</li>
+<li><b>Preview stutters</b>: lower the preview quality, or create proxies for large videos.</li>
+<li><b>Captions say "Model required"</b>: download or import a speech model in the AI workspace.</li>
+<li><b>Something went wrong</b>: Help &rarr; Open Log Folder shows the log files.</li>
+<li><b>Uninstall</b>: Windows Settings &rarr; Apps. Your projects and exports are never deleted; the uninstaller asks before removing settings and cache.</li>
+</ul>
+<div class="note">DriveVault Video Editor Pro is proprietary software. Third-party components and their licenses are listed in Help &rarr; Third-Party Notices.</div>
+</main>
+</body>
+</html>
