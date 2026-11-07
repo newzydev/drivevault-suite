@@ -1,6 +1,12 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.0.1
+-------------
+  - The installer no longer asks for a folder: the program always goes to ...\DriveVault\Common\DriveVault Video Editor Pro (the suite folder layout).
+  - Internal: automated tests no longer play sound (environment variable DV_NO_AUDIO).
+  - Can be installed over 1.0.0 with DriveVault Master Pro ("Check for updates") once this version is published as a GitHub Release.
+
 Version 1.0.0  (first product release)
 --------------------------------------
 Status: release candidate quality. The installer is NOT code-signed yet (Windows SmartScreen will warn), and it has been

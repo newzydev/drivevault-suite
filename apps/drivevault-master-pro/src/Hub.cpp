@@ -390,10 +390,10 @@ QNetworkRequest makeRequest(const QString& url, const QString& accept)
 QString Hub::checkForUpdates()
 {
     if (m_busy || m_checking)
-        return tr2(QStringLiteral("Another task is still running."), QStringLiteral("à¸¡à¸µà¸‡à¸²à¸™à¸­à¸·à¹ˆà¸™à¸à¸³à¸¥à¸±à¸‡à¸—à¸³à¸‡à¸²à¸™à¸­à¸¢à¸¹à¹ˆ"));
+        return tr2(QStringLiteral("Another task is still running."), QStringLiteral("มีงานอื่นกำลังทำงานอยู่"));
     m_checking = true;
     emit checkingChanged();
-    setMessage(tr2(QStringLiteral("Checking GitHub for new versionsâ€¦"), QStringLiteral("à¸à¸³à¸¥à¸±à¸‡à¸•à¸£à¸§à¸ˆà¸«à¸²à¹€à¸§à¸­à¸£à¹Œà¸Šà¸±à¸™à¹ƒà¸«à¸¡à¹ˆà¸ˆà¸²à¸ GitHubâ€¦")));
+    setMessage(tr2(QStringLiteral("Checking GitHub for new versions…"), QStringLiteral("กำลังตรวจหาเวอร์ชันใหม่จาก GitHub…")));
     QNetworkReply* reply = net()->get(makeRequest(m_options.releasesUrl, QStringLiteral("application/vnd.github+json")));
     connect(reply, &QNetworkReply::finished, this, [this, reply] {
         reply->deleteLater();
@@ -403,9 +403,9 @@ QString Hub::checkForUpdates()
             const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
             if (status == 403 || status == 429)
                 setMessage(tr2(QStringLiteral("GitHub is limiting requests from this connection. Try again in an hour."),
-                               QStringLiteral("GitHub à¸ˆà¸³à¸à¸±à¸”à¸ˆà¸³à¸™à¸§à¸™à¸„à¸³à¸‚à¸­à¸ˆà¸²à¸à¸à¸²à¸£à¹€à¸Šà¸·à¹ˆà¸­à¸¡à¸•à¹ˆà¸­à¸™à¸µà¹‰ à¸¥à¸­à¸‡à¹ƒà¸«à¸¡à¹ˆà¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡à¹ƒà¸™à¸­à¸µà¸à¸›à¸£à¸°à¸¡à¸²à¸“à¸«à¸™à¸¶à¹ˆà¸‡à¸Šà¸±à¹ˆà¸§à¹‚à¸¡à¸‡")));
+                               QStringLiteral("GitHub จำกัดจำนวนคำขอจากการเชื่อมต่อนี้ ลองใหม่อีกครั้งในอีกประมาณหนึ่งชั่วโมง")));
             else
-                setMessage(tr2(QStringLiteral("Could not check for updates: %1"), QStringLiteral("à¸•à¸£à¸§à¸ˆà¸«à¸²à¸­à¸±à¸›à¹€à¸”à¸•à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: %1")).arg(reply->errorString()));
+                setMessage(tr2(QStringLiteral("Could not check for updates: %1"), QStringLiteral("ตรวจหาอัปเดตไม่สำเร็จ: %1")).arg(reply->errorString()));
             emit checkFinished(false);
             return;
         }
@@ -416,8 +416,14 @@ QString Hub::checkForUpdates()
         for (const QVariant& v : m_products)
             if (v.toMap().value("onlineUpdate").toBool())
                 ++updates;
-        setMessage(updates > 0 ? tr2(QStringLiteral("%1 update(s) available."), QStringLiteral("à¸¡à¸µà¸­à¸±à¸›à¹€à¸”à¸• %1 à¸£à¸²à¸¢à¸à¸²à¸£")).arg(updates)
-                               : tr2(QStringLiteral("The installed programs are up to date."), QStringLiteral("à¹‚à¸›à¸£à¹à¸à¸£à¸¡à¸—à¸µà¹ˆà¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¹€à¸›à¹‡à¸™à¸£à¸¸à¹ˆà¸™à¸¥à¹ˆà¸²à¸ªà¸¸à¸”à¹à¸¥à¹‰à¸§")));
+        if (m_online.isEmpty()) {          // do not claim "up to date" when there is nothing to compare with
+            setMessage(tr2(QStringLiteral("No program releases have been published on GitHub yet."),
+                           QStringLiteral("ยังไม่มีการเผยแพร่โปรแกรมรุ่นใดบน GitHub")));
+            emit checkFinished(true);
+            return;
+        }
+        setMessage(updates > 0 ? tr2(QStringLiteral("%1 update(s) available."), QStringLiteral("มีอัปเดต %1 รายการ")).arg(updates)
+                               : tr2(QStringLiteral("The installed programs are up to date."), QStringLiteral("โปรแกรมที่ติดตั้งเป็นรุ่นล่าสุดแล้ว")));
         emit checkFinished(true);
     });
     return {};
@@ -436,34 +442,34 @@ void Hub::failDownload(const QString& why)
 QString Hub::downloadAndInstall(const QString& id)
 {
     if (m_busy || m_checking)
-        return tr2(QStringLiteral("Another task is still running."), QStringLiteral("à¸¡à¸µà¸‡à¸²à¸™à¸­à¸·à¹ˆà¸™à¸à¸³à¸¥à¸±à¸‡à¸—à¸³à¸‡à¸²à¸™à¸­à¸¢à¸¹à¹ˆ"));
+        return tr2(QStringLiteral("Another task is still running."), QStringLiteral("มีงานอื่นกำลังทำงานอยู่"));
     const QVariantMap p = productById(id);
     const auto it = m_online.constFind(slugForKey(p.value("key").toString()));
     if (it == m_online.constEnd())
         return tr2(QStringLiteral("No online version is known. Press \"Check for updates\" first."),
-                   QStringLiteral("à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸—à¸£à¸²à¸šà¹€à¸§à¸­à¸£à¹Œà¸Šà¸±à¸™à¸­à¸­à¸™à¹„à¸¥à¸™à¹Œ à¸à¸”à¸›à¸¸à¹ˆà¸¡ \"à¸•à¸£à¸§à¸ˆà¸«à¸²à¸­à¸±à¸›à¹€à¸”à¸•\" à¸à¹ˆà¸­à¸™"));
+                   QStringLiteral("ยังไม่ทราบเวอร์ชันออนไลน์ กดปุ่ม \"ตรวจหาอัปเดต\" ก่อน"));
     const releases::Release rel = *it;
     if (!releases::urlAllowed(rel.assetUrl, m_options.downloadPrefix) || !releases::urlAllowed(rel.hashUrl, m_options.downloadPrefix))
         return tr2(QStringLiteral("The release points to an address that is not the official download address. Nothing was downloaded."),
-                   QStringLiteral("à¹„à¸Ÿà¸¥à¹Œà¸‚à¸­à¸‡à¸£à¸¸à¹ˆà¸™à¸™à¸µà¹‰à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸­à¸¢à¸¹à¹ˆà¸—à¸µà¹ˆà¸—à¸µà¹ˆà¸­à¸¢à¸¹à¹ˆà¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¸—à¸²à¸‡à¸à¸²à¸£ à¸ˆà¸¶à¸‡à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”"));
+                   QStringLiteral("ไฟล์ของรุ่นนี้ไม่ได้อยู่ที่ที่อยู่ดาวน์โหลดทางการ จึงไม่ได้ดาวน์โหลด"));
     if (rel.assetName.contains(QLatin1Char('/')) || rel.assetName.contains(QLatin1Char('\\')) || rel.assetName.contains(QLatin1String("..")))
-        return tr2(QStringLiteral("The release has an invalid file name."), QStringLiteral("à¸Šà¸·à¹ˆà¸­à¹„à¸Ÿà¸¥à¹Œà¸‚à¸­à¸‡à¸£à¸¸à¹ˆà¸™à¸™à¸µà¹‰à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡"));
+        return tr2(QStringLiteral("The release has an invalid file name."), QStringLiteral("ชื่อไฟล์ของรุ่นนี้ไม่ถูกต้อง"));
 
     m_busy = true;
     m_progress = 0;
     emit busyChanged();
     emit downloadProgressChanged();
     const QString name = p.value("name").toString();
-    setMessage(tr2(QStringLiteral("Getting the checksum of %1 %2â€¦"), QStringLiteral("à¸à¸³à¸¥à¸±à¸‡à¸­à¹ˆà¸²à¸™à¸„à¹ˆà¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸‚à¸­à¸‡ %1 %2â€¦")).arg(name, rel.version));
+    setMessage(tr2(QStringLiteral("Getting the checksum of %1 %2…"), QStringLiteral("กำลังอ่านค่าตรวจสอบของ %1 %2…")).arg(name, rel.version));
     QNetworkReply* hashReply = net()->get(makeRequest(rel.hashUrl, QString()));
     connect(hashReply, &QNetworkReply::finished, this, [this, hashReply, rel, name] {
         hashReply->deleteLater();
         if (hashReply->error() != QNetworkReply::NoError)
-            return failDownload(tr2(QStringLiteral("Could not download the checksum file: %1"), QStringLiteral("à¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸Ÿà¸¥à¹Œà¸„à¹ˆà¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: %1")).arg(hashReply->errorString()));
+            return failDownload(tr2(QStringLiteral("Could not download the checksum file: %1"), QStringLiteral("ดาวน์โหลดไฟล์ค่าตรวจสอบไม่สำเร็จ: %1")).arg(hashReply->errorString()));
         const QString expected = releases::parseSha256(QString::fromUtf8(hashReply->read(4096)), rel.assetName);
         if (expected.isEmpty())
             return failDownload(tr2(QStringLiteral("The checksum file of this release is not valid. Nothing was installed."),
-                                    QStringLiteral("à¹„à¸Ÿà¸¥à¹Œà¸„à¹ˆà¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸‚à¸­à¸‡à¸£à¸¸à¹ˆà¸™à¸™à¸µà¹‰à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡ à¸ˆà¸¶à¸‡à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡")));
+                                    QStringLiteral("ไฟล์ค่าตรวจสอบของรุ่นนี้ไม่ถูกต้อง จึงไม่ได้ติดตั้ง")));
         startAssetDownload(rel, name, expected);
     });
     return {};
@@ -476,8 +482,8 @@ void Hub::startAssetDownload(const releases::Release& rel, const QString& produc
     const QString target = dir + QLatin1Char('/') + rel.assetName;
     auto file = std::make_shared<QFile>(target + QStringLiteral(".part"));
     if (!file->open(QIODevice::WriteOnly | QIODevice::Truncate))
-        return failDownload(tr2(QStringLiteral("Could not write to %1."), QStringLiteral("à¹€à¸‚à¸µà¸¢à¸™à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆ %1 à¹„à¸¡à¹ˆà¹„à¸”à¹‰")).arg(dir));
-    setMessage(tr2(QStringLiteral("Downloading %1 %2â€¦"), QStringLiteral("à¸à¸³à¸¥à¸±à¸‡à¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸” %1 %2â€¦")).arg(productName, rel.version));
+        return failDownload(tr2(QStringLiteral("Could not write to %1."), QStringLiteral("เขียนไฟล์ที่ %1 ไม่ได้")).arg(dir));
+    setMessage(tr2(QStringLiteral("Downloading %1 %2…"), QStringLiteral("กำลังดาวน์โหลด %1 %2…")).arg(productName, rel.version));
     QNetworkReply* reply = net()->get(makeRequest(rel.assetUrl, QStringLiteral("application/octet-stream")));
     connect(reply, &QNetworkReply::readyRead, this, [reply, file] { file->write(reply->readAll()); });
     connect(reply, &QNetworkReply::downloadProgress, this, [this, rel](qint64 received, qint64 total) {
@@ -492,24 +498,24 @@ void Hub::startAssetDownload(const releases::Release& rel, const QString& produc
         const QString partName = file->fileName();
         if (reply->error() != QNetworkReply::NoError) {
             QFile::remove(partName);
-            return failDownload(tr2(QStringLiteral("Download failed: %1"), QStringLiteral("à¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: %1")).arg(reply->errorString()));
+            return failDownload(tr2(QStringLiteral("Download failed: %1"), QStringLiteral("ดาวน์โหลดไม่สำเร็จ: %1")).arg(reply->errorString()));
         }
         QFile check(partName);
         QCryptographicHash sha(QCryptographicHash::Sha256);
         if (!check.open(QIODevice::ReadOnly) || !sha.addData(&check)) {
             QFile::remove(partName);
-            return failDownload(tr2(QStringLiteral("The downloaded file could not be read."), QStringLiteral("à¸­à¹ˆà¸²à¸™à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸¡à¹ˆà¹„à¸”à¹‰")));
+            return failDownload(tr2(QStringLiteral("The downloaded file could not be read."), QStringLiteral("อ่านไฟล์ที่ดาวน์โหลดไม่ได้")));
         }
         check.close();
         if (QString::fromLatin1(sha.result().toHex()) != expectedHash) {
             QFile::remove(partName);
             return failDownload(tr2(QStringLiteral("The checksum (SHA-256) of the download does not match. The file was deleted and nothing was installed."),
-                                    QStringLiteral("à¸„à¹ˆà¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸š (SHA-256) à¸‚à¸­à¸‡à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸¡à¹ˆà¸•à¸£à¸‡à¸à¸±à¸™ à¸¥à¸šà¹„à¸Ÿà¸¥à¹Œà¹à¸¥à¹‰à¸§à¹à¸¥à¸°à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡")));
+                                    QStringLiteral("ค่าตรวจสอบ (SHA-256) ของไฟล์ที่ดาวน์โหลดไม่ตรงกัน ลบไฟล์แล้วและไม่ได้ติดตั้ง")));
         }
         QFile::remove(target);
         if (!QFile::rename(partName, target)) {
             QFile::remove(partName);
-            return failDownload(tr2(QStringLiteral("Could not save the downloaded file."), QStringLiteral("à¸šà¸±à¸™à¸—à¸¶à¸à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸¡à¹ˆà¹„à¸”à¹‰")));
+            return failDownload(tr2(QStringLiteral("Could not save the downloaded file."), QStringLiteral("บันทึกไฟล์ที่ดาวน์โหลดไม่ได้")));
         }
         // the file must be what the release says it is
         const QString company = win::versionInfo(target, QStringLiteral("CompanyName"));
@@ -520,7 +526,7 @@ void Hub::startAssetDownload(const releases::Release& rel, const QString& produc
         if (company.compare(QLatin1String("DriveVault"), Qt::CaseInsensitive) != 0 || product.compare(productName, Qt::CaseInsensitive) != 0
             || win::compareVersions(v, rel.version) != 0) {
             QFile::remove(target);
-            return failDownload(tr2(QStringLiteral("The downloaded file is not %1 %2. It was deleted."), QStringLiteral("à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆà¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ %1 %2 à¸¥à¸šà¹„à¸Ÿà¸¥à¹Œà¹à¸¥à¹‰à¸§")).arg(productName, rel.version));
+            return failDownload(tr2(QStringLiteral("The downloaded file is not %1 %2. It was deleted."), QStringLiteral("ไฟล์ที่ดาวน์โหลดไม่ใช่ %1 %2 ลบไฟล์แล้ว")).arg(productName, rel.version));
         }
         m_busy = false;
         m_progress = -1;

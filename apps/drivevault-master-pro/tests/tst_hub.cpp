@@ -353,6 +353,28 @@ private slots:
         qunsetenv("DM_FAKE_MARKER");
     }
 
+    void anEmptyReleaseListIsNotReportedAsUpToDate()
+    {
+        QFile feed(p("empty-feed.json"));
+        QVERIFY(feed.open(QIODevice::WriteOnly));
+        feed.write("[]");
+        feed.close();
+        Hub::Options o = options();
+        o.releasesUrl = QUrl::fromLocalFile(p("empty-feed.json")).toString();
+        Hub hub(o);
+        hub.setLanguage("th");
+        QSignalSpy checked(&hub, &Hub::checkFinished);
+        QVERIFY(hub.checkForUpdates().isEmpty());
+        QTRY_COMPARE(checked.size(), 1);
+        QVERIFY(checked.first().first().toBool());
+        QVERIFY2(hub.message().contains(QString::fromUtf8("ยังไม่มีการเผยแพร่")), qPrintable(hub.message()));     // real Thai, not mojibake
+        hub.setLanguage("en");
+        checked.clear();
+        QVERIFY(hub.checkForUpdates().isEmpty());
+        QTRY_COMPARE(checked.size(), 1);
+        QVERIFY2(hub.message().contains("No program releases"), qPrintable(hub.message()));
+    }
+
     void aFailedCheckSaysSoAndChangesNothing()
     {
         Hub::Options o = options();
