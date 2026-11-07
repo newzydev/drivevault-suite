@@ -559,6 +559,87 @@ private slots:
         QCOMPARE(tl->clipCount(), clipsAtStart);
     }
 
+    void theMonitorSelectsAClipAndMovesScalesAndRotatesIt()
+    {
+        auto* projects = &m_ctx->projects;
+        auto* tl = projects->timeline();
+        m_ctx->controller.setWorkspace("edit");
+        const QString mediaId = projects->media()->idForPath(media.filePath("clip.mp4"));
+        QVERIFY(!mediaId.isEmpty());
+        const int clipsAtStart = tl->clipCount();
+        QCOMPARE(tl->addMedia(mediaId, -1, 0), QString());
+        QString video;
+        for (const ClipData& c : tl->clips())
+            if (c.trackId.startsWith("V")) { video = c.id; break; }
+        QVERIFY(!video.isEmpty());
+        projects->setPlayheadFrame(10);
+        tl->clearSelection();
+
+        QQuickItem* pick = nullptr;
+        QTRY_VERIFY_WITH_TIMEOUT((pick = item("monitorPick")) != nullptr && pick->isVisible() && pick->width() > 100, 3000);
+        QQuickItem* box = item("transformBox");
+        QVERIFY(box != nullptr);
+        QVERIFY(!box->isVisible());                                          // nothing selected: no frame
+        const QPointF centre = pick->mapToScene(QPointF(pick->width() / 2, pick->height() / 2));
+        QTest::mouseClick(m_window, Qt::LeftButton, Qt::NoModifier, centre.toPoint());     // click on the picture selects the clip
+        QTRY_COMPARE_WITH_TIMEOUT(tl->selectedClipOfKind("video"), video, 3000);
+        QTRY_VERIFY_WITH_TIMEOUT(box->isVisible() && box->width() > 20, 3000);
+        QVERIFY(qAbs(box->width() / box->height() - 320.0 / 240.0) < 0.05);               // the frame has the shape of the picture (4:3 here)
+        QVERIFY(box->height() <= pick->height() + 1);                                       // and sits inside the monitor picture
+        QVERIFY((box->mapToScene(QPointF(box->width() / 2, box->height() / 2)) - centre).manhattanLength() < 3);   // centred while Position is 0
+
+        // drag inside the frame: move
+        QCOMPARE(tl->paramValue(video, "posX", 10), 0.0);
+        QQuickItem* move = item("tbMove");
+        QVERIFY(move != nullptr);
+        const QPointF m0 = move->mapToScene(QPointF(move->width() / 2, move->height() / 2));
+        QTest::mouseMove(m_window, m0.toPoint());
+        QTest::mousePress(m_window, Qt::LeftButton, Qt::NoModifier, m0.toPoint());
+        for (int i = 1; i <= 6; ++i)
+            QTest::mouseMove(m_window, (m0 + QPointF(10 * i, 0)).toPoint());
+        QTest::mouseRelease(m_window, Qt::LeftButton, Qt::NoModifier, (m0 + QPointF(60, 0)).toPoint());
+        QTRY_VERIFY_WITH_TIMEOUT(tl->paramValue(video, "posX", 10) > 0.02, 3000);
+        QCOMPARE(tl->selectedClipOfKind("video"), video);
+        tl->resetParams(video, "transform");
+
+        // drag a corner outwards: scale up
+        QQuickItem* corner = item("tbCorner3");
+        QVERIFY(corner != nullptr);
+        const QPointF c0 = corner->mapToScene(QPointF(corner->width() / 2, corner->height() / 2));
+        QTest::mouseMove(m_window, c0.toPoint());
+        QTest::mousePress(m_window, Qt::LeftButton, Qt::NoModifier, c0.toPoint());
+        for (int i = 1; i <= 6; ++i)
+            QTest::mouseMove(m_window, (c0 + QPointF(8 * i, 8 * i)).toPoint());
+        QTest::mouseRelease(m_window, Qt::LeftButton, Qt::NoModifier, (c0 + QPointF(48, 48)).toPoint());
+        QTRY_VERIFY_WITH_TIMEOUT(tl->paramValue(video, "scale", 10) > 1.05, 3000);
+        tl->resetParams(video, "transform");
+
+        // drag the round handle to the right of the frame: rotate by about 90 degrees
+        QQuickItem* rot = item("tbRotate");
+        QVERIFY(rot != nullptr);
+        const QPointF r0 = rot->mapToScene(QPointF(rot->width() / 2, rot->height() / 2));
+        const QPointF boxCentre = box->mapToScene(QPointF(box->width() / 2, box->height() / 2));
+        QTest::mouseMove(m_window, r0.toPoint());
+        QTest::mousePress(m_window, Qt::LeftButton, Qt::NoModifier, r0.toPoint());
+        const QPointF right = boxCentre + QPointF(150, 0);
+        for (int i = 1; i <= 6; ++i)
+            QTest::mouseMove(m_window, (r0 + (right - r0) * (i / 6.0)).toPoint());
+        QTest::mouseRelease(m_window, Qt::LeftButton, Qt::NoModifier, right.toPoint());
+        QTRY_VERIFY_WITH_TIMEOUT(qAbs(tl->paramValue(video, "rotation", 10) - 90.0) < 5.0, 3000);
+        tl->resetParams(video, "transform");
+
+        // a click on an empty part of the monitor clears the selection (the clip is scaled down so that its corner is free)
+        QCOMPARE(tl->setParam(video, "scale", 0.5, 10), QString());
+        const QPointF corner0 = pick->mapToScene(QPointF(pick->width() - 6, 6));
+        QTest::mouseClick(m_window, Qt::LeftButton, Qt::NoModifier, corner0.toPoint());
+        QTRY_VERIFY_WITH_TIMEOUT(tl->selectedClipOfKind("video").isEmpty(), 3000);
+        tl->resetParams(video, "transform");
+
+        while (tl->clipCount() > clipsAtStart && tl->canUndo())
+            tl->undo();
+        QCOMPARE(tl->clipCount(), clipsAtStart);
+    }
+
     void aiWorkspaceFindsSilenceAndAppliesItOnlyAfterConfirmation()
     {
         auto* projects = &m_ctx->projects;
@@ -615,7 +696,7 @@ private slots:
             QVERIFY2(!path.isEmpty() && QFileInfo::exists(path), name);
         }
         QVERIFY(m_ctx->systemInfo.documentPath("../LICENSE.txt").isEmpty());          // only plain file names are looked up
-        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.4.0"));
+        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.5.0"));
         QVERIFY(m_ctx->systemInfo.productName().contains("Video Editor Pro"));
     }
 

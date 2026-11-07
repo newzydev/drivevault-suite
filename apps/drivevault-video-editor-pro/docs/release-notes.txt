@@ -1,6 +1,12 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.5.0
+-------------
+  - Program monitor: click the picture to select the clip under the pointer (a click on an empty part clears the selection). A frame appears around the clip:
+    drag inside it to move (snaps to the centre), drag a corner to scale, drag the round handle above it to rotate (snaps every 45 degrees). The values are the
+    clip's Position, Scale and Rotation, so everything is undoable and is exported as shown. The frame is hidden while playing.
+
 Version 1.4.0
 -------------
   - Imported media are copied into a "medias" folder next to the project file (Settings > Editing > "Copy imported media into the project", on by default).

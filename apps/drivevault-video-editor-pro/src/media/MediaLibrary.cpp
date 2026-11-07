@@ -124,7 +124,7 @@ QVariantMap MediaLibrary::describe(const QString& id) const
     return {{"id", id}, {"name", data(idx, NameRole)}, {"path", data(idx, PathRole)}, {"kind", data(idx, KindRole)},
             {"status", data(idx, StatusRole)}, {"durationText", data(idx, DurationTextRole)},
             {"infoText", data(idx, InfoTextRole)}, {"hasAudio", data(idx, HasAudioRole)}, {"hasVideo", data(idx, HasVideoRole)},
-            {"error", data(idx, ErrorRole)}};
+            {"error", data(idx, ErrorRole)}, {"width", m_items.at(row).ref.info.width}, {"height", m_items.at(row).ref.info.height}};
 }
 
 QString MediaLibrary::thumbnailUrl(const QString& id) const

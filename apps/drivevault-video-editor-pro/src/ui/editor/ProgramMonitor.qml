@@ -95,6 +95,16 @@ Rectangle {
                     }
                 }
 
+                // Click the picture to select a clip; frame, corner handles (scale) and a round handle (rotate) appear
+                TransformBox {
+                    id: transformBox
+                    anchors.fill: parent
+                    frame: frame
+                    z: 15
+                    visible: root.hasClips
+                    onFullscreenRequested: root.toggleFullscreen()
+                }
+
                 // Region chosen for object tracking (AI workspace): drag to move, drag the corner to resize
                 Rectangle {
                     id: trackBox
