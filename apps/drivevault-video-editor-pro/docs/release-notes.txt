@@ -1,6 +1,14 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.1.0
+-------------
+  - New tool panel at the top left of the editor (like CapCut): tabs Import, Audio, Text, Effects, Transitions, Filters, Adjustment and AI.
+    Text adds a title / lower third / caption; Effects, Transitions and Filters (colour looks) apply to the selected clip; Adjustment has the main colour sliders;
+    Audio shows the mixer strips of the audio tracks; AI opens the AI workspace. Everything is undoable and uses the same functions as the inspector.
+  - The master level meter (stereo, dB scale) is always visible at the right edge of the timeline; it was part of the audio mixer before.
+  - The tool panel is wider by default and its tabs share the width (icons only when the panel is narrow).
+
 Version 1.0.1
 -------------
   - The installer no longer asks for a folder: the program always goes to ...\DriveVault\Common\DriveVault Video Editor Pro (the suite folder layout).

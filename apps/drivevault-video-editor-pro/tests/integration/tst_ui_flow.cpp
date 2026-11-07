@@ -361,6 +361,55 @@ private slots:
         QVERIFY(projects->save().isEmpty());
     }
 
+    void toolPanelTabsApplyRealEditsToTheSelectedClip()
+    {
+        auto* projects = &m_ctx->projects;
+        auto* tl = projects->timeline();
+        m_ctx->controller.setWorkspace("edit");
+        const int clipsAtStart = tl->clipCount();
+        const QString mediaId = projects->media()->idForPath(media.filePath("clip.mp4"));
+        QVERIFY(!mediaId.isEmpty());
+        QCOMPARE(tl->addMedia(mediaId, -1, 0), QString());
+        QString video;
+        for (const ClipData& c : tl->clips())
+            if (c.trackId.startsWith("V")) { video = c.id; break; }
+        QVERIFY(!video.isEmpty());
+        tl->select(video);
+        projects->setPlayheadFrame(10);
+        const double satDef = tl->paramInfo("saturation").value("def").toDouble();
+
+        click("toolTab_filters");                       // a look = real colour parameters, undoable like any edit
+        click("look_mono");
+        QTRY_VERIFY_WITH_TIMEOUT(tl->paramValue(video, "saturation", 10) < satDef - 0.1, 3000);
+        click("look_none");
+        QTRY_VERIFY_WITH_TIMEOUT(qAbs(tl->paramValue(video, "saturation", 10) - satDef) < 1e-6, 3000);
+
+        click("toolTab_transitions");
+        click("trIn_dissolve");
+        QTRY_COMPARE_WITH_TIMEOUT(tl->clipInfo(video).value("transIn").toString(), QStringLiteral("dissolve"), 3000);
+        click("trIn_none");
+        QTRY_COMPARE_WITH_TIMEOUT(tl->clipInfo(video).value("transIn").toString(), QString(), 3000);
+
+        click("toolTab_effects");
+        click("fx_blur");
+        QTRY_VERIFY_WITH_TIMEOUT(tl->paramValue(video, "blur", 10) > tl->paramInfo("blur").value("def").toDouble(), 3000);
+        click("fx_reset");
+        QTRY_VERIFY_WITH_TIMEOUT(qAbs(tl->paramValue(video, "blur", 10) - tl->paramInfo("blur").value("def").toDouble()) < 1e-6, 3000);
+
+        const int before = tl->clipCount();
+        click("toolTab_text");
+        click("text_title");
+        QTRY_COMPARE_WITH_TIMEOUT(tl->clipCount(), before + 1, 3000);
+        tl->undo();
+        QTRY_COMPARE_WITH_TIMEOUT(tl->clipCount(), before, 3000);
+
+        QVERIFY(item("meterL") != nullptr && item("meterL")->isVisible());      // the master meter is always shown
+        click("toolTab_import");
+        while (tl->clipCount() > clipsAtStart && tl->canUndo())                 // leave the timeline as this test found it
+            tl->undo();
+        QCOMPARE(tl->clipCount(), clipsAtStart);
+    }
+
     void aiWorkspaceFindsSilenceAndAppliesItOnlyAfterConfirmation()
     {
         auto* projects = &m_ctx->projects;
@@ -417,7 +466,7 @@ private slots:
             QVERIFY2(!path.isEmpty() && QFileInfo::exists(path), name);
         }
         QVERIFY(m_ctx->systemInfo.documentPath("../LICENSE.txt").isEmpty());          // only plain file names are looked up
-        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.0.1"));
+        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.1.0"));
         QVERIFY(m_ctx->systemInfo.productName().contains("Video Editor Pro"));
     }
 

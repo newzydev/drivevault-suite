@@ -3,43 +3,15 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import DriveVault.Backend
 
-// Audio mixer: one strip per audio track (gain, pan, solo, mute) and the master level meter. The strips
-// drive the same mixer that preview and export use.
+// Audio mixer: one strip per audio track (gain, pan, solo, mute). The strips drive the same mixer that preview
+// and export use.
 ColumnLayout {
     id: root
 
     Layout.fillWidth: true
     spacing: 10
 
-    component Meter: Rectangle {
-        property real level: 0
-        implicitWidth: 8
-        implicitHeight: 70
-        radius: 2
-        color: Theme.surfaceHover
-        Rectangle {
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: parent.height * Math.min(1, parent.level)
-            radius: 2
-            color: parent.level > 0.95 ? Theme.error : parent.level > 0.7 ? Theme.warning : Theme.success
-        }
-    }
-
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 10
-        Text { text: qsTr("Master"); Layout.preferredWidth: 78; font.pixelSize: Theme.fontSm; font.weight: Font.DemiBold; color: Theme.text }
-        Meter { objectName: "meterL"; level: Playback.levelL }
-        Meter { objectName: "meterR"; level: Playback.levelR }
-        Text {
-            Layout.fillWidth: true
-            text: Playback.playing ? qsTr("Playing") : qsTr("Play to see the levels")
-            font.pixelSize: Theme.fontXs
-            color: Theme.textDisabled
-            wrapMode: Text.Wrap
-        }
-    }
+    // The master level meter lives at the right edge of the timeline (MasterMeter.qml) so that it is always visible.
 
     Repeater {
         model: Projects.tracks

@@ -2572,6 +2572,19 @@
     </message>
 </context>
 <context>
+    <name>MasterMeter</name>
+    <message>
+        <location filename="../../src/ui/editor/MasterMeter.qml" line="56"/>
+        <source>Master</source>
+        <translation>มาสเตอร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MasterMeter.qml" line="93"/>
+        <source>L   R</source>
+        <translation>ซ้าย   ขวา</translation>
+    </message>
+</context>
+<context>
     <name>MediaItemView</name>
     <message>
         <location filename="../../src/ui/editor/MediaItemView.qml" line="133"/>
@@ -2771,52 +2784,49 @@
 <context>
     <name>MixerSection</name>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="32"/>
         <source>Master</source>
-        <translation>มาสเตอร์</translation>
+        <translation type="vanished">มาสเตอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="37"/>
         <source>Playing</source>
-        <translation>กำลังเล่น</translation>
+        <translation type="vanished">กำลังเล่น</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="37"/>
         <source>Play to see the levels</source>
-        <translation>กดเล่นเพื่อดูระดับเสียง</translation>
+        <translation type="vanished">กดเล่นเพื่อดูระดับเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="73"/>
+        <location filename="../../src/ui/editor/MixerSection.qml" line="45"/>
         <source>Solo</source>
         <translation>เดี่ยว</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="81"/>
+        <location filename="../../src/ui/editor/MixerSection.qml" line="53"/>
         <source>Mute</source>
         <translation>ปิดเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="86"/>
+        <location filename="../../src/ui/editor/MixerSection.qml" line="58"/>
         <source>Volume</source>
         <translation>ระดับเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="95"/>
+        <location filename="../../src/ui/editor/MixerSection.qml" line="67"/>
         <source>Track volume</source>
         <translation>ระดับเสียงแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="101"/>
+        <location filename="../../src/ui/editor/MixerSection.qml" line="73"/>
         <source>Pan</source>
         <translation>ซ้าย-ขวา</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="110"/>
+        <location filename="../../src/ui/editor/MixerSection.qml" line="82"/>
         <source>Track pan</source>
         <translation>ซ้าย-ขวาของแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="115"/>
+        <location filename="../../src/ui/editor/MixerSection.qml" line="87"/>
         <source>Centre</source>
         <translation>กึ่งกลาง</translation>
     </message>
@@ -3882,6 +3892,262 @@
         <location filename="../../src/ui/editor/TitleEditor.qml" line="168"/>
         <source>Position Y</source>
         <translation>ตำแหน่ง Y</translation>
+    </message>
+</context>
+<context>
+    <name>ToolPanel</name>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="16"/>
+        <source>Import</source>
+        <translation>นำเข้า</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="17"/>
+        <source>Audio</source>
+        <translation>เสียง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="18"/>
+        <source>Text</source>
+        <translation>ข้อความ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="19"/>
+        <source>Effects</source>
+        <translation>เอฟเฟกต์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="20"/>
+        <source>Transitions</source>
+        <translation>ทรานซิชัน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="21"/>
+        <source>Filters</source>
+        <translation>ฟิลเตอร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="22"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="367"/>
+        <source>Adjustment</source>
+        <translation>ปรับแต่ง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="23"/>
+        <source>AI</source>
+        <translation>AI</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="44"/>
+        <source>Select a video clip on the timeline first.</source>
+        <translation>กรุณาเลือกคลิปวิดีโอในไทม์ไลน์ก่อน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="235"/>
+        <source>Audio tracks</source>
+        <translation>แทร็กเสียง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="237"/>
+        <source>Import music or sound effects with the Import tab and drag them to an audio track. The master level is always shown at the right of the timeline.</source>
+        <translation>นำเข้าเพลงหรือเสียงเอฟเฟกต์ด้วยแท็บนำเข้า แล้วลากไปวางบนแทร็กเสียง ระดับเสียงมาสเตอร์แสดงตลอดทางขวาของไทม์ไลน์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="251"/>
+        <source>Add text at the playhead</source>
+        <translation>เพิ่มข้อความที่ตำแหน่งหัวเล่น</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="257"/>
+        <source>Title</source>
+        <translation>ชื่อเรื่อง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="258"/>
+        <source>Lower third</source>
+        <translation>แถบชื่อล่าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="259"/>
+        <source>Caption</source>
+        <translation>คำบรรยายภาพ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="261"/>
+        <source>Select the text clip on the timeline to change its words, font and colour in the inspector. Automatic captions are in the AI tab.</source>
+        <translation>เลือกคลิปข้อความในไทม์ไลน์เพื่อแก้คำ ฟอนต์ และสีในอินสเปกเตอร์ ส่วนซับอัตโนมัติอยู่ในแท็บ AI</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="275"/>
+        <source>Effects for the selected clip</source>
+        <translation>เอฟเฟกต์สำหรับคลิปที่เลือก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="281"/>
+        <source>Soft blur</source>
+        <translation>เบลอเบา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="282"/>
+        <source>Strong blur</source>
+        <translation>เบลอแรง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="283"/>
+        <source>Sharpen</source>
+        <translation>ความคมชัด</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="284"/>
+        <source>Vignette</source>
+        <translation>ขอบมืด</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="285"/>
+        <source>Remove effects</source>
+        <translation>ลบเอฟเฟกต์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="287"/>
+        <source>A tile replaces the effects of the selected clip with its setting. Fine control (crop, amounts, keyframes) is in the inspector.</source>
+        <translation>ปุ่มจะแทนที่เอฟเฟกต์ของคลิปที่เลือกด้วยค่าของมัน การปรับละเอียด (ครอป ปริมาณ คีย์เฟรม) อยู่ในอินสเปกเตอร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="301"/>
+        <source>Transition in (start of the clip)</source>
+        <translation>ทรานซิชันเข้า (ต้นคลิป)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="307"/>
+        <source>Cross dissolve</source>
+        <translation>ครอสดิสโซลฟ์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="308"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="322"/>
+        <source>Dip to black</source>
+        <translation>จางผ่านสีดำ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="309"/>
+        <source>Fade from black</source>
+        <translation>ค่อยๆ สว่างจากสีดำ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="310"/>
+        <source>Wipe</source>
+        <translation>ปัดภาพ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="311"/>
+        <source>Slide</source>
+        <translation>สไลด์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="312"/>
+        <source>Zoom</source>
+        <translation>ซูม</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="313"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="323"/>
+        <source>None</source>
+        <translation>ไม่มี</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="315"/>
+        <source>Transition out (end of the clip)</source>
+        <translation>ทรานซิชันออก (ท้ายคลิป)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="321"/>
+        <source>Fade to black</source>
+        <translation>ค่อยๆ มืดเป็นสีดำ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="325"/>
+        <source>An &quot;In&quot; transition blends from the clip before it when the clips touch, otherwise from black. The length is set in the inspector.</source>
+        <translation>ทรานซิชัน "เข้า" จะผสมจากคลิปก่อนหน้าเมื่อคลิปติดกัน ไม่เช่นนั้นเริ่มจากสีดำ ความยาวตั้งในอินสเปกเตอร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="339"/>
+        <source>Looks for the selected clip</source>
+        <translation>ลุคสีสำหรับคลิปที่เลือก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="345"/>
+        <source>Vivid</source>
+        <translation>สดใส</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="346"/>
+        <source>Warm</source>
+        <translation>โทนอุ่น</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="347"/>
+        <source>Cool</source>
+        <translation>โทนเย็น</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="348"/>
+        <source>Black &amp; white</source>
+        <translation>ขาวดำ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="349"/>
+        <source>Faded</source>
+        <translation>ซีดจาง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="350"/>
+        <source>Cinematic</source>
+        <translation>ภาพยนตร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="351"/>
+        <source>Original</source>
+        <translation>ต้นฉบับ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="353"/>
+        <source>A look sets the colour controls (exposure, contrast, saturation ...) of the clip; change them freely in the Adjustment tab. Your own LUT files are imported in the inspector.</source>
+        <translation>ลุคจะตั้งค่าสี (การรับแสง คอนทราสต์ ความอิ่มตัว ...) ของคลิป ปรับต่อได้ในแท็บปรับแต่ง ไฟล์ LUT ของคุณนำเข้าได้ในอินสเปกเตอร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="368"/>
+        <source>Select a video clip on the timeline to adjust it.</source>
+        <translation>เลือกคลิปวิดีโอในไทม์ไลน์เพื่อปรับแต่ง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="371"/>
+        <source>Exposure</source>
+        <translation>การรับแสง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="371"/>
+        <source>Brightness</source>
+        <translation>ความสว่าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="372"/>
+        <source>Contrast</source>
+        <translation>คอนทราสต์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="372"/>
+        <source>Saturation</source>
+        <translation>ความอิ่มตัว</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="373"/>
+        <source>Temperature</source>
+        <translation>อุณหภูมิสี</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="373"/>
+        <source>Tint</source>
+        <translation>โทนสี</translation>
     </message>
 </context>
 <context>

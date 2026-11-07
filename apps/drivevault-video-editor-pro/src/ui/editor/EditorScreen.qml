@@ -24,12 +24,12 @@ Rectangle {
     property string tool: "select"          // select | ripple | roll | slip | slide
 
     readonly property var presets: ({
-        "media":   { media: 520, inspector: 300, timeline: 250 },
-        "edit":    { media: 300, inspector: 320, timeline: 330 },
-        "color":   { media: 240, inspector: 430, timeline: 250 },
-        "audio":   { media: 260, inspector: 340, timeline: 400 },
-        "effects": { media: 260, inspector: 450, timeline: 290 },
-        "ai":      { media: 240, inspector: 420, timeline: 280 }
+        "media":   { media: 560, inspector: 300, timeline: 250 },
+        "edit":    { media: 460, inspector: 320, timeline: 330 },
+        "color":   { media: 400, inspector: 430, timeline: 250 },
+        "audio":   { media: 400, inspector: 340, timeline: 400 },
+        "effects": { media: 420, inspector: 450, timeline: 290 },
+        "ai":      { media: 400, inspector: 420, timeline: 280 }
     })
 
     function setPanel(name, visible) {
@@ -48,18 +48,18 @@ Rectangle {
         if (App.workspace === "export")
             return
         const s = sizesFor(App.workspace)
-        mediaPanel.SplitView.preferredWidth = s.media
+        toolPanel.SplitView.preferredWidth = Math.max(380, s.media)
         inspectorPanel.SplitView.preferredWidth = s.inspector
-        timelinePanel.SplitView.preferredHeight = s.timeline
+        timelineArea.SplitView.preferredHeight = s.timeline
     }
 
     function saveWorkspaceLayout() {
         if (App.workspace === "export")
             return
         AppSettings.setState("ws." + App.workspace, {
-            media: Math.round(mediaPanel.width),
+            media: Math.round(toolPanel.width),
             inspector: Math.round(inspectorPanel.width),
-            timeline: Math.round(timelinePanel.height)
+            timeline: Math.round(timelineArea.height)
         })
     }
 
@@ -83,8 +83,8 @@ Rectangle {
     }
 
     function report(error) { if (error !== "") App.toast(error, "warning") }
-    function importMedia() { mediaPanel.openImport() }
-    function addSelectedMedia() { if (App.selectedMediaId !== "") mediaPanel.addToTimeline(App.selectedMediaId) }
+    function importMedia() { toolPanel.openImport() }
+    function addSelectedMedia() { if (App.selectedMediaId !== "") toolPanel.media.addToTimeline(App.selectedMediaId) }
     function jumpMarker(forward) {
         const f = forward ? Projects.timeline.nextMarker(Projects.playheadFrame) : Projects.timeline.prevMarker(Projects.playheadFrame)
         if (f >= 0)
@@ -198,12 +198,12 @@ Rectangle {
                         radius: 3
                     }
 
-                    MediaPanel {
-                        id: mediaPanel
+                    ToolPanel {
+                        id: toolPanel
                         visible: root.showMedia
-                        SplitView.preferredWidth: 300
-                        SplitView.minimumWidth: 200
-                        SplitView.maximumWidth: 720
+                        SplitView.preferredWidth: 460
+                        SplitView.minimumWidth: 320
+                        SplitView.maximumWidth: 760
                     }
                     ProgramMonitor {
                         id: monitorPanel
@@ -219,16 +219,31 @@ Rectangle {
                     }
                 }
 
-                TimelinePanel {
-                    id: timelinePanel
+                // timeline + the master level meter (always visible at its right edge)
+                Item {
+                    id: timelineArea
                     visible: root.showTimeline
-                    pxPerFrame: root.pxPerFrame
-                    tool: root.tool
-                    onToolRequested: t => root.tool = t
-                    onZoomRequested: value => root.pxPerFrame = value
                     SplitView.preferredHeight: 330
                     SplitView.minimumHeight: 170
                     SplitView.maximumHeight: 640
+
+                    RowLayout {
+                        anchors.fill: parent
+                        spacing: 6
+                        TimelinePanel {
+                            id: timelinePanel
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            pxPerFrame: root.pxPerFrame
+                            tool: root.tool
+                            onToolRequested: t => root.tool = t
+                            onZoomRequested: value => root.pxPerFrame = value
+                        }
+                        MasterMeter {
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: 64
+                        }
+                    }
                 }
             }
 

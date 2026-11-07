@@ -41,6 +41,8 @@ qt_add_qml_module(dv_ui
         editor/EditorMenuBar.qml
         editor/WorkspaceBar.qml
         editor/MediaPanel.qml
+        editor/ToolPanel.qml
+        editor/MasterMeter.qml
         editor/MediaItemView.qml
         editor/TimelineClip.qml
         editor/ProgramMonitor.qml
