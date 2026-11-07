@@ -282,11 +282,11 @@ Rectangle {
                         uniformCellWidths: true
                         columnSpacing: 10
                         rowSpacing: 10
-                        Tile { objectName: "fx_blur"; iconName: "bolt"; label: qsTr("Soft blur"); onActivated: root.applyParams("effects", { blur: 0.35 }) }
-                        Tile { objectName: "fx_blurStrong"; iconName: "bolt"; label: qsTr("Strong blur"); onActivated: root.applyParams("effects", { blur: 0.8 }) }
-                        Tile { objectName: "fx_sharpen"; iconName: "bolt"; label: qsTr("Sharpen"); onActivated: root.applyParams("effects", { sharpen: 0.5 }) }
-                        Tile { objectName: "fx_vignette"; iconName: "bolt"; label: qsTr("Vignette"); onActivated: root.applyParams("effects", { vignette: 0.5 }) }
-                        Tile { objectName: "fx_reset"; iconName: "refresh"; tint: Theme.textSecondary; label: qsTr("Remove effects"); onActivated: root.applyParams("effects", ({})) }
+                        PreviewTile { objectName: "fx_blur"; kind: "effect"; amounts: ({ blur: 0.35 }); label: qsTr("Soft blur"); onActivated: root.applyParams("effects", { blur: 0.35 }) }
+                        PreviewTile { objectName: "fx_blurStrong"; kind: "effect"; amounts: ({ blur: 0.8 }); label: qsTr("Strong blur"); onActivated: root.applyParams("effects", { blur: 0.8 }) }
+                        PreviewTile { objectName: "fx_sharpen"; kind: "effect"; amounts: ({ sharpen: 0.5 }); label: qsTr("Sharpen"); onActivated: root.applyParams("effects", { sharpen: 0.5 }) }
+                        PreviewTile { objectName: "fx_vignette"; kind: "effect"; amounts: ({ vignette: 0.5 }); label: qsTr("Vignette"); onActivated: root.applyParams("effects", { vignette: 0.5 }) }
+                        PreviewTile { objectName: "fx_reset"; kind: "effect"; amounts: ({ reset: true }); label: qsTr("Remove effects"); onActivated: root.applyParams("effects", ({})) }
                     }
                     Hint { text: qsTr("A tile replaces the effects of the selected clip with its setting. Fine control (crop, amounts, keyframes) is in the inspector.") }
                 }
@@ -309,13 +309,13 @@ Rectangle {
                         uniformCellWidths: true
                         columnSpacing: 10
                         rowSpacing: 10
-                        Tile { objectName: "trIn_dissolve"; iconName: "layers"; label: qsTr("Cross dissolve"); onActivated: root.setTransition("in", "dissolve") }
-                        Tile { objectName: "trIn_dip"; iconName: "layers"; label: qsTr("Dip to black"); onActivated: root.setTransition("in", "dip") }
-                        Tile { objectName: "trIn_fade"; iconName: "layers"; label: qsTr("Fade from black"); onActivated: root.setTransition("in", "fade") }
-                        Tile { objectName: "trIn_wipe"; iconName: "layers"; label: qsTr("Wipe"); onActivated: root.setTransition("in", "wipe") }
-                        Tile { objectName: "trIn_slide"; iconName: "layers"; label: qsTr("Slide"); onActivated: root.setTransition("in", "slide") }
-                        Tile { objectName: "trIn_zoom"; iconName: "layers"; label: qsTr("Zoom"); onActivated: root.setTransition("in", "zoom") }
-                        Tile { objectName: "trIn_none"; iconName: "close"; tint: Theme.textSecondary; label: qsTr("None"); onActivated: root.setTransition("in", "") }
+                        PreviewTile { objectName: "trIn_dissolve"; kind: "transition"; transition: "dissolve"; direction: "in"; label: qsTr("Cross dissolve"); onActivated: root.setTransition("in", "dissolve") }
+                        PreviewTile { objectName: "trIn_dip"; kind: "transition"; transition: "dip"; direction: "in"; label: qsTr("Dip to black"); onActivated: root.setTransition("in", "dip") }
+                        PreviewTile { objectName: "trIn_fade"; kind: "transition"; transition: "fade"; direction: "in"; label: qsTr("Fade from black"); onActivated: root.setTransition("in", "fade") }
+                        PreviewTile { objectName: "trIn_wipe"; kind: "transition"; transition: "wipe"; direction: "in"; label: qsTr("Wipe"); onActivated: root.setTransition("in", "wipe") }
+                        PreviewTile { objectName: "trIn_slide"; kind: "transition"; transition: "slide"; direction: "in"; label: qsTr("Slide"); onActivated: root.setTransition("in", "slide") }
+                        PreviewTile { objectName: "trIn_zoom"; kind: "transition"; transition: "zoom"; direction: "in"; label: qsTr("Zoom"); onActivated: root.setTransition("in", "zoom") }
+                        PreviewTile { objectName: "trIn_none"; kind: "transition"; transition: "none"; direction: "in"; label: qsTr("None"); onActivated: root.setTransition("in", "") }
                     }
                     Heading { text: qsTr("Transition out (end of the clip)") }
                     GridLayout {
@@ -324,9 +324,9 @@ Rectangle {
                         uniformCellWidths: true
                         columnSpacing: 10
                         rowSpacing: 10
-                        Tile { objectName: "trOut_fade"; iconName: "layers"; label: qsTr("Fade to black"); onActivated: root.setTransition("out", "fade") }
-                        Tile { objectName: "trOut_dip"; iconName: "layers"; label: qsTr("Dip to black"); onActivated: root.setTransition("out", "dip") }
-                        Tile { objectName: "trOut_none"; iconName: "close"; tint: Theme.textSecondary; label: qsTr("None"); onActivated: root.setTransition("out", "") }
+                        PreviewTile { objectName: "trOut_fade"; kind: "transition"; transition: "fade"; direction: "out"; label: qsTr("Fade to black"); onActivated: root.setTransition("out", "fade") }
+                        PreviewTile { objectName: "trOut_dip"; kind: "transition"; transition: "dip"; direction: "out"; label: qsTr("Dip to black"); onActivated: root.setTransition("out", "dip") }
+                        PreviewTile { objectName: "trOut_none"; kind: "transition"; transition: "none"; direction: "out"; label: qsTr("None"); onActivated: root.setTransition("out", "") }
                     }
                     Hint { text: qsTr("An \"In\" transition blends from the clip before it when the clips touch, otherwise from black. The length is set in the inspector.") }
                 }
@@ -349,13 +349,13 @@ Rectangle {
                         uniformCellWidths: true
                         columnSpacing: 10
                         rowSpacing: 10
-                        Tile { objectName: "look_vivid"; iconName: "paint"; label: qsTr("Vivid"); onActivated: root.applyParams("color", { saturation: 0.45, contrast: 0.2 }) }
-                        Tile { objectName: "look_warm"; iconName: "sun"; label: qsTr("Warm"); onActivated: root.applyParams("color", { temperature: 0.45, saturation: 0.1 }) }
-                        Tile { objectName: "look_cool"; iconName: "paint"; label: qsTr("Cool"); onActivated: root.applyParams("color", { temperature: -0.45, tint: -0.1 }) }
-                        Tile { objectName: "look_mono"; iconName: "paint"; label: qsTr("Black & white"); onActivated: root.applyParams("color", { saturation: -1, contrast: 0.15 }) }
-                        Tile { objectName: "look_faded"; iconName: "paint"; label: qsTr("Faded"); onActivated: root.applyParams("color", { contrast: -0.3, brightness: 0.12, saturation: -0.25 }) }
-                        Tile { objectName: "look_cinema"; iconName: "film"; label: qsTr("Cinematic"); onActivated: root.applyParams("color", { contrast: 0.3, saturation: -0.15, temperature: -0.2 }) }
-                        Tile { objectName: "look_none"; iconName: "refresh"; tint: Theme.textSecondary; label: qsTr("Original"); onActivated: root.applyParams("color", ({})) }
+                        PreviewTile { objectName: "look_vivid"; kind: "look"; amounts: ({ saturation: 0.45, contrast: 0.2 }); label: qsTr("Vivid"); onActivated: root.applyParams("color", { saturation: 0.45, contrast: 0.2 }) }
+                        PreviewTile { objectName: "look_warm"; kind: "look"; amounts: ({ temperature: 0.45, saturation: 0.1 }); label: qsTr("Warm"); onActivated: root.applyParams("color", { temperature: 0.45, saturation: 0.1 }) }
+                        PreviewTile { objectName: "look_cool"; kind: "look"; amounts: ({ temperature: -0.45, tint: -0.1 }); label: qsTr("Cool"); onActivated: root.applyParams("color", { temperature: -0.45, tint: -0.1 }) }
+                        PreviewTile { objectName: "look_mono"; kind: "look"; amounts: ({ saturation: -1, contrast: 0.15 }); label: qsTr("Black & white"); onActivated: root.applyParams("color", { saturation: -1, contrast: 0.15 }) }
+                        PreviewTile { objectName: "look_faded"; kind: "look"; amounts: ({ contrast: -0.3, brightness: 0.12, saturation: -0.25 }); label: qsTr("Faded"); onActivated: root.applyParams("color", { contrast: -0.3, brightness: 0.12, saturation: -0.25 }) }
+                        PreviewTile { objectName: "look_cinema"; kind: "look"; amounts: ({ contrast: 0.3, saturation: -0.15, temperature: -0.2 }); label: qsTr("Cinematic"); onActivated: root.applyParams("color", { contrast: 0.3, saturation: -0.15, temperature: -0.2 }) }
+                        PreviewTile { objectName: "look_none"; kind: "look"; amounts: ({}); label: qsTr("Original"); onActivated: root.applyParams("color", ({})) }
                     }
                     Hint { text: qsTr("A look sets the colour controls (exposure, contrast, saturation ...) of the clip; change them freely in the Adjustment tab. Your own LUT files are imported in the inspector.") }
                 }

@@ -141,11 +141,11 @@ Check 'Start Menu shortcut created (folder DriveVault)' (Test-Path $startMenu)
 
 # ---- Phase 6: packaging contents --------------------------------------------------------------------------------
 $verInstalled = (Get-Item (Join-Path $installDir 'DriveVaultVideoEditorPro.exe')).VersionInfo
-Check 'executable carries version 1.5.0 and publisher' ($verInstalled.ProductVersion -eq '1.5.0' -and $verInstalled.CompanyName -eq 'DriveVault') "version=$($verInstalled.ProductVersion) company=$($verInstalled.CompanyName)"
+Check 'executable carries version 1.6.0 and publisher' ($verInstalled.ProductVersion -eq '1.6.0' -and $verInstalled.CompanyName -eq 'DriveVault') "version=$($verInstalled.ProductVersion) company=$($verInstalled.CompanyName)"
 $manifest = Get-Content (Join-Path $installDir 'product.json') -Raw -ErrorAction SilentlyContinue | ConvertFrom-Json -ErrorAction SilentlyContinue
-Check 'product.json (hub manifest) is valid' ($manifest.id -eq 'drivevault.videoeditor' -and $manifest.accentColor -eq '#8B5CF6' -and $manifest.executable -eq 'DriveVaultVideoEditorPro.exe' -and $manifest.version -eq '1.5.0')
+Check 'product.json (hub manifest) is valid' ($manifest.id -eq 'drivevault.videoeditor' -and $manifest.accentColor -eq '#8B5CF6' -and $manifest.executable -eq 'DriveVaultVideoEditorPro.exe' -and $manifest.version -eq '1.6.0')
 $prod = Get-ItemProperty $productKey -ErrorAction SilentlyContinue
-Check 'hub registry entry (Software\DriveVault\Products\VideoEditorPro)' ($prod.InstallDir -eq $installDir -and $prod.Version -eq '1.5.0' -and $prod.AccentColor -eq '#8B5CF6' -and (Test-Path $prod.Executable)) "InstallDir=$($prod.InstallDir)"
+Check 'hub registry entry (Software\DriveVault\Products\VideoEditorPro)' ($prod.InstallDir -eq $installDir -and $prod.Version -eq '1.6.0' -and $prod.AccentColor -eq '#8B5CF6' -and (Test-Path $prod.Executable)) "InstallDir=$($prod.InstallDir)"
 Check 'user guide Thai + English, release notes installed' ((Test-Path (Join-Path $installDir 'docs\user-guide.th.html')) -and (Test-Path (Join-Path $installDir 'docs\user-guide.en.html')) -and (Test-Path (Join-Path $installDir 'docs\release-notes.txt')))
 Check 'LGPL text, third-party notices and dependency manifest installed' ((Test-Path (Join-Path $installDir 'licenses\LGPL-3.0.txt')) -and (Test-Path (Join-Path $installDir 'licenses\THIRD-PARTY-NOTICES.txt')) -and (Test-Path (Join-Path $installDir 'licenses\dependency-manifest.json')))
 Check 'Visual C++ runtime shipped app-local (program + whisper)' ((Test-Path (Join-Path $installDir 'msvcp140.dll')) -and (Test-Path (Join-Path $installDir 'vcruntime140_1.dll')) -and (Test-Path (Join-Path $installDir 'ai\whisper\vcruntime140.dll')))
@@ -166,7 +166,7 @@ Check 'Master Pro has an installers folder and its licenses' ((Test-Path (Join-P
 Check 'the Video Editor folder sits inside the Master Pro folder' ($installDir -eq (Join-Path $suiteDir 'Common\DriveVault Video Editor Pro') -and $installDir.StartsWith($suiteDir + '\') -and (Test-Path (Join-Path $installDir 'DriveVaultVideoEditorPro.exe')))
 $seen = MasterProducts $masterExe 'installed'
 $ve = $seen | Where-Object { $_.id -eq 'drivevault.videoeditor' }
-Check 'Master Pro (clean PATH) lists the Video Editor as installed' ($null -ne $ve -and $ve.installed -eq $true -and $ve.version -eq '1.5.0' -and $ve.status -eq 'installed' -and $ve.installDir -eq $installDir -and $ve.canUninstall -eq $true) "status=$($ve.status) version=$($ve.version)"
+Check 'Master Pro (clean PATH) lists the Video Editor as installed' ($null -ne $ve -and $ve.installed -eq $true -and $ve.version -eq '1.6.0' -and $ve.status -eq 'installed' -and $ve.installDir -eq $installDir -and $ve.canUninstall -eq $true) "status=$($ve.status) version=$($ve.version)"
 Check 'Master Pro lists the planned programs as coming soon' ((@($seen | Where-Object { $_.status -eq 'comingSoon' }).Count) -eq 2)
 $mpng = Join-Path $Work 'master-window.png'
 cmd /c "set PATH=$env:SystemRoot\System32;$env:SystemRoot&& set QT_QUICK_BACKEND=software&& `"$masterExe`" --data-dir `"$Work\master-data`" --lang th --screenshot `"$mpng`" --size 1120x740" | Out-Null

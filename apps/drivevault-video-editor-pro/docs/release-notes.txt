@@ -1,6 +1,13 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.6.0
+-------------
+  - The Effects, Transitions and Filters tabs show every tile on a drawn sample picture (a landscape, so no media file is needed) with the effect, the look or the
+    transition applied; the preview plays when the mouse is over the tile and returns to the resting picture afterwards. Clicking a tile still applies the real
+    effect / transition / look to the selected clip. The previews are an approximation drawn for the tile (the exported picture is made by the real renderer).
+    Blur uses the graphics card; on a PC without one the blur tiles show the sample unblurred.
+
 Version 1.5.0
 -------------
   - Program monitor: click the picture to select the clip under the pointer (a click on an empty part clears the selection). A frame appears around the clip:

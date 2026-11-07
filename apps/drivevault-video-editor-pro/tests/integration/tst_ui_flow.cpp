@@ -385,6 +385,12 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(qAbs(tl->paramValue(video, "saturation", 10) - satDef) < 1e-6, 3000);
 
         click("toolTab_transitions");
+        for (const char* name : {"trIn_wipe", "trIn_slide", "trIn_zoom", "trOut_fade"}) {   // the preview of a tile plays while the mouse is over it
+            QQuickItem* tileItem = item(QString::fromLatin1(name));
+            QVERIFY(tileItem != nullptr);
+            QTest::mouseMove(m_window, tileItem->mapToScene(QPointF(tileItem->width() / 2, tileItem->height() / 2)).toPoint());
+            QTest::qWait(350);
+        }
         click("trIn_dissolve");
         QTRY_COMPARE_WITH_TIMEOUT(tl->clipInfo(video).value("transIn").toString(), QStringLiteral("dissolve"), 3000);
         click("trIn_none");
@@ -696,7 +702,7 @@ private slots:
             QVERIFY2(!path.isEmpty() && QFileInfo::exists(path), name);
         }
         QVERIFY(m_ctx->systemInfo.documentPath("../LICENSE.txt").isEmpty());          // only plain file names are looked up
-        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.5.0"));
+        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.6.0"));
         QVERIFY(m_ctx->systemInfo.productName().contains("Video Editor Pro"));
     }
 
