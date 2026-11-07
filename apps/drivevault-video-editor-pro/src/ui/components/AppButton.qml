@@ -39,24 +39,31 @@ Button {
         return Theme.text
     }
 
-    contentItem: Row {
-        spacing: control.spacing
-        layoutDirection: Qt.LeftToRight
+    // The icon + text row is centred in the button (a Row used directly as contentItem sits at the left edge when the button is wider).
+    contentItem: Item {
+        implicitWidth: contentRow.implicitWidth
+        implicitHeight: contentRow.implicitHeight
 
-        Icon {
-            visible: control.iconName !== ""
-            name: control.iconName
-            size: 16
-            color: control.labelColor
-            anchors.verticalCenter: parent.verticalCenter
-        }
-        Text {
-            visible: control.text !== ""
-            text: control.text
-            font: control.font
-            color: control.labelColor
-            elide: Text.ElideRight
-            anchors.verticalCenter: parent.verticalCenter
+        Row {
+            id: contentRow
+            anchors.centerIn: parent
+            spacing: control.spacing
+            layoutDirection: Qt.LeftToRight
+
+            Icon {
+                visible: control.iconName !== ""
+                name: control.iconName
+                size: 16
+                color: control.labelColor
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Text {
+                visible: control.text !== ""
+                text: control.text
+                font: control.font
+                color: control.labelColor
+                anchors.verticalCenter: parent.verticalCenter
+            }
         }
     }
 

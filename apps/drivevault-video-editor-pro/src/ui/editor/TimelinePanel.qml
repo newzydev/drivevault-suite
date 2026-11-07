@@ -634,6 +634,41 @@ Rectangle {
                     }
                 }
 
+                // Hover guide: a thin line (with its time) follows the mouse over the ruler and the tracks
+                HoverHandler {
+                    id: hoverGuide
+                    acceptedDevices: PointerDevice.Mouse
+                }
+                Item {
+                    id: guide
+                    objectName: "hoverGuide"
+                    readonly property real gx: hoverGuide.point.position.x
+                    visible: hoverGuide.hovered && gx >= 0 && gx <= scrollArea.width
+                    x: Math.round(gx)
+                    width: 1
+                    height: parent.height
+                    z: 45
+                    Rectangle { width: 1; height: parent.height; color: Qt.alpha(Theme.text, 0.5) }
+                    Rectangle {
+                        y: 2
+                        x: guide.gx > scrollArea.width - 100 ? -width - 6 : 6
+                        width: guideTime.implicitWidth + 12
+                        height: 20
+                        radius: 5
+                        color: Theme.surfaceElevated
+                        border.width: 1
+                        border.color: Theme.border
+                        Text {
+                            id: guideTime
+                            anchors.centerIn: parent
+                            text: guide.visible ? Projects.timecodeFor(root.frameAtViewportX(guide.gx)) : ""
+                            font.pixelSize: Theme.fontXs
+                            font.features: { "tnum": 1 }
+                            color: Theme.text
+                        }
+                    }
+                }
+
                 // Playhead
                 Item {
                     id: playhead

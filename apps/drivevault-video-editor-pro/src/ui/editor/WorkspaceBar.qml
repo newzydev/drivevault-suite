@@ -43,22 +43,26 @@ Rectangle {
                 Accessible.role: Accessible.PageTab
                 onClicked: modelData.key === "home" ? root.homeRequested() : App.workspace = modelData.key
 
-                contentItem: Row {
-                    id: row
-                    spacing: 7
-                    anchors.centerIn: parent
-                    Icon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        name: tab.modelData.icon
-                        size: 16
-                        color: tab.current ? Theme.accentText : tab.hovered ? Theme.text : Theme.textSecondary
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: tab.modelData.label
-                        font.pixelSize: Theme.fontMd
-                        font.weight: tab.current ? Font.DemiBold : Font.Normal
-                        color: tab.current ? Theme.text : tab.hovered ? Theme.text : Theme.textSecondary
+                contentItem: Item {
+                    implicitWidth: row.implicitWidth
+                    implicitHeight: row.implicitHeight
+                    Row {
+                        id: row
+                        spacing: 7
+                        anchors.centerIn: parent
+                        Icon {
+                            anchors.verticalCenter: parent.verticalCenter
+                            name: tab.modelData.icon
+                            size: 16
+                            color: tab.current ? Theme.accentText : tab.hovered ? Theme.text : Theme.textSecondary
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: tab.modelData.label
+                            font.pixelSize: Theme.fontMd
+                            font.weight: tab.current ? Font.DemiBold : Font.Normal
+                            color: tab.current ? Theme.text : tab.hovered ? Theme.text : Theme.textSecondary
+                        }
                     }
                 }
 

@@ -1,6 +1,12 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.1.1
+-------------
+  - Master level meter redesigned: dark track with green / amber / red LED segments, centred in its strip, with the dB scale set apart from the bars.
+  - Button labels and icons are centred (they sat at the left edge of wide buttons, e.g. the workspace tabs and the V / B / N / Y / U tool buttons).
+  - Timeline: a thin guide line with its time follows the mouse over the ruler and the tracks.
+
 Version 1.1.0
 -------------
   - New tool panel at the top left of the editor (like CapCut): tabs Import, Audio, Text, Effects, Transitions, Filters, Adjustment and AI.

@@ -241,7 +241,7 @@ Rectangle {
                         }
                         MasterMeter {
                             Layout.fillHeight: true
-                            Layout.preferredWidth: 64
+                            Layout.preferredWidth: 84
                         }
                     }
                 }

@@ -403,6 +403,13 @@ private slots:
         tl->undo();
         QTRY_COMPARE_WITH_TIMEOUT(tl->clipCount(), before, 3000);
 
+        // a thin guide line follows the mouse over the timeline
+        QQuickItem* guide = item("hoverGuide");
+        QVERIFY(guide != nullptr);
+        QTest::mouseMove(m_window, guide->parentItem()->mapToScene(QPointF(300, 120)).toPoint());
+        QTest::mouseMove(m_window, guide->parentItem()->mapToScene(QPointF(320, 122)).toPoint());
+        QTRY_VERIFY_WITH_TIMEOUT(guide->isVisible(), 3000);
+
         QVERIFY(item("meterL") != nullptr && item("meterL")->isVisible());      // the master meter is always shown
         click("toolTab_import");
         while (tl->clipCount() > clipsAtStart && tl->canUndo())                 // leave the timeline as this test found it
@@ -466,7 +473,7 @@ private slots:
             QVERIFY2(!path.isEmpty() && QFileInfo::exists(path), name);
         }
         QVERIFY(m_ctx->systemInfo.documentPath("../LICENSE.txt").isEmpty());          // only plain file names are looked up
-        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.1.0"));
+        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.1.1"));
         QVERIFY(m_ctx->systemInfo.productName().contains("Video Editor Pro"));
     }
 
