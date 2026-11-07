@@ -45,6 +45,7 @@ qt_add_qml_module(dv_ui
         editor/MasterMeter.qml
         editor/MediaItemView.qml
         editor/TimelineClip.qml
+        editor/ClipLevelLine.qml
         editor/ProgramMonitor.qml
         editor/InspectorPanel.qml
         editor/ParamRow.qml

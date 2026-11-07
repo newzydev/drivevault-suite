@@ -113,6 +113,7 @@ private:
     void syncTracksToData();
     void configureAutosave();
     void configureCache();
+    void configureMediaFolder();
     QString projectDir() const;
 
     SettingsManager* m_settings;

@@ -1,6 +1,8 @@
 #include "project/ProjectFile.h"
 
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QJsonDocument>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -16,6 +18,8 @@ private slots:
         d.tracks[0].muted = true;
         d.tracks[1].locked = true;
         d.tracks[2].visible = false;
+        d.tracks[0].lane = 0;          // lane heights (collapsed / tall) are saved
+        d.tracks[1].lane = 2;
 
         ProjectData out;
         QString error;
@@ -26,6 +30,26 @@ private slots:
         QCOMPARE(out.frameRate, (timecode::FrameRate{30000, 1001}));
         QCOMPARE(out.sampleRate, 48000);
         QCOMPARE(out.tracks, d.tracks);
+        QCOMPARE(out.tracks.at(0).lane, 0);
+        QCOMPARE(out.tracks.at(1).lane, 2);
+
+        // a project file from before the lane heights existed opens with normal lanes
+        QJsonObject root = ProjectFile::toJson(d);
+        QJsonObject timeline = root.value("timeline").toObject();
+        QJsonArray tracks = timeline.value("tracks").toArray();
+        QVERIFY(!tracks.isEmpty());
+        for (int i = 0; i < tracks.size(); ++i) {
+            QJsonObject o = tracks.at(i).toObject();
+            QVERIFY(o.contains("lane"));
+            o.remove("lane");
+            tracks[i] = o;
+        }
+        timeline["tracks"] = tracks;
+        root["timeline"] = timeline;
+        ProjectData old;
+        QVERIFY2(ProjectFile::fromJson(root, &old, &error), qPrintable(error));
+        for (const TrackInfo& tr : old.tracks)
+            QCOMPARE(tr.lane, 1);
     }
     void saveLoadAtomicWithThaiPath()
     {

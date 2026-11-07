@@ -30,6 +30,7 @@ QVariant TrackListModel::data(const QModelIndex& index, int role) const
     case GainRole: return t.gainDb;
     case PanRole: return t.pan;
     case SoloRole: return t.solo;
+    case LaneRole: return t.lane;
     default: return {};
     }
 }
@@ -67,6 +68,13 @@ bool TrackListModel::setData(const QModelIndex& index, const QVariant& value, in
             return false;
         t.solo = value.toBool();
         break;
+    case LaneRole: {
+        const int lane = std::clamp(value.toInt(), 0, 2);
+        if (t.lane == lane)
+            return false;
+        t.lane = lane;
+        break;
+    }
     case GainRole: {
         const double db = std::clamp(value.toDouble(), -60.0, 12.0);
         if (qFuzzyCompare(t.gainDb + 100, db + 100))
@@ -92,7 +100,7 @@ bool TrackListModel::setData(const QModelIndex& index, const QVariant& value, in
 QHash<int, QByteArray> TrackListModel::roleNames() const
 {
     return {{IdRole, "trackId"}, {NameRole, "name"}, {KindRole, "kind"}, {MutedRole, "muted"}, {LockedRole, "locked"},
-            {VisibleRole, "trackVisible"}, {GainRole, "gainDb"}, {PanRole, "pan"}, {SoloRole, "solo"}};
+            {VisibleRole, "trackVisible"}, {GainRole, "gainDb"}, {PanRole, "pan"}, {SoloRole, "solo"}, {LaneRole, "lane"}};
 }
 
 void TrackListModel::setTracks(const QList<TrackInfo>& tracks)

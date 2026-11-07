@@ -1,6 +1,16 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.4.0
+-------------
+  - Imported media are copied into a "medias" folder next to the project file (Settings > Editing > "Copy imported media into the project", on by default).
+    The copy runs in the background, the original stays where it is, the same file is not copied twice, a file with the same name from another folder gets
+    "(2)" and a file that cannot be read leaves no copy. Projects that already exist keep using their files where they are.
+  - Tracks can be collapsed and expanded: the arrow in the track header, or right-click > Compact track / Normal height / Tall track. The height is saved
+    with the project (older projects open with normal lanes).
+  - Level line on every clip: move the mouse over a clip and a line appears; drag it up or down to change the opacity of a video clip or the volume of an
+    audio clip (the same values as in the inspector, one undo step per change).
+
 Version 1.3.1
 -------------
   - Fixed: files chosen in the Import dialog (or dragged in) were not imported at all ("Cannot import ...: file not found"). The dialog hands the list over as a

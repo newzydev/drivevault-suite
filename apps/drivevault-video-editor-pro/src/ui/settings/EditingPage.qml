@@ -28,6 +28,15 @@ ColumnLayout {
         Layout.fillWidth: true
     }
 
+    SettingRow {
+        title: qsTr("Copy imported media into the project")
+        description: qsTr("Imported files are copied to the \"medias\" folder next to the project file, so the project keeps working when the originals move.")
+        AppSwitch {
+            checked: AppSettings.values.copyMediaToProject
+            onToggled: AppSettings.set("copyMediaToProject", checked)
+        }
+    }
+
     Section { title: qsTr("Timeline"); Layout.topMargin: 22 }
 
     SettingRow {

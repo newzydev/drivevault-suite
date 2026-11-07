@@ -25,7 +25,8 @@ Item {
     property string tool: "select"          // select | ripple | roll | slip | slide
 
     property real pxPerFrame: 4
-    property int laneHeight: 46
+    property var panel                      // the TimelinePanel: lane geometry of every track
+    readonly property int laneHeight: panel ? panel.heightOf(shownTrack) : 46
     property Item surface
     property bool snapEnabled: true
     signal contextRequested(string clipId)
@@ -45,7 +46,7 @@ Item {
     readonly property int snapTolerance: Math.max(2, Math.round(8 / pxPerFrame))
 
     x: shownStart * pxPerFrame
-    y: shownTrack * laneHeight + 2
+    y: (panel ? panel.topOf(shownTrack) : shownTrack * laneHeight) + 2
     width: Math.max(3, (shownEnd - shownStart) * pxPerFrame)
     height: laneHeight - 4
     z: dragging || trimming ? 100 : selected ? 5 : 1
@@ -73,7 +74,7 @@ Item {
             fillMode: Image.Tile
             horizontalAlignment: Image.AlignLeft
             verticalAlignment: Image.AlignVCenter
-            sourceSize.height: clipRoot.laneHeight - 19
+            sourceSize.height: Math.max(8, clipRoot.laneHeight - 19)
             opacity: 0.6
             asynchronous: true
         }
@@ -186,7 +187,7 @@ Item {
             if (!pressed || !(mouse.buttons & Qt.LeftButton))
                 return
             const p = mapToItem(clipRoot.surface, mouse.x, mouse.y)
-            if (!moved && Math.abs(p.x - pressX) < 4 && Math.floor(p.y / clipRoot.laneHeight) === clipRoot.trackIndex)
+            if (!moved && Math.abs(p.x - pressX) < 4 && clipRoot.panel.rowAtY(p.y) === clipRoot.trackIndex)
                 return
             moved = true
             const desired = origStart + Math.round((p.x - pressX) / clipRoot.pxPerFrame)
@@ -199,7 +200,7 @@ Item {
                 }
                 return
             }
-            const track = Math.floor(p.y / clipRoot.laneHeight)
+            const track = clipRoot.panel.rowAtY(p.y)
             const r = Projects.timeline.clampMove(clipRoot.clipId, desired, track, clipRoot.snapEnabled, clipRoot.snapTolerance)
             clipRoot.dragStart = r.start
             clipRoot.dragTrack = r.trackIndex
@@ -229,6 +230,20 @@ Item {
             if (err !== "")
                 App.toast(err, "warning")
         }
+    }
+
+    // ---- level line: opacity (video) / volume (audio), shown while the mouse is over the clip ---------------------------------------
+    HoverHandler { id: clipHover }
+    ClipLevelLine {
+        objectName: "levelLine_" + clipRoot.clipId
+        anchors.fill: parent
+        clipId: clipRoot.clipId
+        paramKey: clipRoot.kind === "audio" ? "volume" : "opacity"
+        startFrame: clipRoot.startFrame
+        durationFrames: clipRoot.durationFrames
+        shown: clipHover.hovered && !clipRoot.dragging && !clipRoot.trimming
+        editable: clipRoot.kind !== "subtitle" && !clipRoot.dragging && !clipRoot.trimming
+        visible: clipRoot.kind !== "subtitle" && (shown || dragging)
     }
 
     // ---- trim handles -------------------------------------------------------------------------------------

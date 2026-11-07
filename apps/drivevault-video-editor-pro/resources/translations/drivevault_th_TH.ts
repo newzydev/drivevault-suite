@@ -820,42 +820,52 @@
         <translation>ตำแหน่งโปรเจกต์เริ่มต้น</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/EditingPage.qml" line="31"/>
+        <location filename="../../src/ui/settings/EditingPage.qml" line="32"/>
+        <source>Copy imported media into the project</source>
+        <translation>คัดลอกสื่อที่นำเข้าไปไว้ในโปรเจกต์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/EditingPage.qml" line="33"/>
+        <source>Imported files are copied to the &quot;medias&quot; folder next to the project file, so the project keeps working when the originals move.</source>
+        <translation>ไฟล์ที่นำเข้าจะถูกคัดลอกไปไว้ในโฟลเดอร์ "medias" ข้างไฟล์โปรเจกต์ โปรเจกต์จึงยังใช้ได้แม้ย้ายไฟล์ต้นฉบับ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/EditingPage.qml" line="40"/>
         <source>Timeline</source>
         <translation>ไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/EditingPage.qml" line="34"/>
+        <location filename="../../src/ui/settings/EditingPage.qml" line="43"/>
         <source>Snapping</source>
         <translation>การดูดติด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/EditingPage.qml" line="35"/>
+        <location filename="../../src/ui/settings/EditingPage.qml" line="44"/>
         <source>Clips and the playhead snap to edit points (active once clips can be placed).</source>
         <translation>คลิปและเพลย์เฮดจะดูดติดจุดตัดต่อ (ใช้งานได้เมื่อวางคลิปได้)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/EditingPage.qml" line="42"/>
+        <location filename="../../src/ui/settings/EditingPage.qml" line="51"/>
         <source>Auto save</source>
         <translation>บันทึกอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/EditingPage.qml" line="45"/>
+        <location filename="../../src/ui/settings/EditingPage.qml" line="54"/>
         <source>Save automatically</source>
         <translation>บันทึกโดยอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/EditingPage.qml" line="46"/>
+        <location filename="../../src/ui/settings/EditingPage.qml" line="55"/>
         <source>Unsaved work is written to a recovery copy; your project file is never overwritten by auto save.</source>
         <translation>งานที่ยังไม่บันทึกจะถูกเขียนลงสำเนากู้คืน ไฟล์โปรเจกต์ของคุณจะไม่ถูกเขียนทับโดยการบันทึกอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/EditingPage.qml" line="53"/>
+        <location filename="../../src/ui/settings/EditingPage.qml" line="62"/>
         <source>Auto save interval</source>
         <translation>ช่วงเวลาบันทึกอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/EditingPage.qml" line="65"/>
+        <location filename="../../src/ui/settings/EditingPage.qml" line="74"/>
         <source>min</source>
         <translation>นาที</translation>
     </message>
@@ -3557,12 +3567,12 @@
 <context>
     <name>TimelineClip</name>
     <message>
-        <location filename="../../src/ui/editor/TimelineClip.qml" line="300"/>
+        <location filename="../../src/ui/editor/TimelineClip.qml" line="301"/>
         <source>There is no clip next to this edge to roll.</source>
         <translation>ไม่มีคลิปที่ติดกับขอบนี้ให้ม้วนจุดตัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelineClip.qml" line="314"/>
+        <location filename="../../src/ui/editor/TimelineClip.qml" line="315"/>
         <source>Media file is missing</source>
         <translation>ไม่พบไฟล์สื่อ</translation>
     </message>
@@ -3570,274 +3580,299 @@
 <context>
     <name>TimelinePanel</name>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="54"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="74"/>
         <source>Subtitle</source>
         <translation>ซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="70"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="90"/>
         <source>Import subtitles (.srt)</source>
         <translation>นำเข้าซับไตเติล (.srt)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="71"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="79"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="91"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="99"/>
         <source>SubRip subtitles (*.srt)</source>
         <translation>ซับไตเติล SubRip (*.srt)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="71"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="91"/>
         <source>All files (*)</source>
         <translation>ไฟล์ทั้งหมด (*)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="76"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="96"/>
         <source>Export subtitles (.srt)</source>
         <translation>ส่งออกซับไตเติล (.srt)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="128"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="148"/>
         <source>Rename marker</source>
         <translation>เปลี่ยนชื่อมาร์กเกอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="104"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="134"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="124"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="154"/>
         <source>Cancel</source>
         <translation>ยกเลิก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="109"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="135"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="129"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="155"/>
         <source>OK</source>
         <translation>ตกลง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="141"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="161"/>
         <source>Rename…</source>
         <translation>เปลี่ยนชื่อ…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="142"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="162"/>
         <source>Delete marker</source>
         <translation>ลบมาร์กเกอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="146"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="166"/>
         <source>Title</source>
         <translation>ชื่อเรื่อง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="147"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="167"/>
         <source>Lower third</source>
         <translation>แถบชื่อล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="148"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="168"/>
         <source>Caption</source>
         <translation>คำบรรยายภาพ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="150"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="170"/>
         <source>Subtitle at playhead</source>
         <translation>ซับไตเติลที่เพลย์เฮด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="151"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="171"/>
         <source>Import subtitles (.srt)…</source>
         <translation>นำเข้าซับไตเติล (.srt)…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="152"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="172"/>
         <source>Export subtitles (.srt)…</source>
         <translation>ส่งออกซับไตเติล (.srt)…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="154"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="164"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="174"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="187"/>
         <source>Add video track</source>
         <translation>เพิ่มแทร็กวิดีโอ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="155"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="165"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="175"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="188"/>
         <source>Add audio track</source>
         <translation>เพิ่มแทร็กเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="156"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="176"/>
         <source>Add subtitle track</source>
         <translation>เพิ่มแทร็กซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="166"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="189"/>
         <source>Remove track</source>
         <translation>ลบแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="162"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="182"/>
         <source>Lock / unlock</source>
         <translation>ล็อก / ปลดล็อก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="98"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="118"/>
         <source>Rename track</source>
         <translation>เปลี่ยนชื่อแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="120"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="140"/>
         <source>Delete this track?</source>
         <translation>ลบแทร็กนี้หรือไม่?</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="121"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="141"/>
         <source>The track still has clips. They are deleted together with the track, and this cannot be undone (the undo history is cleared).</source>
         <translation>แทร็กนี้ยังมีคลิปอยู่ คลิปจะถูกลบพร้อมกับแทร็ก และย้อนกลับไม่ได้ (ประวัติการย้อนกลับจะถูกล้าง)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="122"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="142"/>
         <source>Delete track</source>
         <translation>ลบแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="161"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="181"/>
         <source>Rename track…</source>
         <translation>เปลี่ยนชื่อแทร็ก…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="171"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="183"/>
+        <source>Compact track</source>
+        <translation>แทร็กแบบย่อ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="184"/>
+        <source>Normal height</source>
+        <translation>ความสูงปกติ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="185"/>
+        <source>Tall track</source>
+        <translation>แทร็กแบบสูง</translation>
+    </message>
+    <message>
         <location filename="../../src/ui/editor/TimelinePanel.qml" line="194"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="217"/>
         <source>Split at Playhead</source>
         <translation>แยกคลิปที่เพลย์เฮด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="172"/>
         <location filename="../../src/ui/editor/TimelinePanel.qml" line="195"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="218"/>
         <source>Delete</source>
         <translation>ลบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="173"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="196"/>
         <source>Ripple Delete</source>
         <translation>ลบและปิดช่องว่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="175"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="198"/>
         <source>Cut</source>
         <translation>ตัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="176"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="199"/>
         <source>Copy</source>
         <translation>คัดลอก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="177"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="200"/>
         <source>Paste at Playhead</source>
         <translation>วางที่เพลย์เฮด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="179"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="202"/>
         <source>Group</source>
         <translation>จัดกลุ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="180"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="203"/>
         <source>Ungroup</source>
         <translation>เลิกจัดกลุ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="189"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="212"/>
         <source>Timeline</source>
         <translation>ไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="192"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="215"/>
         <source>Undo</source>
         <translation>เลิกทำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="193"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="216"/>
         <source>Redo</source>
         <translation>ทำซ้ำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="198"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="221"/>
         <source>Select</source>
         <translation>เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="198"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="221"/>
         <source>Ripple trim</source>
         <translation>ตัดแบบริปเปิล</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="199"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="222"/>
         <source>Roll edit</source>
         <translation>ม้วนจุดตัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="199"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="222"/>
         <source>Slip</source>
         <translation>สลิป</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="199"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="222"/>
         <source>Slide</source>
         <translation>สไลด์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="211"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="234"/>
         <source>Add marker</source>
         <translation>เพิ่มมาร์กเกอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="212"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="235"/>
         <source>Add titles, subtitles and tracks</source>
         <translation>เพิ่มชื่อเรื่อง ซับไตเติล และแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="218"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="241"/>
         <source>Snapping</source>
         <translation>การดูดติด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="221"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="244"/>
         <source>Zoom out</source>
         <translation>ซูมออก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="228"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="251"/>
         <source>Timeline zoom</source>
         <translation>ซูมไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="230"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="253"/>
         <source>Zoom in</source>
         <translation>ซูมเข้า</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="233"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="256"/>
         <source>Fit timeline</source>
         <translation>พอดีกับไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="366"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="354"/>
+        <source>Expand track</source>
+        <translation>ขยายแทร็ก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="354"/>
+        <source>Collapse track</source>
+        <translation>ย่อแทร็ก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="399"/>
         <source>Video</source>
         <translation>วิดีโอ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="376"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="409"/>
         <source>Audio</source>
         <translation>เสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="533"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="566"/>
         <source>Drag media here to start editing</source>
         <translation>ลากสื่อมาวางที่นี่เพื่อเริ่มตัดต่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="542"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="575"/>
         <source>or double-click a media item to add it at the playhead.</source>
         <translation>หรือดับเบิลคลิกรายการสื่อเพื่อเพิ่มที่ตำแหน่งเพลย์เฮด</translation>
     </message>
@@ -3846,22 +3881,22 @@
         <translation type="vanished">รีเซ็ตการซูม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="262"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="285"/>
         <source>Tracks</source>
         <translation>แทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="333"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="366"/>
         <source>Toggle track visibility</source>
         <translation>สลับการแสดงแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="333"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="366"/>
         <source>Mute track</source>
         <translation>ปิดเสียงแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="344"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="377"/>
         <source>Lock track</source>
         <translation>ล็อกแทร็ก</translation>
     </message>
@@ -4645,22 +4680,27 @@
         <translation type="vanished">ไม่พบไฟล์</translation>
     </message>
     <message>
-        <location filename="../../src/media/MediaLibrary.cpp" line="308"/>
+        <location filename="../../src/media/MediaLibrary.cpp" line="312"/>
         <source>The file was not found: %1</source>
         <translation>ไม่พบไฟล์: %1</translation>
     </message>
     <message>
-        <location filename="../../src/media/MediaLibrary.cpp" line="544"/>
+        <location filename="../../src/media/MediaLibrary.cpp" line="400"/>
+        <source>The file could not be copied into the project folder (%1).</source>
+        <translation>คัดลอกไฟล์ไปยังโฟลเดอร์โปรเจกต์ไม่ได้ (%1)</translation>
+    </message>
+    <message>
+        <location filename="../../src/media/MediaLibrary.cpp" line="577"/>
         <source>This media is not part of the project.</source>
         <translation>สื่อนี้ไม่ได้อยู่ในโปรเจกต์</translation>
     </message>
     <message>
-        <location filename="../../src/media/MediaLibrary.cpp" line="552"/>
+        <location filename="../../src/media/MediaLibrary.cpp" line="585"/>
         <source>The selected file is a different kind of media.</source>
         <translation>ไฟล์ที่เลือกเป็นสื่อคนละประเภท</translation>
     </message>
     <message>
-        <location filename="../../src/media/MediaLibrary.cpp" line="555"/>
+        <location filename="../../src/media/MediaLibrary.cpp" line="588"/>
         <source>The selected file has a different duration than the original media.</source>
         <translation>ไฟล์ที่เลือกมีความยาวต่างจากสื่อเดิม</translation>
     </message>
@@ -4826,37 +4866,37 @@
         <translation>ไฟล์โปรเจกต์เสียหาย: %1</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="323"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="324"/>
         <source>The project file is damaged: invalid track definition.</source>
         <translation>ไฟล์โปรเจกต์เสียหาย: การกำหนดแทร็กไม่ถูกต้อง</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="346"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="347"/>
         <source>The project file is damaged: invalid media entry.</source>
         <translation>ไฟล์โปรเจกต์เสียหาย: รายการสื่อไม่ถูกต้อง</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="358"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="359"/>
         <source>The project file is damaged: invalid clip definition.</source>
         <translation>ไฟล์โปรเจกต์เสียหาย: การกำหนดคลิปไม่ถูกต้อง</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="372"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="373"/>
         <source>The file was not found: %1</source>
         <translation>ไม่พบไฟล์: %1</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="377"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="378"/>
         <source>Cannot open the file: %1</source>
         <translation>ไม่สามารถเปิดไฟล์ได้: %1</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="382"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="383"/>
         <source>The project file is unexpectedly large.</source>
         <translation>ไฟล์โปรเจกต์มีขนาดใหญ่ผิดปกติ</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="389"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="390"/>
         <source>The project file is damaged and cannot be read (%1).</source>
         <translation>ไฟล์โปรเจกต์เสียหายและอ่านไม่ได้ (%1)</translation>
     </message>
@@ -4864,92 +4904,92 @@
 <context>
     <name>dv::ProjectManager</name>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="129"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="131"/>
         <source>Please enter a project name.</source>
         <translation>โปรดกรอกชื่อโปรเจกต์</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="131"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="133"/>
         <source>This name cannot be used as a file name.</source>
         <translation>ไม่สามารถใช้ชื่อนี้เป็นชื่อไฟล์ได้</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="245"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="248"/>
         <source>Please choose a location for the project.</source>
         <translation>โปรดเลือกตำแหน่งเก็บโปรเจกต์</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="252"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="255"/>
         <source>A project with this name already exists in the selected location.</source>
         <translation>มีโปรเจกต์ชื่อนี้อยู่แล้วในตำแหน่งที่เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="257"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="260"/>
         <source>Cannot create the project: %1</source>
         <translation>ไม่สามารถสร้างโปรเจกต์ได้: %1</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="271"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="274"/>
         <source>Please choose a DriveVault project file (.dvproj).</source>
         <translation>โปรดเลือกไฟล์โปรเจกต์ DriveVault (.dvproj)</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="318"/>
-        <location filename="../../src/project/ProjectManager.cpp" line="327"/>
-        <location filename="../../src/project/ProjectManager.cpp" line="391"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="321"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="330"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="395"/>
         <source>There is no open project.</source>
         <translation>ไม่มีโปรเจกต์ที่เปิดอยู่</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="320"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="323"/>
         <source>The project has no file yet. Use Save As.</source>
         <translation>โปรเจกต์ยังไม่มีไฟล์ โปรดใช้ บันทึกเป็น</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="331"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="334"/>
         <source>Please choose a file name.</source>
         <translation>โปรดเลือกชื่อไฟล์</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="341"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="344"/>
         <source>Cannot save the project: %1</source>
         <translation>ไม่สามารถบันทึกโปรเจกต์ได้: %1</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="393"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="397"/>
         <source>The project already has a subtitle track.</source>
         <translation>โปรเจกต์นี้มีแทร็กซับไตเติลอยู่แล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="393"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="397"/>
         <source>No more tracks can be added.</source>
         <translation>เพิ่มแทร็กไม่ได้อีกแล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="400"/>
-        <location filename="../../src/project/ProjectManager.cpp" line="411"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="404"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="415"/>
         <source>There is no such track.</source>
         <translation>ไม่มีแทร็กนี้</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="402"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="406"/>
         <source>The track still contains clips. Remove them first.</source>
         <translation>แทร็กยังมีคลิปอยู่ กรุณาลบคลิปก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="404"/>
-        <location filename="../../src/project/ProjectManager.cpp" line="413"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="408"/>
         <location filename="../../src/project/ProjectManager.cpp" line="417"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="421"/>
         <source>A project needs at least one video and one audio track.</source>
         <translation>โปรเจกต์ต้องมีแทร็กวิดีโอและแทร็กเสียงอย่างน้อยอย่างละหนึ่งแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="425"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="429"/>
         <source>This media is not part of the project.</source>
         <translation>สื่อนี้ไม่ได้อยู่ในโปรเจกต์</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="427"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="431"/>
         <source>This media is used on the timeline. Remove its clips first.</source>
         <translation>สื่อนี้ถูกใช้บนไทม์ไลน์ ลบคลิปของมันก่อน</translation>
     </message>

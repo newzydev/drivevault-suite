@@ -460,6 +460,105 @@ private slots:
         QVERIFY(!tracks->canRemove(rowOf("V1")) || tracks->count() > 2);   // the last video / audio track of a kind stays
     }
 
+    void tracksCanBeCollapsedAndTallLanesKeepTheClipsInPlace()
+    {
+        auto* projects = &m_ctx->projects;
+        auto* tl = projects->timeline();
+        auto* tracks = projects->tracks();
+        m_ctx->controller.setWorkspace("edit");
+        const QString mediaId = projects->media()->idForPath(media.filePath("clip.mp4"));
+        QVERIFY(!mediaId.isEmpty());
+        const int clipsAtStart = tl->clipCount();
+        QCOMPARE(tl->addMedia(mediaId, -1, 0), QString());
+        QString video;
+        for (const ClipData& c : tl->clips())
+            if (c.trackId.startsWith("V")) { video = c.id; break; }
+        QVERIFY(!video.isEmpty());
+        QQuickItem* clipItem = nullptr;
+        QTRY_VERIFY_WITH_TIMEOUT((clipItem = item("clip_" + video)) != nullptr && clipItem->height() > 10, 3000);
+        const qreal normalHeight = clipItem->height();
+        int row = -1;
+        const auto list = tracks->tracks();
+        for (int i = 0; i < list.size(); ++i)
+            if (list.at(i).id == tl->findClip(video)->trackId)
+                row = i;
+        QVERIFY(row >= 0);
+
+        click("trackFold" + QString::number(row));                      // the arrow in the track header collapses the lane
+        QCOMPARE(tracks->laneAt(row), 0);
+        QTRY_VERIFY_WITH_TIMEOUT(clipItem->height() < normalHeight - 10, 3000);
+        click("trackFold" + QString::number(row));                      // and expands it again
+        QCOMPARE(tracks->laneAt(row), 1);
+        QTRY_COMPARE_WITH_TIMEOUT(clipItem->height(), normalHeight, 3000);
+        tracks->setLane(row, 2);                                         // tall lane (right-click menu)
+        QTRY_VERIFY_WITH_TIMEOUT(clipItem->height() > normalHeight + 20, 3000);
+        tracks->setLane(row, 1);
+
+        tl->undo();
+        QCOMPARE(tl->clipCount(), clipsAtStart);
+    }
+
+    void theLevelLineOfAClipChangesOpacityAndVolume()
+    {
+        auto* projects = &m_ctx->projects;
+        auto* tl = projects->timeline();
+        m_ctx->controller.setWorkspace("edit");
+        const QString mediaId = projects->media()->idForPath(media.filePath("clip.mp4"));
+        QVERIFY(!mediaId.isEmpty());
+        const int clipsAtStart = tl->clipCount();
+        QCOMPARE(tl->addMedia(mediaId, -1, 0), QString());
+        QString video, audio;
+        for (const ClipData& c : tl->clips())
+            (c.trackId.startsWith("V") ? video : audio) = c.id;
+        QVERIFY(!video.isEmpty() && !audio.isEmpty());
+        projects->setPlayheadFrame(10);
+        QCOMPARE(tl->paramValue(video, "opacity", 10), 1.0);
+
+        QQuickItem* clipItem = nullptr;
+        QTRY_VERIFY_WITH_TIMEOUT((clipItem = item("clip_" + video)) != nullptr && clipItem->width() > 40 && clipItem->height() > 20, 3000);
+        QQuickItem* line = item("levelLine_" + video);
+        QVERIFY(line != nullptr);
+        QVERIFY(!line->isVisible());                                     // only while the mouse is over the clip
+        const QPointF inside = clipItem->mapToScene(QPointF(clipItem->width() / 2, clipItem->height() / 2));
+        QTest::mouseMove(m_window, inside.toPoint());
+        QTest::mouseMove(m_window, (inside + QPointF(2, 1)).toPoint());
+        QTRY_VERIFY_WITH_TIMEOUT(line->isVisible(), 3000);
+
+        // opacity is 100 %: the line is at the top; dragging it down fades the clip
+        const QPointF onLine = clipItem->mapToScene(QPointF(clipItem->width() / 2, 5));
+        QTest::mouseMove(m_window, onLine.toPoint());
+        QTest::mousePress(m_window, Qt::LeftButton, Qt::NoModifier, onLine.toPoint());
+        for (int i = 1; i <= 6; ++i)
+            QTest::mouseMove(m_window, (onLine + QPointF(0, 4 * i)).toPoint());
+        QTest::mouseRelease(m_window, Qt::LeftButton, Qt::NoModifier, (onLine + QPointF(0, 24)).toPoint());
+        QTRY_VERIFY_WITH_TIMEOUT(tl->paramValue(video, "opacity", 10) < 0.95, 3000);
+        QVERIFY(tl->paramValue(video, "opacity", 10) > 0.0);
+        QCOMPARE(tl->findClip(video)->startFrame, qint64(0));            // dragging the line did not move the clip
+
+        // audio clip: the line sits at 0 dB; dragging it up raises the volume
+        QQuickItem* audioItem = nullptr;
+        QTRY_VERIFY_WITH_TIMEOUT((audioItem = item("clip_" + audio)) != nullptr && audioItem->height() > 20, 3000);
+        QQuickItem* aline = item("levelLine_" + audio);
+        QVERIFY(aline != nullptr);
+        const QPointF aInside = audioItem->mapToScene(QPointF(audioItem->width() / 2, audioItem->height() / 2));
+        QTest::mouseMove(m_window, aInside.toPoint());
+        QTest::mouseMove(m_window, (aInside + QPointF(2, 1)).toPoint());
+        QTRY_VERIFY_WITH_TIMEOUT(aline->isVisible(), 3000);
+        const double volBefore = tl->paramValue(audio, "volume", 10);
+        const qreal lineY = 5 + (1 - (volBefore + 60.0) / 72.0) * (audioItem->height() - 10);
+        const QPointF aOn = audioItem->mapToScene(QPointF(audioItem->width() / 2, lineY));
+        QTest::mouseMove(m_window, aOn.toPoint());
+        QTest::mousePress(m_window, Qt::LeftButton, Qt::NoModifier, aOn.toPoint());
+        for (int i = 1; i <= 5; ++i)
+            QTest::mouseMove(m_window, (aOn - QPointF(0, 3 * i)).toPoint());
+        QTest::mouseRelease(m_window, Qt::LeftButton, Qt::NoModifier, (aOn - QPointF(0, 15)).toPoint());
+        QTRY_VERIFY_WITH_TIMEOUT(tl->paramValue(audio, "volume", 10) > volBefore + 0.4, 3000);
+
+        while (tl->clipCount() > clipsAtStart && tl->canUndo())
+            tl->undo();
+        QCOMPARE(tl->clipCount(), clipsAtStart);
+    }
+
     void aiWorkspaceFindsSilenceAndAppliesItOnlyAfterConfirmation()
     {
         auto* projects = &m_ctx->projects;
@@ -516,7 +615,7 @@ private slots:
             QVERIFY2(!path.isEmpty() && QFileInfo::exists(path), name);
         }
         QVERIFY(m_ctx->systemInfo.documentPath("../LICENSE.txt").isEmpty());          // only plain file names are looked up
-        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.3.1"));
+        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.4.0"));
         QVERIFY(m_ctx->systemInfo.productName().contains("Video Editor Pro"));
     }
 

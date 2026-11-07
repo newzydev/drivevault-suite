@@ -17,7 +17,27 @@ Rectangle {
     readonly property var tl: Projects.timeline
     readonly property int headerWidth: 168
     readonly property int rulerHeight: 30
-    readonly property int laneHeight: 46
+    // Every track has its own lane height (compact / normal / tall), kept in the project file.
+    readonly property var laneHeights: [26, 46, 96]
+    property int layoutRev: 0
+    Connections {
+        target: Projects.tracks
+        function onDataChanged() { root.layoutRev++ }
+        function onCountChanged() { root.layoutRev++ }
+        function onModelReset() { root.layoutRev++ }
+    }
+    function heightOf(row) { layoutRev; return laneHeights[Projects.tracks.laneAt(row)] }
+    function topOf(row) { layoutRev; let y = 0; for (let i = 0; i < row; ++i) y += laneHeights[Projects.tracks.laneAt(i)]; return y }
+    function totalHeight() { return topOf(Projects.tracks.count) }
+    function rowAtY(y) {
+        layoutRev
+        let top = 0
+        for (let i = 0; i < Projects.tracks.count; ++i) {
+            top += laneHeights[Projects.tracks.laneAt(i)]
+            if (y < top) return i
+        }
+        return Projects.tracks.count      // below the last track
+    }
     readonly property int fps: Math.max(1, Projects.nominalFps)
     readonly property int totalFrames: fps * 60 * 30   // 30 minutes of addressable timeline
 
@@ -160,6 +180,9 @@ Rectangle {
         property int row: -1
         AppMenuItem { objectName: "trackRename"; text: qsTr("Rename track…"); onTriggered: root.renameTrack(trackMenu.row) }
         AppMenuItem { text: qsTr("Lock / unlock"); onTriggered: Projects.tracks.toggle(trackMenu.row, "locked") }
+        AppMenuItem { objectName: "trackCompact"; text: qsTr("Compact track"); checkable: true; checked: Projects.tracks.laneAt(trackMenu.row) === 0; onTriggered: Projects.tracks.setLane(trackMenu.row, 0) }
+        AppMenuItem { objectName: "trackNormal"; text: qsTr("Normal height"); checkable: true; checked: Projects.tracks.laneAt(trackMenu.row) === 1; onTriggered: Projects.tracks.setLane(trackMenu.row, 1) }
+        AppMenuItem { objectName: "trackTall"; text: qsTr("Tall track"); checkable: true; checked: Projects.tracks.laneAt(trackMenu.row) === 2; onTriggered: Projects.tracks.setLane(trackMenu.row, 2) }
         AppMenuSeparator {}
         AppMenuItem { text: qsTr("Add video track"); onTriggered: root.addTrack("video") }
         AppMenuItem { text: qsTr("Add audio track"); onTriggered: root.addTrack("audio") }
@@ -289,9 +312,10 @@ Rectangle {
                                 required property bool locked
                                 required property bool trackVisible
                                 required property bool solo
+                                required property int lane
 
                                 width: root.headerWidth
-                                height: root.laneHeight
+                                height: root.heightOf(header.index)
                                 color: "transparent"
 
                                 Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
@@ -320,6 +344,15 @@ Rectangle {
                                         font.weight: Font.DemiBold
                                         color: Theme.text
                                         elide: Text.ElideRight
+                                    }
+                                    IconButton {
+                                        objectName: "trackFold" + header.index
+                                        iconSize: 15
+                                        implicitWidth: 22
+                                        implicitHeight: 22
+                                        iconName: header.lane === 0 ? "chevronRight" : "chevronDown"
+                                        tip: header.lane === 0 ? qsTr("Expand track") : qsTr("Collapse track")
+                                        onClicked: Projects.tracks.setLane(header.index, header.lane === 0 ? 1 : 0)
                                     }
                                     IconButton {
                                         objectName: "trackToggle" + header.index
@@ -399,7 +432,7 @@ Rectangle {
                     width: parent.width
                     height: parent.height - root.rulerHeight
                     contentWidth: root.totalFrames * root.pxPerFrame
-                    contentHeight: Projects.tracks.count * root.laneHeight
+                    contentHeight: root.totalHeight()
                     boundsBehavior: Flickable.StopAtBounds
                     clip: true
                     flickableDirection: Flickable.HorizontalAndVerticalFlick
@@ -439,7 +472,7 @@ Rectangle {
                                 required property bool trackVisible
                                 required property bool locked
                                 width: lanes.contentWidth
-                                height: root.laneHeight
+                                height: root.heightOf(index)
                                 color: kind === "video" ? Theme.videoTrack : kind === "subtitle" ? Theme.subtitleTrack : Theme.audioTrack
                                 opacity: (kind !== "audio" ? trackVisible : !muted) ? 1 : 0.45
                                 Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
@@ -464,7 +497,7 @@ Rectangle {
                             model: Projects.timeline
                             delegate: TimelineClip {
                                 pxPerFrame: root.pxPerFrame
-                                laneHeight: root.laneHeight
+                                panel: root
                                 surface: clipLayer
                                 snapEnabled: AppSettings.values.snapping
                                 tool: root.tool
@@ -489,7 +522,7 @@ Rectangle {
                             function target(drag) {
                                 const id = drag.source.mediaId
                                 const kind = root.primaryKind(id)
-                                const laneIdx = Math.floor(drag.y / root.laneHeight)
+                                const laneIdx = root.rowAtY(drag.y)
                                 const track = (laneIdx >= 0 && laneIdx < root.tl.trackCount() && root.tl.trackKind(laneIdx) === kind
                                                && !root.tl.trackLocked(laneIdx)) ? laneIdx : root.tl.trackIndexForKind(kind)
                                 const frames = root.tl.mediaFrames(id)
@@ -503,9 +536,9 @@ Rectangle {
                                     return
                                 }
                                 dropGhost.x = t.start * root.pxPerFrame
-                                dropGhost.y = t.track * root.laneHeight + 2
+                                dropGhost.y = root.topOf(t.track) + 2
                                 dropGhost.width = Math.max(4, t.frames * root.pxPerFrame)
-                                dropGhost.height = root.laneHeight - 4
+                                dropGhost.height = root.heightOf(t.track) - 4
                                 dropGhost.visible = true
                             }
                             onExited: dropGhost.visible = false

@@ -20,7 +20,7 @@ constexpr int kMaxDimension = 16384;
 QJsonObject trackToJson(const TrackInfo& t)
 {
     return {{"id", t.id}, {"name", t.name}, {"kind", t.kind}, {"muted", t.muted}, {"locked", t.locked},
-            {"visible", t.visible}, {"gainDb", t.gainDb}, {"pan", t.pan}, {"solo", t.solo}};
+            {"visible", t.visible}, {"gainDb", t.gainDb}, {"pan", t.pan}, {"solo", t.solo}, {"lane", t.lane}};
 }
 
 QJsonObject mediaToJson(const MediaRef& m)
@@ -318,6 +318,7 @@ bool ProjectFile::fromJson(const QJsonObject& root, ProjectData* out, QString* e
         t.gainDb = std::clamp(o.value(QStringLiteral("gainDb")).toDouble(0.0), -60.0, 12.0);
         t.pan = std::clamp(o.value(QStringLiteral("pan")).toDouble(0.0), -1.0, 1.0);
         t.solo = o.value(QStringLiteral("solo")).toBool(false);
+        t.lane = std::clamp(o.value(QStringLiteral("lane")).toInt(1), 0, 2);       // older project files have no lane height
         const bool kindOk = t.kind == QLatin1String("video") || t.kind == QLatin1String("audio") || t.kind == QLatin1String("subtitle");
         if (t.id.isEmpty() || !kindOk)
             return fail(tr("The project file is damaged: invalid track definition."));

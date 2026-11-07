@@ -12,7 +12,7 @@ class TrackListModel : public QAbstractListModel {
     Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
 public:
     enum Role {
-        IdRole = Qt::UserRole + 1, NameRole, KindRole, MutedRole, LockedRole, VisibleRole, GainRole, PanRole, SoloRole
+        IdRole = Qt::UserRole + 1, NameRole, KindRole, MutedRole, LockedRole, VisibleRole, GainRole, PanRole, SoloRole, LaneRole
     };
 
     explicit TrackListModel(QObject* parent = nullptr);
@@ -29,6 +29,8 @@ public:
     // property is one of "muted", "locked", "visible", "solo".
     Q_INVOKABLE void toggle(int row, const QString& property);
     Q_INVOKABLE bool canRemove(int row) const;
+    Q_INVOKABLE int laneAt(int row) const { return row >= 0 && row < m_tracks.size() ? m_tracks.at(row).lane : 1; }
+    Q_INVOKABLE void setLane(int row, int level) { setData(index(row), level, LaneRole); }
     Q_INVOKABLE QString nameAt(int row) const { return row >= 0 && row < m_tracks.size() ? m_tracks.at(row).name : QString(); }     // a project keeps at least one video and one audio track
     Q_INVOKABLE void setName(int row, const QString& name);
     Q_INVOKABLE void setGain(int row, double db);

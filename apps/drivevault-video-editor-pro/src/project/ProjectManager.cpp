@@ -70,6 +70,8 @@ ProjectManager::ProjectManager(SettingsManager* settings, RecentProjectsModel* r
                 configureAutosave();
             else if (key == QLatin1String("cacheLocation"))
                 configureCache();
+            else if (key == QLatin1String("copyMediaToProject"))
+                configureMediaFolder();
         });
     }
     configureAutosave();
@@ -216,6 +218,7 @@ void ProjectManager::applyData(const ProjectData& data, const QString& path, boo
     m_tracks.setTracks(m_data.tracks);
     m_timeline.setFrameRate(m_data.frameRate);
     m_timeline.setTracks(m_data.tracks);
+    configureMediaFolder();
     m_library.load(m_data.media, projectDir());
     m_timeline.load(m_data.clips);
     m_timeline.setMarkers(m_data.markers, m_data.inPoint, m_data.outPoint);
@@ -345,6 +348,7 @@ QString ProjectManager::saveAs(const QString& pathOrUrl)
     const QString oldAutosave = m_path.isEmpty() ? QString() : autosavePathFor(m_path);
     m_data = data;
     m_path = path;
+    configureMediaFolder();
     if (!oldAutosave.isEmpty())
         QFile::remove(oldAutosave);
     QFile::remove(autosavePathFor(path));
@@ -448,6 +452,13 @@ void ProjectManager::configureAutosave()
     }
     m_autosaveTimer.setInterval(m_settings->get(QStringLiteral("autoSaveMinutes")).toInt() * 60 * 1000);
     m_autosaveTimer.start();
+}
+
+// Imported files are copied into <project folder>/medias (setting "copyMediaToProject").
+void ProjectManager::configureMediaFolder()
+{
+    const bool copy = m_settings && m_settings->get(QStringLiteral("copyMediaToProject")).toBool();      // without settings (unit tests) files stay where they are
+    m_library.setMediaFolder(copy && !projectDir().isEmpty() ? QDir(projectDir()).filePath(QStringLiteral("medias")) : QString());
 }
 
 void ProjectManager::configureCache()

@@ -54,6 +54,7 @@ struct TrackInfo {
     double gainDb = 0;   // audio tracks: channel fader
     double pan = 0;      // audio tracks: -1 (left) .. +1 (right)
     bool solo = false;
+    int lane = 1;        // height of the lane on the timeline: 0 compact, 1 normal, 2 tall
 
     bool operator==(const TrackInfo&) const = default;
 };

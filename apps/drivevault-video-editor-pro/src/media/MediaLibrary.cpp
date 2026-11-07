@@ -269,6 +269,8 @@ QString MediaLibrary::idForPath(const QString& path) const
     for (const Item& it : m_items)
         if (QDir::cleanPath(it.ref.path).toLower() == wanted)
             return it.ref.id;
+    if (const QString copied = m_copiedSources.value(wanted); !copied.isEmpty() && m_index.contains(copied))      // the original of a copied file
+        return copied;
     return {};
 }
 
@@ -311,10 +313,28 @@ QString MediaLibrary::importFile(const QString& pathOrUrl)
         return {};
     }
 
+    // copy into the project's medias folder (unless the file is already inside it)
+    QString copyFrom;
+    QString target = fi.absoluteFilePath();
+    if (!m_mediaFolder.isEmpty() && !QDir::cleanPath(target).startsWith(QDir::cleanPath(m_mediaFolder) + QLatin1Char('/'), Qt::CaseInsensitive)) {
+        const QString key = QDir::cleanPath(target).toLower();
+        if (const QString known = m_copiedSources.value(key); !known.isEmpty() && contains(known)) {
+            emit importSkipped(fi.fileName());
+            return known;
+        }
+        copyFrom = target;
+        const QDir folder(m_mediaFolder);
+        target = folder.filePath(fi.fileName());
+        for (int n = 2; QFileInfo::exists(target) || !idForPath(target).isEmpty(); ++n)     // never overwrite another file
+            target = folder.filePath(QStringLiteral("%1 (%2).%3").arg(fi.completeBaseName()).arg(n).arg(fi.suffix()));
+    }
+
     Item item;
     item.ref.id = newId();
-    item.ref.path = fi.absoluteFilePath();
-    item.ref.name = fi.fileName();
+    item.ref.path = QDir::cleanPath(target);
+    item.ref.name = QFileInfo(target).fileName();
+    if (!copyFrom.isEmpty())
+        m_copiedSources.insert(QDir::cleanPath(copyFrom).toLower(), item.ref.id);
     item.status = Status::Importing;
     item.added = QDateTime::currentMSecsSinceEpoch() * 1000 + (m_counter++ % 1000);
 
@@ -325,7 +345,7 @@ QString MediaLibrary::importFile(const QString& pathOrUrl)
     endInsertRows();
     emit countChanged();
     emit libraryChanged();
-    startProbe(item.ref.id, item.ref.path);
+    startProbe(item.ref.id, item.ref.path, copyFrom);
     return item.ref.id;
 }
 
@@ -362,16 +382,27 @@ int MediaLibrary::importUrls(const QVariantList& urls)
     return queued;
 }
 
-void MediaLibrary::startProbe(const QString& id, const QString& path)
+void MediaLibrary::startProbe(const QString& id, const QString& path, const QString& copyFrom)
 {
     jobStarted();
     const auto cancel = m_items.at(rowOf(id)).cancel;
     const auto alive = m_alive;
     QPointer<MediaLibrary> self(this);
-    runAsync(m_pool, [self, id, path, cancel, alive] {
+    runAsync(m_pool, [self, id, path, copyFrom, cancel, alive] {
         MediaInfo info;
         QString error;
-        const bool ok = !cancel->load() && MediaProbe::probe(path, &info, &error);
+        bool copied = true;
+        if (!copyFrom.isEmpty() && !cancel->load()) {          // copy the file into the project first (a big file takes a while: not on the UI thread)
+            QDir().mkpath(QFileInfo(path).absolutePath());
+            copied = QFile::copy(copyFrom, path);
+            if (!copied) {
+                QFile::remove(path);
+                error = tr("The file could not be copied into the project folder (%1).").arg(QDir::toNativeSeparators(QFileInfo(path).absolutePath()));
+            }
+        }
+        const bool ok = copied && !cancel->load() && MediaProbe::probe(path, &info, &error);
+        if (!ok && copied && !copyFrom.isEmpty())
+            QFile::remove(path);                               // do not leave a copy of a file that could not be read
         if (!alive->load())
             return;
         QMetaObject::invokeMethod(self.data(), [self, id, ok, info, error, cancel] {

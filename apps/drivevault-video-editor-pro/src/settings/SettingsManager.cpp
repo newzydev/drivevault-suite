@@ -55,6 +55,7 @@ const QList<SettingsManager::Definition>& SettingsManager::definitions()
         // Editing
         def("defaultFps", Type::String, "30"),
         def("snapping", Type::Bool, true),
+        def("copyMediaToProject", Type::Bool, true),            // imported files are copied into <project>/medias
         def("autoSaveEnabled", Type::Bool, true),
         def("autoSaveMinutes", Type::Int, 5, 1, 60),
         def("defaultProjectLocation", Type::Path, ""),

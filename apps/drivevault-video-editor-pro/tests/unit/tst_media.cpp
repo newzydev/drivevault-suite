@@ -271,6 +271,48 @@ private slots:
         QCOMPARE(failed.count(), 0);
         QCOMPARE(lib.count(), 6);
     }
+    void importedFilesAreCopiedIntoTheProjectsMediasFolder()
+    {
+        const QString medias = p("project/medias");
+        MediaLibrary lib;
+        lib.setCacheDir(p("libcache-copy"));
+        lib.setMediaFolder(medias);
+        QSignalSpy ready(&lib, &MediaLibrary::mediaReady);
+        QSignalSpy failed(&lib, &MediaLibrary::importFailed);
+        QSignalSpy skipped(&lib, &MediaLibrary::importSkipped);
+
+        const QString id = lib.importFile(p("clip.mp4"));
+        QVERIFY(!id.isEmpty());
+        QTRY_COMPARE_WITH_TIMEOUT(ready.count(), 1, 15000);
+        QVERIFY(QFileInfo::exists(medias + "/clip.mp4"));                        // the copy
+        QVERIFY(QFileInfo::exists(p("clip.mp4")));                               // the original stays where it was
+        QCOMPARE(QDir::cleanPath(lib.pathOf(id)), QDir::cleanPath(medias + "/clip.mp4"));
+        QCOMPARE(lib.idForPath(p("clip.mp4")), id);                              // the original path still finds it
+
+        QCOMPARE(lib.importFile(p("clip.mp4")), id);                             // the same file again is not copied again
+        QCOMPARE(skipped.count(), 1);
+        QCOMPARE(QDir(medias).entryList(QDir::Files).size(), 1);
+
+        // another file with the same name from another folder: kept under a different name, nothing overwritten
+        QVERIFY(QDir().mkpath(p("other")));
+        QVERIFY(QFile::copy(p("silent.mp4"), p("other/clip.mp4")));
+        const QString id2 = lib.importFile(p("other/clip.mp4"));
+        QVERIFY(!id2.isEmpty() && id2 != id);
+        QTRY_COMPARE_WITH_TIMEOUT(ready.count(), 2, 15000);
+        QVERIFY(QFileInfo::exists(medias + "/clip (2).mp4"));
+        QCOMPARE(QDir(medias).entryList(QDir::Files).size(), 2);
+
+        // a file that cannot be read leaves no copy behind
+        lib.importFile(p("broken.mp4"));
+        QTRY_COMPARE_WITH_TIMEOUT(failed.count(), 1, 15000);
+        QVERIFY(!QFileInfo::exists(medias + "/broken.mp4"));
+
+        // a file that is already in the folder is used as it is
+        QCOMPARE(QDir(medias).entryList(QDir::Files).size(), 2);
+        const QString again = lib.importFile(medias + "/clip.mp4");
+        QCOMPARE(again, id);
+        QCOMPARE(QDir(medias).entryList(QDir::Files).size(), 2);
+    }
     void libraryReportsBrokenFilesAndDropsThem()
     {
         MediaLibrary lib;

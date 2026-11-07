@@ -41,6 +41,9 @@ public:
     int missingCount() const;
 
     void setCacheDir(const QString& dir);
+    // Imported files are copied into this folder first (the project's "medias" folder); empty = use the files where they are.
+    void setMediaFolder(const QString& dir) { m_mediaFolder = dir; }
+    QString mediaFolder() const { return m_mediaFolder; }
     QString cacheDir() const { return m_cacheDir; }
 
     // ---- Import ----------------------------------------------------------------------------
@@ -98,7 +101,7 @@ private:
     };
 
     int rowOf(const QString& id) const;
-    void startProbe(const QString& id, const QString& path);
+    void startProbe(const QString& id, const QString& path, const QString& copyFrom = QString());
     void startDerived(const QString& id);              // thumbnail + waveform
     void jobStarted();
     void jobFinished();
@@ -108,6 +111,8 @@ private:
     QList<Item> m_items;
     QHash<QString, int> m_index;
     QString m_cacheDir;
+    QString m_mediaFolder;
+    QHash<QString, QString> m_copiedSources;        // original path (lower case) -> media id, so that a file is not copied twice
     QThreadPool m_pool;
     int m_busy = 0;
     qint64 m_counter = 0;

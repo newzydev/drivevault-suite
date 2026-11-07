@@ -65,6 +65,7 @@ private slots:
         paths::setOverrideRoot(p("app"));
         m_settings = std::make_unique<SettingsManager>();
         m_settings->load();
+        m_settings->set("copyMediaToProject", false);        // these tests move / rename the original files
         m_recents = std::make_unique<RecentProjectsModel>(m_settings.get());
         m_recents->load();
         m_pm = std::make_unique<ProjectManager>(m_settings.get(), m_recents.get());
