@@ -11,6 +11,7 @@
 #include <QElapsedTimer>
 #include <QEventLoop>
 #include <QThread>
+#include <QFile>
 #include <QFileInfo>
 #include <QPointer>
 #include <QRunnable>
@@ -33,6 +34,26 @@ QString toLocal(const QString& pathOrUrl)
     if (pathOrUrl.startsWith(QLatin1String("file:"), Qt::CaseInsensitive))
         return QUrl(pathOrUrl).toLocalFile();
     return pathOrUrl;
+}
+
+// The paths behind one value handed over from QML: a QUrl, a string (file: URL or plain path), or a list of those (the file dialog's
+// selectedFiles can arrive as a QList<QUrl> or as a nested list). Empty entries are skipped.
+void collectLocalPaths(const QVariant& v, QStringList* out)
+{
+    if (v.typeId() == QMetaType::QUrl) {
+        const QUrl u = v.toUrl();
+        const QString p = u.isLocalFile() ? u.toLocalFile() : u.toString();
+        if (!p.isEmpty())
+            out->append(p);
+    } else if (v.typeId() == QMetaType::QString) {
+        if (const QString p = toLocal(v.toString()); !p.isEmpty())
+            out->append(p);
+    } else if (v.canConvert<QVariantList>()) {
+        for (const QVariant& item : v.toList())
+            collectLocalPaths(item, out);
+    } else if (const QString p = toLocal(v.toString()); !p.isEmpty()) {
+        out->append(p);
+    }
 }
 
 QString formatDuration(int64_t us)
@@ -278,8 +299,13 @@ QString MediaLibrary::importFile(const QString& pathOrUrl)
         emit importSkipped(fi.fileName());
         return existing;
     }
-    if (!fi.exists() || !fi.isFile()) {
-        emit importFailed(fi.fileName(), tr("The file was not found."));
+    // A file that only exists in the cloud (Google Drive / OneDrive "online only") may not report as existing until it is opened:
+    // opening it is also what makes the cloud client download it.
+    const bool present = (fi.exists() && !fi.isDir()) || (!fi.isDir() && QFile(path).open(QIODevice::ReadOnly));
+    if (!present) {
+        qCWarning(lcProject) << "Import: file not found:" << pathOrUrl << "->" << path;
+        emit importFailed(fi.fileName().isEmpty() ? pathOrUrl : fi.fileName(),
+                          tr("The file was not found: %1").arg(QDir::toNativeSeparators(path.isEmpty() ? pathOrUrl : path)));
         return {};
     }
 
@@ -318,8 +344,12 @@ int MediaLibrary::importFolder(const QString& pathOrUrl)
 int MediaLibrary::importUrls(const QVariantList& urls)
 {
     int queued = 0;
-    for (const QVariant& v : urls) {
-        const QString path = toLocal(v.toString());
+    QStringList paths;
+    for (const QVariant& v : urls)
+        collectLocalPaths(v, &paths);
+    if (paths.isEmpty())
+        qCWarning(lcProject) << "Import: nothing usable in" << urls;
+    for (const QString& path : paths) {
         if (QFileInfo(path).isDir())
             queued += importFolder(path);
         else {

@@ -236,6 +236,35 @@ private slots:
         QCOMPARE(skipped.count(), 1);
         QCOMPARE(lib.count(), 1);
     }
+    void filesChosenInTheDialogAreImportedWhateverTheirNames()
+    {
+        // The file dialog hands over QUrl values. Names with #, %, spaces and Thai letters must survive the trip (a '#' or '%'
+        // used to be read as a URL fragment / escape and the import said "file not found" with an empty name).
+        const QStringList names = { QStringLiteral("clip #1 50%.mp4"), QStringLiteral("แนะนำน้องใหม่ โครงการ #2.mp4"), QStringLiteral("a%20b.mp4") };
+        MediaLibrary lib;
+        lib.setCacheDir(p("libcache-names"));
+        QSignalSpy failed(&lib, &MediaLibrary::importFailed);
+        QVariantList urls;
+        for (const QString& n : names) {
+            QVERIFY(QFile::copy(p("clip.mp4"), p(n)));
+            urls << QUrl::fromLocalFile(p(n));
+        }
+        urls << QVariant(QUrl::fromLocalFile(p(names.at(0))).toString());      // the same file as a plain string (QML `.toString()`): skipped as a duplicate
+        QCOMPARE(lib.importUrls(urls), 4);
+        QCOMPARE(failed.count(), 0);
+        QCOMPARE(lib.count(), 3);
+        lib.waitForIdle();
+        for (int i = 0; i < lib.count(); ++i)
+            QCOMPARE(lib.index(i).data(MediaLibrary::KindRole).toString(), QStringLiteral("video"));
+
+        // the selection can also arrive as a list inside the list (QList<QUrl> / QVariantList) - it used to become an empty name
+        QVERIFY(QFile::copy(p("clip.mp4"), p("nested one.mp4")));
+        QVERIFY(QFile::copy(p("clip.mp4"), p("nested two.mp4")));
+        QCOMPARE(lib.importUrls(QVariantList{ QVariantList{ QUrl::fromLocalFile(p("nested one.mp4")) },
+                                              QVariant::fromValue(QList<QUrl>{ QUrl::fromLocalFile(p("nested two.mp4")) }) }), 2);
+        QCOMPARE(failed.count(), 0);
+        QCOMPARE(lib.count(), 5);
+    }
     void libraryReportsBrokenFilesAndDropsThem()
     {
         MediaLibrary lib;
@@ -247,6 +276,7 @@ private slots:
         QCOMPARE(lib.count(), 0);
         lib.importFile(p("nonexistent.mp4"));
         QCOMPARE(failed.count(), 2);
+        QVERIFY2(failed.last().at(1).toString().contains("nonexistent.mp4"), qPrintable(failed.last().at(1).toString()));      // the message names the path
     }
     void libraryLoadFlagsMissingAndRelinks()
     {

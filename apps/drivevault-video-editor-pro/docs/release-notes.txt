@@ -1,6 +1,13 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.1.2
+-------------
+  - Import: files chosen in the file dialog are accepted however the list arrives (a list inside a list used to give "Cannot import : file not found" with an empty
+    name), and a file that is only in the cloud (Google Drive / OneDrive "online only") is opened instead of being reported missing.
+    The message now shows the full path, and the log (Help > Open log) records what the import received.
+  - Fixed a harmless warning when closing a maximized window for the first time.
+
 Version 1.1.1
 -------------
   - Master level meter redesigned: dark track with green / amber / red LED segments, centred in its strip, with the dB scale set apart from the bars.

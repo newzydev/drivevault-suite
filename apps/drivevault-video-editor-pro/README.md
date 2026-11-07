@@ -5,7 +5,7 @@
 Native Windows desktop video editor - C++20, Qt 6 / Qt Quick, FFmpeg, CMake. UI languages: ไทย / English.
 Master specification: [`DriveVault-Video-Editor-Pro-Claude-Code.md`](../../docs/spec/DriveVault-Video-Editor-Pro-Claude-Code.md).
 
-## Status: Version 1.1.1 - Phase 6 product packaging (on top of the Phase 3 editor, the Phase 4 AI tools and the Phase 5 performance work)
+## Status: Version 1.1.2 - Phase 6 product packaging (on top of the Phase 3 editor, the Phase 4 AI tools and the Phase 5 performance work)
 
 Import -> edit -> grade / animate / title -> mix -> save -> reopen -> export works end to end and is covered by automated tests.
 Anything not listed as implemented is visibly disabled or labelled with the phase that delivers it.

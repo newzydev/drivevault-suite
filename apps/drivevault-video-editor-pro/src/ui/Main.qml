@@ -40,7 +40,7 @@ ApplicationWindow {
 
     function saveGeometry() {
         const maximized = visibility === Window.Maximized
-        const previous = AppSettings.state("window", {})
+        const previous = AppSettings.state("window", {}) || {}      // the stored value can be null
         AppSettings.setState("window", maximized
             ? { x: previous.x, y: previous.y, w: previous.w, h: previous.h, maximized: true }
             : { x: x, y: y, w: width, h: height, maximized: false })
