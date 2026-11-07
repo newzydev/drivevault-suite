@@ -262,8 +262,14 @@ private slots:
         QVERIFY(QFile::copy(p("clip.mp4"), p("nested two.mp4")));
         QCOMPARE(lib.importUrls(QVariantList{ QVariantList{ QUrl::fromLocalFile(p("nested one.mp4")) },
                                               QVariant::fromValue(QList<QUrl>{ QUrl::fromLocalFile(p("nested two.mp4")) }) }), 2);
+        // exactly what the real file dialog delivers (seen in the log): a QVariant that holds a QVariant that holds the QUrl
+        QVERIFY(QFile::copy(p("clip.mp4"), p("wrapped.mp4")));
+        QVariant inner = QUrl::fromLocalFile(p("wrapped.mp4"));
+        const QVariant wrapped(QMetaType::fromType<QVariant>(), &inner);          // QVariant::fromValue(QVariant) would not nest
+        QVERIFY(wrapped.metaType() == QMetaType::fromType<QVariant>());
+        QCOMPARE(lib.importUrls(QVariantList{ wrapped }), 1);
         QCOMPARE(failed.count(), 0);
-        QCOMPARE(lib.count(), 5);
+        QCOMPARE(lib.count(), 6);
     }
     void libraryReportsBrokenFilesAndDropsThem()
     {

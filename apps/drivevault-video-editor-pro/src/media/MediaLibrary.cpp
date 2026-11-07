@@ -40,7 +40,9 @@ QString toLocal(const QString& pathOrUrl)
 // selectedFiles can arrive as a QList<QUrl> or as a nested list). Empty entries are skipped.
 void collectLocalPaths(const QVariant& v, QStringList* out)
 {
-    if (v.typeId() == QMetaType::QUrl) {
+    if (v.metaType() == QMetaType::fromType<QVariant>()) {         // QML hands over each list entry as a QVariant inside a QVariant
+        collectLocalPaths(v.value<QVariant>(), out);
+    } else if (v.typeId() == QMetaType::QUrl) {
         const QUrl u = v.toUrl();
         const QString p = u.isLocalFile() ? u.toLocalFile() : u.toString();
         if (!p.isEmpty())

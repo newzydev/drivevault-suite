@@ -4,7 +4,7 @@ Native Windows desktop programs by DriveVault, in one repository.
 
 | Folder | What |
 |---|---|
-| [`apps/drivevault-video-editor-pro`](apps/drivevault-video-editor-pro) | **DriveVault Video Editor Pro** 1.3.0 - video editor (C++20, Qt 6 / QML, FFmpeg). Accent colour violet `#8B5CF6`. |
+| [`apps/drivevault-video-editor-pro`](apps/drivevault-video-editor-pro) | **DriveVault Video Editor Pro** 1.3.1 - video editor (C++20, Qt 6 / QML, FFmpeg). Accent colour violet `#8B5CF6`. |
 | [`apps/drivevault-master-pro`](apps/drivevault-master-pro) | **DriveVault Master Pro** 1.2.0 - the hub that lists, opens, installs, updates (also from GitHub Releases, when you press a button) and uninstalls the programs. Accent colour amber `#F59E0B`. |
 | [`shared/scripts`](shared/scripts) | Build environment (`env.ps1`), signing, clean-machine dependency check, installer artwork - used by every app. |
 | [`docs`](docs) | [`suite-integration.md`](docs/suite-integration.md) (the contract between the programs and the hub), [`spec/`](docs/spec) (the master specification). |
@@ -42,5 +42,5 @@ Outputs: `apps\drivevault-master-pro\dist\DriveVault-Master-Pro-Setup-x64.exe`, 
 
 ## Status
 
-Video Editor Pro is 1.3.0 and Master Pro 1.2.0; both are tested by automated tests (14 + 2 test suites, 66 installer checks). Not code-signed yet (Windows SmartScreen shows a warning: "More info" -> "Run anyway"; signing needs a purchased certificate and is a later step), not tested on a separate clean PC / VM.
+Video Editor Pro is 1.3.1 and Master Pro 1.2.0; both are tested by automated tests (14 + 2 test suites, 66 installer checks). Not code-signed yet (Windows SmartScreen shows a warning: "More info" -> "Run anyway"; signing needs a purchased certificate and is a later step), not tested on a separate clean PC / VM.
 The licence agreement (EULA, English + Thai, in `shared/legal`, governed by Thai law) is drafted but has not been reviewed by a lawyer. See each app's README for details.

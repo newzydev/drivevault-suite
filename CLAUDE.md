@@ -10,7 +10,7 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 
 | Folder | Program |
 |---|---|
-| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.3.0 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
+| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.3.1 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
 | `apps/drivevault-master-pro` | DriveVault Master Pro 1.0.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
 | `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md). |
