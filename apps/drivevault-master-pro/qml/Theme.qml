@@ -16,6 +16,7 @@ QtObject {
     readonly property color success: "#22C55E"
     readonly property color warning: "#F59E0B"
     readonly property color error: "#EF4444"
+    readonly property color errorSoft: "#FCA5A5"
     readonly property color info: "#3B82F6"
     readonly property int radius: 12
     readonly property int radiusSmall: 8

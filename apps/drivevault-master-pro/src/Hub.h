@@ -30,6 +30,8 @@ class Hub : public QObject {
     Q_PROPERTY(bool checking READ checking NOTIFY checkingChanged FINAL)                        // asking GitHub for releases
     Q_PROPERTY(double downloadProgress READ downloadProgress NOTIFY downloadProgressChanged FINAL)   // 0..1 while downloading, -1 otherwise
     Q_PROPERTY(bool onlineChecked READ onlineChecked NOTIFY productsChanged FINAL)
+    Q_PROPERTY(bool autoCheck READ autoCheck WRITE setAutoCheck NOTIFY autoCheckChanged FINAL)    // check for updates when the program starts
+    Q_PROPERTY(QString selfUpdateVersion READ selfUpdateVersion NOTIFY productsChanged FINAL)    // newer Master Pro release, "" when none
 
 public:
     struct Options {
@@ -55,6 +57,9 @@ public:
     bool checking() const { return m_checking; }
     double downloadProgress() const { return m_progress; }
     bool onlineChecked() const { return m_onlineChecked; }
+    bool autoCheck() const { return m_autoCheck; }
+    void setAutoCheck(bool on);
+    QString selfUpdateVersion() const;
 
     // Re-reads the registry and the installer folders.
     Q_INVOKABLE void refresh();
@@ -68,6 +73,10 @@ public:
     // checks its SHA-256 against the release's .sha256 file and its version resource, and runs it like any other setup file.
     Q_INVOKABLE QString checkForUpdates();
     Q_INVOKABLE QString downloadAndInstall(const QString& productId);
+    Q_INVOKABLE QString updateSelf();                                               // Master Pro's own newer release
+    Q_INVOKABLE void checkForUpdatesOnStart();                                      // quiet check, only when `autoCheck` is on
+    Q_INVOKABLE QVariantMap windowState() const;                                    // {maximized, width, height, x, y}
+    Q_INVOKABLE void saveWindowState(bool maximized, int x, int y, int width, int height);
     Q_INVOKABLE QString addInstallerFolder(const QString& folderOrUrl);
     Q_INVOKABLE QString removeInstallerFolder(const QString& folder);
     Q_INVOKABLE QString openInstallersFolder();
@@ -81,6 +90,8 @@ public:
     QVariantList scanInstallers() const;
     // Silent switch of the install: tests use it so that no wizard opens.
     void setSilentInstalls(bool silent) { m_silent = silent; }
+    // The start-up check is off for screenshots and diagnostics (they must never touch the network).
+    void setStartCheckEnabled(bool on) { m_startCheckEnabled = on; }
 
 signals:
     void productsChanged();
@@ -89,6 +100,7 @@ signals:
     void languageChanged();
     void taskFinished(int exitCode);
     void checkingChanged();
+    void autoCheckChanged();
     void downloadProgressChanged();
     void checkFinished(bool ok);
     void downloadFinished(bool ok);
@@ -102,7 +114,9 @@ private:
     void saveFolders(const QStringList& folders);
     QNetworkAccessManager* net();
     void failDownload(const QString& why);
-    void startAssetDownload(const releases::Release& rel, const QString& productName, const QString& expectedHash);
+    QString startCheck(bool quiet);
+    QString beginDownload(const QString& slug, const QString& name, bool self);
+    void startAssetDownload(const releases::Release& rel, const QString& productName, const QString& expectedHash, bool self);
 
     Options m_options;
     QString m_appDir;
@@ -118,6 +132,8 @@ private:
     QMap<QString, releases::Release> m_online;     // best release per slug, from the last check
     bool m_checking = false;
     bool m_onlineChecked = false;
+    bool m_autoCheck = true;
+    bool m_startCheckEnabled = true;
     double m_progress = -1;
     QString m_cleanupFile;                          // a downloaded setup file that is deleted after a successful run
 };

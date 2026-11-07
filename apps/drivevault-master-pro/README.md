@@ -27,7 +27,7 @@ the last program is gone it can be uninstalled and removes the suite folder if i
   `<Master>\installers`, `%LOCALAPPDATA%\DriveVault\MasterPro\installers` and folders you add, or a file you choose. Only setup files whose version resource says
   *CompanyName = DriveVault* are started; **signatures are not verified** (the installers are not signed yet). A newer setup file than the installed version
   shows "Update available".
-* Image Editor and Audio Editor are shown as **Coming soon** - they do not exist yet. Programs are installed from setup files on this PC. Since 1.1.0 the **Check for updates** button asks the GitHub Releases of `newzydev/drivevault-suite` which versions exist (only when you press it - nothing runs in the background) and offers **Download and update / install**: the setup file comes from the official release address only, its SHA-256 is compared with the release's `.sha256` file, its version resource must be DriveVault + the right program + the released version, and then it runs like any other setup file (and is deleted after a successful run). There is no online store and no automatic update.
+* Image Editor and Audio Editor are shown as **Coming soon** - they do not exist yet. Programs are installed from setup files on this PC. Since 1.1.0 the **Check for updates** button asks the GitHub Releases of `newzydev/drivevault-suite` which versions exist (only when you press it - once when the program opens too, unless switched off) and offers **Download and update / install**: the setup file comes from the official release address only, its SHA-256 is compared with the release's `.sha256` file, its version resource must be DriveVault + the right program + the released version, and then it runs like any other setup file (and is deleted after a successful run). There is no online store and no automatic update.
 
 ## Build, run, test
 
@@ -46,6 +46,6 @@ refusal while a program is installed, uninstall, empty-folder clean-up) is teste
 
 ## Status
 
-Version 1.1.1 (online update check added in 1.1.0). Not code-signed (the signing scripts are in the Video Editor repository: `scripts\sign.ps1`, `package.ps1 -Sign`). Not tested on a separate clean PC / VM,
+Version 1.2.0 (online update check since 1.1.0). Not code-signed (the signing scripts are in the Video Editor repository: `scripts\sign.ps1`, `package.ps1 -Sign`). Not tested on a separate clean PC / VM,
 and the all-users path under `C:\Program Files` needs administrator rights and was not run by the automated tests (the per-user path was). `LICENSE.txt` and the installer licence pages are the drafted EULA generated from `shared/legal`
 (not yet reviewed by a lawyer).

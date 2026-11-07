@@ -1,6 +1,14 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.2.0
+  New
+  - Checks for updates automatically once when it opens (all programs and Master Pro itself). The checkbox "Check for updates on start" in the footer switches it off.
+    The check is quiet: nothing is shown when it fails or when everything is up to date. Nothing is downloaded until you press an update button.
+  - Master Pro can update itself: a banner "Master Pro x.y.z is available" with an "Update Master Pro" button (download, SHA-256 check, setup closes and restarts Master Pro).
+  - The window remembers whether it was maximized and its normal size and place.
+  - New look for the buttons (gradient accent button, softer secondary and delete buttons); the actions of a program card no longer overflow the card.
+
 v1.1.1
   - Fixed: the Thai texts of "Check for updates" and the download were garbled.
   - An empty release list now says that no releases have been published yet (it used to say "up to date").
@@ -16,7 +24,7 @@ v1.1.0 (2026-11-07)
   - The licence text (EULA) says that "Check for updates" contacts GitHub.
   - Fixed: the Thai product section (6) of the licence text was shown garbled; the licence generator script is now saved with a byte order mark.
   Notes
-  - Master Pro does not update itself; its setup file is installed by the program installers or run by hand.
+  - (1.1.0 only) Master Pro did not update itself; since 1.2.0 it does.
   - GitHub limits anonymous requests (60 per hour per connection): if the check says so, try again later.
 
 Known limitations

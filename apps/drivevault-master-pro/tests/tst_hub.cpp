@@ -353,6 +353,71 @@ private slots:
         qunsetenv("DM_FAKE_MARKER");
     }
 
+    void windowStateAndTheStartCheckSettingArePersisted()
+    {
+        {
+            Hub hub(options());
+            QVERIFY(hub.autoCheck());                                   // on by default
+            QCOMPARE(hub.windowState().value("width").toInt(), 0);      // nothing remembered yet
+            hub.saveWindowState(true, 120, 80, 1000, 700);
+            hub.setAutoCheck(false);
+        }
+        Hub again(options());
+        QVERIFY(!again.autoCheck());
+        const QVariantMap w = again.windowState();
+        QVERIFY(w.value("maximized").toBool());
+        QCOMPARE(w.value("width").toInt(), 1000);
+        QCOMPARE(w.value("height").toInt(), 700);
+        QCOMPARE(w.value("x").toInt(), 120);
+        again.saveWindowState(false, 10, 20, 100, 100);                // too small to be a real window: only the maximized flag changes
+        QVERIFY(!again.windowState().value("maximized").toBool());
+        QCOMPARE(again.windowState().value("width").toInt(), 1000);
+        // with the setting off the start-up check does nothing
+        QSignalSpy checked(&again, &Hub::checkFinished);
+        again.checkForUpdatesOnStart();
+        QVERIFY(!again.checking());
+        QCOMPARE(checked.size(), 0);
+    }
+
+    void aNewerMasterProReleaseIsOfferedAndTheStartCheckIsQuiet()
+    {
+        auto url = [&](const QString& file) { return QUrl::fromLocalFile(p(file)).toString(); };
+        const QString name = QStringLiteral("DriveVault-Master-Pro-Setup-x64.exe");
+        QFile feed(p("master-feed.json"));
+        QVERIFY(feed.open(QIODevice::WriteOnly));
+        feed.write(QJsonDocument(QJsonArray{QJsonObject{
+            {"tag_name", "drivevault-master-pro-v9.9.9"}, {"draft", false}, {"prerelease", false}, {"html_url", "https://example.invalid"},
+            {"assets", QJsonArray{QJsonObject{{"name", name}, {"browser_download_url", url("rel/" + name)}, {"size", 1}},
+                                  QJsonObject{{"name", name + ".sha256"}, {"browser_download_url", url("rel/" + name + ".sha256")}, {"size", 1}}}}}}).toJson());
+        feed.close();
+        Hub::Options o = options();
+        o.releasesUrl = url("master-feed.json");
+        Hub hub(o);
+        hub.setLanguage("en");
+        hub.setAutoCheck(true);                                        // an earlier test switched it off in the shared settings file
+        QVERIFY(hub.selfUpdateVersion().isEmpty());
+        QVERIFY(!hub.updateSelf().isEmpty());                          // nothing known yet
+        QSignalSpy checked(&hub, &Hub::checkFinished);
+        hub.checkForUpdatesOnStart();                                  // auto check is on by default
+        QVERIFY(hub.checking());
+        QTRY_COMPARE(checked.size(), 1);
+        QCOMPARE(hub.selfUpdateVersion(), QStringLiteral("9.9.9"));
+        QVERIFY2(hub.message().contains("1 update"), qPrintable(hub.message()));   // Master Pro itself counts
+        // a quiet check that finds nothing new says nothing
+        Hub::Options none = options();
+        none.releasesUrl = QUrl::fromLocalFile(p("empty-feed.json")).toString();
+        QFile empty(p("empty-feed.json"));
+        QVERIFY(empty.open(QIODevice::WriteOnly));
+        empty.write("[]");
+        empty.close();
+        Hub quiet(none);
+        quiet.setLanguage("en");
+        QSignalSpy done(&quiet, &Hub::checkFinished);
+        quiet.checkForUpdatesOnStart();
+        QTRY_COMPARE(done.size(), 1);
+        QVERIFY2(quiet.message().isEmpty(), qPrintable(quiet.message()));
+    }
+
     void anEmptyReleaseListIsNotReportedAsUpToDate()
     {
         QFile feed(p("empty-feed.json"));

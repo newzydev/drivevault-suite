@@ -15,6 +15,41 @@ ApplicationWindow {
     title: "DriveVault Master Pro"
     color: Theme.background
 
+    // ---- the window opens the way it was closed: maximized or normal, with its normal size and place ----------------------------
+    property int normalX: x
+    property int normalY: y
+    property int normalWidth: width
+    property int normalHeight: height
+    onXChanged: if (visibility === Window.Windowed) normalX = x
+    onYChanged: if (visibility === Window.Windowed) normalY = y
+    onWidthChanged: if (visibility === Window.Windowed) normalWidth = width
+    onHeightChanged: if (visibility === Window.Windowed) normalHeight = height
+    function pointOnAScreen(px, py) {
+        const screens = Qt.application.screens
+        for (let i = 0; i < screens.length; ++i) {
+            const s = screens[i]
+            if (px >= s.virtualX && px < s.virtualX + s.width && py >= s.virtualY && py < s.virtualY + s.height)
+                return true
+        }
+        return false
+    }
+    Component.onCompleted: {
+        const s = Hub.windowState()
+        if (s.width > 0 && s.height > 0) {
+            width = Math.max(minimumWidth, s.width)
+            height = Math.max(minimumHeight, s.height)
+            if (pointOnAScreen(s.x + 80, s.y + 20)) {      // never open off screen (a monitor that is gone)
+                x = s.x
+                y = s.y
+            }
+        }
+        normalX = x; normalY = y; normalWidth = width; normalHeight = height
+        if (s.maximized)
+            visibility = Window.Maximized
+        Hub.checkForUpdatesOnStart()
+    }
+    onClosing: Hub.saveWindowState(visibility === Window.Maximized, normalX, normalY, normalWidth, normalHeight)
+
     property string notice: ""
     function showNotice(text) { notice = text; noticeTimer.restart() }
 
@@ -102,6 +137,38 @@ ApplicationWindow {
             }
         }
 
+        // ---- Master Pro itself has a newer release ------------------------------------------------------------------------------
+        Rectangle {
+            objectName: "selfUpdateBanner"
+            Layout.fillWidth: true
+            visible: Hub.selfUpdateVersion !== ""
+            implicitHeight: visible ? 56 : 0
+            color: Qt.alpha(Theme.accent, 0.12)
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Qt.alpha(Theme.accent, 0.4) }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 28
+                anchors.rightMargin: 24
+                spacing: 14
+                Text {
+                    Layout.fillWidth: true
+                    text: Tr.s("selfUpdate").replace("%1", Hub.selfUpdateVersion)
+                    font.pixelSize: 14
+                    font.weight: Font.DemiBold
+                    color: Theme.text
+                    elide: Text.ElideRight
+                }
+                MButton {
+                    objectName: "selfUpdate"
+                    variant: "primary"
+                    compact: true
+                    text: Tr.s("selfUpdateBtn")
+                    enabled: !Hub.busy && !Hub.checking
+                    onClicked: { const e = Hub.updateSelf(); if (e !== "") win.showNotice(e) }
+                }
+            }
+        }
+
         // ---- programs ------------------------------------------------------------------------------------------------
         Flickable {
             Layout.fillWidth: true
@@ -173,6 +240,30 @@ ApplicationWindow {
                         font.pixelSize: 13
                         color: Hub.busy || Hub.checking ? Theme.accent : Theme.textSecondary
                         elide: Text.ElideRight
+                    }
+                    CheckBox {
+                        id: autoCheckBox
+                        objectName: "autoCheck"
+                        checked: Hub.autoCheck
+                        onToggled: Hub.autoCheck = checked
+                        padding: 0
+                        spacing: 8
+                        contentItem: Text {
+                            leftPadding: autoCheckBox.indicator.width + autoCheckBox.spacing
+                            text: Tr.s("autoCheck")
+                            font.pixelSize: 12
+                            color: Theme.textSecondary
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        indicator: Rectangle {
+                            implicitWidth: 18; implicitHeight: 18
+                            y: (autoCheckBox.height - height) / 2
+                            radius: 5
+                            color: autoCheckBox.checked ? Theme.accent : "transparent"
+                            border.width: 1
+                            border.color: autoCheckBox.checked ? Theme.accent : Theme.border
+                            Text { anchors.centerIn: parent; visible: autoCheckBox.checked; text: "✓"; font.pixelSize: 12; font.weight: Font.Bold; color: Theme.readableOn(Theme.accent) }
+                        }
                     }
                     Text { text: "v" + Hub.version; font.pixelSize: 12; color: Theme.textDisabled }
                 }

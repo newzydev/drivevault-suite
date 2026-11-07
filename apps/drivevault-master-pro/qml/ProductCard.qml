@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import DriveVault.Master.Backend
 
 // One DriveVault program: its own accent colour, status and the actions that make sense right now.
+// Layout: one full-width main action per row (the first is the recommended one), then Folder / Uninstall side by side.
 Rectangle {
     id: card
 
@@ -15,11 +16,12 @@ Rectangle {
     readonly property color accent: product.accent
     readonly property string status: product.status
     readonly property string key: product.key
+    readonly property bool hasUpdate: product.updateAvailable === true || product.onlineUpdate === true
 
     objectName: "card_" + key
     implicitWidth: 320
-    implicitHeight: body.implicitHeight + 104
-    radius: Theme.radius
+    implicitHeight: body.y + body.implicitHeight + 20
+    radius: Theme.radius + 2
     color: Theme.backgroundAlt
     border.width: 1
     border.color: hover.hovered ? card.accent : Theme.borderSubtle
@@ -32,7 +34,7 @@ Rectangle {
         id: band
         width: parent.width
         height: 96
-        radius: Theme.radius
+        radius: card.radius
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: card.accent }
@@ -79,7 +81,7 @@ Rectangle {
             Rectangle {
                 id: chip
                 objectName: "status_" + card.key
-                readonly property bool update: card.product.updateAvailable === true || card.product.onlineUpdate === true
+                readonly property bool update: card.hasUpdate
                 implicitWidth: chipText.implicitWidth + 20
                 implicitHeight: 24
                 radius: 12
@@ -126,63 +128,76 @@ Rectangle {
             wrapMode: Text.Wrap
         }
 
-        Flow {
+        // ---- main actions (full width) -------------------------------------------------------------------------------------------
+        MButton {
+            objectName: "onlineUpdate_" + card.key
             Layout.fillWidth: true
+            visible: card.product.onlineUpdate === true
+            variant: "primary"; tint: card.accent
+            text: Tr.s("onlineUpdate").replace("%1", card.product.onlineVersion)
+            enabled: !Hub.busy && !Hub.checking
+            onClicked: { const e = Hub.downloadAndInstall(card.product.id); if (e !== "") card.error(e) }
+        }
+        MButton {
+            objectName: "update_" + card.key
+            Layout.fillWidth: true
+            visible: card.product.updateAvailable === true
+            variant: card.product.onlineUpdate === true ? "secondary" : "primary"; tint: card.accent
+            text: Tr.s("updateBtn")
+            enabled: !Hub.busy
+            onClicked: { const e = Hub.installProduct(card.product.id); if (e !== "") card.error(e) }
+        }
+        MButton {
+            objectName: "onlineInstall_" + card.key
+            Layout.fillWidth: true
+            visible: card.product.onlineInstall === true
+            variant: card.product.installerPath === "" ? "primary" : "secondary"; tint: card.accent
+            text: Tr.s("onlineInstall").replace("%1", card.product.onlineVersion)
+            enabled: !Hub.busy && !Hub.checking
+            onClicked: { const e = Hub.downloadAndInstall(card.product.id); if (e !== "") card.error(e) }
+        }
+        MButton {
+            objectName: "install_" + card.key
+            Layout.fillWidth: true
+            visible: (status === "notInstalled" || status === "broken") && card.product.installerPath !== ""
+            variant: "primary"; tint: card.accent
+            text: Tr.s("install")
+            enabled: !Hub.busy
+            onClicked: { const e = Hub.installProduct(card.product.id); if (e !== "") card.error(e) }
+        }
+        MButton {
+            objectName: "launch_" + card.key
+            Layout.fillWidth: true
+            visible: status === "installed"
+            variant: card.hasUpdate ? "secondary" : "primary"; tint: card.accent
+            text: Tr.s("launch")
+            enabled: !Hub.busy
+            onClicked: { const e = Hub.launch(card.product.id); if (e !== "") card.error(e) }
+        }
+        MButton {
+            objectName: "browse_" + card.key
+            Layout.fillWidth: true
+            visible: (status === "notInstalled" || status === "broken") && card.product.installerPath === ""
+            text: Tr.s("browse")
+            onClicked: card.browseRequested()
+        }
+
+        // ---- secondary actions (side by side) --------------------------------------------------------------------------------------
+        RowLayout {
+            Layout.fillWidth: true
+            visible: status === "installed"
             spacing: 8
             MButton {
-                objectName: "launch_" + card.key
-                visible: status === "installed"
-                variant: "primary"; tint: card.accent
-                text: Tr.s("launch")
-                enabled: !Hub.busy
-                onClicked: { const e = Hub.launch(card.product.id); if (e !== "") card.error(e) }
-            }
-            MButton {
-                objectName: "update_" + card.key
-                visible: card.product.updateAvailable === true
-                variant: "secondary"
-                text: Tr.s("updateBtn")
-                enabled: !Hub.busy
-                onClicked: { const e = Hub.installProduct(card.product.id); if (e !== "") card.error(e) }
-            }
-            MButton {
-                objectName: "onlineUpdate_" + card.key
-                visible: card.product.onlineUpdate === true
-                variant: "primary"; tint: card.accent
-                text: Tr.s("onlineUpdate").replace("%1", card.product.onlineVersion)
-                enabled: !Hub.busy && !Hub.checking
-                onClicked: { const e = Hub.downloadAndInstall(card.product.id); if (e !== "") card.error(e) }
-            }
-            MButton {
-                objectName: "onlineInstall_" + card.key
-                visible: card.product.onlineInstall === true
-                variant: card.product.installerPath === "" ? "primary" : "secondary"; tint: card.accent
-                text: Tr.s("onlineInstall").replace("%1", card.product.onlineVersion)
-                enabled: !Hub.busy && !Hub.checking
-                onClicked: { const e = Hub.downloadAndInstall(card.product.id); if (e !== "") card.error(e) }
-            }
-            MButton {
-                objectName: "install_" + card.key
-                visible: (status === "notInstalled" || status === "broken") && card.product.installerPath !== ""
-                variant: "primary"; tint: card.accent
-                text: Tr.s("install")
-                enabled: !Hub.busy
-                onClicked: { const e = Hub.installProduct(card.product.id); if (e !== "") card.error(e) }
-            }
-            MButton {
-                objectName: "browse_" + card.key
-                visible: (status === "notInstalled" || status === "broken") && card.product.installerPath === ""
-                text: Tr.s("browse")
-                onClicked: card.browseRequested()
-            }
-            MButton {
                 objectName: "folder_" + card.key
-                visible: status === "installed"
+                Layout.fillWidth: true
+                compact: true
                 text: Tr.s("folder")
                 onClicked: { const e = Hub.openFolder(card.product.id); if (e !== "") card.error(e) }
             }
             MButton {
                 objectName: "uninstall_" + card.key
+                Layout.fillWidth: true
+                compact: true
                 visible: card.product.canUninstall === true
                 variant: "danger"
                 text: Tr.s("uninstall")

@@ -22,15 +22,15 @@ having the rights to the material you edit and export. The Software works on you
 4. PRIVACY
 The Software works offline. It does not collect usage data, has no telemetry and does not send personal data or your files anywhere. Settings, logs, auto-save copies and
 caches are stored on your computer (in %LOCALAPPDATA%\DriveVault) and are removed on request when you uninstall. The only time the Software uses the internet is when you
-yourself press a button that downloads or checks something (for example a speech model, or "Check for updates" in DriveVault Master Pro, which contacts GitHub); then the server you connect to can see your connection like any website.
+yourself press a button that downloads or checks something (for example a speech model, or "Check for updates" in DriveVault Master Pro, which contacts GitHub - also once when it opens, unless you switch that off); then the server you connect to can see your connection like any website.
 
 5. UPDATES AND THE DRIVEVAULT SUITE
 We may offer new versions, but we are not obliged to. A newer installer replaces the installed version. DriveVault Master Pro, which is installed together with every
 DriveVault program, manages the programs on your computer; it starts only setup files that identify DriveVault as their publisher and only when you ask it to.
 
 6. PRODUCT-SPECIFIC TERMS
-Master Pro lists, opens, installs, updates and uninstalls DriveVault programs only when you ask it to. It uses setup files on your computer; only when you press "Check for updates" does it contact GitHub
-(the releases of the DriveVault repository), and when you then choose to download, it fetches that one setup file and compares its SHA-256 checksum with the one published in the release before it runs.
+Master Pro lists, opens, installs, updates and uninstalls DriveVault programs only when you ask it to. It uses setup files on your computer; it contacts GitHub (the releases of the DriveVault repository) when you press "Check for updates"
+and, unless you switch "Check for updates on start" off, once when it opens; only when you then choose to download, it fetches that one setup file and compares its SHA-256 checksum with the one published in the release before it runs.
 It has no online store and never downloads anything by itself. It starts only setup files whose version information names DriveVault as the publisher. It does not verify digital signatures of setup files (installers may be unsigned),
 so install only setup files that you obtained from a source you trust. Uninstalling a program never deletes your projects or exported files.
 

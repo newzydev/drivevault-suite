@@ -50,6 +50,7 @@ int main(int argc, char* argv[])
     dm::Hub hub(options);
     if (parser.isSet(lang))
         hub.setLanguage(parser.value(lang));
+    hub.setStartCheckEnabled(!parser.isSet(shot) && !parser.isSet(list));      // diagnostics never use the network
 
     if (parser.isSet(list)) {
         QJsonArray out;

@@ -113,6 +113,7 @@ Hub::Hub(const Options& options, QObject* parent)
                     : options.dataDir;
     QDir().mkpath(m_dataDir);
     QSettings s(m_dataDir + QStringLiteral("/settings.ini"), QSettings::IniFormat);
+    m_autoCheck = s.value(QStringLiteral("autoCheckUpdates"), true).toBool();
     m_language = s.value(QStringLiteral("language")).toString();
     if (m_language != QLatin1String("th") && m_language != QLatin1String("en"))
         m_language = QLocale::system().language() == QLocale::Thai ? QStringLiteral("th") : QStringLiteral("en");
@@ -136,6 +137,31 @@ void Hub::setLanguage(const QString& language)
     QSettings(m_dataDir + QStringLiteral("/settings.ini"), QSettings::IniFormat).setValue(QStringLiteral("language"), m_language);
     emit languageChanged();
     refresh();
+}
+
+// The window comes back the way the user left it: maximized or normal, and the normal size and place.
+QVariantMap Hub::windowState() const
+{
+    QSettings s(m_dataDir + QStringLiteral("/settings.ini"), QSettings::IniFormat);
+    QVariantMap m;
+    m["maximized"] = s.value(QStringLiteral("window/maximized"), false).toBool();
+    m["width"] = s.value(QStringLiteral("window/width"), 0).toInt();
+    m["height"] = s.value(QStringLiteral("window/height"), 0).toInt();
+    m["x"] = s.value(QStringLiteral("window/x"), -1).toInt();
+    m["y"] = s.value(QStringLiteral("window/y"), -1).toInt();
+    return m;
+}
+
+void Hub::saveWindowState(bool maximized, int x, int y, int width, int height)
+{
+    QSettings s(m_dataDir + QStringLiteral("/settings.ini"), QSettings::IniFormat);
+    s.setValue(QStringLiteral("window/maximized"), maximized);
+    if (width >= 400 && height >= 300) {            // the normal (not maximized) geometry is kept while maximized
+        s.setValue(QStringLiteral("window/width"), width);
+        s.setValue(QStringLiteral("window/height"), height);
+        s.setValue(QStringLiteral("window/x"), x);
+        s.setValue(QStringLiteral("window/y"), y);
+    }
 }
 
 void Hub::setMessage(const QString& m)
@@ -387,19 +413,48 @@ QNetworkRequest makeRequest(const QString& url, const QString& accept)
 }
 } // namespace
 
-QString Hub::checkForUpdates()
+QString Hub::checkForUpdates() { return startCheck(false); }
+
+void Hub::checkForUpdatesOnStart()
+{
+    if (m_autoCheck && m_startCheckEnabled)
+        startCheck(true);
+}
+
+void Hub::setAutoCheck(bool on)
+{
+    if (on == m_autoCheck)
+        return;
+    m_autoCheck = on;
+    QSettings(m_dataDir + QStringLiteral("/settings.ini"), QSettings::IniFormat).setValue(QStringLiteral("autoCheckUpdates"), on);
+    emit autoCheckChanged();
+}
+
+QString Hub::selfUpdateVersion() const
+{
+    const auto it = m_online.constFind(QStringLiteral("drivevault-master-pro"));
+    return it != m_online.constEnd() && win::compareVersions(it->version, version()) > 0 ? it->version : QString();
+}
+
+// A quiet check (when the program starts) says nothing when it fails or when everything is up to date.
+QString Hub::startCheck(bool quiet)
 {
     if (m_busy || m_checking)
         return tr2(QStringLiteral("Another task is still running."), QStringLiteral("มีงานอื่นกำลังทำงานอยู่"));
     m_checking = true;
     emit checkingChanged();
-    setMessage(tr2(QStringLiteral("Checking GitHub for new versions…"), QStringLiteral("กำลังตรวจหาเวอร์ชันใหม่จาก GitHub…")));
+    if (!quiet)
+        setMessage(tr2(QStringLiteral("Checking GitHub for new versions…"), QStringLiteral("กำลังตรวจหาเวอร์ชันใหม่จาก GitHub…")));
     QNetworkReply* reply = net()->get(makeRequest(m_options.releasesUrl, QStringLiteral("application/vnd.github+json")));
-    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, quiet] {
         reply->deleteLater();
         m_checking = false;
         emit checkingChanged();
         if (reply->error() != QNetworkReply::NoError) {
+            if (quiet) {
+                emit checkFinished(false);
+                return;
+            }
             const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
             if (status == 403 || status == 429)
                 setMessage(tr2(QStringLiteral("GitHub is limiting requests from this connection. Try again in an hour."),
@@ -416,6 +471,12 @@ QString Hub::checkForUpdates()
         for (const QVariant& v : m_products)
             if (v.toMap().value("onlineUpdate").toBool())
                 ++updates;
+        if (!selfUpdateVersion().isEmpty())
+            ++updates;
+        if (quiet && updates == 0) {
+            emit checkFinished(true);
+            return;
+        }
         if (m_online.isEmpty()) {          // do not claim "up to date" when there is nothing to compare with
             setMessage(tr2(QStringLiteral("No program releases have been published on GitHub yet."),
                            QStringLiteral("ยังไม่มีการเผยแพร่โปรแกรมรุ่นใดบน GitHub")));
@@ -441,10 +502,22 @@ void Hub::failDownload(const QString& why)
 
 QString Hub::downloadAndInstall(const QString& id)
 {
+    const QVariantMap p = productById(id);
+    return beginDownload(slugForKey(p.value("key").toString()), p.value("name").toString(), false);
+}
+
+QString Hub::updateSelf()
+{
+    if (selfUpdateVersion().isEmpty())
+        return tr2(QStringLiteral("No newer version of Master Pro is known."), QStringLiteral("ยังไม่ทราบรุ่นใหม่ของ Master Pro"));
+    return beginDownload(QStringLiteral("drivevault-master-pro"), QStringLiteral("DriveVault Master Pro"), true);
+}
+
+QString Hub::beginDownload(const QString& slug, const QString& name, bool self)
+{
     if (m_busy || m_checking)
         return tr2(QStringLiteral("Another task is still running."), QStringLiteral("มีงานอื่นกำลังทำงานอยู่"));
-    const QVariantMap p = productById(id);
-    const auto it = m_online.constFind(slugForKey(p.value("key").toString()));
+    const auto it = m_online.constFind(slug);
     if (it == m_online.constEnd())
         return tr2(QStringLiteral("No online version is known. Press \"Check for updates\" first."),
                    QStringLiteral("ยังไม่ทราบเวอร์ชันออนไลน์ กดปุ่ม \"ตรวจหาอัปเดต\" ก่อน"));
@@ -459,10 +532,9 @@ QString Hub::downloadAndInstall(const QString& id)
     m_progress = 0;
     emit busyChanged();
     emit downloadProgressChanged();
-    const QString name = p.value("name").toString();
     setMessage(tr2(QStringLiteral("Getting the checksum of %1 %2…"), QStringLiteral("กำลังอ่านค่าตรวจสอบของ %1 %2…")).arg(name, rel.version));
     QNetworkReply* hashReply = net()->get(makeRequest(rel.hashUrl, QString()));
-    connect(hashReply, &QNetworkReply::finished, this, [this, hashReply, rel, name] {
+    connect(hashReply, &QNetworkReply::finished, this, [this, hashReply, rel, name, self] {
         hashReply->deleteLater();
         if (hashReply->error() != QNetworkReply::NoError)
             return failDownload(tr2(QStringLiteral("Could not download the checksum file: %1"), QStringLiteral("ดาวน์โหลดไฟล์ค่าตรวจสอบไม่สำเร็จ: %1")).arg(hashReply->errorString()));
@@ -470,12 +542,12 @@ QString Hub::downloadAndInstall(const QString& id)
         if (expected.isEmpty())
             return failDownload(tr2(QStringLiteral("The checksum file of this release is not valid. Nothing was installed."),
                                     QStringLiteral("ไฟล์ค่าตรวจสอบของรุ่นนี้ไม่ถูกต้อง จึงไม่ได้ติดตั้ง")));
-        startAssetDownload(rel, name, expected);
+        startAssetDownload(rel, name, expected, self);
     });
     return {};
 }
 
-void Hub::startAssetDownload(const releases::Release& rel, const QString& productName, const QString& expectedHash)
+void Hub::startAssetDownload(const releases::Release& rel, const QString& productName, const QString& expectedHash, bool self)
 {
     const QString dir = QDir::cleanPath(m_dataDir + QStringLiteral("/installers"));
     QDir().mkpath(dir);
@@ -491,7 +563,7 @@ void Hub::startAssetDownload(const releases::Release& rel, const QString& produc
         m_progress = whole > 0 ? qBound(0.0, double(received) / double(whole), 1.0) : 0.0;
         emit downloadProgressChanged();
     });
-    connect(reply, &QNetworkReply::finished, this, [this, reply, file, rel, productName, expectedHash, target] {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, file, rel, productName, expectedHash, target, self] {
         reply->deleteLater();
         file->write(reply->readAll());
         file->close();
@@ -534,7 +606,20 @@ void Hub::startAssetDownload(const releases::Release& rel, const QString& produc
         emit downloadProgressChanged();
         emit downloadFinished(true);
         m_cleanupFile = target;
-        const QString error = installFromFile(target);
+        QString error;
+        if (self) {
+            // Master Pro replaces itself: the setup closes this program (Restart Manager), installs over the same folder and starts it again.
+            const bool allUsers = QSettings(QStringLiteral("HKEY_LOCAL_MACHINE\\%1\\MasterPro").arg(m_options.registryRoot), QSettings::NativeFormat)
+                                      .contains(QStringLiteral("Version"));
+            error = run(target,
+                        QStringLiteral("/SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS %1")
+                            .arg(allUsers ? QStringLiteral("/ALLUSERS") : QStringLiteral("/CURRENTUSER")),
+                        QFileInfo(target).absolutePath(),
+                        tr2(QStringLiteral("Updating Master Pro to %1… the program restarts."), QStringLiteral("กำลังอัปเดต Master Pro เป็น %1… โปรแกรมจะเปิดใหม่")).arg(rel.version),
+                        tr2(QStringLiteral("Master Pro was updated."), QStringLiteral("อัปเดต Master Pro แล้ว")));
+        } else {
+            error = installFromFile(target);
+        }
         if (!error.isEmpty()) {
             m_cleanupFile.clear();
             setMessage(error);
