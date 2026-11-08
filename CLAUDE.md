@@ -11,7 +11,7 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 | Folder | Program |
 |---|---|
 | `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.6.0 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
-| `apps/drivevault-master-pro` | DriveVault Master Pro 1.0.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
+| `apps/drivevault-master-pro` | DriveVault Master Pro 1.2.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
 | `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md). |
 | `docs` | `suite-integration.md` (contract between programs and hub), `spec/` (the owner's master specification - read-only). |
@@ -79,6 +79,14 @@ Edit the templates (or the per-product section 6 in the script), run the script,
 - Never `--no-verify`, force push, `reset --hard`, `git init` or change branches without asking. If the push is rejected (remote has new commits), `git pull --rebase`, re-check, push again; stop and ask if there are conflicts.
 - Do not commit half-done work, failing tests or a broken build. If something fails, report it instead.
 - Tell the owner in the summary: commit hash, message, and the new version if bumped.
+- **After every commit that changes a program (so its version was bumped), end the summary with a "Release to publish" notice** for each program that changed, so the owner can update the GitHub Release. Format: the program name followed by its version.
+  ```
+  Release title: DriveVault Master Pro 1.2.0
+  Tag: drivevault-master-pro-v1.2.0
+  Files: apps\drivevault-master-pro\dist\DriveVault-Master-Pro-Setup-x64.exe + .sha256   (built from this commit; say so if the installer was not rebuilt yet)
+  ```
+  Title = `DriveVault <Name> <x.y.z>`; tag = program folder name below `apps/` + `-v` + version (all lower case, e.g. `drivevault-video-editor-pro-v1.6.0`). One notice per program, only for programs whose version changed in that commit; docs-only / agent-file-only commits need no notice.
+  If the installer in `dist\` is older than the commit, say that it must be rebuilt (`package.ps1`) before it is attached.
 
 **Commit message** (English, first line at most about 72 characters): `<type>(<scope>): v<new version> <short summary>`
 - `type`: `feat` = new feature (minor), `fix` = bug fix / small change (patch), `feat!` or `fix!` = breaking change (major), and the following need no version number: `docs`, `chore`, `build`, `test`, `refactor`.
