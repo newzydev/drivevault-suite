@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.3.2 (2026-11-08)
+  Fixed
+  - Updating from GitHub no longer gives up at the first "HTTP 504 / 503 / 502" (GitHub's download server is sometimes busy): the checksum file and the setup
+    file are tried again up to 2 more times. When it still fails the message now says the HTTP status ("HTTP 504 - GitHub's download server is busy, try again
+    in a moment") instead of an empty "server replied:".
+
 v1.3.1
   Fixed
   - The window now opens maximized again when it was maximized when you closed it, also after it was resized right before: the normal size that is remembered is

@@ -9,6 +9,7 @@
 #include <QVariantList>
 
 class QNetworkAccessManager;
+class QNetworkReply;
 class QThread;
 
 namespace dm {
@@ -41,6 +42,9 @@ public:
         // Where the releases come from. The defaults are the official repository; tests point both at local files.
         QString releasesUrl = QStringLiteral("https://api.github.com/repos/newzydev/drivevault-suite/releases?per_page=30");
         QString downloadPrefix = QStringLiteral("https://github.com/newzydev/drivevault-suite/releases/download/");                                                   // where installers\ and licenses\ live; default: the program folder
+        // A download that fails because the server is busy (HTTP 502 / 503 / 504, timeout, connection cut) is tried again.
+        int maxRetries = 2;                                               // extra attempts after the first one
+        int retryDelayMs = 2500;
     };
     explicit Hub(const Options& options, QObject* parent = nullptr);
     ~Hub() override;
@@ -116,7 +120,10 @@ private:
     void failDownload(const QString& why);
     QString startCheck(bool quiet);
     QString beginDownload(const QString& slug, const QString& name, bool self);
-    void startAssetDownload(const releases::Release& rel, const QString& productName, const QString& expectedHash, bool self);
+    void fetchChecksum(const releases::Release& rel, const QString& name, bool self, int attempt);
+    void startAssetDownload(const releases::Release& rel, const QString& productName, const QString& expectedHash, bool self, int attempt = 0);
+    QString httpProblem(QNetworkReply* reply) const;       // "HTTP 504 (server busy)" or the network error text
+    static bool retryable(QNetworkReply* reply);
 
     Options m_options;
     QString m_appDir;

@@ -22,6 +22,7 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QThread>
+#include <QTimer>
 #include <QUrl>
 #include <QVariantMap>
 
@@ -558,21 +559,54 @@ QString Hub::beginDownload(const QString& slug, const QString& name, bool self)
     emit busyChanged();
     emit downloadProgressChanged();
     setMessage(tr2(QStringLiteral("Getting the checksum of %1 %2…"), QStringLiteral("กำลังอ่านค่าตรวจสอบของ %1 %2…")).arg(name, rel.version));
+    fetchChecksum(rel, name, self, 0);
+    return {};
+}
+
+bool Hub::retryable(QNetworkReply* reply)
+{
+    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if (status == 502 || status == 503 || status == 504)
+        return true;
+    const auto e = reply->error();
+    return e == QNetworkReply::TimeoutError || e == QNetworkReply::RemoteHostClosedError || e == QNetworkReply::TemporaryNetworkFailureError
+           || e == QNetworkReply::UnknownNetworkError;
+}
+
+QString Hub::httpProblem(QNetworkReply* reply) const
+{
+    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if (status == 502 || status == 503 || status == 504)
+        return tr2(QStringLiteral("HTTP %1 - GitHub's download server is busy, try again in a moment").arg(status),
+                   QStringLiteral("HTTP %1 - เซิร์ฟเวอร์ดาวน์โหลดของ GitHub ไม่ว่าง ลองใหม่อีกครั้งในอีกสักครู่").arg(status));
+    if (status > 0)
+        return QStringLiteral("HTTP %1 (%2)").arg(status).arg(reply->errorString());
+    return reply->errorString();
+}
+
+void Hub::fetchChecksum(const releases::Release& rel, const QString& name, bool self, int attempt)
+{
     QNetworkReply* hashReply = net()->get(makeRequest(rel.hashUrl, QString()));
-    connect(hashReply, &QNetworkReply::finished, this, [this, hashReply, rel, name, self] {
+    connect(hashReply, &QNetworkReply::finished, this, [this, hashReply, rel, name, self, attempt] {
         hashReply->deleteLater();
-        if (hashReply->error() != QNetworkReply::NoError)
-            return failDownload(tr2(QStringLiteral("Could not download the checksum file: %1"), QStringLiteral("ดาวน์โหลดไฟล์ค่าตรวจสอบไม่สำเร็จ: %1")).arg(hashReply->errorString()));
+        if (hashReply->error() != QNetworkReply::NoError) {
+            if (attempt < m_options.maxRetries && retryable(hashReply)) {
+                setMessage(tr2(QStringLiteral("%1 - trying again (%2/%3)…"), QStringLiteral("%1 - กำลังลองใหม่ (%2/%3)…"))
+                               .arg(httpProblem(hashReply)).arg(attempt + 1).arg(m_options.maxRetries));
+                QTimer::singleShot(m_options.retryDelayMs, this, [this, rel, name, self, attempt] { fetchChecksum(rel, name, self, attempt + 1); });
+                return;
+            }
+            return failDownload(tr2(QStringLiteral("Could not download the checksum file: %1"), QStringLiteral("ดาวน์โหลดไฟล์ค่าตรวจสอบไม่สำเร็จ: %1")).arg(httpProblem(hashReply)));
+        }
         const QString expected = releases::parseSha256(QString::fromUtf8(hashReply->read(4096)), rel.assetName);
         if (expected.isEmpty())
             return failDownload(tr2(QStringLiteral("The checksum file of this release is not valid. Nothing was installed."),
                                     QStringLiteral("ไฟล์ค่าตรวจสอบของรุ่นนี้ไม่ถูกต้อง จึงไม่ได้ติดตั้ง")));
         startAssetDownload(rel, name, expected, self);
     });
-    return {};
 }
 
-void Hub::startAssetDownload(const releases::Release& rel, const QString& productName, const QString& expectedHash, bool self)
+void Hub::startAssetDownload(const releases::Release& rel, const QString& productName, const QString& expectedHash, bool self, int attempt)
 {
     const QString dir = QDir::cleanPath(m_dataDir + QStringLiteral("/installers"));
     QDir().mkpath(dir);
@@ -588,14 +622,24 @@ void Hub::startAssetDownload(const releases::Release& rel, const QString& produc
         m_progress = whole > 0 ? qBound(0.0, double(received) / double(whole), 1.0) : 0.0;
         emit downloadProgressChanged();
     });
-    connect(reply, &QNetworkReply::finished, this, [this, reply, file, rel, productName, expectedHash, target, self] {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, file, rel, productName, expectedHash, target, self, attempt] {
         reply->deleteLater();
         file->write(reply->readAll());
         file->close();
         const QString partName = file->fileName();
         if (reply->error() != QNetworkReply::NoError) {
             QFile::remove(partName);
-            return failDownload(tr2(QStringLiteral("Download failed: %1"), QStringLiteral("ดาวน์โหลดไม่สำเร็จ: %1")).arg(reply->errorString()));
+            if (attempt < m_options.maxRetries && retryable(reply)) {
+                m_progress = 0;
+                emit downloadProgressChanged();
+                setMessage(tr2(QStringLiteral("%1 - trying again (%2/%3)…"), QStringLiteral("%1 - กำลังลองใหม่ (%2/%3)…"))
+                               .arg(httpProblem(reply)).arg(attempt + 1).arg(m_options.maxRetries));
+                QTimer::singleShot(m_options.retryDelayMs, this, [this, rel, productName, expectedHash, self, attempt] {
+                    startAssetDownload(rel, productName, expectedHash, self, attempt + 1);
+                });
+                return;
+            }
+            return failDownload(tr2(QStringLiteral("Download failed: %1"), QStringLiteral("ดาวน์โหลดไม่สำเร็จ: %1")).arg(httpProblem(reply)));
         }
         QFile check(partName);
         QCryptographicHash sha(QCryptographicHash::Sha256);

@@ -9,6 +9,8 @@
 
 #include <QSettings>
 #include <QSignalSpy>
+#include <QTcpServer>
+#include <QTcpSocket>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -359,6 +361,105 @@ private slots:
         QTRY_COMPARE(checked2.size(), 1);
         QVERIFY(!other.downloadAndInstall("drivevault.videoeditor").isEmpty());
         QVERIFY(!other.busy());
+        qunsetenv("DM_FAKE_EXIT");
+        qunsetenv("DM_FAKE_MARKER");
+    }
+
+    // GitHub sometimes answers 504 for a release file: the hub tries again, and when it gives up it says what the server said.
+    void aBusyServerIsRetriedAndTheHttpStatusIsShown()
+    {
+        const QString name = QStringLiteral("DriveVault-Video-Editor-Pro-Setup-x64.exe");
+        const QString exe = fakeSetup(p("busy-app/DriveVaultVideoEditorPro.exe"));
+        const QString served = fakeSetup(p("busy/" + name));
+        QVERIFY(!exe.isEmpty() && !served.isEmpty());
+        QFile bytes(served);
+        QVERIFY(bytes.open(QIODevice::ReadOnly));
+        const QByteArray body = bytes.readAll();
+        bytes.close();
+        QFile hashFile(p("busy/" + name + ".sha256"));
+        QVERIFY(hashFile.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        hashFile.write(QStringLiteral("%1 *%2\n").arg(QString::fromLatin1(QCryptographicHash::hash(body, QCryptographicHash::Sha256).toHex()), name).toLatin1());
+        hashFile.close();
+
+        // a tiny HTTP server: the first `failFirst` requests of every path get 504, the next ones the file
+        int failFirst = 2;
+        QMap<QString, int> hits;
+        QTcpServer server;
+        QVERIFY(server.listen(QHostAddress::LocalHost, 0));
+        connect(&server, &QTcpServer::newConnection, this, [&] {
+            while (QTcpSocket* s = server.nextPendingConnection()) {
+                connect(s, &QTcpSocket::readyRead, s, [&, s] {
+                    const QByteArray req = s->readAll();
+                    const QString path = QString::fromLatin1(req.split(' ').value(1));
+                    const bool fail = ++hits[path] <= failFirst;
+                    QByteArray out;
+                    if (fail) {
+                        out = "HTTP/1.1 504 Gateway Time-out\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+                    } else {
+                        QFile f(p("busy/" + path.section('/', -1)));
+                        const QByteArray data = f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray();
+                        out = "HTTP/1.1 200 OK\r\nContent-Length: " + QByteArray::number(data.size()) + "\r\nConnection: close\r\n\r\n" + data;
+                    }
+                    s->write(out);
+                    s->disconnectFromHost();
+                });
+            }
+        });
+        const QString base = QStringLiteral("http://127.0.0.1:%1/rel/").arg(server.serverPort());
+        QFile feed(p("busy-feed.json"));
+        QVERIFY(feed.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        feed.write(QJsonDocument(QJsonArray{QJsonObject{
+            {"tag_name", "drivevault-video-editor-pro-v2.0.0"}, {"draft", false}, {"prerelease", false}, {"html_url", "https://example.invalid"},
+            {"assets", QJsonArray{QJsonObject{{"name", name}, {"browser_download_url", base + name}, {"size", body.size()}},
+                                  QJsonObject{{"name", name + ".sha256"}, {"browser_download_url", base + name + ".sha256"}, {"size", 1}}}}}}).toJson());
+        feed.close();
+        writeProduct("VideoEditorPro", {{"DisplayName", "DriveVault Video Editor Pro"}, {"Version", "1.0.0"}, {"InstallDir", QFileInfo(exe).absolutePath()},
+                                         {"Executable", exe}, {"Uninstaller", exe}});
+        qputenv("DM_FAKE_MARKER", p("busy-marker.txt").toLocal8Bit());
+        qputenv("DM_FAKE_EXIT", "0");
+        QFile::remove(p("busy-marker.txt"));
+        QFile::remove(p("app/installers/" + name));
+
+        Hub::Options o = options();
+        o.releasesUrl = QUrl::fromLocalFile(p("busy-feed.json")).toString();
+        o.downloadPrefix = base;
+        o.retryDelayMs = 20;
+        o.maxRetries = 2;
+
+        {   // two 504 answers per file, then the file: the checksum and the setup are both fetched on the third try
+            Hub hub(o);
+            hub.setLanguage("en");
+            hub.setSilentInstalls(true);
+            QSignalSpy checked(&hub, &Hub::checkFinished);
+            QVERIFY(hub.checkForUpdates().isEmpty());
+            QTRY_COMPARE(checked.size(), 1);
+            QSignalSpy downloaded(&hub, &Hub::downloadFinished);
+            QVERIFY(hub.downloadAndInstall("drivevault.videoeditor").isEmpty());
+            QTRY_COMPARE_WITH_TIMEOUT(downloaded.size(), 1, 20000);
+            QVERIFY2(downloaded.first().first().toBool(), qPrintable(hub.message()));
+            QTRY_VERIFY(QFileInfo::exists(p("busy-marker.txt")));
+            QCOMPARE(hits.value("/rel/" + name + ".sha256"), 3);
+            QCOMPARE(hits.value("/rel/" + name), 3);
+            QTRY_VERIFY(!hub.busy());
+        }
+
+        {   // the server stays busy: after the allowed attempts the user is told the HTTP status
+            failFirst = 100;
+            hits.clear();
+            o.maxRetries = 1;
+            Hub hub(o);
+            hub.setLanguage("en");
+            QSignalSpy checked(&hub, &Hub::checkFinished);
+            QVERIFY(hub.checkForUpdates().isEmpty());
+            QTRY_COMPARE(checked.size(), 1);
+            QSignalSpy downloaded(&hub, &Hub::downloadFinished);
+            QVERIFY(hub.downloadAndInstall("drivevault.videoeditor").isEmpty());
+            QTRY_COMPARE_WITH_TIMEOUT(downloaded.size(), 1, 20000);
+            QVERIFY(!downloaded.first().first().toBool());
+            QVERIFY2(hub.message().contains("HTTP 504"), qPrintable(hub.message()));
+            QCOMPARE(hits.value("/rel/" + name + ".sha256"), 2);       // the first try and one more
+            QVERIFY(!hub.busy());
+        }
         qunsetenv("DM_FAKE_EXIT");
         qunsetenv("DM_FAKE_MARKER");
     }

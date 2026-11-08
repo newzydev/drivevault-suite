@@ -46,6 +46,6 @@ refusal while a program is installed, uninstall, empty-folder clean-up) is teste
 
 ## Status
 
-Version 1.3.1 (online update check since 1.1.0). Not code-signed (the signing scripts are in the Video Editor repository: `scripts\sign.ps1`, `package.ps1 -Sign`). Not tested on a separate clean PC / VM,
+Version 1.3.2 (online update check since 1.1.0). Not code-signed (the signing scripts are in the Video Editor repository: `scripts\sign.ps1`, `package.ps1 -Sign`). Not tested on a separate clean PC / VM,
 and the all-users path under `C:\Program Files` needs administrator rights and was not run by the automated tests (the per-user path was). `LICENSE.txt` and the installer licence pages are the drafted EULA generated from `shared/legal`
 (not yet reviewed by a lawyer).
