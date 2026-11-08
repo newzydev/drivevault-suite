@@ -1,6 +1,13 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.9.1
+-------------
+  - Fixed the Home screen: the three start buttons were wider than their column and ran into the recent projects panel; now "New Project" has its own wide button and
+    "Open Project" and "Project from folder" share the row below it.
+  - Fixed: a scroll bar track was always drawn, even when a list had nothing to scroll (visible on the recent projects list); scroll bars now appear only when needed.
+  - The "Clear list" button and the remove buttons of the recent projects line up at the right edge.
+
 Version 1.9.0
 -------------
   - New: a local language model for "Edit by prompt". With it installed, the button "Understand with local AI" (Ctrl+Enter) turns a FREE sentence in Thai or English into the

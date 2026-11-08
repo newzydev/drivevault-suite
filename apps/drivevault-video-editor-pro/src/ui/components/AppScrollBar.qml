@@ -8,6 +8,7 @@ ScrollBar {
     implicitHeight: orientation === Qt.Horizontal ? 10 : 0
     minimumSize: 0.08
     policy: ScrollBar.AsNeeded
+    visible: policy === ScrollBar.AlwaysOn || size < 1.0            // a custom contentItem is not hidden by AsNeeded on its own
     padding: 2
 
     contentItem: Rectangle {

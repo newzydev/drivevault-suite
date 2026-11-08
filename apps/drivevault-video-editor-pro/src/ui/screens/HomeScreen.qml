@@ -61,8 +61,8 @@ Rectangle {
 
         // ---- Brand + actions ---------------------------------------------------------------
         ColumnLayout {
-            Layout.preferredWidth: 400
-            Layout.maximumWidth: 460
+            Layout.preferredWidth: 440
+            Layout.maximumWidth: 480
             Layout.fillHeight: true
             spacing: 0
 
@@ -92,40 +92,46 @@ Rectangle {
                 wrapMode: Text.Wrap
             }
 
-            RowLayout {
+            ColumnLayout {
                 Layout.topMargin: 34
-                spacing: 12
+                Layout.fillWidth: true
+                spacing: 10
                 AppButton {
                     objectName: "homeNewProject"
+                    Layout.fillWidth: true
                     variant: "primary"
                     iconName: "plus"
                     text: qsTr("New Project")
-                    implicitHeight: 42
-                    leftPadding: 20
-                    rightPadding: 20
+                    implicitHeight: 46
                     font.pixelSize: Theme.fontLg
                     onClicked: root.newProjectRequested()
                 }
-                AppButton {
-                    objectName: "homeOpenProject"
-                    iconName: "folder"
-                    text: qsTr("Open Project")
-                    implicitHeight: 42
-                    leftPadding: 20
-                    rightPadding: 20
-                    font.pixelSize: Theme.fontLg
-                    onClicked: root.openProjectRequested()
-                }
-                AppButton {
-                    objectName: "homeFolderProject"
-                    iconName: "import"
-                    text: qsTr("Project from folder")
-                    implicitHeight: 42
-                    leftPadding: 20
-                    rightPadding: 20
-                    font.pixelSize: Theme.fontLg
-                    onClicked: root.folderProjectRequested()
-                    AppToolTip { visible: parent.hovered; text: qsTr("Choose a folder: a project named after it is created and every video, picture and audio file in it is imported.") }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+                    AppButton {
+                        objectName: "homeOpenProject"
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        iconName: "folder"
+                        text: qsTr("Open Project")
+                        implicitHeight: 42
+                        leftPadding: 12
+                        rightPadding: 12
+                        onClicked: root.openProjectRequested()
+                    }
+                    AppButton {
+                        objectName: "homeFolderProject"
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        iconName: "import"
+                        text: qsTr("Project from folder")
+                        implicitHeight: 42
+                        leftPadding: 12
+                        rightPadding: 12
+                        onClicked: root.folderProjectRequested()
+                        AppToolTip { visible: parent.hovered; text: qsTr("Choose a folder: a project named after it is created and every video, picture and audio file in it is imported.") }
+                    }
                 }
             }
 
@@ -218,6 +224,7 @@ Rectangle {
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.margins: 20
+                    Layout.rightMargin: 31
                     Layout.bottomMargin: 12
                     Text {
                         Layout.fillWidth: true
@@ -231,6 +238,8 @@ Rectangle {
                         variant: "ghost"
                         iconName: "trash"
                         text: qsTr("Clear list")
+                        implicitHeight: 32
+                        rightPadding: 8
                         onClicked: Recents.clear()
                     }
                 }
@@ -266,6 +275,7 @@ Rectangle {
                         spacing: 4
                         boundsBehavior: Flickable.StopAtBounds
                         ScrollBar.vertical: AppScrollBar {}
+                        readonly property bool scrolls: contentHeight > height
 
                         delegate: ItemDelegate {
                             id: card
@@ -275,9 +285,11 @@ Rectangle {
                             required property string lastOpenedText
                             required property bool exists
 
-                            width: ListView.view.width - 6
+                            width: ListView.view.width - (ListView.view.scrolls ? 12 : 0)
                             height: 72
                             padding: 0
+                            leftPadding: 12
+                            rightPadding: 20                  // the remove button keeps its distance from the edge of the row
                             hoverEnabled: true
                             focusPolicy: Qt.StrongFocus
                             onClicked: exists ? root.openRecentRequested(path) : App.toast(qsTr("The project file was not found. Remove it from the list or restore the file."), "warning")
@@ -291,9 +303,6 @@ Rectangle {
 
                             contentItem: RowLayout {
                                 spacing: 14
-                                anchors.fill: parent
-                                anchors.leftMargin: 12
-                                anchors.rightMargin: 8
 
                                 Rectangle {
                                     Layout.preferredWidth: 78
