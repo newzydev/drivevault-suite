@@ -5,75 +5,19 @@
 
 ## ดาวน์โหลด / Download
 
-### ศูนย์รวมโปรแกรม / Hub
-
-<table width="100%">
-  <tr>
-    <th width="42%">โปรแกรม / Program</th>
-    <th width="14%">เวอร์ชัน / Version</th>
-    <th width="44%">ดาวน์โหลด / Download</th>
-  </tr>
-  <tr>
-    <td><b>DriveVault Master Pro</b><br>ศูนย์รวมโปรแกรม DriveVault / the hub</td>
-    <td>1.3.0</td>
-    <td><a href="https://github.com/newzydev/drivevault-suite/releases/download/drivevault-master-pro-v1.3.0/DriveVault-Master-Pro-Setup-x64.exe"><img alt="Download Master Pro 1.3.0" src="https://img.shields.io/badge/Download-1.3.0-F59E0B?style=for-the-badge&logo=windows&logoColor=white"></a><br><a href="https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-master-pro-v1.3.0">รายละเอียดรุ่น / release page</a></td>
-  </tr>
-</table>
-
-### โปรแกรมมัลติมีเดีย / Multimedia
-
-<table width="100%">
-  <tr>
-    <th width="42%">โปรแกรม / Program</th>
-    <th width="14%">เวอร์ชัน / Version</th>
-    <th width="44%">ดาวน์โหลด / Download</th>
-  </tr>
-  <tr>
-    <td><b>DriveVault Video Editor Pro</b><br>ตัดต่อวิดีโอ / video editor</td>
-    <td>1.6.0</td>
-    <td><a href="https://github.com/newzydev/drivevault-suite/releases/download/drivevault-video-editor-pro-v1.6.0/DriveVault-Video-Editor-Pro-Setup-x64.exe"><img alt="Download Video Editor Pro 1.6.0" src="https://img.shields.io/badge/Download-1.6.0-8B5CF6?style=for-the-badge&logo=windows&logoColor=white"></a><br><a href="https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-video-editor-pro-v1.6.0">รายละเอียดรุ่น / release page</a></td>
-  </tr>
-  <tr>
-    <td><b>DriveVault Image Editor Pro</b><br>แต่งภาพ / image editor</td>
-    <td>-</td>
-    <td>เร็วๆ นี้ / coming soon</td>
-  </tr>
-  <tr>
-    <td><b>DriveVault Audio Editor Pro</b><br>ตัดต่อเสียง / audio editor</td>
-    <td>-</td>
-    <td>เร็วๆ นี้ / coming soon</td>
-  </tr>
-</table>
-
-### โปรแกรมออฟฟิศ / Office
-
-<table width="100%">
-  <tr>
-    <th width="42%">โปรแกรม / Program</th>
-    <th width="14%">เวอร์ชัน / Version</th>
-    <th width="44%">ดาวน์โหลด / Download</th>
-  </tr>
-  <tr>
-    <td><b>DriveVault Document Pro</b><br>เอกสาร / documents</td>
-    <td>-</td>
-    <td>เร็วๆ นี้ / coming soon</td>
-  </tr>
-  <tr>
-    <td><b>DriveVault Presentation Pro</b><br>งานนำเสนอ / presentations</td>
-    <td>-</td>
-    <td>เร็วๆ นี้ / coming soon</td>
-  </tr>
-  <tr>
-    <td><b>DriveVault Spreadsheet Pro</b><br>ตาราง / spreadsheets</td>
-    <td>-</td>
-    <td>เร็วๆ นี้ / coming soon</td>
-  </tr>
-  <tr>
-    <td><b>DriveVault PDF Pro</b><br>จัดการ PDF / PDF tools</td>
-    <td>-</td>
-    <td>เร็วๆ นี้ / coming soon</td>
-  </tr>
-</table>
+| โปรแกรม / Program&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | เวอร์ชัน&nbsp;/&nbsp;Version&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | ดาวน์โหลด / Download&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
+|---|:---:|---|
+| **ศูนย์รวมโปรแกรม / Hub** | | |
+| <b>DriveVault Master Pro</b><br>ศูนย์รวมโปรแกรม DriveVault / the hub | 1.3.0 | <a href="https://github.com/newzydev/drivevault-suite/releases/download/drivevault-master-pro-v1.3.0/DriveVault-Master-Pro-Setup-x64.exe"><img alt="Download Master Pro 1.3.0" src="https://img.shields.io/badge/Download-1.3.0-F59E0B?style=for-the-badge&logo=windows&logoColor=white"></a><br><a href="https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-master-pro-v1.3.0">รายละเอียดรุ่น / release page</a> |
+| **โปรแกรมมัลติมีเดีย / Multimedia** | | |
+| <b>DriveVault Video Editor Pro</b><br>ตัดต่อวิดีโอ / video editor | 1.6.0 | <a href="https://github.com/newzydev/drivevault-suite/releases/download/drivevault-video-editor-pro-v1.6.0/DriveVault-Video-Editor-Pro-Setup-x64.exe"><img alt="Download Video Editor Pro 1.6.0" src="https://img.shields.io/badge/Download-1.6.0-8B5CF6?style=for-the-badge&logo=windows&logoColor=white"></a><br><a href="https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-video-editor-pro-v1.6.0">รายละเอียดรุ่น / release page</a> |
+| <b>DriveVault Image Editor Pro</b><br>แต่งภาพ / image editor | - | เร็วๆ นี้ / coming soon |
+| <b>DriveVault Audio Editor Pro</b><br>ตัดต่อเสียง / audio editor | - | เร็วๆ นี้ / coming soon |
+| **โปรแกรมออฟฟิศ / Office** | | |
+| <b>DriveVault Document Pro</b><br>เอกสาร / documents | - | เร็วๆ นี้ / coming soon |
+| <b>DriveVault Presentation Pro</b><br>งานนำเสนอ / presentations | - | เร็วๆ นี้ / coming soon |
+| <b>DriveVault Spreadsheet Pro</b><br>ตาราง / spreadsheets | - | เร็วๆ นี้ / coming soon |
+| <b>DriveVault PDF Pro</b><br>จัดการ PDF / PDF tools | - | เร็วๆ นี้ / coming soon |
 
 ต้องใช้ Windows 10 หรือ 11 (64 บิต) · *Windows 10 or 11, 64-bit.*
 ทุกรุ่นก่อนหน้าอยู่ที่ [Releases](https://github.com/newzydev/drivevault-suite/releases) · *All earlier versions are on the Releases page.*
