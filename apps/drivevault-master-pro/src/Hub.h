@@ -43,7 +43,10 @@ public:
         QString releasesUrl = QStringLiteral("https://api.github.com/repos/newzydev/drivevault-suite/releases?per_page=30");
         QString downloadPrefix = QStringLiteral("https://github.com/newzydev/drivevault-suite/releases/download/");                                                   // where installers\ and licenses\ live; default: the program folder
         // A download that fails because the server is busy (HTTP 502 / 503 / 504, timeout, connection cut) is tried again.
-        int maxRetries = 2;                                               // extra attempts after the first one
+        // When a download still fails after the retries, the release page on GitHub is opened in the browser so the user can download by hand.
+        QString pagePrefix = QStringLiteral("https://github.com/newzydev/drivevault-suite/releases/");                // only pages below this address are opened
+        bool openPageOnFailure = true;                                    // tests turn it off (they only watch the signal)
+        int maxRetries = 2;                                              // extra attempts after the first one
         int retryDelayMs = 2500;
     };
     explicit Hub(const Options& options, QObject* parent = nullptr);
@@ -108,6 +111,7 @@ signals:
     void downloadProgressChanged();
     void checkFinished(bool ok);
     void downloadFinished(bool ok);
+    void releasePageOpened(const QString& url);       // a failed download sent the user to the release page
 
 private:
     struct Catalog;
@@ -118,6 +122,7 @@ private:
     void saveFolders(const QStringList& folders);
     QNetworkAccessManager* net();
     void failDownload(const QString& why);
+    void failOnline(const QString& why, const releases::Release& rel);    // failDownload + opens the release page for a manual download
     QString startCheck(bool quiet);
     QString beginDownload(const QString& slug, const QString& name, bool self);
     void fetchChecksum(const releases::Release& rel, const QString& name, bool self, int attempt);

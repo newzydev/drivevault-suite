@@ -526,6 +526,19 @@ void Hub::failDownload(const QString& why)
     emit downloadFinished(false);
 }
 
+void Hub::failOnline(const QString& why, const releases::Release& rel)
+{
+    const bool pageOk = !rel.pageUrl.isEmpty() && rel.pageUrl.startsWith(m_options.pagePrefix);
+    failDownload(pageOk ? why + tr2(QStringLiteral(" The release page on GitHub was opened: download the setup file from there."),
+                                    QStringLiteral(" เปิดหน้า Release บน GitHub ให้แล้ว กดดาวน์โหลดไฟล์ติดตั้งจากหน้านั้นเอง"))
+                        : why);
+    if (!pageOk)
+        return;
+    if (m_options.openPageOnFailure)
+        QDesktopServices::openUrl(QUrl(rel.pageUrl));
+    emit releasePageOpened(rel.pageUrl);
+}
+
 QString Hub::downloadAndInstall(const QString& id)
 {
     const QVariantMap p = productById(id);
@@ -596,7 +609,7 @@ void Hub::fetchChecksum(const releases::Release& rel, const QString& name, bool 
                 QTimer::singleShot(m_options.retryDelayMs, this, [this, rel, name, self, attempt] { fetchChecksum(rel, name, self, attempt + 1); });
                 return;
             }
-            return failDownload(tr2(QStringLiteral("Could not download the checksum file: %1"), QStringLiteral("ดาวน์โหลดไฟล์ค่าตรวจสอบไม่สำเร็จ: %1")).arg(httpProblem(hashReply)));
+            return failOnline(tr2(QStringLiteral("Could not download the checksum file: %1."), QStringLiteral("ดาวน์โหลดไฟล์ค่าตรวจสอบไม่สำเร็จ: %1")).arg(httpProblem(hashReply)), rel);
         }
         const QString expected = releases::parseSha256(QString::fromUtf8(hashReply->read(4096)), rel.assetName);
         if (expected.isEmpty())
@@ -639,7 +652,7 @@ void Hub::startAssetDownload(const releases::Release& rel, const QString& produc
                 });
                 return;
             }
-            return failDownload(tr2(QStringLiteral("Download failed: %1"), QStringLiteral("ดาวน์โหลดไม่สำเร็จ: %1")).arg(httpProblem(reply)));
+            return failOnline(tr2(QStringLiteral("Download failed: %1."), QStringLiteral("ดาวน์โหลดไม่สำเร็จ: %1")).arg(httpProblem(reply)), rel);
         }
         QFile check(partName);
         QCryptographicHash sha(QCryptographicHash::Sha256);

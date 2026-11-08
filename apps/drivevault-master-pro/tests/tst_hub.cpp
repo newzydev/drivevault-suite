@@ -409,7 +409,8 @@ private slots:
         QFile feed(p("busy-feed.json"));
         QVERIFY(feed.open(QIODevice::WriteOnly | QIODevice::Truncate));
         feed.write(QJsonDocument(QJsonArray{QJsonObject{
-            {"tag_name", "drivevault-video-editor-pro-v2.0.0"}, {"draft", false}, {"prerelease", false}, {"html_url", "https://example.invalid"},
+            {"tag_name", "drivevault-video-editor-pro-v2.0.0"}, {"draft", false}, {"prerelease", false},
+            {"html_url", "https://example.invalid/releases/tag/drivevault-video-editor-pro-v2.0.0"},
             {"assets", QJsonArray{QJsonObject{{"name", name}, {"browser_download_url", base + name}, {"size", body.size()}},
                                   QJsonObject{{"name", name + ".sha256"}, {"browser_download_url", base + name + ".sha256"}, {"size", 1}}}}}}).toJson());
         feed.close();
@@ -425,6 +426,8 @@ private slots:
         o.downloadPrefix = base;
         o.retryDelayMs = 20;
         o.maxRetries = 2;
+        o.pagePrefix = QStringLiteral("https://example.invalid/releases/");
+        o.openPageOnFailure = false;                                     // never start a real browser in a test
 
         {   // two 504 answers per file, then the file: the checksum and the setup are both fetched on the third try
             Hub hub(o);
@@ -434,9 +437,11 @@ private slots:
             QVERIFY(hub.checkForUpdates().isEmpty());
             QTRY_COMPARE(checked.size(), 1);
             QSignalSpy downloaded(&hub, &Hub::downloadFinished);
+            QSignalSpy pageOpened(&hub, &Hub::releasePageOpened);
             QVERIFY(hub.downloadAndInstall("drivevault.videoeditor").isEmpty());
             QTRY_COMPARE_WITH_TIMEOUT(downloaded.size(), 1, 20000);
             QVERIFY2(downloaded.first().first().toBool(), qPrintable(hub.message()));
+            QCOMPARE(pageOpened.size(), 0);                           // a download that worked does not open the browser
             QTRY_VERIFY(QFileInfo::exists(p("busy-marker.txt")));
             QCOMPARE(hits.value("/rel/" + name + ".sha256"), 3);
             QCOMPARE(hits.value("/rel/" + name), 3);
@@ -453,10 +458,15 @@ private slots:
             QVERIFY(hub.checkForUpdates().isEmpty());
             QTRY_COMPARE(checked.size(), 1);
             QSignalSpy downloaded(&hub, &Hub::downloadFinished);
+            QSignalSpy pageOpened(&hub, &Hub::releasePageOpened);
             QVERIFY(hub.downloadAndInstall("drivevault.videoeditor").isEmpty());
             QTRY_COMPARE_WITH_TIMEOUT(downloaded.size(), 1, 20000);
             QVERIFY(!downloaded.first().first().toBool());
             QVERIFY2(hub.message().contains("HTTP 504"), qPrintable(hub.message()));
+            // the user is sent to the release page to download by hand
+            QCOMPARE(pageOpened.size(), 1);
+            QCOMPARE(pageOpened.first().first().toString(), QStringLiteral("https://example.invalid/releases/tag/drivevault-video-editor-pro-v2.0.0"));
+            QVERIFY2(hub.message().contains("release page"), qPrintable(hub.message()));
             QCOMPARE(hits.value("/rel/" + name + ".sha256"), 2);       // the first try and one more
             QVERIFY(!hub.busy());
         }

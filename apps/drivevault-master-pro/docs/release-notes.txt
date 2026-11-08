@@ -1,6 +1,11 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.3.3 (2026-11-08)
+  New
+  - When an update still cannot be downloaded after the retries, Master Pro opens the release page on GitHub in your browser, so you can download the setup
+    file from there yourself. (Only pages of the official DriveVault repository are opened, and only after a failed download that you started.)
+
 v1.3.2 (2026-11-08)
   Fixed
   - Updating from GitHub no longer gives up at the first "HTTP 504 / 503 / 502" (GitHub's download server is sometimes busy): the checksum file and the setup

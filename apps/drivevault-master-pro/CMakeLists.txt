@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultMasterPro
-    VERSION 1.3.2
+    VERSION 1.3.3
     DESCRIPTION "DriveVault Master Pro - installs, launches and updates the DriveVault programs"
     LANGUAGES CXX)
 
