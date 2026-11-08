@@ -98,6 +98,13 @@ Rectangle {
         report(start ? Projects.timeline.trimStart(id, Projects.playheadFrame) : Projects.timeline.trimEnd(id, Projects.playheadFrame))
     }
 
+    // bottom panel: "timeline" | "mixer" (remembered)
+    property string bottomTab: AppSettings.state("bottom.tab", "timeline")
+    function selectBottomTab(key) {
+        bottomTab = key
+        AppSettings.setState("bottom.tab", key)
+    }
+
     Shortcut { sequence: "="; enabled: root.visible; onActivated: root.zoomBy(1.25) }
     Shortcut { sequence: "+"; enabled: root.visible; onActivated: root.zoomBy(1.25) }
     Shortcut { sequence: "-"; enabled: root.visible; onActivated: root.zoomBy(0.8) }
@@ -201,6 +208,7 @@ Rectangle {
 
                     ToolPanel {
                         id: toolPanel
+                        onMixerRequested: root.selectBottomTab("mixer")
                         visible: root.showMedia
                         SplitView.preferredWidth: 460
                         SplitView.minimumWidth: 320
@@ -224,21 +232,77 @@ Rectangle {
                 Item {
                     id: timelineArea
                     visible: root.showTimeline
-                    SplitView.preferredHeight: 330
+                    SplitView.preferredHeight: 362
                     SplitView.minimumHeight: 170
                     SplitView.maximumHeight: 640
 
                     RowLayout {
                         anchors.fill: parent
                         spacing: 6
-                        TimelinePanel {
-                            id: timelinePanel
+                        ColumnLayout {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            pxPerFrame: root.pxPerFrame
-                            tool: root.tool
-                            onToolRequested: t => root.tool = t
-                            onZoomRequested: value => root.pxPerFrame = value
+                            spacing: 4
+
+                            // tabs of the bottom panel: Timeline | Mixer
+                            Row {
+                                id: bottomTabs
+                                spacing: 4
+                                Repeater {
+                                    model: [ { key: "timeline", label: qsTr("Timeline"), icon: "layers" }, { key: "mixer", label: qsTr("Mixer"), icon: "sliders" } ]
+                                    delegate: Rectangle {
+                                        id: bottomTab
+                                        required property var modelData
+                                        readonly property bool current: root.bottomTab === modelData.key
+                                        objectName: "bottomTab_" + modelData.key
+                                        width: tabRow.implicitWidth + 24
+                                        height: 26
+                                        radius: Theme.radiusSmall + 2
+                                        color: current ? Theme.accentSubtle : tabMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                                        Row {
+                                            id: tabRow
+                                            anchors.centerIn: parent
+                                            spacing: 6
+                                            Icon { anchors.verticalCenter: parent.verticalCenter; name: bottomTab.modelData.icon; size: 15; color: bottomTab.current ? Theme.accentText : Theme.textSecondary }
+                                            Text {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                text: bottomTab.modelData.label
+                                                font.pixelSize: Theme.fontSm
+                                                font.weight: bottomTab.current ? Font.DemiBold : Font.Medium
+                                                color: bottomTab.current ? Theme.accentText : Theme.textSecondary
+                                            }
+                                        }
+                                        Rectangle {
+                                            visible: bottomTab.current
+                                            anchors.bottom: parent.bottom
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            width: parent.width - 20; height: 2; radius: 1
+                                            color: Theme.accent
+                                        }
+                                        MouseArea {
+                                            id: tabMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.selectBottomTab(bottomTab.modelData.key)
+                                        }
+                                    }
+                                }
+                            }
+
+                            StackLayout {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                currentIndex: root.bottomTab === "mixer" ? 1 : 0
+                                TimelinePanel {
+                                    id: timelinePanel
+                                    pxPerFrame: root.pxPerFrame
+                                    tool: root.tool
+                                    onToolRequested: t => root.tool = t
+                                    onZoomRequested: value => root.pxPerFrame = value
+                                }
+                                MixerPanel { id: mixerPanel }
+                            }
                         }
                         MasterMeter {
                             Layout.fillHeight: true

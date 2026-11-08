@@ -55,7 +55,9 @@ qt_add_qml_module(dv_ui
         editor/ParamSection.qml
         editor/CurvesEditor.qml
         editor/TitleEditor.qml
-        editor/MixerSection.qml
+        editor/MixerPanel.qml
+        editor/MixerKnob.qml
+        editor/MixerFader.qml
         editor/AiPanel.qml
         editor/ModelManagerView.qml
         editor/TimelinePanel.qml

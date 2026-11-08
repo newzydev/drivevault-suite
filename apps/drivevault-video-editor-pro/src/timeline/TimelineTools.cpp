@@ -26,8 +26,9 @@ QString toLocal(const QString& pathOrUrl)
 
 bool validTransition(const QString& direction, const QString& type)
 {
-    static const QStringList in = {"dissolve", "dip", "fade", "wipe", "slide", "zoom"};
-    static const QStringList out = {"fade", "dip"};
+    static const QStringList in = {"dissolve", "dip", "fade", "wipe", "wipeLeft", "wipeDown", "wipeUp", "slide", "slideLeft", "slideUp",
+                                   "slideDown", "zoom", "zoomOut", "spin", "flash"};
+    static const QStringList out = {"fade", "dip", "wipe", "slide", "zoom", "spin", "flash"};
     return type.isEmpty() || (direction == QLatin1String("in") ? in : out).contains(type);
 }
 
@@ -362,24 +363,43 @@ QString TimelineModel::addTitle(int trackIndex, qint64 startFrame, const QString
     ClipData c;
     c.type = QStringLiteral("title");
     c.durationFrames = std::max<qint64>(1, qRound64(5.0 * m_rate.toDouble()));
+    struct Style { const char* key; const char* text; const char* font; int size; const char* color; const char* stroke; double strokeWidth;
+                   bool shadow; bool bold; const char* align; double x; double y; };
+    // The text styles of the Text tab (keep the previews in qml/ToolPanel.qml in step with this table).
+    static const Style kStyles[] = {
+        {"title", QT_TR_NOOP("Title"), "Noto Sans Thai", 96,  "#FFFFFF", "#000000", 0,  false, true,  "center", 0.5,  0.5},
+        {"lowerThird", QT_TR_NOOP("Lower third"), "Noto Sans Thai", 52,  "#FFFFFF", "#000000", 0,  true,  true,  "left",   0.08, 0.84},
+        {"caption", QT_TR_NOOP("Caption"), "Noto Sans Thai", 44,  "#FFFFFF", "#000000", 3,  false, true,  "center", 0.5,  0.9},
+        {"bigBold", QT_TR_NOOP("BIG TEXT"), "Noto Sans Thai", 150, "#FFFFFF", "#000000", 0,  true,  true,  "center", 0.5,  0.5},
+        {"outline", QT_TR_NOOP("Outline"), "Noto Sans Thai", 110, "#FFFFFF", "#111111", 8,  false, true,  "center", 0.5,  0.5},
+        {"impact", QT_TR_NOOP("IMPACT"), "Impact",         130, "#FFFFFF", "#000000", 7,  true,  false, "center", 0.5,  0.5},
+        {"yellowSub", QT_TR_NOOP("Subtitle"), "Noto Sans Thai", 52,  "#FFE600", "#000000", 4,  false, true,  "center", 0.5,  0.88},
+        {"neonPink", QT_TR_NOOP("Neon"), "Noto Sans Thai", 110, "#FF4FD8", "#8A0F72", 5,  true,  true,  "center", 0.5,  0.5},
+        {"neonBlue", QT_TR_NOOP("Neon"), "Noto Sans Thai", 110, "#4FE0FF", "#0A5066", 5,  true,  true,  "center", 0.5,  0.5},
+        {"gold", QT_TR_NOOP("Gold"), "Noto Sans Thai", 110, "#FFD34D", "#6B4A00", 4,  true,  true,  "center", 0.5,  0.5},
+        {"redAlert", QT_TR_NOOP("ALERT"), "Noto Sans Thai", 110, "#FF3B30", "#FFFFFF", 5,  false, true,  "center", 0.5,  0.5},
+        {"elegant", QT_TR_NOOP("Elegant"), "Georgia",        96,  "#F4E9D4", "#000000", 0,  true,  false, "center", 0.5,  0.5},
+        {"script", QT_TR_NOOP("Handwriting"), "Segoe Script",   100, "#FFFFFF", "#000000", 2,  true,  false, "center", 0.5,  0.5},
+        {"typewriter", QT_TR_NOOP("Typewriter"), "Consolas",       56,  "#E8E8E8", "#000000", 0,  false, false, "left",   0.1,  0.5},
+        {"cornerTag", QT_TR_NOOP("Tag"), "Noto Sans Thai", 40,  "#FFFFFF", "#000000", 0,  true,  true,  "left",   0.07, 0.08},
+        {"bigNumber", QT_TR_NOOP("01"), "Noto Sans Thai", 300, "#FFFFFF", "#000000", 0,  true,  true,  "center", 0.5,  0.5},
+    };
+    const Style* style = &kStyles[0];
+    for (const Style& st : kStyles)
+        if (preset == QLatin1String(st.key))
+            style = &st;
     TitleData& t = c.title;
-    if (preset == QLatin1String("lowerThird")) {
-        t.text = tr("Lower third");
-        t.size = 52;
-        t.x = 0.08;
-        t.y = 0.84;
-        t.align = QStringLiteral("left");
-        t.shadow = true;
-    } else if (preset == QLatin1String("caption")) {
-        t.text = tr("Caption");
-        t.size = 44;
-        t.x = 0.5;
-        t.y = 0.9;
-        t.strokeWidth = 3;
-    } else {
-        t.text = tr("Title");
-        t.size = 96;
-    }
+    t.text = tr(style->text);
+    t.font = QString::fromUtf8(style->font);
+    t.size = style->size;
+    t.color = QString::fromLatin1(style->color);
+    t.strokeColor = QString::fromLatin1(style->stroke);
+    t.strokeWidth = style->strokeWidth;
+    t.shadow = style->shadow;
+    t.bold = style->bold;
+    t.align = QString::fromLatin1(style->align);
+    t.x = style->x;
+    t.y = style->y;
     return addGeneratedClip(c, trackIndex, startFrame);
 }
 

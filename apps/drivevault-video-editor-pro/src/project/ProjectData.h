@@ -26,6 +26,7 @@ struct ProjectData {
     QList<MarkerData> markers;
     int64_t inPoint = -1;     // export range marks (frames), -1 = not set
     int64_t outPoint = -1;
+    double masterGainDb = 0;  // master fader of the mixer (dB), applied before the master limiter
 };
 
 } // namespace dv

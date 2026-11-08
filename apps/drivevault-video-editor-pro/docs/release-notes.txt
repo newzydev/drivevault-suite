@@ -1,6 +1,20 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.7.0
+-------------
+  - Bigger catalogs, grouped like a mobile editor: Text 16 styles (Title, Lower third, Caption, Subtitle, Outline, Impact, Neon, Gold, Elegant, Handwriting,
+    Typewriter ...), Effects 20 (blur and sharpen levels, vignettes, Dream, Focus, letterbox / cinema bars, zoom, tilt ...), Transitions 15 in / 7 out (wipe and slide
+    in four directions, zoom in / out, spin, flash ...) and Filters 24 (Basic, Film, Mood). Every tile sets real clip parameters or a real transition; the
+    renderer was extended, so preview and export show the same transitions. The text fonts Impact, Georgia, Segoe Script and Consolas are Windows fonts; Thai
+    letters that these fonts lack are drawn with a fallback font.
+  - The bottom panel has two tabs: Timeline and Mixer. The mixer has a channel strip for every audio track (fader, pan, solo, mute and the Gain / High / Mid / Low
+    knobs of the clip under the playhead on that track) and a master fader at the right, next to the always-visible master meter. The master fader is a real
+    project setting (saved in the project file, used by preview and export; projects from older versions open with 0 dB). The EQ and Gain knobs edit the clip under
+    the playhead because the EQ belongs to clips, not to tracks.
+  - Long values in the inspector (such as the project path) are cut with "..." and the full text is the tooltip.
+  - The Audio tab of the tool panel now has Import audio, Add audio track and Open mixer (the strips moved to the mixer).
+
 Version 1.6.0
 -------------
   - The Effects, Transitions and Filters tabs show every tile on a drawn sample picture (a landscape, so no media file is needed) with the effect, the look or the

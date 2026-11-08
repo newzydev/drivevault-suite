@@ -234,25 +234,72 @@ void Compositor::drawClip(QPainter& p, const RenderSnapshot& snapshot, const Sna
     const double posY = sc.clip.param("posY", clipFrame);
     const double scale = sc.clip.param("scale", clipFrame) * how.scaleMul;
     const double rotation = sc.clip.param("rotation", clipFrame);
-    const bool plain = posX == 0 && posY == 0 && scale == 1.0 && rotation == 0 && how.offsetX == 0;
+    const bool plain = posX == 0 && posY == 0 && scale == 1.0 && rotation == 0 && how.rotationAdd == 0 && how.offsetX == 0 && how.offsetY == 0;
 
     p.save();
-    if (how.clipRight < 1.0)
-        p.setClipRect(QRectF(0, 0, canvas.width() * how.clipRight, canvas.height()));
+    if (how.clipLeft > 0.0 || how.clipRight < 1.0 || how.clipTop > 0.0 || how.clipBottom < 1.0)
+        p.setClipRect(QRectF(canvas.width() * how.clipLeft, canvas.height() * how.clipTop,
+                             canvas.width() * (how.clipRight - how.clipLeft), canvas.height() * (how.clipBottom - how.clipTop)));
     p.setOpacity(opacity);
     if (plain) {
         p.drawImage(QPointF((canvas.width() - image.width()) / 2.0, (canvas.height() - image.height()) / 2.0), image);
     } else {
         p.setRenderHint(QPainter::SmoothPixmapTransform);
         QTransform t;
-        t.translate(canvas.width() / 2.0 + (posX + how.offsetX) * canvas.width(), canvas.height() / 2.0 + posY * canvas.height());
-        t.rotate(rotation);
+        t.translate(canvas.width() / 2.0 + (posX + how.offsetX) * canvas.width(), canvas.height() / 2.0 + (posY + how.offsetY) * canvas.height());
+        t.rotate(rotation + how.rotationAdd);
         t.scale(scale, scale);
         t.translate(-image.width() / 2.0, -image.height() / 2.0);
         p.setTransform(t);
         p.drawImage(0, 0, image);
     }
     p.restore();
+    if (how.flash > 0.0) {
+        p.save();
+        p.setOpacity(std::clamp(how.flash, 0.0, 1.0));
+        p.fillRect(QRectF(0, 0, canvas.width(), canvas.height()), Qt::white);
+        p.restore();
+    }
+}
+
+// How a clip looks `t` of the way through a transition (0 = hidden, 1 = fully shown).
+void Compositor::applyTransition(Drawing& how, const QString& type, double t)
+{
+    const double inv = 1.0 - t;
+    if (type == QLatin1String("dissolve") || type == QLatin1String("fade"))
+        how.alpha *= t;
+    else if (type == QLatin1String("dip"))
+        how.alpha *= std::max(0.0, 2.0 * t - 1.0);
+    else if (type == QLatin1String("wipe"))
+        how.clipRight = std::max(0.001, t);
+    else if (type == QLatin1String("wipeLeft"))
+        how.clipLeft = std::min(0.999, inv);
+    else if (type == QLatin1String("wipeDown"))
+        how.clipBottom = std::max(0.001, t);
+    else if (type == QLatin1String("wipeUp"))
+        how.clipTop = std::min(0.999, inv);
+    else if (type == QLatin1String("slide"))
+        how.offsetX = inv;
+    else if (type == QLatin1String("slideLeft"))
+        how.offsetX = -inv;
+    else if (type == QLatin1String("slideUp"))
+        how.offsetY = inv;
+    else if (type == QLatin1String("slideDown"))
+        how.offsetY = -inv;
+    else if (type == QLatin1String("zoom")) {
+        how.scaleMul = 0.3 + 0.7 * t;
+        how.alpha *= t;
+    } else if (type == QLatin1String("zoomOut")) {
+        how.scaleMul = 1.0 + 0.8 * inv;
+        how.alpha *= t;
+    } else if (type == QLatin1String("spin")) {
+        how.scaleMul = 0.3 + 0.7 * t;
+        how.rotationAdd = -180.0 * inv;
+        how.alpha *= t;
+    } else if (type == QLatin1String("flash")) {
+        how.alpha *= t;
+        how.flash = 1.0 - std::abs(2.0 * t - 1.0);
+    }
 }
 
 void Compositor::drawTrackClip(QPainter& p, const RenderSnapshot& snapshot, int idx, int64_t frame, QSize canvas)
@@ -265,7 +312,7 @@ void Compositor::drawTrackClip(QPainter& p, const RenderSnapshot& snapshot, int 
     // ---- out transition: the clip fades away over its last frames ----
     if (c.transOut.active() && cf >= c.durationFrames - c.transOut.frames) {
         const double q = double(c.durationFrames - cf) / double(c.transOut.frames);   // 1 .. 0
-        how.alpha = c.transOut.type == QLatin1String("dip") ? std::max(0.0, 2.0 * q - 1.0) : q;
+        applyTransition(how, c.transOut.type, q);      // an out transition is the in transition played backwards
     }
 
     // ---- in transition: blend with the clip that ends where this one starts ----
@@ -284,18 +331,7 @@ void Compositor::drawTrackClip(QPainter& p, const RenderSnapshot& snapshot, int 
             // The outgoing clip carries on past its end (its next source frames, or a hold on the last one).
             drawClip(p, snapshot, *previous, previous->clip.durationFrames - 1, frame, canvas, back);
         }
-        if (type == QLatin1String("dissolve") || type == QLatin1String("fade"))
-            how.alpha *= t;
-        else if (type == QLatin1String("dip"))
-            how.alpha *= std::max(0.0, 2.0 * t - 1.0);
-        else if (type == QLatin1String("wipe"))
-            how.clipRight = std::max(0.001, t);
-        else if (type == QLatin1String("slide"))
-            how.offsetX = 1.0 - t;
-        else if (type == QLatin1String("zoom")) {
-            how.scaleMul = 0.3 + 0.7 * t;
-            how.alpha *= t;
-        }
+        applyTransition(how, type, t);
     }
     drawClip(p, snapshot, sc, cf, frame, canvas, how);
 }

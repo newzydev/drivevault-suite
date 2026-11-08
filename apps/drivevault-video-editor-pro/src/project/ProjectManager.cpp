@@ -187,6 +187,7 @@ SnapshotPtr ProjectManager::snapshot() const
     snap->height = m_data.height;
     snap->fps = m_data.frameRate;
     snap->sampleRate = m_data.sampleRate;
+    snap->masterGainDb = m_data.masterGainDb;
     snap->tracks = m_tracks.tracks();
     for (const ClipData& c : m_timeline.clips()) {
         SnapshotClip sc;
@@ -214,6 +215,7 @@ void ProjectManager::applyData(const ProjectData& data, const QString& path, boo
     m_data = data;
     m_path = path;
     m_open = true;
+    emit masterGainChanged();
     m_playhead = 0;
     m_tracks.setTracks(m_data.tracks);
     m_timeline.setFrameRate(m_data.frameRate);
@@ -386,6 +388,17 @@ void ProjectManager::closeProject()
     emit projectChanged();
     emit dirtyChanged();
     emit playheadChanged();
+    emit snapshotChanged();
+}
+
+void ProjectManager::setMasterGainDb(double db)
+{
+    db = std::clamp(db, -60.0, 12.0);
+    if (!m_open || qFuzzyCompare(m_data.masterGainDb + 100, db + 100))
+        return;
+    m_data.masterGainDb = db;
+    markExtraDirty();
+    emit masterGainChanged();
     emit snapshotChanged();
 }
 

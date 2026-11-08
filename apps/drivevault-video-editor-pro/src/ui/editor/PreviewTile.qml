@@ -11,7 +11,7 @@ Rectangle {
     property string kind: "look"                     // "look" | "effect" | "transition"
     // look / effect: the amounts reached at the end of the animation (-1 .. 1; blur, vignette and sharpen 0 .. 1)
     property var amounts: ({})
-    // transition: "dissolve" | "dip" | "fade" | "wipe" | "slide" | "zoom" | "none", and "in" | "out"
+    // transition: a type of the Compositor (dissolve, dip, fade, wipe, wipeLeft, slide, zoom, spin, flash ...) or "none", and "in" | "out"
     property string transition: "none"
     property string direction: "in"
     property color tint: Theme.accent
@@ -66,50 +66,57 @@ Rectangle {
                     blur: (tile.amounts.blur || 0) * tile.t
                     vignette: (tile.amounts.vignette || 0) * tile.t
                     sharpen: (tile.amounts.sharpen || 0) * tile.t
+                    zoom: 1 + ((tile.amounts.zoom || 1) - 1) * tile.t
+                    tilt: (tile.amounts.tilt || 0) * tile.t
+                    barsV: (tile.amounts.barsV || 0) * tile.t
+                    barsH: (tile.amounts.barsH || 0) * tile.t
                 }
 
-                // transition: picture A, then picture B arrives
+                // transition: the clip that moves is picture B (in) or picture A (out, over black); `s` is how far it is shown, as in the Compositor
                 Item {
+                    id: trans
                     anchors.fill: parent
                     visible: tile.kind === "transition"
-                    readonly property real p: tile.t
                     readonly property string type: tile.transition
                     readonly property bool leaving: tile.direction === "out"
+                    readonly property real s: leaving ? 1 - tile.t : tile.t     // 0 hidden .. 1 fully shown
 
-                    PreviewScene {                                    // A
-                        anchors.fill: parent
-                        variant: 0
-                        opacity: parent.leaving ? 1 - parent.p
-                                 : parent.type === "dip" ? Math.max(0, 1 - 2 * parent.p)
-                                 : parent.type === "fade" ? 0 : 1
-                    }
-                    Item {                                            // B (comes in)
-                        id: incoming
-                        visible: !parent.leaving
-                        x: parent.type === "slide" ? (1 - parent.p) * parent.width : 0
-                        width: parent.type === "wipe" ? Math.max(0, parent.p * parent.width) : parent.width
-                        height: parent.height
-                        clip: true
-                        opacity: parent.type === "dissolve" || parent.type === "fade" ? parent.p
-                                 : parent.type === "dip" ? Math.max(0, 2 * parent.p - 1)
-                                 : parent.type === "zoom" ? Math.min(1, 0.3 + parent.p) : 1
-                        PreviewScene {
-                            width: frameBox.width
-                            height: frameBox.height
-                            variant: 1
-                            transformOrigin: Item.Center
-                            scale: parent.parent.type === "zoom" ? 0.25 + 0.75 * parent.parent.p : 1
-                        }
-                    }
-                    Rectangle {                                       // "none": nothing happens
-                        anchors.fill: parent
-                        visible: parent.type === "none"
-                        color: "transparent"
-                    }
-                    Rectangle {                                       // out: the picture goes to black
+                    Rectangle { anchors.fill: parent; z: -2; color: "#000000" }
+                    PreviewScene {                                    // A stays underneath while B comes in
                         anchors.fill: parent
                         z: -1
-                        color: "#000000"
+                        variant: 0
+                        visible: !trans.leaving
+                        opacity: trans.type === "dip" ? Math.max(0, 1 - 2 * trans.s) : trans.type === "fade" ? 0 : 1
+                    }
+                    Item {                                            // window onto the moving picture (wipes shrink it)
+                        id: mover
+                        readonly property string ty: trans.type
+                        readonly property real s: trans.s
+                        x: (ty === "wipeLeft" ? 1 - s : 0) * parent.width
+                        y: (ty === "wipeUp" ? 1 - s : 0) * parent.height
+                        width: (ty === "wipe" ? Math.max(0.001, s) : ty === "wipeLeft" ? s : 1) * parent.width
+                        height: (ty === "wipeDown" ? Math.max(0.001, s) : ty === "wipeUp" ? s : 1) * parent.height
+                        clip: true
+                        visible: ty !== "none"
+                        opacity: ty === "dissolve" || ty === "fade" || ty === "zoomOut" || ty === "spin" || ty === "flash" || ty === "zoom" ? Math.min(1, s)
+                                 : ty === "dip" ? Math.max(0, 2 * s - 1) : 1
+                        PreviewScene {
+                            x: -mover.x + (mover.ty === "slide" ? 1 - mover.s : mover.ty === "slideLeft" ? mover.s - 1 : 0) * trans.width
+                            y: -mover.y + (mover.ty === "slideUp" ? 1 - mover.s : mover.ty === "slideDown" ? mover.s - 1 : 0) * trans.height
+                            width: trans.width
+                            height: trans.height
+                            variant: trans.leaving ? 0 : 1
+                            transformOrigin: Item.Center
+                            scale: mover.ty === "zoom" || mover.ty === "spin" ? 0.3 + 0.7 * mover.s : mover.ty === "zoomOut" ? 1 + 0.8 * (1 - mover.s) : 1
+                            rotation: mover.ty === "spin" ? -180 * (1 - mover.s) : 0
+                        }
+                    }
+                    Rectangle {                                       // flash: white over everything in the middle
+                        anchors.fill: parent
+                        visible: trans.type === "flash"
+                        color: "#FFFFFF"
+                        opacity: 1 - Math.abs(2 * trans.s - 1)
                     }
                 }
             }

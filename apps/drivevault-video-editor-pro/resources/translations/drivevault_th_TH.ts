@@ -827,7 +827,7 @@
     <message>
         <location filename="../../src/ui/settings/EditingPage.qml" line="33"/>
         <source>Imported files are copied to the &quot;medias&quot; folder next to the project file, so the project keeps working when the originals move.</source>
-        <translation>ไฟล์ที่นำเข้าจะถูกคัดลอกไปไว้ในโฟลเดอร์ "medias" ข้างไฟล์โปรเจกต์ โปรเจกต์จึงยังใช้ได้แม้ย้ายไฟล์ต้นฉบับ</translation>
+        <translation>ไฟล์ที่นำเข้าจะถูกคัดลอกไปไว้ในโฟลเดอร์ &quot;medias&quot; ข้างไฟล์โปรเจกต์ โปรเจกต์จึงยังใช้ได้แม้ย้ายไฟล์ต้นฉบับ</translation>
     </message>
     <message>
         <location filename="../../src/ui/settings/EditingPage.qml" line="40"/>
@@ -1358,6 +1358,19 @@
         <location filename="../../src/ui/editor/EditorMenuBar.qml" line="255"/>
         <source>Settings</source>
         <translation>ตั้งค่า</translation>
+    </message>
+</context>
+<context>
+    <name>EditorScreen</name>
+    <message>
+        <location filename="../../src/ui/editor/EditorScreen.qml" line="252"/>
+        <source>Timeline</source>
+        <translation>ไทม์ไลน์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/EditorScreen.qml" line="252"/>
+        <source>Mixer</source>
+        <translation>มิกเซอร์</translation>
     </message>
 </context>
 <context>
@@ -2015,12 +2028,12 @@
 <context>
     <name>InspectorPanel</name>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="100"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="103"/>
         <source>Inspector</source>
         <translation>อินสเปกเตอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="124"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="127"/>
         <source>Nothing selected</source>
         <translation>ยังไม่ได้เลือกรายการ</translation>
     </message>
@@ -2029,14 +2042,14 @@
         <translation type="vanished">พารามิเตอร์การแปลงภาพ ความโปร่งใส ความเร็ว เสียง และเอฟเฟกต์ จะแสดงที่นี่เมื่อวางคลิปบนไทม์ไลน์ได้ (Phase 2/3)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="419"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="429"/>
         <source>Project</source>
         <translation>โปรเจกต์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="133"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="376"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="423"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="136"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="386"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="433"/>
         <source>Name</source>
         <translation>ชื่อ</translation>
     </message>
@@ -2056,326 +2069,400 @@
         <translation>ไฟล์ทั้งหมด (*)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="125"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="128"/>
         <source>Select a clip on the timeline or a media item to see its details here.</source>
         <translation>เลือกคลิปบนไทม์ไลน์หรือรายการสื่อ เพื่อดูรายละเอียดที่นี่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="129"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="132"/>
         <source>Clip</source>
         <translation>คลิป</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="134"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="137"/>
         <source>Track</source>
         <translation>แทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="134"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="137"/>
         <source>linked</source>
         <translation>เชื่อมกัน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="135"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="138"/>
         <source>Start</source>
         <translation>เริ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="136"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="312"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="378"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="427"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="139"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="322"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="388"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="437"/>
         <source>Duration</source>
         <translation>ระยะเวลา</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="137"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="140"/>
         <source>End</source>
         <translation>สิ้นสุด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="138"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="141"/>
         <source>Source in</source>
         <translation>จุดเข้าของต้นฉบับ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="139"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="380"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="142"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="390"/>
         <source>Status</source>
         <translation>สถานะ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="139"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="142"/>
         <source>Media file is missing</source>
         <translation>ไม่พบไฟล์สื่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="139"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="380"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="142"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="390"/>
         <source>OK</source>
         <translation>ปกติ</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="145"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="148"/>
         <source>%n clips selected</source>
         <translation>
             <numerusform>เลือกอยู่ %n คลิป</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="154"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="157"/>
         <source>Title</source>
         <translation>ชื่อเรื่อง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="162"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="165"/>
         <source>Subtitle</source>
         <translation>ซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="172"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="175"/>
         <source>Transform</source>
         <translation>การแปลง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="176"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="179"/>
         <source>Opacity</source>
         <translation>ความทึบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="177"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="180"/>
         <source>Position X</source>
         <translation>ตำแหน่ง X</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="178"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="181"/>
         <source>Position Y</source>
         <translation>ตำแหน่ง Y</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="179"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="182"/>
         <source>Scale</source>
         <translation>ขนาด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="180"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="183"/>
         <source>Rotation</source>
         <translation>การหมุน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="187"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="190"/>
         <source>Colour</source>
         <translation>สี</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="191"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="194"/>
         <source>Exposure</source>
         <translation>การรับแสง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="192"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="195"/>
         <source>Brightness</source>
         <translation>ความสว่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="193"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="196"/>
         <source>Contrast</source>
         <translation>คอนทราสต์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="194"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="197"/>
         <source>Saturation</source>
         <translation>ความอิ่มตัว</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="195"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="198"/>
         <source>Temperature</source>
         <translation>อุณหภูมิสี</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="196"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="199"/>
         <source>Tint</source>
         <translation>โทนสี</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="203"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="206"/>
         <source>Change look…</source>
         <translation>เปลี่ยนลุค…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="203"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="206"/>
         <source>Import look…</source>
         <translation>นำเข้าลุค…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="209"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="212"/>
         <source>Remove</source>
         <translation>ลบออก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="222"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="225"/>
         <source>Look strength</source>
         <translation>ความเข้มของลุค</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="228"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="231"/>
         <source>Lift · Gamma · Gain</source>
         <translation>Lift · Gamma · Gain</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="234"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="237"/>
         <source>Lift</source>
         <translation>Lift</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="234"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="237"/>
         <source>Gamma</source>
         <translation>Gamma</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="234"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="237"/>
         <source>Gain</source>
         <translation>Gain</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="250"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="253"/>
         <source>Curves</source>
         <translation>เส้นโค้ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="261"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="264"/>
         <source>Effects</source>
         <translation>เอฟเฟกต์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="265"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="268"/>
         <source>Blur</source>
         <translation>เบลอ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="266"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="269"/>
         <source>Sharpen</source>
         <translation>ความคมชัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="267"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="270"/>
         <source>Vignette</source>
         <translation>ขอบมืด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="268"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="271"/>
         <source>Crop left</source>
         <translation>ครอบซ้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="269"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="272"/>
         <source>Crop right</source>
         <translation>ครอบขวา</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="270"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="273"/>
         <source>Crop top</source>
         <translation>ครอบบน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="271"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="274"/>
         <source>Crop bottom</source>
         <translation>ครอบล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="278"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="281"/>
         <source>Transitions</source>
         <translation>ทรานซิชัน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="282"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="285"/>
         <source>In</source>
         <translation>เข้า</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="283"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="287"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="286"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="295"/>
         <source>None</source>
         <translation>ไม่มี</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="283"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="286"/>
         <source>Cross dissolve</source>
         <translation>ครอสดิสโซลฟ์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="284"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="288"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="287"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="296"/>
         <source>Dip to black</source>
         <translation>จางผ่านสีดำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="284"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="287"/>
         <source>Fade from black</source>
         <translation>ค่อยๆ สว่างจากสีดำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="285"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="288"/>
+        <source>Wipe right</source>
+        <translation>เช็ดไปขวา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="288"/>
+        <source>Wipe left</source>
+        <translation>เช็ดไปซ้าย</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="289"/>
+        <source>Wipe down</source>
+        <translation>เช็ดลง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="289"/>
+        <source>Wipe up</source>
+        <translation>เช็ดขึ้น</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="290"/>
+        <source>Slide from right</source>
+        <translation>สไลด์จากขวา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="290"/>
+        <source>Slide from left</source>
+        <translation>สไลด์จากซ้าย</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="291"/>
+        <source>Slide from bottom</source>
+        <translation>สไลด์จากล่าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="291"/>
+        <source>Slide from top</source>
+        <translation>สไลด์จากบน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="292"/>
+        <source>Zoom in</source>
+        <translation>ซูมเข้า</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="292"/>
+        <source>Zoom out</source>
+        <translation>ซูมออก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="293"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="298"/>
+        <source>Spin</source>
+        <translation>หมุน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="293"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="298"/>
+        <source>Flash</source>
+        <translation>แฟลช</translation>
+    </message>
+    <message>
         <source>Wipe</source>
-        <translation>ปัดภาพ</translation>
+        <translation type="vanished">ปัดภาพ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="285"/>
         <source>Slide</source>
-        <translation>สไลด์</translation>
+        <translation type="vanished">สไลด์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="285"/>
         <source>Zoom</source>
-        <translation>ซูม</translation>
+        <translation type="vanished">ซูม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="286"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="294"/>
         <source>Out</source>
         <translation>ออก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="287"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="295"/>
         <source>Fade to black</source>
         <translation>ค่อยๆ มืดเป็นสีดำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="326"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="296"/>
+        <source>Wipe out</source>
+        <translation>เช็ดออก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="297"/>
+        <source>Slide out</source>
+        <translation>สไลด์ออก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="297"/>
+        <source>Shrink away</source>
+        <translation>ย่อหายไป</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="336"/>
         <source>An &quot;In&quot; transition blends from the clip before it when the clips touch, otherwise from black.</source>
         <translation>ทรานซิชัน &quot;เข้า&quot; จะผสมจากคลิปก่อนหน้าเมื่อคลิปติดกัน มิฉะนั้นจะเริ่มจากสีดำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="341"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="351"/>
         <source>Volume</source>
         <translation>ระดับเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="342"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="352"/>
         <source>Bass</source>
         <translation>เสียงทุ้ม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="343"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="353"/>
         <source>Mid</source>
         <translation>เสียงกลาง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="344"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="354"/>
         <source>Treble</source>
         <translation>เสียงแหลม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="345"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="355"/>
         <source>Noise gate</source>
         <translation>นอยส์เกต</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="347"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="357"/>
         <source>Fade in</source>
         <translation>เฟดเข้า</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="347"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="357"/>
         <source>Fade out</source>
         <translation>เฟดออก</translation>
     </message>
@@ -2384,85 +2471,85 @@
         <translation type="vanished">มิกเซอร์เสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="372"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="428"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="382"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="438"/>
         <source>Media</source>
         <translation>สื่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="377"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="387"/>
         <source>Type</source>
         <translation>ประเภท</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="377"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="387"/>
         <source>Image</source>
         <translation>รูปภาพ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="377"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="387"/>
         <source>Video</source>
         <translation>วิดีโอ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="379"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="389"/>
         <source>Format</source>
         <translation>รูปแบบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="380"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="390"/>
         <source>File not found</source>
         <translation>ไม่พบไฟล์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="381"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="391"/>
         <source>Path</source>
         <translation>พาธ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="387"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="397"/>
         <source>Add to Timeline</source>
         <translation>เพิ่มลงไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="407"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="417"/>
         <source>Create preview proxy</source>
         <translation>สร้างพร็อกซีสำหรับพรีวิว</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="410"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="420"/>
         <source>Proxy ready</source>
         <translation>พร็อกซีพร้อมแล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="411"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="421"/>
         <source>Building proxy…</source>
         <translation>กำลังสร้างพร็อกซี…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="412"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="422"/>
         <source>No proxy: variable frame rate</source>
         <translation>ไม่มีพร็อกซี: เฟรมเรตไม่คงที่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="424"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="434"/>
         <source>Resolution</source>
         <translation>ความละเอียด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="425"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="435"/>
         <source>Frame rate</source>
         <translation>อัตราเฟรม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="429"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="439"/>
         <source>Clips</source>
         <translation>คลิป</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="337"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="377"/>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="426"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="347"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="387"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="436"/>
         <source>Audio</source>
         <translation>เสียง</translation>
     </message>
@@ -2471,7 +2558,7 @@
         <translation type="vanished">แทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/InspectorPanel.qml" line="430"/>
+        <location filename="../../src/ui/editor/InspectorPanel.qml" line="440"/>
         <source>File</source>
         <translation>ไฟล์</translation>
     </message>
@@ -2792,6 +2879,74 @@
     </message>
 </context>
 <context>
+    <name>MixerPanel</name>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="30"/>
+        <source>Centre</source>
+        <translation>กึ่งกลาง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="113"/>
+        <source>Clip under the playhead</source>
+        <translation>คลิปใต้เส้นเพลย์เฮด</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="113"/>
+        <source>No clip at the playhead</source>
+        <translation>ไม่มีคลิปที่เส้นเพลย์เฮด</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="127"/>
+        <source>Gain</source>
+        <translation>Gain</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="136"/>
+        <source>High</source>
+        <translation>เสียงแหลม</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="146"/>
+        <source>Mid</source>
+        <translation>เสียงกลาง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="156"/>
+        <source>Low</source>
+        <translation>เสียงทุ้ม</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="167"/>
+        <source>Pan</source>
+        <translation>ซ้าย-ขวา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="198"/>
+        <source>Solo</source>
+        <translation>เดี่ยว</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="206"/>
+        <source>Mute</source>
+        <translation>ปิดเสียง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="215"/>
+        <source>No audio track yet. Add one with the &quot;+ Audio&quot; button of the timeline.</source>
+        <translation>ยังไม่มีแทร็กเสียง เพิ่มได้ด้วยปุ่ม &quot;+ เสียง&quot; ของไทม์ไลน์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="232"/>
+        <source>Master</source>
+        <translation>มาสเตอร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/MixerPanel.qml" line="240"/>
+        <source>Volume</source>
+        <translation>ระดับเสียง</translation>
+    </message>
+</context>
+<context>
     <name>MixerSection</name>
     <message>
         <source>Master</source>
@@ -2806,39 +2961,32 @@
         <translation type="vanished">กดเล่นเพื่อดูระดับเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="45"/>
         <source>Solo</source>
-        <translation>เดี่ยว</translation>
+        <translation type="vanished">เดี่ยว</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="53"/>
         <source>Mute</source>
-        <translation>ปิดเสียง</translation>
+        <translation type="vanished">ปิดเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="58"/>
         <source>Volume</source>
-        <translation>ระดับเสียง</translation>
+        <translation type="vanished">ระดับเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="67"/>
         <source>Track volume</source>
-        <translation>ระดับเสียงแทร็ก</translation>
+        <translation type="vanished">ระดับเสียงแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="73"/>
         <source>Pan</source>
-        <translation>ซ้าย-ขวา</translation>
+        <translation type="vanished">ซ้าย-ขวา</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="82"/>
         <source>Track pan</source>
-        <translation>ซ้าย-ขวาของแทร็ก</translation>
+        <translation type="vanished">ซ้าย-ขวาของแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/MixerSection.qml" line="87"/>
         <source>Centre</source>
-        <translation>กึ่งกลาง</translation>
+        <translation type="vanished">กึ่งกลาง</translation>
     </message>
 </context>
 <context>
@@ -3400,17 +3548,17 @@
         <translation type="vanished">การเล่นภาพ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="207"/>
+        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="217"/>
         <source>Timecode</source>
         <translation>ไทม์โค้ด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="214"/>
+        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="224"/>
         <source>Go to start</source>
         <translation>ไปที่จุดเริ่มต้น</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="220"/>
+        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="230"/>
         <source>Previous frame</source>
         <translation>เฟรมก่อนหน้า</translation>
     </message>
@@ -3419,7 +3567,7 @@
         <translation type="vanished">เล่น / หยุดชั่วคราว — ใช้งานได้ใน Phase 2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="237"/>
+        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="247"/>
         <source>Next frame</source>
         <translation>เฟรมถัดไป</translation>
     </message>
@@ -3438,37 +3586,37 @@
         <translation>ดับเบิลคลิกรายการสื่อหรือลากไปวางบนไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="232"/>
+        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="242"/>
         <source>Pause</source>
         <translation>หยุดชั่วคราว</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="232"/>
+        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="242"/>
         <source>Play</source>
         <translation>เล่น</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="242"/>
+        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="252"/>
         <source>Go to end</source>
         <translation>ไปที่จุดสิ้นสุด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="254"/>
+        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="264"/>
         <source>Full</source>
         <translation>เต็ม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="255"/>
+        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="265"/>
         <source>1/2</source>
         <translation>1/2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="256"/>
+        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="266"/>
         <source>1/4</source>
         <translation>1/4</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="259"/>
+        <location filename="../../src/ui/editor/ProgramMonitor.qml" line="269"/>
         <source>Preview quality</source>
         <translation>คุณภาพตัวอย่าง</translation>
     </message>
@@ -3567,12 +3715,12 @@
 <context>
     <name>TimelineClip</name>
     <message>
-        <location filename="../../src/ui/editor/TimelineClip.qml" line="301"/>
+        <location filename="../../src/ui/editor/TimelineClip.qml" line="315"/>
         <source>There is no clip next to this edge to roll.</source>
         <translation>ไม่มีคลิปที่ติดกับขอบนี้ให้ม้วนจุดตัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelineClip.qml" line="315"/>
+        <location filename="../../src/ui/editor/TimelineClip.qml" line="329"/>
         <source>Media file is missing</source>
         <translation>ไม่พบไฟล์สื่อ</translation>
     </message>
@@ -3971,255 +4119,632 @@
 <context>
     <name>ToolPanel</name>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="16"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="17"/>
         <source>Import</source>
         <translation>นำเข้า</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="17"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="18"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="456"/>
         <source>Audio</source>
         <translation>เสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="18"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="19"/>
         <source>Text</source>
         <translation>ข้อความ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="19"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="20"/>
         <source>Effects</source>
         <translation>เอฟเฟกต์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="20"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="21"/>
         <source>Transitions</source>
         <translation>ทรานซิชัน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="21"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="22"/>
         <source>Filters</source>
         <translation>ฟิลเตอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="22"/>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="374"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="23"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="542"/>
         <source>Adjustment</source>
         <translation>ปรับแต่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="23"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="24"/>
         <source>AI</source>
         <translation>AI</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="44"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="45"/>
         <source>Select a video clip on the timeline first.</source>
         <translation>กรุณาเลือกคลิปวิดีโอในไทม์ไลน์ก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="237"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="78"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="147"/>
+        <source>Basic</source>
+        <translation>พื้นฐาน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="82"/>
+        <source>Subtitle</source>
+        <translation>ซับไตเติล</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="83"/>
+        <source>Tag</source>
+        <translation>ป้าย</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="84"/>
+        <source>01</source>
+        <translation>01</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="85"/>
+        <source>Bold and outline</source>
+        <translation>ตัวหนาและเส้นขอบ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="86"/>
+        <source>BIG TEXT</source>
+        <translation>ตัวใหญ่</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="87"/>
+        <source>Outline</source>
+        <translation>เส้นขอบ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="88"/>
+        <source>IMPACT</source>
+        <translation>อิมแพกต์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="89"/>
+        <source>ALERT</source>
+        <translation>เตือนภัย</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="90"/>
+        <source>Colour</source>
+        <translation>สี</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="91"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="92"/>
+        <source>Neon</source>
+        <translation>นีออน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="93"/>
+        <source>Gold</source>
+        <translation>ทอง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="94"/>
+        <source>Fonts</source>
+        <translation>แบบอักษร</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="95"/>
+        <source>Elegant</source>
+        <translation>หรูหรา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="96"/>
+        <source>Handwriting</source>
+        <translation>ลายมือ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="97"/>
+        <source>Typewriter</source>
+        <translation>พิมพ์ดีด</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="101"/>
+        <source>Blur and sharpen</source>
+        <translation>เบลอและความคมชัด</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="102"/>
+        <source>Light blur</source>
+        <translation>เบลอเบา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="110"/>
+        <source>Dark edges</source>
+        <translation>ขอบมืด</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="111"/>
+        <source>Dream</source>
+        <translation>ฝันหวาน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="112"/>
+        <source>Soft portrait</source>
+        <translation>พอร์ตเทรตนุ่ม</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="113"/>
+        <source>Focus</source>
+        <translation>โฟกัส</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="114"/>
+        <source>Crisp</source>
+        <translation>คมกริบ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="115"/>
+        <source>Frame and zoom</source>
+        <translation>กรอบและซูม</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="116"/>
+        <source>Letterbox</source>
+        <translation>เลตเตอร์บ็อกซ์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="117"/>
+        <source>Wide bars</source>
+        <translation>แถบกว้าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="118"/>
+        <source>Cinema bars</source>
+        <translation>แถบหนัง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="119"/>
+        <source>Side bars</source>
+        <translation>แถบข้าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="120"/>
+        <source>Zoom 125%</source>
+        <translation>ซูม 125%</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="121"/>
+        <source>Zoom 160%</source>
+        <translation>ซูม 160%</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="122"/>
+        <source>Tilt right</source>
+        <translation>เอียงขวา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="123"/>
+        <source>Tilt left</source>
+        <translation>เอียงซ้าย</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="124"/>
+        <source>Normal size</source>
+        <translation>ขนาดปกติ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="528"/>
+        <source>A look sets the colour controls (brightness, contrast, saturation ...) of the clip; change them freely in the Adjustment tab. Your own LUT files are imported in the inspector.</source>
+        <translation>ลุคจะตั้งค่าสี (ความสว่าง คอนทราสต์ ความอิ่มตัว ...) ของคลิป ปรับต่อได้อิสระในแท็บปรับแต่ง ไฟล์ LUT ของคุณนำเข้าได้ในอินสเปกเตอร์</translation>
+    </message>
+    <message>
         <source>Audio tracks</source>
-        <translation>แทร็กเสียง</translation>
+        <translation type="vanished">แทร็กเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="239"/>
         <source>Import music or sound effects with the Import tab and drag them to an audio track. The master level is always shown at the right of the timeline.</source>
-        <translation>นำเข้าเพลงหรือเสียงเอฟเฟกต์ด้วยแท็บนำเข้า แล้วลากไปวางบนแทร็กเสียง ระดับเสียงมาสเตอร์แสดงตลอดทางขวาของไทม์ไลน์</translation>
+        <translation type="vanished">นำเข้าเพลงหรือเสียงเอฟเฟกต์ด้วยแท็บนำเข้า แล้วลากไปวางบนแทร็กเสียง ระดับเสียงมาสเตอร์แสดงตลอดทางขวาของไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="253"/>
         <source>Add text at the playhead</source>
-        <translation>เพิ่มข้อความที่ตำแหน่งหัวเล่น</translation>
+        <translation type="vanished">เพิ่มข้อความที่ตำแหน่งหัวเล่น</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="260"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="79"/>
         <source>Title</source>
         <translation>ชื่อเรื่อง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="261"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="80"/>
         <source>Lower third</source>
         <translation>แถบชื่อล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="262"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="81"/>
         <source>Caption</source>
         <translation>คำบรรยายภาพ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="264"/>
         <source>Select the text clip on the timeline to change its words, font and colour in the inspector. Automatic captions are in the AI tab.</source>
-        <translation>เลือกคลิปข้อความในไทม์ไลน์เพื่อแก้คำ ฟอนต์ และสีในอินสเปกเตอร์ ส่วนซับอัตโนมัติอยู่ในแท็บ AI</translation>
+        <translation type="vanished">เลือกคลิปข้อความในไทม์ไลน์เพื่อแก้คำ ฟอนต์ และสีในอินสเปกเตอร์ ส่วนซับอัตโนมัติอยู่ในแท็บ AI</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="278"/>
         <source>Effects for the selected clip</source>
-        <translation>เอฟเฟกต์สำหรับคลิปที่เลือก</translation>
+        <translation type="vanished">เอฟเฟกต์สำหรับคลิปที่เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="285"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="103"/>
         <source>Soft blur</source>
         <translation>เบลอเบา</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="286"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="104"/>
         <source>Strong blur</source>
         <translation>เบลอแรง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="287"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="105"/>
         <source>Sharpen</source>
         <translation>ความคมชัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="288"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="106"/>
+        <source>Extra sharp</source>
+        <translation>คมพิเศษ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="108"/>
+        <source>Vignette and mood</source>
+        <translation>วิกเนตต์และอารมณ์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="109"/>
         <source>Vignette</source>
         <translation>ขอบมืด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="289"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="107"/>
         <source>Remove effects</source>
         <translation>ลบเอฟเฟกต์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="291"/>
         <source>A tile replaces the effects of the selected clip with its setting. Fine control (crop, amounts, keyframes) is in the inspector.</source>
-        <translation>ปุ่มจะแทนที่เอฟเฟกต์ของคลิปที่เลือกด้วยค่าของมัน การปรับละเอียด (ครอป ปริมาณ คีย์เฟรม) อยู่ในอินสเปกเตอร์</translation>
+        <translation type="vanished">ปุ่มจะแทนที่เอฟเฟกต์ของคลิปที่เลือกด้วยค่าของมัน การปรับละเอียด (ครอป ปริมาณ คีย์เฟรม) อยู่ในอินสเปกเตอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="305"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="127"/>
         <source>Transition in (start of the clip)</source>
         <translation>ทรานซิชันเข้า (ต้นคลิป)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="312"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="128"/>
         <source>Cross dissolve</source>
         <translation>ครอสดิสโซลฟ์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="313"/>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="328"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="128"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="141"/>
         <source>Dip to black</source>
         <translation>จางผ่านสีดำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="314"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="128"/>
         <source>Fade from black</source>
         <translation>ค่อยๆ สว่างจากสีดำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="315"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="129"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="141"/>
+        <source>Flash</source>
+        <translation>แฟลช</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="130"/>
         <source>Wipe</source>
         <translation>ปัดภาพ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="316"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="131"/>
+        <source>Wipe right</source>
+        <translation>เช็ดไปขวา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="131"/>
+        <source>Wipe left</source>
+        <translation>เช็ดไปซ้าย</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="132"/>
+        <source>Wipe down</source>
+        <translation>เช็ดลง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="132"/>
+        <source>Wipe up</source>
+        <translation>เช็ดขึ้น</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="133"/>
         <source>Slide</source>
         <translation>สไลด์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="317"/>
         <source>Zoom</source>
-        <translation>ซูม</translation>
+        <translation type="vanished">ซูม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="318"/>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="329"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="129"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="143"/>
         <source>None</source>
         <translation>ไม่มี</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="320"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="134"/>
+        <source>Slide from right</source>
+        <translation>สไลด์จากขวา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="134"/>
+        <source>Slide from left</source>
+        <translation>สไลด์จากซ้าย</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="135"/>
+        <source>Slide from bottom</source>
+        <translation>สไลด์จากล่าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="135"/>
+        <source>Slide from top</source>
+        <translation>สไลด์จากบน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="136"/>
+        <source>Zoom and spin</source>
+        <translation>ซูมและหมุน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="137"/>
+        <source>Zoom in</source>
+        <translation>ซูมเข้า</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="137"/>
+        <source>Zoom out</source>
+        <translation>ซูมออก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="137"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="143"/>
+        <source>Spin</source>
+        <translation>หมุน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="140"/>
         <source>Transition out (end of the clip)</source>
         <translation>ทรานซิชันออก (ท้ายคลิป)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="327"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="141"/>
         <source>Fade to black</source>
         <translation>ค่อยๆ มืดเป็นสีดำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="331"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="142"/>
+        <source>Wipe out</source>
+        <translation>เช็ดออก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="142"/>
+        <source>Slide out</source>
+        <translation>สไลด์ออก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="142"/>
+        <source>Shrink away</source>
+        <translation>ย่อหายไป</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="154"/>
+        <source>Bright</source>
+        <translation>สว่าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="155"/>
+        <source>Dark</source>
+        <translation>มืด</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="157"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="158"/>
+        <source>Film</source>
+        <translation>ฟิล์ม</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="159"/>
+        <source>Vintage</source>
+        <translation>วินเทจ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="160"/>
+        <source>Sepia</source>
+        <translation>ซีเปีย</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="161"/>
+        <source>Retro</source>
+        <translation>เรโทร</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="162"/>
+        <source>Noir</source>
+        <translation>นัวร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="163"/>
+        <source>Bleach</source>
+        <translation>ฟอกสี</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="164"/>
+        <source>Mood</source>
+        <translation>อารมณ์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="165"/>
+        <source>Sunset</source>
+        <translation>พระอาทิตย์ตก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="166"/>
+        <source>Golden hour</source>
+        <translation>แสงทอง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="167"/>
+        <source>Ocean</source>
+        <translation>มหาสมุทร</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="168"/>
+        <source>Forest</source>
+        <translation>ป่า</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="169"/>
+        <source>Neon night</source>
+        <translation>ราตรีนีออน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="170"/>
+        <source>Pastel</source>
+        <translation>พาสเทล</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="171"/>
+        <source>Moody</source>
+        <translation>หม่นลึก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="172"/>
+        <source>Teal and orange</source>
+        <translation>ฟ้าเขียวกับส้ม</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="173"/>
+        <source>Punchy</source>
+        <translation>จัดจ้าน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="463"/>
+        <source>Import audio</source>
+        <translation>นำเข้าเสียง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="464"/>
+        <source>Add audio track</source>
+        <translation>เพิ่มแทร็กเสียง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="465"/>
+        <source>Open mixer</source>
+        <translation>เปิดมิกเซอร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="467"/>
+        <source>Import music or sound effects with the Import tab and drag them to an audio track. The mixer (levels, EQ, pan) is the Mixer tab of the timeline panel; the master level is always shown at its right.</source>
+        <translation>นำเข้าเพลงหรือเสียงเอฟเฟกต์ด้วยแท็บนำเข้า แล้วลากไปวางบนแทร็กเสียง มิกเซอร์ (ระดับเสียง EQ ซ้าย-ขวา) อยู่ในแท็บมิกเซอร์ของแผงไทม์ไลน์ ระดับมาสเตอร์แสดงอยู่ทางขวาเสมอ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="482"/>
+        <source>A style adds a text clip at the playhead. Select it on the timeline to change its words, font, colour and place in the inspector. Automatic captions are in the AI tab.</source>
+        <translation>สไตล์จะเพิ่มคลิปข้อความที่ตำแหน่งเพลย์เฮด เลือกคลิปบนไทม์ไลน์เพื่อแก้คำ ฟอนต์ สี และตำแหน่งในอินสเปกเตอร์ ส่วนซับอัตโนมัติอยู่ในแท็บ AI</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="497"/>
+        <source>An effect replaces the effects of the selected clip with its setting (zoom and tilt change the size and rotation of the clip; &quot;Normal size&quot; undoes them). Fine control is in the inspector.</source>
+        <translation>เอฟเฟกต์จะแทนที่เอฟเฟกต์ของคลิปที่เลือกด้วยค่าของมัน (ซูมและเอียงจะเปลี่ยนขนาดและการหมุนของคลิป &quot;ขนาดปกติ&quot; ใช้ยกเลิก) ปรับละเอียดได้ในอินสเปกเตอร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="513"/>
         <source>An &quot;In&quot; transition blends from the clip before it when the clips touch, otherwise from black. The length is set in the inspector.</source>
         <translation>ทรานซิชัน &quot;เข้า&quot; จะผสมจากคลิปก่อนหน้าเมื่อคลิปติดกัน ไม่เช่นนั้นเริ่มจากสีดำ ความยาวตั้งในอินสเปกเตอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="345"/>
         <source>Looks for the selected clip</source>
-        <translation>ลุคสีสำหรับคลิปที่เลือก</translation>
+        <translation type="vanished">ลุคสีสำหรับคลิปที่เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="352"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="148"/>
         <source>Vivid</source>
         <translation>สดใส</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="353"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="149"/>
         <source>Warm</source>
         <translation>โทนอุ่น</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="354"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="150"/>
         <source>Cool</source>
         <translation>โทนเย็น</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="355"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="151"/>
         <source>Black &amp; white</source>
         <translation>ขาวดำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="356"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="152"/>
         <source>Faded</source>
         <translation>ซีดจาง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="357"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="153"/>
         <source>Cinematic</source>
         <translation>ภาพยนตร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="358"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="156"/>
         <source>Original</source>
         <translation>ต้นฉบับ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="360"/>
         <source>A look sets the colour controls (exposure, contrast, saturation ...) of the clip; change them freely in the Adjustment tab. Your own LUT files are imported in the inspector.</source>
-        <translation>ลุคจะตั้งค่าสี (การรับแสง คอนทราสต์ ความอิ่มตัว ...) ของคลิป ปรับต่อได้ในแท็บปรับแต่ง ไฟล์ LUT ของคุณนำเข้าได้ในอินสเปกเตอร์</translation>
+        <translation type="vanished">ลุคจะตั้งค่าสี (การรับแสง คอนทราสต์ ความอิ่มตัว ...) ของคลิป ปรับต่อได้ในแท็บปรับแต่ง ไฟล์ LUT ของคุณนำเข้าได้ในอินสเปกเตอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="375"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="543"/>
         <source>Select a video clip on the timeline to adjust it.</source>
         <translation>เลือกคลิปวิดีโอในไทม์ไลน์เพื่อปรับแต่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="378"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="546"/>
         <source>Exposure</source>
         <translation>การรับแสง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="378"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="546"/>
         <source>Brightness</source>
         <translation>ความสว่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="379"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="547"/>
         <source>Contrast</source>
         <translation>คอนทราสต์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="379"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="547"/>
         <source>Saturation</source>
         <translation>ความอิ่มตัว</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="380"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="548"/>
         <source>Temperature</source>
         <translation>อุณหภูมิสี</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ToolPanel.qml" line="380"/>
+        <location filename="../../src/ui/editor/ToolPanel.qml" line="548"/>
         <source>Tint</source>
         <translation>โทนสี</translation>
     </message>
@@ -4846,57 +5371,57 @@
         <translation>อัตราสุ่มตัวอย่างเสียงไม่ถูกต้อง</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="277"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="278"/>
         <source>This is not a DriveVault project file.</source>
         <translation>นี่ไม่ใช่ไฟล์โปรเจกต์ DriveVault</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="281"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="282"/>
         <source>The project file has no valid version information.</source>
         <translation>ไฟล์โปรเจกต์ไม่มีข้อมูลเวอร์ชันที่ถูกต้อง</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="283"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="284"/>
         <source>This project was created by a newer version of DriveVault Video Editor Pro (file format %1). Please update the application.</source>
         <translation>โปรเจกต์นี้สร้างโดย DriveVault Video Editor Pro เวอร์ชันที่ใหม่กว่า (รูปแบบไฟล์ %1) โปรดอัปเดตโปรแกรม</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="306"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="307"/>
         <source>The project file is damaged: %1</source>
         <translation>ไฟล์โปรเจกต์เสียหาย: %1</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="324"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="326"/>
         <source>The project file is damaged: invalid track definition.</source>
         <translation>ไฟล์โปรเจกต์เสียหาย: การกำหนดแทร็กไม่ถูกต้อง</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="347"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="349"/>
         <source>The project file is damaged: invalid media entry.</source>
         <translation>ไฟล์โปรเจกต์เสียหาย: รายการสื่อไม่ถูกต้อง</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="359"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="361"/>
         <source>The project file is damaged: invalid clip definition.</source>
         <translation>ไฟล์โปรเจกต์เสียหาย: การกำหนดคลิปไม่ถูกต้อง</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="373"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="375"/>
         <source>The file was not found: %1</source>
         <translation>ไม่พบไฟล์: %1</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="378"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="380"/>
         <source>Cannot open the file: %1</source>
         <translation>ไม่สามารถเปิดไฟล์ได้: %1</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="383"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="385"/>
         <source>The project file is unexpectedly large.</source>
         <translation>ไฟล์โปรเจกต์มีขนาดใหญ่ผิดปกติ</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectFile.cpp" line="390"/>
+        <location filename="../../src/project/ProjectFile.cpp" line="392"/>
         <source>The project file is damaged and cannot be read (%1).</source>
         <translation>ไฟล์โปรเจกต์เสียหายและอ่านไม่ได้ (%1)</translation>
     </message>
@@ -4914,82 +5439,82 @@
         <translation>ไม่สามารถใช้ชื่อนี้เป็นชื่อไฟล์ได้</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="248"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="250"/>
         <source>Please choose a location for the project.</source>
         <translation>โปรดเลือกตำแหน่งเก็บโปรเจกต์</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="255"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="257"/>
         <source>A project with this name already exists in the selected location.</source>
         <translation>มีโปรเจกต์ชื่อนี้อยู่แล้วในตำแหน่งที่เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="260"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="262"/>
         <source>Cannot create the project: %1</source>
         <translation>ไม่สามารถสร้างโปรเจกต์ได้: %1</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="274"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="276"/>
         <source>Please choose a DriveVault project file (.dvproj).</source>
         <translation>โปรดเลือกไฟล์โปรเจกต์ DriveVault (.dvproj)</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="321"/>
-        <location filename="../../src/project/ProjectManager.cpp" line="330"/>
-        <location filename="../../src/project/ProjectManager.cpp" line="395"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="323"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="332"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="408"/>
         <source>There is no open project.</source>
         <translation>ไม่มีโปรเจกต์ที่เปิดอยู่</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="323"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="325"/>
         <source>The project has no file yet. Use Save As.</source>
         <translation>โปรเจกต์ยังไม่มีไฟล์ โปรดใช้ บันทึกเป็น</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="334"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="336"/>
         <source>Please choose a file name.</source>
         <translation>โปรดเลือกชื่อไฟล์</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="344"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="346"/>
         <source>Cannot save the project: %1</source>
         <translation>ไม่สามารถบันทึกโปรเจกต์ได้: %1</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="397"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="410"/>
         <source>The project already has a subtitle track.</source>
         <translation>โปรเจกต์นี้มีแทร็กซับไตเติลอยู่แล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="397"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="410"/>
         <source>No more tracks can be added.</source>
         <translation>เพิ่มแทร็กไม่ได้อีกแล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="404"/>
-        <location filename="../../src/project/ProjectManager.cpp" line="415"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="417"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="428"/>
         <source>There is no such track.</source>
         <translation>ไม่มีแทร็กนี้</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="406"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="419"/>
         <source>The track still contains clips. Remove them first.</source>
         <translation>แทร็กยังมีคลิปอยู่ กรุณาลบคลิปก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="408"/>
-        <location filename="../../src/project/ProjectManager.cpp" line="417"/>
         <location filename="../../src/project/ProjectManager.cpp" line="421"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="430"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="434"/>
         <source>A project needs at least one video and one audio track.</source>
         <translation>โปรเจกต์ต้องมีแทร็กวิดีโอและแทร็กเสียงอย่างน้อยอย่างละหนึ่งแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="429"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="442"/>
         <source>This media is not part of the project.</source>
         <translation>สื่อนี้ไม่ได้อยู่ในโปรเจกต์</translation>
     </message>
     <message>
-        <location filename="../../src/project/ProjectManager.cpp" line="431"/>
+        <location filename="../../src/project/ProjectManager.cpp" line="444"/>
         <source>This media is used on the timeline. Remove its clips first.</source>
         <translation>สื่อนี้ถูกใช้บนไทม์ไลน์ ลบคลิปของมันก่อน</translation>
     </message>
@@ -5063,11 +5588,11 @@
         <location filename="../../src/timeline/TimelineModel.cpp" line="674"/>
         <location filename="../../src/timeline/TimelineModel.cpp" line="761"/>
         <location filename="../../src/timeline/TimelineModel.cpp" line="784"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="97"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="773"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="841"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="887"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="914"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="98"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="793"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="861"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="907"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="934"/>
         <source>The clip no longer exists.</source>
         <translation>คลิปนี้ไม่มีอยู่แล้ว</translation>
     </message>
@@ -5078,14 +5603,14 @@
         <location filename="../../src/timeline/TimelineModel.cpp" line="835"/>
         <location filename="../../src/timeline/TimelineModel.cpp" line="847"/>
         <location filename="../../src/timeline/TimelineModel.cpp" line="861"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="81"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="341"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="456"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="724"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="779"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="847"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="892"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="918"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="82"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="342"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="476"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="744"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="799"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="867"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="912"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="938"/>
         <source>The track is locked.</source>
         <translation>แทร็กถูกล็อก</translation>
     </message>
@@ -5123,7 +5648,7 @@
     <message>
         <location filename="../../src/timeline/TimelineModel.cpp" line="843"/>
         <location filename="../../src/timeline/TimelineModel.cpp" line="855"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="694"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="714"/>
         <source>Select a clip first.</source>
         <translation>เลือกคลิปก่อน</translation>
     </message>
@@ -5165,8 +5690,8 @@
     </message>
     <message>
         <location filename="../../src/timeline/TimelineAi.cpp" line="144"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="149"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="179"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="150"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="180"/>
         <source>Unknown parameter.</source>
         <translation>ไม่รู้จักพารามิเตอร์นี้</translation>
     </message>
@@ -5186,219 +5711,280 @@
         <translation>เพิ่มซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="70"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="71"/>
         <source>There is no such track.</source>
         <translation>ไม่มีแทร็กนี้</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="82"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="83"/>
         <source>Delete track clips</source>
         <translation>ลบคลิปของแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="151"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="152"/>
         <source>Change %1</source>
         <translation>เปลี่ยน %1</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="180"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="205"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="181"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="206"/>
         <source>Keyframe</source>
         <translation>คีย์เฟรม</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="204"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="205"/>
         <source>Unknown interpolation.</source>
         <translation>ไม่รู้จักการประมาณค่านี้</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="219"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="220"/>
         <source>Remove keyframes</source>
         <translation>ลบคีย์เฟรม</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="235"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="236"/>
         <source>Reset</source>
         <translation>รีเซ็ต</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="272"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="273"/>
         <source>Unknown curve.</source>
         <translation>ไม่รู้จักเส้นโค้งนี้</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="281"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="282"/>
         <source>Curves</source>
         <translation>เส้นโค้ง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="303"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="304"/>
         <source>The file was not found.</source>
         <translation>ไม่พบไฟล์</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="304"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="305"/>
         <source>Colour look</source>
         <translation>ลุคสี</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="312"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="313"/>
         <source>Audio fades</source>
         <translation>เฟดเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="322"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="323"/>
         <source>This transition is not available here.</source>
         <translation>ใช้ทรานซิชันนี้ที่นี่ไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="323"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="324"/>
         <source>Transition</source>
         <translation>ทรานซิชัน</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="339"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="340"/>
         <source>There is no suitable track.</source>
         <translation>ไม่มีแทร็กที่เหมาะสม</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="346"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="347"/>
         <source>Add title</source>
         <translation>เพิ่มชื่อเรื่อง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="367"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="371"/>
         <source>Lower third</source>
         <translation>แถบชื่อล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="374"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="372"/>
         <source>Caption</source>
         <translation>คำบรรยายภาพ</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="380"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="370"/>
         <source>Title</source>
         <translation>ชื่อเรื่อง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="399"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="373"/>
+        <source>BIG TEXT</source>
+        <translation>ตัวใหญ่</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="374"/>
+        <source>Outline</source>
+        <translation>เส้นขอบ</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="375"/>
+        <source>IMPACT</source>
+        <translation>อิมแพกต์</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="376"/>
+        <source>Subtitle</source>
+        <translation>ซับไตเติล</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="377"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="378"/>
+        <source>Neon</source>
+        <translation>นีออน</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="379"/>
+        <source>Gold</source>
+        <translation>ทอง</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="380"/>
+        <source>ALERT</source>
+        <translation>เตือนภัย</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="381"/>
+        <source>Elegant</source>
+        <translation>หรูหรา</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="382"/>
+        <source>Handwriting</source>
+        <translation>ลายมือ</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="383"/>
+        <source>Typewriter</source>
+        <translation>พิมพ์ดีด</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="384"/>
+        <source>Tag</source>
+        <translation>ป้าย</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="385"/>
+        <source>01</source>
+        <translation>01</translation>
+    </message>
+    <message>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="419"/>
         <source>Edit title</source>
         <translation>แก้ไขชื่อเรื่อง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="435"/>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="454"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="455"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="474"/>
         <source>Add a subtitle track first.</source>
         <translation>กรุณาเพิ่มแทร็กซับไตเติลก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="460"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="480"/>
         <source>Cannot open the file: %1</source>
         <translation>เปิดไฟล์ไม่ได้: %1</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="494"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="514"/>
         <source>The file contains no subtitles.</source>
         <translation>ไฟล์นี้ไม่มีซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="532"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="552"/>
         <source>Import subtitles</source>
         <translation>นำเข้าซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="543"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="563"/>
         <source>There are no subtitles to export.</source>
         <translation>ไม่มีซับไตเติลให้ส่งออก</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="555"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="575"/>
         <source>Cannot save the file: %1</source>
         <translation>บันทึกไฟล์ไม่ได้: %1</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="590"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="610"/>
         <source>Marker %1</source>
         <translation>มาร์กเกอร์ %1</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="661"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="681"/>
         <source>Select at least two clips to group them.</source>
         <translation>เลือกอย่างน้อยสองคลิปเพื่อจัดกลุ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="668"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="688"/>
         <source>Group clips</source>
         <translation>จัดกลุ่มคลิป</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="685"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="705"/>
         <source>The selected clips are not grouped.</source>
         <translation>คลิปที่เลือกยังไม่ได้จัดกลุ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="686"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="706"/>
         <source>Ungroup clips</source>
         <translation>เลิกจัดกลุ่มคลิป</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="715"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="735"/>
         <source>There is nothing to paste.</source>
         <translation>ไม่มีสิ่งที่จะวาง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="722"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="742"/>
         <source>The track of the copied clip no longer exists.</source>
         <translation>แทร็กของคลิปที่คัดลอกไม่มีอยู่แล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="726"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="746"/>
         <source>The media of the copied clip is no longer in the project.</source>
         <translation>สื่อของคลิปที่คัดลอกไม่อยู่ในโปรเจกต์แล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="757"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="777"/>
         <source>Paste</source>
         <translation>วาง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="830"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="850"/>
         <source>Ripple trim</source>
         <translation>ตัดแบบริปเปิล</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="852"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="872"/>
         <source>There is no clip directly behind this one.</source>
         <translation>ไม่มีคลิปที่อยู่ติดหลังคลิปนี้</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="879"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="899"/>
         <source>Roll edit</source>
         <translation>ม้วนจุดตัด</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="894"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="914"/>
         <source>Stills and titles have no source to slip.</source>
         <translation>ภาพนิ่งและชื่อเรื่องไม่มีต้นฉบับให้สลิป</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="906"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="926"/>
         <source>Slip clip</source>
         <translation>สลิปคลิป</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="916"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="936"/>
         <source>Ungroup the clip first: slide works on a single clip.</source>
         <translation>กรุณาเลิกจัดกลุ่มก่อน: สไลด์ใช้กับคลิปเดี่ยวเท่านั้น</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="925"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="945"/>
         <source>Slide needs a clip directly before and after.</source>
         <translation>สไลด์ต้องมีคลิปติดอยู่ทั้งด้านหน้าและด้านหลัง</translation>
     </message>
     <message>
-        <location filename="../../src/timeline/TimelineTools.cpp" line="944"/>
+        <location filename="../../src/timeline/TimelineTools.cpp" line="964"/>
         <source>Slide clip</source>
         <translation>สไลด์คลิป</translation>
     </message>

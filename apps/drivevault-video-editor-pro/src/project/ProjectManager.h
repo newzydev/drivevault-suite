@@ -31,6 +31,7 @@ class ProjectManager : public QObject {
     Q_PROPERTY(int nominalFps READ nominalFps NOTIFY projectChanged FINAL)
     Q_PROPERTY(int sampleRate READ sampleRate NOTIFY projectChanged FINAL)
     Q_PROPERTY(TrackListModel* tracks READ tracks CONSTANT FINAL)
+    Q_PROPERTY(double masterGainDb READ masterGainDb NOTIFY masterGainChanged FINAL)   // master fader of the mixer, dB
     Q_PROPERTY(TimelineModel* timeline READ timeline CONSTANT FINAL)
     Q_PROPERTY(MediaLibrary* media READ media CONSTANT FINAL)
     Q_PROPERTY(MediaFilterModel* mediaView READ mediaView CONSTANT FINAL)
@@ -74,6 +75,8 @@ public:
 
     // Tracks: new video tracks go on top of the video group, audio tracks at the bottom, one subtitle track on top.
     Q_INVOKABLE QString addTrack(const QString& kind);
+    double masterGainDb() const { return m_data.masterGainDb; }
+    Q_INVOKABLE void setMasterGainDb(double db);
     Q_INVOKABLE QString removeTrack(int index);                // only empty tracks, never the last video / audio track
     Q_INVOKABLE QString removeTrackWithClips(int index);       // deletes the clips on the track too; clears the undo history
 
@@ -97,6 +100,7 @@ public:
     void autosaveNow();
 
 signals:
+    void masterGainChanged();
     void projectChanged();
     void dirtyChanged();
     void playheadChanged();

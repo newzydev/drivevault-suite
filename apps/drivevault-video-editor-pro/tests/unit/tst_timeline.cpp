@@ -431,7 +431,7 @@ private slots:
     {
         m->addMedia("vs", 1, 0);
         const QString id = onTrack("V1")[0].id;
-        QVERIFY(!m->setTransition(id, "out", "wipe", 10).isEmpty());      // not an out transition
+        QVERIFY(!m->setTransition(id, "out", "zoomOut", 10).isEmpty());      // not an out transition
         QVERIFY(!m->setTransition(id, "sideways", "fade", 10).isEmpty());
         QCOMPARE(m->setTransition(id, "in", "dissolve", 30), QString());
         QCOMPARE(m->findClip(id)->transIn.frames, qint64(30));

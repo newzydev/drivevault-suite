@@ -50,9 +50,17 @@ private:
         double alpha = 1.0;
         double scaleMul = 1.0;
         double offsetX = 0;     // in canvas widths
-        double clipRight = 1.0; // wipe: fraction of the canvas width that is revealed
+        double offsetY = 0;     // in canvas heights
+        double rotationAdd = 0; // degrees (spin)
+        // wipe: the part of the canvas that is revealed, as fractions of its width / height
+        double clipLeft = 0.0;
+        double clipRight = 1.0;
+        double clipTop = 0.0;
+        double clipBottom = 1.0;
+        double flash = 0.0;     // 0 .. 1: a white flash over the canvas after the clip is drawn
     };
 
+    static void applyTransition(Drawing& how, const QString& type, double t);
     QImage renderUncached(const RenderSnapshot& snapshot, int64_t frame, QSize size);
     static quint64 cacheKey(int64_t frame, QSize size);
     VideoReader* readerFor(const QString& path, int trackIndex);

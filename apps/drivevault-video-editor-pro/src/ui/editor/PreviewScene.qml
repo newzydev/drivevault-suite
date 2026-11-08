@@ -16,6 +16,10 @@ Item {
     property real blur: 0                        // 0 .. 1
     property real vignette: 0                    // 0 .. 1
     property real sharpen: 0                     // 0 .. 1
+    property real zoom: 1                        // picture scale (zoom effects)
+    property real tilt: 0                        // picture rotation in degrees
+    property real barsV: 0                       // black bars at the top and bottom, fraction of the height each
+    property real barsH: 0                       // black bars left and right, fraction of the width each
 
     readonly property bool gpu: GraphicsInfo.api !== GraphicsInfo.Software
     readonly property var palettes: [
@@ -46,6 +50,8 @@ Item {
     Item {
         id: art
         anchors.fill: parent
+        scale: scene.zoom
+        rotation: scene.tilt
         layer.enabled: scene.gpu && scene.blur > 0.01
         layer.effect: MultiEffect {
             blurEnabled: true
@@ -89,6 +95,11 @@ Item {
             color: scene.adj(scene.pal.hillFront)
         }
     }
+
+    Rectangle { visible: scene.barsV > 0; width: parent.width; height: parent.height * scene.barsV; color: "#000000" }
+    Rectangle { visible: scene.barsV > 0; y: parent.height * (1 - scene.barsV); width: parent.width; height: parent.height * scene.barsV; color: "#000000" }
+    Rectangle { visible: scene.barsH > 0; width: parent.width * scene.barsH; height: parent.height; color: "#000000" }
+    Rectangle { visible: scene.barsH > 0; x: parent.width * (1 - scene.barsH); width: parent.width * scene.barsH; height: parent.height; color: "#000000" }
 
     // vignette: the edges fade to black (four soft bands)
     Repeater {

@@ -25,6 +25,7 @@ struct RenderSnapshot {
     int height = 1080;
     timecode::FrameRate fps{30, 1};
     int sampleRate = 48000;
+    double masterGainDb = 0;      // master fader (dB)
     QList<TrackInfo> tracks;      // top to bottom, as shown in the timeline
     QList<SnapshotClip> clips;
     int64_t durationFrames = 0;   // end of the last clip

@@ -20,6 +20,7 @@ private slots:
         d.tracks[2].visible = false;
         d.tracks[0].lane = 0;          // lane heights (collapsed / tall) are saved
         d.tracks[1].lane = 2;
+        d.masterGainDb = -7.5;         // the master fader is saved
 
         ProjectData out;
         QString error;
@@ -32,6 +33,7 @@ private slots:
         QCOMPARE(out.tracks, d.tracks);
         QCOMPARE(out.tracks.at(0).lane, 0);
         QCOMPARE(out.tracks.at(1).lane, 2);
+        QCOMPARE(out.masterGainDb, -7.5);
 
         // a project file from before the lane heights existed opens with normal lanes
         QJsonObject root = ProjectFile::toJson(d);

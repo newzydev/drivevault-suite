@@ -29,7 +29,7 @@ void collectingHandler(QtMsgType type, const QMessageLogContext& context, const 
         // Platform noise that is irrelevant for the UI.
         if (message.contains(QLatin1String("propagateSizeHints")) || message.contains(QLatin1String("QFontDatabase")))
             return;
-        g_qmlProblems << message;
+        g_qmlProblems << (QString::fromUtf8(QTest::currentTestFunction() ? QTest::currentTestFunction() : "") + QStringLiteral(": ") + message);
     }
     Q_UNUSED(context)
 }
@@ -385,7 +385,7 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(qAbs(tl->paramValue(video, "saturation", 10) - satDef) < 1e-6, 3000);
 
         click("toolTab_transitions");
-        for (const char* name : {"trIn_wipe", "trIn_slide", "trIn_zoom", "trOut_fade"}) {   // the preview of a tile plays while the mouse is over it
+        for (const char* name : {"trIn_dissolve", "trIn_dip", "trIn_fade", "trIn_flash"}) {   // the preview of a tile plays while the mouse is over it
             QQuickItem* tileItem = item(QString::fromLatin1(name));
             QVERIFY(tileItem != nullptr);
             QTest::mouseMove(m_window, tileItem->mapToScene(QPointF(tileItem->width() / 2, tileItem->height() / 2)).toPoint());
@@ -408,6 +408,51 @@ private slots:
         QTRY_COMPARE_WITH_TIMEOUT(tl->clipCount(), before + 1, 3000);
         tl->undo();
         QTRY_COMPARE_WITH_TIMEOUT(tl->clipCount(), before, 3000);
+
+        // the big catalogs: more looks, effects, transitions and text styles are real operations too
+        // tiles far down a tab are below the visible part of its scroll view: activate them directly
+        auto tile = [&](const QString& name) {
+            QQuickItem* target = item(name);
+            QVERIFY2(target != nullptr, qPrintable(name));
+            QMetaObject::invokeMethod(target, "activated");
+        };
+        click("toolTab_text");
+        tile("text_neonPink");
+        QTRY_COMPARE_WITH_TIMEOUT(tl->clipCount(), before + 1, 3000);
+        tl->undo();
+        QTRY_COMPARE_WITH_TIMEOUT(tl->clipCount(), before, 3000);
+        tl->select(video);                              // adding the text selected the new clip
+        click("toolTab_effects");
+        tile("fx_letterbox");
+        QTRY_VERIFY_WITH_TIMEOUT(tl->paramValue(video, "cropT", 10) > 0.05, 3000);
+        tile("fx_reset");
+        QTRY_VERIFY_WITH_TIMEOUT(tl->paramValue(video, "cropT", 10) < 1e-6, 3000);
+        click("toolTab_transitions");
+        tile("trIn_flash");
+        QTRY_COMPARE_WITH_TIMEOUT(tl->clipInfo(video).value("transIn").toString(), QStringLiteral("flash"), 3000);
+        tile("trOut_wipe");
+        QTRY_COMPARE_WITH_TIMEOUT(tl->clipInfo(video).value("transOut").toString(), QStringLiteral("wipe"), 3000);
+        tile("trIn_none");
+        tile("trOut_none");
+        QTRY_COMPARE_WITH_TIMEOUT(tl->clipInfo(video).value("transOut").toString(), QString(), 3000);
+        click("toolTab_filters");
+        tile("look_sepia");
+        QTRY_VERIFY_WITH_TIMEOUT(tl->paramValue(video, "saturation", 10) < satDef - 0.1, 3000);
+        tile("look_none");
+        QTRY_VERIFY_WITH_TIMEOUT(qAbs(tl->paramValue(video, "saturation", 10) - satDef) < 1e-6, 3000);
+
+        // the bottom panel has a Mixer tab: master fader (saved with the project), channel strips and EQ knobs
+        click("bottomTab_mixer");
+        QQuickItem* master = item("masterGain");
+        QVERIFY(master != nullptr);
+        QTRY_VERIFY_WITH_TIMEOUT(master->isVisible(), 3000);
+        QVERIFY(item("masterStrip") != nullptr);
+        QVERIFY(item("mixHigh" + QString::number(3)) != nullptr || item("trackGain3") != nullptr);
+        QMetaObject::invokeMethod(master, "moved", Q_ARG(double, -6.0));
+        QTRY_COMPARE_WITH_TIMEOUT(projects->masterGainDb(), -6.0, 3000);
+        QMetaObject::invokeMethod(master, "moved", Q_ARG(double, 0.0));
+        QTRY_COMPARE_WITH_TIMEOUT(projects->masterGainDb(), 0.0, 3000);
+        click("bottomTab_timeline");
 
         // a thin guide line follows the mouse over the timeline
         QQuickItem* guide = item("hoverGuide");
@@ -437,9 +482,14 @@ private slots:
                     return i;
             return -1;
         };
-        click("addVideoTrack");                                         // the buttons under the track names
+        auto press = [&](const char* name) {                             // the buttons under the track names scroll away with many tracks
+            QQuickItem* target = item(QString::fromLatin1(name));
+            QVERIFY2(target != nullptr, name);
+            QMetaObject::invokeMethod(target, "clicked");
+        };
+        press("addVideoTrack");
         QTRY_COMPARE_WITH_TIMEOUT(tracks->count(), before + 1, 3000);
-        click("addAudioTrack");
+        press("addAudioTrack");
         QTRY_COMPARE_WITH_TIMEOUT(tracks->count(), before + 2, 3000);
         const int newVideo = rowOf("V3");
         const int newAudio = rowOf("A3");
@@ -702,7 +752,7 @@ private slots:
             QVERIFY2(!path.isEmpty() && QFileInfo::exists(path), name);
         }
         QVERIFY(m_ctx->systemInfo.documentPath("../LICENSE.txt").isEmpty());          // only plain file names are looked up
-        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.6.0"));
+        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.7.0"));
         QVERIFY(m_ctx->systemInfo.productName().contains("Video Editor Pro"));
     }
 

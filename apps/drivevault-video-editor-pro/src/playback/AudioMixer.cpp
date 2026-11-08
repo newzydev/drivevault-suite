@@ -222,9 +222,10 @@ void AudioMixer::render(int64_t startSample, int frames, float* out, Peaks* peak
     }
 
     float pl = 0, pr = 0;
+    const float masterGain = dbToLinear(snap.masterGainDb);
     for (int i = 0; i < frames; ++i) {
-        out[size_t(i) * 2] = softLimit(out[size_t(i) * 2]);
-        out[size_t(i) * 2 + 1] = softLimit(out[size_t(i) * 2 + 1]);
+        out[size_t(i) * 2] = softLimit(out[size_t(i) * 2] * masterGain);
+        out[size_t(i) * 2 + 1] = softLimit(out[size_t(i) * 2 + 1] * masterGain);
         pl = std::max(pl, std::abs(out[size_t(i) * 2]));
         pr = std::max(pr, std::abs(out[size_t(i) * 2 + 1]));
     }

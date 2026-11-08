@@ -70,7 +70,10 @@ Rectangle {
                     font.pixelSize: Theme.fontSm
                     font.features: modelData.mono ? { "tnum": 1 } : {}
                     color: modelData.warn ? Theme.error : Theme.text
-                    wrapMode: Text.WrapAnywhere
+                    elide: Text.ElideMiddle                         // a long value is cut with ... (the full text is the tooltip)
+                    maximumLineCount: 1
+                    HoverHandler { id: valueHover }
+                    AppToolTip { visible: valueHover.hovered && v.truncated; text: String(modelData.v) }
                 }
             }
         }
@@ -282,10 +285,17 @@ Rectangle {
                         model: [ { dir: "in", label: qsTr("In"),
                                    types: [ { value: "", label: qsTr("None") }, { value: "dissolve", label: qsTr("Cross dissolve") },
                                             { value: "dip", label: qsTr("Dip to black") }, { value: "fade", label: qsTr("Fade from black") },
-                                            { value: "wipe", label: qsTr("Wipe") }, { value: "slide", label: qsTr("Slide") }, { value: "zoom", label: qsTr("Zoom") } ] },
+                                            { value: "wipe", label: qsTr("Wipe right") }, { value: "wipeLeft", label: qsTr("Wipe left") },
+                                            { value: "wipeDown", label: qsTr("Wipe down") }, { value: "wipeUp", label: qsTr("Wipe up") },
+                                            { value: "slide", label: qsTr("Slide from right") }, { value: "slideLeft", label: qsTr("Slide from left") },
+                                            { value: "slideUp", label: qsTr("Slide from bottom") }, { value: "slideDown", label: qsTr("Slide from top") },
+                                            { value: "zoom", label: qsTr("Zoom in") }, { value: "zoomOut", label: qsTr("Zoom out") },
+                                            { value: "spin", label: qsTr("Spin") }, { value: "flash", label: qsTr("Flash") } ] },
                                  { dir: "out", label: qsTr("Out"),
                                    types: [ { value: "", label: qsTr("None") }, { value: "fade", label: qsTr("Fade to black") },
-                                            { value: "dip", label: qsTr("Dip to black") } ] } ]
+                                            { value: "dip", label: qsTr("Dip to black") }, { value: "wipe", label: qsTr("Wipe out") },
+                                            { value: "slide", label: qsTr("Slide out") }, { value: "zoom", label: qsTr("Shrink away") },
+                                            { value: "spin", label: qsTr("Spin") }, { value: "flash", label: qsTr("Flash") } ] } ]
                         delegate: ColumnLayout {
                             id: tr
                             required property var modelData

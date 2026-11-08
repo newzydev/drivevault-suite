@@ -261,7 +261,8 @@ QJsonObject ProjectFile::toJson(const ProjectData& d)
                                  {"sampleRate", d.sampleRate}}},
         {"media", media},
         {"timeline", QJsonObject{{"tracks", tracks}, {"clips", clips}, {"markers", markers},
-                                 {"inPoint", double(d.inPoint)}, {"outPoint", double(d.outPoint)}}},
+                                 {"inPoint", double(d.inPoint)}, {"outPoint", double(d.outPoint)},
+                                 {"masterGainDb", d.masterGainDb}}},
     };
 }
 
@@ -306,6 +307,7 @@ bool ProjectFile::fromJson(const QJsonObject& root, ProjectData* out, QString* e
         return fail(tr("The project file is damaged: %1").arg(problem));
 
     const QJsonObject timeline = root.value(QStringLiteral("timeline")).toObject();
+    d.masterGainDb = std::clamp(timeline.value(QStringLiteral("masterGainDb")).toDouble(0.0), -60.0, 12.0);   // absent in older files
     for (const QJsonValue& v : timeline.value(QStringLiteral("tracks")).toArray()) {
         const QJsonObject o = v.toObject();
         TrackInfo t;

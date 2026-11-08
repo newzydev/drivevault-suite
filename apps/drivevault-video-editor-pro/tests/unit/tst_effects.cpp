@@ -311,6 +311,43 @@ private slots:
         QVERIFY(near(px(render(*s, 105), .5, .5), 0, 0, 0, 12));             // dip to black is dark from the middle on
     }
 
+    void moreTransitionDirections()
+    {
+        auto s = snap();
+        add(*s, "a", "V1", p("red.png"), 0, 60);
+        add(*s, "b", "V1", p("blue.png"), 60, 60);
+        clip(*s, "b").transIn = {"wipeLeft", 30};
+        QImage wl = render(*s, 75);                                          // revealed from the right edge
+        QVERIFY(near(px(wl, 0.25, .5), 255, 0, 0));
+        QVERIFY(near(px(wl, 0.75, .5), 0, 0, 255));
+        clip(*s, "b").transIn = {"wipeDown", 30};
+        QImage wd = render(*s, 75);                                          // revealed from the top
+        QVERIFY(near(px(wd, .5, 0.25), 0, 0, 255));
+        QVERIFY(near(px(wd, .5, 0.75), 255, 0, 0));
+        clip(*s, "b").transIn = {"wipeUp", 30};
+        QImage wu = render(*s, 75);                                          // revealed from the bottom
+        QVERIFY(near(px(wu, .5, 0.25), 255, 0, 0));
+        QVERIFY(near(px(wu, .5, 0.75), 0, 0, 255));
+        clip(*s, "b").transIn = {"slideLeft", 30};
+        QImage sl = render(*s, 75);                                          // blue slides in from the left
+        QVERIFY(near(px(sl, 0.25, .5), 0, 0, 255));
+        QVERIFY(near(px(sl, 0.75, .5), 255, 0, 0));
+        clip(*s, "b").transIn = {"slideUp", 30};
+        QImage su = render(*s, 75);                                          // blue slides in from the bottom
+        QVERIFY(near(px(su, .5, 0.25), 255, 0, 0));
+        QVERIFY(near(px(su, .5, 0.75), 0, 0, 255));
+        clip(*s, "b").transIn = {"flash", 30};
+        QVERIFY(near(px(render(*s, 75), .5, .5), 255, 255, 255, 12));         // white in the middle of the flash
+        QVERIFY(near(px(render(*s, 90), .5, .5), 0, 0, 255));                // done
+        clip(*s, "b").transIn = {"spin", 30};
+        QVERIFY(qBlue(px(render(*s, 75), .5, .5)) > 80);                      // the incoming clip turns up in the middle
+        clip(*s, "b").transIn = {};
+        clip(*s, "b").transOut = {"wipe", 30};
+        QImage wo = render(*s, 105);                                         // half of the clip is left (the left half), the rest is black
+        QVERIFY(near(px(wo, 0.25, .5), 0, 0, 255));
+        QVERIFY(near(px(wo, 0.75, .5), 0, 0, 0, 12));
+    }
+
     // ========================================= titles ================================================
     void titlesRenderTextIncludingThai()
     {
@@ -447,6 +484,10 @@ private slots:
 
         s->tracks[3].gainDb = -12.0;                                                   // channel fader on A1
         QVERIFY(std::abs(rms(mix(*s, 24000, 9600)) / full - 0.251) < 0.03);
+        s->masterGainDb = -12.0;                                                       // master fader: another -12 dB on top
+        QVERIFY(std::abs(rms(mix(*s, 24000, 9600)) / full - 0.063) < 0.02);
+        s->masterGainDb = 0;
+        s->tracks[3].gainDb = 0;
     }
     void panSoloMuteAndKeyframedVolume()
     {
