@@ -20,10 +20,21 @@ ApplicationWindow {
     property int normalY: y
     property int normalWidth: width
     property int normalHeight: height
-    onXChanged: if (visibility === Window.Windowed) normalX = x
-    onYChanged: if (visibility === Window.Windowed) normalY = y
-    onWidthChanged: if (visibility === Window.Windowed) normalWidth = width
-    onHeightChanged: if (visibility === Window.Windowed) normalHeight = height
+    // the normal geometry is taken a moment after the window stopped moving: a maximize changes the size before the visibility, and that size must not be kept
+    Timer {
+        id: settle
+        interval: 350
+        onTriggered: {
+            if (win.visibility === Window.Windowed) {
+                win.normalX = win.x; win.normalY = win.y
+                win.normalWidth = win.width; win.normalHeight = win.height
+            }
+        }
+    }
+    onXChanged: settle.restart()
+    onYChanged: settle.restart()
+    onWidthChanged: settle.restart()
+    onHeightChanged: settle.restart()
     function pointOnAScreen(px, py) {
         const screens = Qt.application.screens
         for (let i = 0; i < screens.length; ++i) {
@@ -48,7 +59,12 @@ ApplicationWindow {
             visibility = Window.Maximized
         Hub.checkForUpdatesOnStart()
     }
-    onClosing: Hub.saveWindowState(visibility === Window.Maximized, normalX, normalY, normalWidth, normalHeight)
+    onClosing: {
+        if (visibility === Window.Windowed && settle.running) {      // closed right after a move or resize
+            normalX = x; normalY = y; normalWidth = width; normalHeight = height
+        }
+        Hub.saveWindowState(visibility === Window.Maximized, normalX, normalY, normalWidth, normalHeight)
+    }
 
     // ---- sections, search and the numbers of the hero ------------------------------------------------------------------------
     // all program cards get the height of the tallest one

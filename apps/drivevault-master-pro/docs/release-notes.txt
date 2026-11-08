@@ -1,6 +1,11 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.3.1
+  Fixed
+  - The window now opens maximized again when it was maximized when you closed it, also after it was resized right before: the normal size that is remembered is
+    taken once the window has settled (a maximize used to change the size before it was known to be maximized).
+
 v1.3.0
   New
   - New look: a hero at the top (headline and a search field that filters the programs by name and description, and an updates badge when there is one),
