@@ -51,6 +51,8 @@ public:
     Q_INVOKABLE QString importFile(const QString& pathOrUrl);
     Q_INVOKABLE int importUrls(const QVariantList& urls);       // files and folders; returns files queued
     Q_INVOKABLE int importFolder(const QString& pathOrUrl);
+    // Every video / audio / image file of a folder (and its sub folders), in natural name order.
+    static QStringList mediaFilesIn(const QString& folderOrUrl);
 
     // ---- Queries ---------------------------------------------------------------------------
     bool contains(const QString& id) const { return m_index.contains(id); }

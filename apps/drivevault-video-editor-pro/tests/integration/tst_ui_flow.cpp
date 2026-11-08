@@ -102,6 +102,7 @@ private slots:
         QQuickItem* button = item("homeNewProject");
         QVERIFY(button);
         QCOMPARE(button->property("text").toString(), QStringLiteral("New Project"));
+        QVERIFY(item("homeFolderProject") != nullptr);                 // a project can be made from a folder
     }
 
     void languageSwitchesAtRuntimeWithoutRestart()
@@ -712,6 +713,8 @@ private slots:
         QVERIFY(item("aiEnable") != nullptr);
         click("aiEnable");                                             // the switch turns the AI tools on
         QTRY_VERIFY_WITH_TIMEOUT(m_ctx->settings.get("aiEnabled").toBool(), 2000);
+        QVERIFY(item("aiPanel") != nullptr);
+        item("aiPanel")->setProperty("openSection", "captions");         // the AI sections are an accordion: one is open at a time
         QTRY_VERIFY_WITH_TIMEOUT(item("captionStatus") != nullptr && item("captionStatus")->isVisible(), 3000);
 
         auto activate = [&](const QString& name) {
@@ -741,6 +744,19 @@ private slots:
             tl->undo();
         QCOMPARE(tl->clipCount(), 0);
         m_ctx->settings.set("aiEnabled", false);
+        // edit by prompt: the plan is listed, one press applies it and it is one undo step
+        item("aiPanel")->setProperty("openSection", "edit");
+        QQuickItem* prompt = item("aiPrompt");
+        QVERIFY(prompt != nullptr);
+        prompt->setProperty("text", "add the text \"Hi\" at 1 second");
+        QTRY_VERIFY_WITH_TIMEOUT(item("aiEditRun") != nullptr && item("aiEditRun")->property("enabled").toBool(), 3000);
+        const int clipsBeforePrompt = tl->clipCount();
+        activate("aiEditRun");
+        QCOMPARE(tl->clipCount(), clipsBeforePrompt + 1);
+        tl->undo();
+        QCOMPARE(tl->clipCount(), clipsBeforePrompt);
+        QVERIFY(item("placeAll") != nullptr);                          // the Import tab has the button that places every clip
+
         click("ws_edit");
         QVERIFY(projects->save().isEmpty());
     }
@@ -752,7 +768,7 @@ private slots:
             QVERIFY2(!path.isEmpty() && QFileInfo::exists(path), name);
         }
         QVERIFY(m_ctx->systemInfo.documentPath("../LICENSE.txt").isEmpty());          // only plain file names are looked up
-        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.7.0"));
+        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.8.0"));
         QVERIFY(m_ctx->systemInfo.productName().contains("Video Editor Pro"));
     }
 

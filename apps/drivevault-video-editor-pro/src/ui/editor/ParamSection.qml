@@ -12,6 +12,8 @@ ColumnLayout {
     property string clipId
     property int revision: 0
     property bool defaultExpanded: true
+    property bool controlled: false          // true: the owner sets `expanded` (accordion) and reacts to toggleRequested()
+    signal toggleRequested()
     property bool expanded: AppSettings.state("insp." + group + title, defaultExpanded)
     default property alias content: body.data
 
@@ -27,6 +29,10 @@ ColumnLayout {
             Layout.preferredHeight: 24
             cursorShape: Qt.PointingHandCursor
             onClicked: {
+                if (section.controlled) {
+                    section.toggleRequested()
+                    return
+                }
                 section.expanded = !section.expanded
                 AppSettings.setState("insp." + section.group + section.title, section.expanded)
             }

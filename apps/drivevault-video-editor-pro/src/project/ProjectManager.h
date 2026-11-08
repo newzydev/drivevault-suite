@@ -68,6 +68,11 @@ public:
     // Creates <folder>/<name>/<name>.dvproj. `folder` may be a local path or a file:// URL.
     Q_INVOKABLE QString createProject(const QString& name, const QString& folder, int width, int height,
                                       const QString& frameRate, int sampleRate);
+    // Creates a project named after the folder (size and frame rate follow its first video) and imports every media file of the folder.
+    Q_INVOKABLE QString createProjectFromFolder(const QString& folderOrUrl, const QString& saveLocation);
+    // Puts every imported media item on the timeline one after another (pictures and videos on the main video track, audio-only files on a music
+    // track from 0). One undo step. Items that are still being analysed are skipped and reported.
+    Q_INVOKABLE QString placeAllMedia();
     Q_INVOKABLE QString openProject(const QString& pathOrUrl);
     Q_INVOKABLE QString save();
     Q_INVOKABLE QString saveAs(const QString& pathOrUrl);

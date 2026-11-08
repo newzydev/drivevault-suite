@@ -9,6 +9,7 @@ Rectangle {
 
     signal newProjectRequested()
     signal openProjectRequested()
+    signal folderProjectRequested()
     signal openRecentRequested(string path)
 
     color: Theme.background
@@ -114,6 +115,17 @@ Rectangle {
                     rightPadding: 20
                     font.pixelSize: Theme.fontLg
                     onClicked: root.openProjectRequested()
+                }
+                AppButton {
+                    objectName: "homeFolderProject"
+                    iconName: "import"
+                    text: qsTr("Project from folder")
+                    implicitHeight: 42
+                    leftPadding: 20
+                    rightPadding: 20
+                    font.pixelSize: Theme.fontLg
+                    onClicked: root.folderProjectRequested()
+                    AppToolTip { visible: parent.hovered; text: qsTr("Choose a folder: a project named after it is created and every video, picture and audio file in it is imported.") }
                 }
             }
 

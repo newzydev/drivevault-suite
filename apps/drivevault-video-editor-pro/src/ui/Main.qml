@@ -170,12 +170,25 @@ ApplicationWindow {
         }
     }
 
+    FolderDialog {
+        id: folderProjectDialog
+        title: qsTr("Choose the folder with your clips, pictures and audio")
+        onAccepted: {
+            const err = Projects.createProjectFromFolder(selectedFolder.toString(), Projects.defaultLocation(AppSettings.values.defaultProjectLocation))
+            if (err !== "")
+                toasts.show(err, "error")
+            else
+                toasts.show(qsTr("Project created from the folder. The files are being imported; then press \"Place all clips on the timeline\" in the Import tab."), "success")
+        }
+    }
+
     // ---- Content ------------------------------------------------------------------------------
     HomeScreen {
         anchors.fill: parent
         visible: App.screen === "home"
         onNewProjectRequested: App.newProjectOpen = true
         onOpenProjectRequested: openDialog.open()
+        onFolderProjectRequested: window.guardUnsaved(function () { folderProjectDialog.open() })
         onOpenRecentRequested: path => window.doOpenPath(path)
     }
 

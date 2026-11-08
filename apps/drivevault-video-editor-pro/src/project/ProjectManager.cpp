@@ -1,12 +1,14 @@
 #include "ProjectManager.h"
 
 #include "core/AppPaths.h"
+#include "media/MediaProbe.h"
 #include "core/FileUtils.h"
 #include "core/Logger.h"
 #include "project/ProjectFile.h"
 #include "project/RecentProjectsModel.h"
 #include "settings/SettingsManager.h"
 
+#include <QCollator>
 #include <QCoreApplication>
 #include <atomic>
 #include <QCryptographicHash>
@@ -234,6 +236,130 @@ void ProjectManager::applyData(const ProjectData& data, const QString& path, boo
 }
 
 // ---- create / open / save ----------------------------------------------------------------------
+
+QString ProjectManager::createProjectFromFolder(const QString& folderOrUrl, const QString& saveLocation)
+{
+    const QString folder = toLocalPath(folderOrUrl).trimmed();
+    if (folder.isEmpty() || !QDir(folder).exists())
+        return tr("The folder does not exist.");
+    const QStringList files = MediaLibrary::mediaFilesIn(folder);
+    if (files.isEmpty())
+        return tr("The folder has no video, image or audio files.");
+
+    // The project takes the size and frame rate of the first video; stills and audio-only folders get 1920 x 1080 at 30 fps.
+    int width = 1920;
+    int height = 1080;
+    double fps = 30.0;
+    for (const QString& file : files) {
+        if (MediaProbe::looksLikeImage(file))
+            continue;
+        MediaInfo info;
+        QString problem;
+        if (MediaProbe::probe(file, &info, &problem) && info.hasVideo && info.width > 0 && info.height > 0) {
+            width = std::clamp(info.width & ~1, 64, 16384);
+            height = std::clamp(info.height & ~1, 64, 16384);
+            if (info.fpsNum > 0 && info.fpsDen > 0)
+                fps = double(info.fpsNum) / double(info.fpsDen);
+            break;
+        }
+    }
+    static const double kRates[] = {23.976, 24.0, 25.0, 29.97, 30.0, 50.0, 59.94, 60.0};
+    double best = 30.0;
+    for (double r : kRates)
+        if (std::abs(r - fps) < std::abs(best - fps))
+            best = r;
+
+    QString baseName = QFileInfo(folder).fileName().trimmed();
+    if (!validateName(baseName).isEmpty())
+        baseName = tr("New project");
+    QString name = baseName;
+    const QString location = toLocalPath(saveLocation).trimmed();
+    for (int n = 2; n < 100; ++n) {
+        const QString sanitized = fileutils::sanitizeFileName(name);
+        if (!QFileInfo::exists(QDir::cleanPath(location + QLatin1Char('/') + sanitized + QLatin1Char('/') + sanitized + QLatin1Char('.')
+                                               + QLatin1String(ProjectFile::kExtension))))
+            break;
+        name = baseName + QLatin1Char(' ') + QString::number(n);
+    }
+    if (const QString error = createProject(name, saveLocation, width, height, QString::number(best, 'f', 3), 48000); !error.isEmpty())
+        return error;
+    for (const QString& file : files)
+        m_library.importFile(file);
+    return {};
+}
+
+QString ProjectManager::placeAllMedia()
+{
+    if (!m_open)
+        return tr("Open a project first.");
+    QList<MediaRef> refs = m_library.refs();
+    if (refs.isEmpty())
+        return tr("There is no media in the project yet. Import files first.");
+    QCollator collator;
+    collator.setNumericMode(true);
+    collator.setCaseSensitivity(Qt::CaseInsensitive);
+    std::sort(refs.begin(), refs.end(), [&](const MediaRef& a, const MediaRef& b) { return collator.compare(a.name, b.name) < 0; });
+
+    auto* tl = &m_timeline;
+    const int videoTrack = tl->trackIndexForKind(QStringLiteral("video"));
+    if (videoTrack < 0)
+        return tr("The project has no video track.");
+    auto endOf = [&](int trackIndex) {
+        qint64 end = 0;
+        const QString id = m_tracks.tracks().value(trackIndex).id;
+        for (const ClipData& c : tl->clips())
+            if (c.trackId == id)
+                end = std::max(end, c.endFrame());
+        return end;
+    };
+    auto audioTrackIndexes = [&]() {
+        QList<int> list;
+        for (int i = 0; i < m_tracks.count(); ++i)
+            if (m_tracks.tracks().at(i).kind == QLatin1String("audio"))
+                list << i;
+        return list;
+    };
+
+    int pending = 0;
+    int placed = 0;
+    QString failure;
+    tl->undoStack()->beginMacro(tr("Place all media"));
+    qint64 videoEnd = endOf(videoTrack);
+    int musicTrack = -1;
+    for (const MediaRef& ref : refs) {
+        if (!m_library.isReady(ref.id)) {
+            ++pending;
+            continue;
+        }
+        if (ref.info.hasVideo || ref.info.isStill()) {
+            if (const QString error = tl->addMedia(ref.id, videoTrack, videoEnd); !error.isEmpty()) {
+                failure = error;
+                continue;
+            }
+            videoEnd = std::max(videoEnd, endOf(videoTrack));
+        } else {
+            if (musicTrack < 0) {
+                // the second audio track holds the music (the first one carries the sound of the videos)
+                if (audioTrackIndexes().size() < 2)
+                    addTrack(QStringLiteral("audio"));
+                musicTrack = audioTrackIndexes().last();
+            }
+            if (const QString error = tl->addMedia(ref.id, musicTrack, endOf(musicTrack)); !error.isEmpty()) {
+                failure = error;
+                continue;
+            }
+        }
+        ++placed;
+    }
+    tl->undoStack()->endMacro();
+    if (placed == 0 && !failure.isEmpty())
+        return failure;
+    if (placed == 0)
+        return tr("The files are still being analysed. Try again in a moment.");
+    if (pending > 0)
+        return tr("%n file(s) are still being analysed and were not placed. Press the button again when they are ready.", "", pending);
+    return {};
+}
 
 QString ProjectManager::createProject(const QString& name, const QString& folder, int width, int height,
                                       const QString& frameRate, int sampleRate)

@@ -2,6 +2,7 @@ import QtQuick
 import DriveVault.Backend
 
 // A rotary knob of the mixer: drag up / down (or use the wheel) to change, double-click to reset, a 270 degree arc shows the value.
+// Compact: one line - name on the left, the dial, the value on the right.
 Item {
     id: knob
 
@@ -14,23 +15,27 @@ Item {
     property string suffix: ""
     property color tint: Theme.accent
     property var formatter: null                     // optional function(value) -> text
+    property bool compact: true
     signal moved(real value)
 
     readonly property real fraction: to > from ? Math.max(0, Math.min(1, (value - from) / (to - from))) : 0
     readonly property real resetFraction: to > from ? Math.max(0, Math.min(1, (resetValue - from) / (to - from))) : 0
     readonly property string valueText: formatter ? formatter(value) : value.toFixed(decimals) + suffix
+    readonly property real dialSize: compact ? 32 : 40
+    readonly property real capSize: dialSize * 0.66
 
-    implicitWidth: 56
-    implicitHeight: 74
+    implicitWidth: compact ? 200 : 56
+    implicitHeight: compact ? 38 : 74
     opacity: enabled ? 1 : 0.4
     onFractionChanged: arc.requestPaint()
     onTintChanged: arc.requestPaint()
 
     Text {
         id: caption
-        anchors.top: parent.top
-        width: parent.width
-        horizontalAlignment: Text.AlignHCenter
+        x: 0
+        y: knob.compact ? (knob.height - height) / 2 : 0
+        width: knob.compact ? 52 : knob.width
+        horizontalAlignment: knob.compact ? Text.AlignLeft : Text.AlignHCenter
         text: knob.label
         elide: Text.ElideRight
         maximumLineCount: 1
@@ -41,11 +46,10 @@ Item {
 
     Item {
         id: dial
-        anchors.top: caption.bottom
-        anchors.topMargin: 3
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: 40
-        height: 40
+        x: knob.compact ? 56 : (knob.width - width) / 2
+        y: knob.compact ? (knob.height - height) / 2 : caption.height + 3
+        width: knob.dialSize
+        height: knob.dialSize
 
         Canvas {
             id: arc
@@ -68,20 +72,20 @@ Item {
             }
         }
         Rectangle {                                       // the cap
+            id: cap
             anchors.centerIn: parent
-            width: 26; height: 26; radius: 13
-            color: ma.containsMouse || ma.pressed ? Theme.surfaceHover : Theme.surface
+            width: knob.capSize; height: knob.capSize; radius: width / 2
+            color: ma.containsMouse || ma.pressed ? Theme.surfaceHover : Theme.backgroundAlt
             border.width: 1
             border.color: Theme.border
-            Rectangle {                                   // the pointer
-                width: 2; height: 9; radius: 1
+            Rectangle {                                   // the pointer, turned about the centre of the cap
+                id: pointer
+                width: 2; height: cap.height * 0.34; radius: 1
                 color: knob.tint
-                x: parent.width / 2 - 1
+                x: cap.width / 2 - 1
                 y: 3
-                transformOrigin: Item.Bottom
                 antialiasing: true
-                // transform around the cap centre: the pointer is `parent.height / 2 - 3` long
-                transform: Rotation { origin.x: 1; origin.y: 10; angle: -135 + 270 * knob.fraction }
+                transform: Rotation { origin.x: 1; origin.y: cap.height / 2 - 3; angle: -135 + 270 * knob.fraction }
             }
         }
         MouseArea {
@@ -107,14 +111,14 @@ Item {
     }
 
     Text {
-        anchors.top: dial.bottom
-        anchors.topMargin: 2
-        width: parent.width
-        horizontalAlignment: Text.AlignHCenter
+        x: knob.compact ? dial.x + dial.width + 8 : 0
+        y: knob.compact ? (knob.height - height) / 2 : dial.y + dial.height + 2
+        width: knob.compact ? knob.width - x : knob.width
+        horizontalAlignment: knob.compact ? Text.AlignLeft : Text.AlignHCenter
         text: knob.valueText
         elide: Text.ElideRight
         maximumLineCount: 1
-        font.pixelSize: 10
+        font.pixelSize: 11
         font.features: { "tnum": 1 }
         color: Theme.textSecondary
     }

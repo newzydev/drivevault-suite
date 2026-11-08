@@ -7,6 +7,7 @@
 #include "ai/Assistant.h"
 #include "ai/AudioAnalysis.h"
 #include "ai/AudioEnhancer.h"
+#include "ai/EditPlanner.h"
 #include "ai/ModelManager.h"
 #include "ai/Tracker.h"
 #include "ai/Transcriber.h"
@@ -139,6 +140,113 @@ private slots:
     }
 
     // ---- audio enhancement ----------------------------------------------------------------------------------------
+    void editPromptsAreUnderstoodInThaiAndEnglish()
+    {
+        using K = ai::EditStep;
+        // English: several requests in one sentence
+        ai::EditPlan a = ai::parseEditPrompt("Place all clips, add the black and white filter, add the slide transition, add the text \"Hello, world\" at 3 seconds then export 1080p");
+        QCOMPARE(a.unknown.size(), 0);
+        QCOMPARE(a.steps.size(), 5);
+        QCOMPARE(a.steps[0].kind, K::PlaceAll);
+        QCOMPARE(a.steps[1].kind, K::Look);
+        QCOMPARE(a.steps[1].id, QStringLiteral("mono"));
+        QCOMPARE(a.steps[2].kind, K::Transition);
+        QCOMPARE(a.steps[2].id, QStringLiteral("slide"));
+        QCOMPARE(a.steps[2].direction, QStringLiteral("in"));
+        QCOMPARE(a.steps[3].kind, K::AddText);
+        QCOMPARE(a.steps[3].text, QStringLiteral("Hello, world"));      // the comma inside the quotes is not a separator
+        QCOMPARE(a.steps[3].seconds, 3.0);
+        QCOMPARE(a.steps[4].kind, K::Export);
+        QCOMPARE(a.steps[4].preset, QStringLiteral("1080p"));
+
+        // Thai
+        ai::EditPlan t = ai::parseEditPrompt(QString::fromUtf8("วางคลิปทั้งหมดตามลำดับ แล้วใส่ฟิลเตอร์ขาวดำ ใส่เอฟเฟกต์เบลอแรง ใส่ทรานซิชันสไลด์ ใส่ข้อความ \"สวัสดี\" ที่ 2 วินาที แล้วส่งออก 4k"));
+        QCOMPARE(t.unknown.size(), 0);
+        QCOMPARE(t.steps.size(), 6);
+        QCOMPARE(t.steps[0].kind, K::PlaceAll);
+        QCOMPARE(t.steps[1].id, QStringLiteral("mono"));
+        QCOMPARE(t.steps[2].kind, K::Effect);
+        QCOMPARE(t.steps[2].id, QStringLiteral("blurStrong"));          // the longest name wins over "เบลอ"
+        QCOMPARE(t.steps[3].id, QStringLiteral("slide"));
+        QCOMPARE(t.steps[4].text, QString::fromUtf8("สวัสดี"));
+        QCOMPARE(t.steps[4].seconds, 2.0);
+        QCOMPARE(t.steps[5].preset, QStringLiteral("4k"));
+
+        // splitting: one time, a list of times, "every N seconds", minutes and seconds
+        ai::EditPlan sp = ai::parseEditPrompt("split at 5, 10 and 15 seconds");
+        QCOMPARE(sp.steps.size(), 3);
+        QCOMPARE(sp.steps[2].seconds, 15.0);
+        QCOMPARE(ai::parseEditPrompt(QString::fromUtf8("ตัดทุก 10 วินาที")).steps.value(0).every, 10.0);
+        QCOMPARE(ai::parseEditPrompt("cut at 1 minute 30 seconds").steps.value(0).seconds, 90.0);
+        QCOMPARE(ai::parseEditPrompt("split at 01:05").steps.value(0).seconds, 65.0);
+        // targets, "the end of the clip", names without a keyword, and what is not understood
+        QCOMPARE(ai::parseEditPrompt("add a blur effect to clip 2").steps.value(0).clipNumber, 2);
+        QCOMPARE(ai::parseEditPrompt("add a fade transition at the end of the clip").steps.value(0).direction, QStringLiteral("out"));
+        QCOMPARE(ai::parseEditPrompt(QString::fromUtf8("ใส่ฟิลเตอร์วินเทจ")).steps.value(0).id, QStringLiteral("vintage"));
+        QCOMPARE(ai::parseEditPrompt("make a coffee").steps.size(), 0);
+        QCOMPARE(ai::parseEditPrompt("make a coffee").unknown.size(), 1);
+        QCOMPARE(ai::parseEditPrompt("add the neon text Open now").steps.value(0).id, QStringLiteral("neonPink"));
+        QCOMPARE(ai::parseEditPrompt("add the neon text Open now").steps.value(0).text, QStringLiteral("Open now"));
+    }
+
+    void aFolderBecomesAProjectAndAPromptEditsIt()
+    {
+        QDir().mkpath(p("shoot"));
+        QVERIFY(testmedia::runFfmpeg({"-f", "lavfi", "-i", "testsrc=size=640x360:rate=25:duration=2", "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
+                                      "-shortest", "-pix_fmt", "yuv420p", p("shoot/a clip 1.mp4")}));
+        QVERIFY(testmedia::runFfmpeg({"-f", "lavfi", "-i", "smptebars=size=640x360:rate=25:duration=2", "-pix_fmt", "yuv420p", p("shoot/b clip 2.mp4")}));
+        QVERIFY(testmedia::runFfmpeg({"-f", "lavfi", "-i", "sine=frequency=220:duration=3", p("shoot/music.wav")}));
+
+        QCOMPARE(m_pm->createProjectFromFolder(p("shoot"), p("projects2")), QString());
+        QVERIFY(m_pm->isOpen());
+        QCOMPARE(m_pm->name(), QStringLiteral("shoot"));                // named after the folder
+        QCOMPARE(m_pm->width(), 640);
+        QCOMPARE(m_pm->height(), 360);
+        QCOMPARE(m_pm->nominalFps(), 25);                               // size and rate of the first video
+        QCOMPARE(m_pm->media()->count(), 3);
+        for (const MediaRef& ref : m_pm->media()->refs())
+            [&] { QTRY_VERIFY_WITH_TIMEOUT(m_pm->media()->isReady(ref.id), 15000); }();
+        m_pm->media()->waitForIdle();
+
+        auto* tl = m_pm->timeline();
+        QVERIFY(!m_ai->planEdit("place all clips")["steps"].toList().isEmpty());
+        QCOMPARE(m_ai->applyEditPrompt("place all clips, add the black and white filter, add the slide transition, add the text \"Hello\" at 1 second"), QString());
+        // a clip 1 (video + its sound) then b clip 2, the music on its own track from 0, the title at 1 s
+        QList<ClipData> video;
+        QString musicTrack;
+        int titles = 0;
+        for (const ClipData& c : tl->clips()) {
+            if (c.isTitle()) { ++titles; QCOMPARE(c.startFrame, qint64(25)); continue; }
+            if (c.trackId.startsWith("V"))
+                video << c;
+            if (m_pm->media()->describe(c.mediaId).value("kind").toString() == QLatin1String("audio") && c.startFrame == 0)
+                musicTrack = c.trackId;
+        }
+        QCOMPARE(titles, 1);
+        QCOMPARE(video.size(), 2);
+        std::sort(video.begin(), video.end(), [](const ClipData& x, const ClipData& y) { return x.startFrame < y.startFrame; });
+        QCOMPARE(video[0].startFrame, qint64(0));
+        QCOMPARE(video[1].startFrame, video[0].endFrame());            // one after another
+        const double satDef = tl->paramInfo("saturation").value("def").toDouble();
+        for (const ClipData& c : video) {
+            QVERIFY(tl->paramValue(c.id, "saturation", c.startFrame) < satDef - 0.5);                // black and white
+            QCOMPARE(tl->clipInfo(c.id).value("transIn").toString(), QStringLiteral("slide"));
+        }
+        QVERIFY(!musicTrack.isEmpty());
+
+        // everything the prompt did is one undo step
+        const int clipsAfter = tl->clipCount();
+        QVERIFY(clipsAfter > 3);
+        tl->undo();
+        QCOMPARE(tl->clipCount(), 0);
+        tl->redo();
+        QCOMPARE(tl->clipCount(), clipsAfter);
+
+        // something that cannot be done is reported and never half-applied silently
+        QVERIFY(!m_ai->applyEditPrompt("make a coffee").isEmpty());
+        m_pm->closeProject();
+    }
+
     void noiseReductionRemovesNoiseAndKeepsTheSpeechLevel()
     {
         const int rate = 48000;

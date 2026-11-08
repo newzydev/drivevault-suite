@@ -76,6 +76,11 @@ public:
 
     // ---- assistant ------------------------------------------------------------------------------------------------
     Q_INVOKABLE QVariantMap parseAssistant(const QString& text) const;   // {valid, type, summary}
+    // "Edit by prompt": a Thai / English sentence is turned into editing steps (place the clips, split, text, effects, transitions, filters, export).
+    // A deterministic keyword interpreter - not a language model. planEdit only describes; applyEditPrompt carries the steps out as ONE undo step
+    // (the export step is left to the caller: {exportRequested, exportPreset}).
+    Q_INVOKABLE QVariantMap planEdit(const QString& text) const;   // {valid, steps: [text], unknown: [text], exportRequested, exportPreset}
+    Q_INVOKABLE QString applyEditPrompt(const QString& text);       // "" when done, otherwise the first problem
     Q_INVOKABLE QString runAssistant(const QString& text);                // "" when started / done, otherwise a message
 
     // Tests and shutdown.

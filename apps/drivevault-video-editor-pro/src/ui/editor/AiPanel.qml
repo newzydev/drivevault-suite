@@ -7,11 +7,36 @@ import DriveVault.Backend
 // model manager. Analyses never change the project; every "apply" button is an explicit confirmation and one undo step.
 Item {
     id: root
+    objectName: "aiPanel"
 
     readonly property bool enabled: AppSettings.values.aiEnabled
     readonly property bool hasClips: Projects.timeline.clipCount > 0
 
     function report(err) { if (err !== "") App.toast(err, "warning") }
+
+    // accordion: one section open at a time (remembered)
+    property string openSection: AppSettings.state("ai.section", "edit")
+    function toggleSection(id) {
+        openSection = openSection === id ? "" : id
+        AppSettings.setState("ai.section", openSection)
+    }
+
+    // starts the export that a prompt asked for; an existing file is never overwritten silently
+    function exportFromPrompt(preset) {
+        const folder = AppSettings.values.exportFolder !== "" ? AppSettings.values.exportFolder : SysInfo.defaultExportDirectory
+        const container = AppSettings.values.exportFormat
+        const name = Projects.name
+        App.workspace = "export"
+        if (ExportJob.fileExists(ExportJob.outputFilePath(name, folder, container))) {
+            App.toast(qsTr("A file named \"%1\" already exists in the export folder. Check the name in the Export workspace and press Export.").arg(name), "info")
+            return
+        }
+        const err = ExportJob.start(name, folder, container, preset !== "" ? preset : AppSettings.values.exportPreset,
+                                    AppSettings.values.exportCustomWidth, AppSettings.values.exportCustomHeight, AppSettings.values.exportQuality,
+                                    AppSettings.values.exportAudioBitrate, AppSettings.values.exportEncoder)
+        if (err !== "")
+            App.toast(err, "warning")
+    }
 
     component Note: Text {
         Layout.fillWidth: true
@@ -110,11 +135,124 @@ Item {
                 description: qsTr("Turn the switch on to use captions, silence detection, cut suggestions, audio enhancement, tracking and the assistant.")
             }
 
+            // ---- edit by prompt ------------------------------------------------------------------------------
+            ParamSection {
+                id: editSection
+                objectName: "aiEditSection"
+                visible: root.enabled
+                title: qsTr("Edit by prompt")
+                controlled: true
+                expanded: root.openSection === "edit"
+                onToggleRequested: root.toggleSection("edit")
+                property var plan: Ai.planEdit(promptField.text)
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 96
+                    radius: Theme.radius
+                    color: Theme.surface
+                    border.width: 1
+                    border.color: promptField.activeFocus ? Theme.accent : Theme.border
+                    ScrollView {
+                        anchors.fill: parent
+                        anchors.margins: 2
+                        TextArea {
+                            id: promptField
+                            objectName: "aiPrompt"
+                            wrapMode: TextArea.Wrap
+                            placeholderText: qsTr("Describe the edit, e.g. place all clips, add the black and white filter, add the slide transition, add the text \"Hello\" at 3 seconds, export 1080p")
+                            placeholderTextColor: Theme.textDisabled
+                            color: Theme.text
+                            selectByMouse: true
+                            font.pixelSize: Theme.fontSm
+                            leftPadding: 10; rightPadding: 10; topPadding: 8; bottomPadding: 8
+                            background: null
+                        }
+                    }
+                }
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: 6
+                    Repeater {
+                        model: [ qsTr("Place all clips, add the filter cinematic and the transition dissolve"),
+                                 qsTr("Split every 10 seconds"),
+                                 qsTr("Add the text \"Hello\" at 2 seconds, then export 1080p") ]
+                        delegate: Rectangle {
+                            required property string modelData
+                            width: Math.min(chipText.implicitWidth + 20, column.width)
+                            height: 26
+                            radius: 13
+                            color: chipMouse.containsMouse ? Theme.surfaceHover : Theme.surface
+                            border.width: 1
+                            border.color: Theme.borderSubtle
+                            Text {
+                                id: chipText
+                                anchors.centerIn: parent
+                                width: parent.width - 16
+                                text: parent.modelData
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
+                                font.pixelSize: Theme.fontXs
+                                color: Theme.textSecondary
+                            }
+                            MouseArea { id: chipMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: promptField.text = parent.modelData }
+                        }
+                    }
+                }
+                // what will happen, before it happens
+                Repeater {
+                    model: editSection.plan.steps
+                    delegate: RowLayout {
+                        required property var modelData
+                        Layout.fillWidth: true
+                        spacing: 6
+                        Text { text: "\u2022"; font.pixelSize: Theme.fontSm; color: Theme.accentText; Layout.alignment: Qt.AlignTop }
+                        Text { Layout.fillWidth: true; text: modelData; font.pixelSize: Theme.fontSm; color: Theme.text; wrapMode: Text.Wrap }
+                    }
+                }
+                Repeater {
+                    model: editSection.plan.unknown
+                    delegate: Text {
+                        required property var modelData
+                        Layout.fillWidth: true
+                        text: qsTr("Not understood: %1").arg(modelData)
+                        font.pixelSize: Theme.fontSm
+                        color: Theme.warning
+                        wrapMode: Text.Wrap
+                    }
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    AppButton {
+                        objectName: "aiEditRun"
+                        variant: "primary"
+                        iconName: "sparkle"
+                        text: qsTr("Edit")
+                        enabled: editSection.plan.valid && Projects.isOpen
+                        onClicked: {
+                            const plan = Ai.planEdit(promptField.text)
+                            const err = Ai.applyEditPrompt(promptField.text)
+                            if (err !== "")
+                                root.report(err)
+                            else
+                                App.toast(qsTr("Done. Everything the prompt did is one step: Undo (Ctrl+Z) takes it back."), "success")
+                            if (plan.exportRequested)
+                                root.exportFromPrompt(plan.exportPreset)
+                        }
+                    }
+                    Item { Layout.fillWidth: true }
+                }
+                Note { text: qsTr("Works offline on this PC with a fixed set of Thai and English words (it is not a chat model). It can place all clips, split, add text, effects, transitions and filters, and start an export. Put the words of a text in quotation marks. Anything it does not understand is listed above and skipped.") }
+            }
+
             // ---- assistant -----------------------------------------------------------------------------------
             ParamSection {
                 id: assistantSection
                 visible: root.enabled
                 title: qsTr("Assistant")
+                controlled: true
+                expanded: root.openSection === "assistant"
+                onToggleRequested: root.toggleSection("assistant")
                 property var parsed: Ai.parseAssistant(askField.text)
                 AppTextField {
                     id: askField
@@ -150,6 +288,9 @@ Item {
             ParamSection {
                 visible: root.enabled
                 title: qsTr("Auto captions")
+                controlled: true
+                expanded: root.openSection === "captions"
+                onToggleRequested: root.toggleSection("captions")
                 RowLayout {
                     Layout.fillWidth: true
                     StatusBadge {
@@ -210,6 +351,9 @@ Item {
             ParamSection {
                 visible: root.enabled
                 title: qsTr("Silence detection")
+                controlled: true
+                expanded: root.openSection === "silence"
+                onToggleRequested: root.toggleSection("silence")
                 RowLayout {
                     Layout.fillWidth: true
                     Lbl { text: qsTr("Threshold") }
@@ -258,6 +402,9 @@ Item {
             ParamSection {
                 visible: root.enabled
                 title: qsTr("Smart cut suggestions")
+                controlled: true
+                expanded: root.openSection === "cuts"
+                onToggleRequested: root.toggleSection("cuts")
                 RowLayout {
                     Layout.fillWidth: true
                     Lbl { text: qsTr("Sensitivity") }
@@ -302,6 +449,9 @@ Item {
             ParamSection {
                 visible: root.enabled
                 title: qsTr("Audio enhancement")
+                controlled: true
+                expanded: root.openSection === "enhance"
+                onToggleRequested: root.toggleSection("enhance")
                 RowLayout {
                     Layout.fillWidth: true
                     Lbl { text: qsTr("Noise reduction") }
@@ -339,6 +489,9 @@ Item {
                 id: trackSection
                 visible: root.enabled
                 title: qsTr("Object tracking")
+                controlled: true
+                expanded: root.openSection === "tracking"
+                onToggleRequested: root.toggleSection("tracking")
                 property var region: Ai.trackRegion.w !== undefined ? Ai.trackRegion : ({ x: 0.4, y: 0.4, w: 0.2, h: 0.2 })
                 function setRegion(key, v) {
                     const r = Object.assign({}, region)
@@ -418,6 +571,9 @@ Item {
             ParamSection {
                 visible: root.enabled
                 title: qsTr("Speech models")
+                controlled: true
+                expanded: root.openSection === "models"
+                onToggleRequested: root.toggleSection("models")
                 ModelManagerView {}
             }
         }

@@ -1,6 +1,20 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.8.0
+-------------
+  - New: "Edit by prompt" (AI tab, first section). Type what you want in Thai or English - for example: place all clips, add the black and white filter, add the slide
+    transition, add the text "Hello" at 3 seconds, export 1080p - and the steps it understood are listed. Press Edit and they are carried out as ONE undo step:
+    place all clips, split at a time or every N seconds, add text, effects, transitions and filters (to every video clip, clip N or the selected clip), and start the
+    export (an existing file is never overwritten silently). It works offline with a fixed set of words: it is NOT a language model, so free-form sentences are not
+    understood; what it does not understand is listed and skipped. Put the words of a text in quotation marks.
+  - New: "Project from folder" on the Home screen: choose a folder and a project named after it is created (size and frame rate of its first video) with every video,
+    picture and audio file of the folder imported. The Import tab has a "Place all clips on the timeline" button (one undo step: videos and pictures one after another
+    in name order, audio-only files on a music track from 0).
+  - The AI tab is an accordion: one section is open at a time (remembered).
+  - The mixer was re-arranged: the knobs are one line each (name, dial, value), the fader with its solo / mute buttons sits beside them, and the strips are centred.
+  - Fixed: the dB scale of the faders was drawn on top of each other.
+
 Version 1.7.0
 -------------
   - Bigger catalogs, grouped like a mobile editor: Text 16 styles (Title, Lower third, Caption, Subtitle, Outline, Impact, Neon, Gold, Elegant, Handwriting,

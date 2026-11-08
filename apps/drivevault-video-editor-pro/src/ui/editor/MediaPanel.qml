@@ -147,6 +147,14 @@ Rectangle {
             IconButton { iconName: "sliders"; subtle: false; tip: qsTr("Sort"); onClicked: sortMenu.popup() }
             IconButton { iconName: "import"; subtle: false; tip: qsTr("Import files…") + "  (Ctrl+I)"; onClicked: importDialog.open() }
             IconButton { iconName: "folder"; subtle: false; tip: qsTr("Import a folder…"); onClicked: folderDialog.open() }
+            IconButton {
+                objectName: "placeAll"
+                iconName: "layers"
+                subtle: false
+                enabled: root.library.count > 0
+                tip: qsTr("Place all clips on the timeline, in order")
+                onClicked: { const err = Projects.placeAllMedia(); if (err !== "") App.toast(err, "warning") }
+            }
         }
 
         // Missing media banner

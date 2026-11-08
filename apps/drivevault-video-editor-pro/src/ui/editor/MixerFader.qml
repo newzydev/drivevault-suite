@@ -20,15 +20,15 @@ Item {
     opacity: enabled ? 1 : 0.4
 
     Item {
-        id: scale
+        id: ticks
         x: 0; y: 10; width: 22; height: parent.height - 20
         Repeater {
             model: fader.marks
             delegate: Text {
                 required property int modelData
-                width: scale.width
+                width: ticks.width
                 horizontalAlignment: Text.AlignRight
-                y: fader.posOf(modelData) * scale.height - height / 2
+                y: fader.posOf(modelData) * ticks.height - height / 2
                 text: modelData > 0 ? "+" + modelData : String(modelData)
                 font.pixelSize: 9
                 font.features: { "tnum": 1 }

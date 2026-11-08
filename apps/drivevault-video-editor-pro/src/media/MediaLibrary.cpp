@@ -7,6 +7,7 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
+#include <QCollator>
 #include <QDirIterator>
 #include <QElapsedTimer>
 #include <QEventLoop>
@@ -347,6 +348,22 @@ QString MediaLibrary::importFile(const QString& pathOrUrl)
     emit libraryChanged();
     startProbe(item.ref.id, item.ref.path, copyFrom);
     return item.ref.id;
+}
+
+QStringList MediaLibrary::mediaFilesIn(const QString& folderOrUrl)
+{
+    QStringList files;
+    QDirIterator it(toLocal(folderOrUrl), QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        const QString file = it.next();
+        if (mediaExtensions().contains(QFileInfo(file).suffix().toLower()))
+            files << file;
+    }
+    QCollator collator;
+    collator.setNumericMode(true);
+    collator.setCaseSensitivity(Qt::CaseInsensitive);
+    std::sort(files.begin(), files.end(), collator);
+    return files;
 }
 
 int MediaLibrary::importFolder(const QString& pathOrUrl)

@@ -3,8 +3,8 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import DriveVault.Backend
 
-// The audio mixer (a tab of the timeline panel): one channel strip per audio track - fader (track level), pan, and Gain / High / Mid / Low
-// knobs of the clip that is under the playhead on that track - and the master fader at the right. Everything drives the same parameters that
+// The audio mixer (a tab of the timeline panel): one channel strip per audio track - Gain / High / Mid / Low knobs of the clip that is under the
+// playhead on that track, pan, the track fader with solo and mute - and the master fader at the right. Everything drives the same parameters that
 // the inspector, the preview and the export use (clip volume, eqHigh / eqMid / eqLow, track gain / pan, project master level).
 Rectangle {
     id: root
@@ -15,7 +15,6 @@ Rectangle {
     border.width: 1
     clip: true
 
-    readonly property int stripWidth: 112
     property int rev: 0
     Connections {
         target: Projects.timeline
@@ -30,25 +29,23 @@ Rectangle {
     function panText(p) { return Math.abs(p) < 0.005 ? qsTr("Centre") : (p < 0 ? "L " : "R ") + Math.round(Math.abs(p) * 100) }
     function dbText(v) { return (v > 0 ? "+" : "") + v.toFixed(1) + " dB" }
 
-    // one strip: a column of controls on a slightly lighter panel
+    // one strip: a rounded panel with a colour bar on top; everything inside is centred
     component Strip: Rectangle {
         id: strip
-        property string title
         property color tint: Theme.success
         default property alias content: body.data
-        width: root.stripWidth
         height: parent ? parent.height : 300
         radius: Theme.radius
         color: Theme.surface
         border.width: 1
         border.color: Theme.borderSubtle
-        Rectangle { x: 0; y: 0; width: parent.width; height: 3; radius: 1.5; color: strip.tint }
+        Rectangle { x: 1; y: 1; width: parent.width - 2; height: 3; radius: 1.5; color: strip.tint }
         ColumnLayout {
             id: body
             anchors.fill: parent
-            anchors.topMargin: 8
-            anchors.margins: 6
-            spacing: 4
+            anchors.margins: 10
+            anchors.topMargin: 12
+            spacing: 6
         }
     }
 
@@ -61,16 +58,17 @@ Rectangle {
             id: strips
             Layout.fillWidth: true
             Layout.fillHeight: true
-            contentWidth: stripRow.width
+            contentWidth: Math.max(stripRow.width, width)
             contentHeight: height
             boundsBehavior: Flickable.StopAtBounds
             flickableDirection: Flickable.HorizontalFlick
             clip: true
-            ScrollBar.horizontal: ScrollBar { policy: strips.contentWidth > strips.width ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }
+            ScrollBar.horizontal: ScrollBar { policy: stripRow.width > strips.width ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }
 
             Row {
                 id: stripRow
-                height: strips.height - (strips.contentWidth > strips.width ? 10 : 0)
+                x: Math.max(0, (strips.width - width) / 2)          // few strips: centred in the panel
+                height: strips.height - (stripRow.width > strips.width ? 10 : 0)
                 spacing: 8
                 Repeater {
                     model: Projects.tracks
@@ -85,132 +83,147 @@ Rectangle {
                         required property real gainDb
                         required property real pan
 
-                        // the clip of this track under the playhead (the strip's knobs edit it)
+                        // the clip of this track under the playhead (the knobs edit it)
                         readonly property string clipId: { root.rev; return kind === "audio" ? Projects.timeline.clipAt(index, Projects.playheadFrame) : "" }
                         readonly property bool hasClip: clipId !== ""
                         function pv(key) { root.rev; return hasClip ? Projects.timeline.paramValue(clipId, key, Projects.playheadFrame) : 0 }
                         function setP(key, v) { root.report(Projects.timeline.setParam(clipId, key, v, Projects.playheadFrame)) }
 
                         visible: kind === "audio"
-                        width: visible ? root.stripWidth : 0
-                        title: name
+                        width: visible ? 262 : 0
 
-                        RowLayout {
+                        Text {
                             Layout.fillWidth: true
-                            spacing: 4
-                            Text {
-                                Layout.fillWidth: true
-                                text: channel.name
-                                elide: Text.ElideRight
-                                maximumLineCount: 1
-                                font.pixelSize: Theme.fontSm
-                                font.weight: Font.Bold
-                                color: Theme.text
-                            }
+                            horizontalAlignment: Text.AlignHCenter
+                            text: channel.name
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                            font.pixelSize: Theme.fontMd
+                            font.weight: Font.Bold
+                            color: Theme.text
                         }
                         Text {
                             Layout.fillWidth: true
+                            horizontalAlignment: Text.AlignHCenter
                             text: channel.hasClip ? qsTr("Clip under the playhead") : qsTr("No clip at the playhead")
                             elide: Text.ElideRight
                             maximumLineCount: 1
                             font.pixelSize: 10
                             color: Theme.textDisabled
                         }
-                        GridLayout {
-                            Layout.alignment: Qt.AlignHCenter
-                            columns: 2
-                            columnSpacing: 0
-                            rowSpacing: 0
-                            MixerKnob {
-                                objectName: "mixGain" + channel.index
-                                enabled: channel.hasClip
-                                label: qsTr("Gain")
-                                from: -60; to: 12; resetValue: 0
-                                value: channel.pv("volume")
-                                formatter: root.dbText
-                                onMoved: v => channel.setP("volume", v)
-                            }
-                            MixerKnob {
-                                objectName: "mixHigh" + channel.index
-                                enabled: channel.hasClip
-                                label: qsTr("High")
-                                tint: Theme.accent
-                                from: -18; to: 18; resetValue: 0
-                                value: channel.pv("eqHigh")
-                                formatter: root.dbText
-                                onMoved: v => channel.setP("eqHigh", v)
-                            }
-                            MixerKnob {
-                                objectName: "mixMid" + channel.index
-                                enabled: channel.hasClip
-                                label: qsTr("Mid")
-                                tint: Theme.accent
-                                from: -18; to: 18; resetValue: 0
-                                value: channel.pv("eqMid")
-                                formatter: root.dbText
-                                onMoved: v => channel.setP("eqMid", v)
-                            }
-                            MixerKnob {
-                                objectName: "mixLow" + channel.index
-                                enabled: channel.hasClip
-                                label: qsTr("Low")
-                                tint: Theme.accent
-                                from: -18; to: 18; resetValue: 0
-                                value: channel.pv("eqLow")
-                                formatter: root.dbText
-                                onMoved: v => channel.setP("eqLow", v)
-                            }
-                        }
-                        MixerKnob {
-                            objectName: "trackPan" + channel.index
-                            Layout.alignment: Qt.AlignHCenter
-                            label: qsTr("Pan")
-                            from: -1; to: 1; resetValue: 0
-                            value: channel.pan
-                            formatter: root.panText
-                            onMoved: v => Projects.tracks.setPan(channel.index, Math.abs(v) < 0.04 ? 0 : v)
-                        }
-                        MixerFader {
-                            objectName: "trackGain" + channel.index
-                            Layout.alignment: Qt.AlignHCenter
-                            Layout.fillHeight: true
-                            Layout.minimumHeight: 70
-                            value: channel.gainDb
-                            onMoved: db => Projects.tracks.setGain(channel.index, db)
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
-                            text: root.dbText(channel.gainDb)
-                            font.pixelSize: 10
-                            font.features: { "tnum": 1 }
-                            color: Theme.textSecondary
-                        }
                         RowLayout {
-                            Layout.alignment: Qt.AlignHCenter
-                            spacing: 4
-                            AppButton {
-                                objectName: "trackSolo" + channel.index
-                                text: "S"
-                                implicitWidth: 34; implicitHeight: 24; leftPadding: 0; rightPadding: 0
-                                variant: channel.solo ? "primary" : "secondary"
-                                onClicked: Projects.tracks.toggle(channel.index, "solo")
-                                AppToolTip { visible: parent.hovered; text: qsTr("Solo") }
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            spacing: 10
+
+                            // knobs
+                            ColumnLayout {
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 0
+                                MixerKnob {
+                                    objectName: "mixGain" + channel.index
+                                    enabled: channel.hasClip
+                                    label: qsTr("Gain")
+                                    implicitWidth: 156
+                                    from: -60; to: 12; resetValue: 0
+                                    value: channel.pv("volume")
+                                    formatter: root.dbText
+                                    onMoved: v => channel.setP("volume", v)
+                                }
+                                MixerKnob {
+                                    objectName: "mixHigh" + channel.index
+                                    enabled: channel.hasClip
+                                    label: qsTr("High")
+                                    implicitWidth: 156
+                                    from: -18; to: 18; resetValue: 0
+                                    value: channel.pv("eqHigh")
+                                    formatter: root.dbText
+                                    onMoved: v => channel.setP("eqHigh", v)
+                                }
+                                MixerKnob {
+                                    objectName: "mixMid" + channel.index
+                                    enabled: channel.hasClip
+                                    label: qsTr("Mid")
+                                    implicitWidth: 156
+                                    from: -18; to: 18; resetValue: 0
+                                    value: channel.pv("eqMid")
+                                    formatter: root.dbText
+                                    onMoved: v => channel.setP("eqMid", v)
+                                }
+                                MixerKnob {
+                                    objectName: "mixLow" + channel.index
+                                    enabled: channel.hasClip
+                                    label: qsTr("Low")
+                                    implicitWidth: 156
+                                    from: -18; to: 18; resetValue: 0
+                                    value: channel.pv("eqLow")
+                                    formatter: root.dbText
+                                    onMoved: v => channel.setP("eqLow", v)
+                                }
+                                Rectangle { Layout.fillWidth: true; Layout.topMargin: 3; Layout.bottomMargin: 3; height: 1; color: Theme.borderSubtle }
+                                MixerKnob {
+                                    objectName: "trackPan" + channel.index
+                                    label: qsTr("Pan")
+                                    implicitWidth: 156
+                                    tint: Theme.success
+                                    from: -1; to: 1; resetValue: 0
+                                    value: channel.pan
+                                    formatter: root.panText
+                                    onMoved: v => Projects.tracks.setPan(channel.index, Math.abs(v) < 0.04 ? 0 : v)
+                                }
                             }
-                            AppButton {
-                                objectName: "trackMute" + channel.index
-                                text: "M"
-                                implicitWidth: 34; implicitHeight: 24; leftPadding: 0; rightPadding: 0
-                                variant: channel.muted ? "danger" : "secondary"
-                                onClicked: Projects.tracks.toggle(channel.index, "muted")
-                                AppToolTip { visible: parent.hovered; text: qsTr("Mute") }
+
+                            Rectangle { Layout.fillHeight: true; Layout.topMargin: 4; Layout.bottomMargin: 4; width: 1; color: Theme.borderSubtle }
+
+                            // fader, level and solo / mute
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                spacing: 4
+                                MixerFader {
+                                    objectName: "trackGain" + channel.index
+                                    Layout.alignment: Qt.AlignHCenter
+                                    Layout.fillHeight: true
+                                    Layout.minimumHeight: 60
+                                    value: channel.gainDb
+                                    tint: Theme.success
+                                    onMoved: db => Projects.tracks.setGain(channel.index, db)
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: root.dbText(channel.gainDb)
+                                    font.pixelSize: 10
+                                    font.features: { "tnum": 1 }
+                                    color: Theme.textSecondary
+                                }
+                                RowLayout {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    spacing: 4
+                                    AppButton {
+                                        objectName: "trackSolo" + channel.index
+                                        text: "S"
+                                        implicitWidth: 30; implicitHeight: 24; leftPadding: 0; rightPadding: 0
+                                        variant: channel.solo ? "primary" : "secondary"
+                                        onClicked: Projects.tracks.toggle(channel.index, "solo")
+                                        AppToolTip { visible: parent.hovered; text: qsTr("Solo") }
+                                    }
+                                    AppButton {
+                                        objectName: "trackMute" + channel.index
+                                        text: "M"
+                                        implicitWidth: 30; implicitHeight: 24; leftPadding: 0; rightPadding: 0
+                                        variant: channel.muted ? "danger" : "secondary"
+                                        onClicked: Projects.tracks.toggle(channel.index, "muted")
+                                        AppToolTip { visible: parent.hovered; text: qsTr("Mute") }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
             Text {
-                visible: Projects.tracks.count > 0 && stripRow.width === 0
+                visible: stripRow.width === 0
                 anchors.centerIn: parent
                 text: qsTr("No audio track yet. Add one with the \"+ Audio\" button of the timeline.")
                 color: Theme.textDisabled
@@ -218,19 +231,17 @@ Rectangle {
             }
         }
 
-        Rectangle { Layout.fillHeight: true; width: 1; color: Theme.borderSubtle }
-
         // master fader: the level of everything that is heard and exported (the meter at the far right shows the result)
         Strip {
             objectName: "masterStrip"
             Layout.fillHeight: true
+            Layout.preferredWidth: 112
             tint: Theme.accent
-            width: 96
             Text {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 text: qsTr("Master")
-                font.pixelSize: Theme.fontSm
+                font.pixelSize: Theme.fontMd
                 font.weight: Font.Bold
                 color: Theme.text
             }
@@ -245,7 +256,7 @@ Rectangle {
                 objectName: "masterGain"
                 Layout.alignment: Qt.AlignHCenter
                 Layout.fillHeight: true
-                Layout.minimumHeight: 70
+                Layout.minimumHeight: 60
                 tint: Theme.accent
                 value: Projects.masterGainDb
                 onMoved: db => Projects.setMasterGainDb(db)
