@@ -79,14 +79,14 @@ Edit the templates (or the per-product section 6 in the script), run the script,
 - Never `--no-verify`, force push, `reset --hard`, `git init` or change branches without asking. If the push is rejected (remote has new commits), `git pull --rebase`, re-check, push again; stop and ask if there are conflicts.
 - Do not commit half-done work, failing tests or a broken build. If something fails, report it instead.
 - Tell the owner in the summary: commit hash, message, and the new version if bumped.
-- **After every commit that changes a program (so its version was bumped), end the summary with a "Release to publish" notice** for each program that changed, so the owner can update the GitHub Release. Format: the program name followed by its version.
+- **A Release is never made or announced on your own, and not for every commit.** A version bump in a commit does not mean a Release. After such a commit do not rebuild the installer and do not write a "Release to publish" notice; instead end the summary with one question: does the owner want a Release for this version (name the program and version)? Wait for a clear yes - a yes covers that version only. Only after the yes, rebuild the installer (`package.ps1` / `build-all.ps1`) and run `test-installer.ps1` as the verification rules ask, then give the notice for that program. Format of the notice: the program name followed by its version.
   ```
   Release title: DriveVault Master Pro 1.2.0
   Tag: drivevault-master-pro-v1.2.0
   Files: apps\drivevault-master-pro\dist\DriveVault-Master-Pro-Setup-x64.exe + .sha256   (built from this commit; say so if the installer was not rebuilt yet)
   ```
-  Title = `DriveVault <Name> <x.y.z>`; tag = program folder name below `apps/` + `-v` + version (all lower case, e.g. `drivevault-video-editor-pro-v1.6.0`). One notice per program, only for programs whose version changed in that commit; docs-only / agent-file-only commits need no notice.
-  If the installer in `dist\` is older than the commit, say that it must be rebuilt (`package.ps1`) before it is attached.
+  Title = `DriveVault <Name> <x.y.z>`; tag = program folder name below `apps/` + `-v` + version (all lower case, e.g. `drivevault-video-editor-pro-v1.6.0`). One notice per confirmed program release; docs-only / agent-file-only commits never ask for a Release.
+  The installer attached must be built from the commit that gets tagged: after the owner's yes, rebuild it if the one in `dist\` is older.
 
 **Commit message** (English, first line at most about 72 characters): `<type>(<scope>): v<new version> <short summary>`
 - `type`: `feat` = new feature (minor), `fix` = bug fix / small change (patch), `feat!` or `fix!` = breaking change (major), and the following need no version number: `docs`, `chore`, `build`, `test`, `refactor`.
@@ -108,7 +108,7 @@ Edit the templates (or the per-product section 6 in the script), run the script,
   1. Tag `<slug>-v<x.y.z>` on `main`, one per program release: `drivevault-video-editor-pro-v1.0.1`, `drivevault-master-pro-v1.1.0` (the program folder name below `apps/` + `-v` + version) (not `v1.0.1` alone, because two programs share the repository). Title = program name + version; description = the new `release-notes.txt` entry.
   2. Attach **both** files from the program's `dist\`: `DriveVault-<Name>-Setup-x64.exe` and `DriveVault-<Name>-Setup-x64.exe.sha256`, unchanged. Without the `.sha256` asset Master Pro ignores the release.
   3. "Set as the latest release", not a pre-release or draft. The installer attached must be built from the tagged commit.
-  Agents never create tags or releases; they remind the owner of these steps when a version was bumped.
+  Agents never create tags or releases; only after the owner has said yes to a Release do they give the notice and these steps.
 - Say the new version number in the summary every time you finish a change that bumps it.
 - The root `README.md` is for users (what the programs do, download table, install, update, privacy); developer material lives in `docs/DEVELOPMENT.md`. Keep it that way.
 
