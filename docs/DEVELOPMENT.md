@@ -43,7 +43,7 @@ Outputs: `apps\drivevault-master-pro\dist\DriveVault-Master-Pro-Setup-x64.exe`, 
 
 ## Status
 
-Both programs are covered by automated tests (Video Editor 14 suites, Master Pro 2, 66 installer checks). Not code-signed yet (Windows SmartScreen shows a warning: "More info" -> "Run anyway"; signing needs a purchased certificate and is a later step), not tested on a separate clean PC / VM.
+Both programs are covered by automated tests (Video Editor 14 suites, Master Pro 2, 68 installer checks). Not code-signed yet (Windows SmartScreen shows a warning: "More info" -> "Run anyway"; signing needs a purchased certificate and is a later step), not tested on a separate clean PC / VM.
 The licence agreement (EULA, English + Thai, in `shared/legal`, governed by Thai law) is drafted but has not been reviewed by a lawyer. See each app's README for details.
 
 ## Releases

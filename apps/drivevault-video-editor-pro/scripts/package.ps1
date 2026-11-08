@@ -89,6 +89,21 @@ if (Test-Path (Join-Path $whisperDir 'whisper-cli.exe')) {
     Write-Warning "whisper.cpp not found in $whisperDir - the installer will not contain the captions engine"
 }
 
+# llama.cpp (language model server for "Edit by prompt", MIT): the engine ships, the model (Qwen3.5 4B, Apache 2.0) is downloaded by the user
+$llamaDir = Join-Path $SuiteRoot '.tools\llm\llama'
+if (Test-Path (Join-Path $llamaDir 'llama-server.exe')) {
+    $llamaStage = Join-Path $stage 'ai\llama'
+    New-Item -ItemType Directory -Force $llamaStage | Out-Null
+    foreach ($pattern in 'llama-server.exe', 'llama-server-impl.dll', 'llama.dll', 'llama-common.dll', 'mtmd.dll', 'ggml.dll', 'ggml-base.dll', 'ggml-cpu-*.dll', 'libomp.dll') {
+        Copy-Item (Join-Path $llamaDir $pattern) $llamaStage
+    }
+    Copy-Item (Join-Path $DvRoot 'third_party\llama.cpp-LICENSE.txt') (Join-Path $lic 'llama.cpp-LICENSE.txt')
+    Copy-Item (Join-Path $DvRoot 'third_party\LLVM-OpenMP-LICENSE.txt') (Join-Path $lic 'LLVM-OpenMP-LICENSE.txt')
+    Copy-Item $crtDlls.FullName $llamaStage                   # llama-server is a separate program: it needs its own copy
+} else {
+    Write-Warning "llama.cpp not found in $llamaDir - the installer will not contain the language model engine"
+}
+
 # Licenses, notices, documentation and the product manifest for the DriveVault hub.
 Copy-Item (Join-Path $DvRoot 'third_party\LGPL-3.0.txt') $lic
 Copy-Item (Join-Path $DvRoot 'docs\THIRD-PARTY-NOTICES.txt') $lic

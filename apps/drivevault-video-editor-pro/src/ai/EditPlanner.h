@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QByteArray>
+#include <QJsonObject>
 #include <QList>
 #include <QPair>
 #include <QString>
@@ -44,5 +46,12 @@ const QList<CatalogEntry>& textStyleCatalog();
 // Deterministic keyword interpreter - not a language model. Understands several requests in one prompt (separated by commas, "and" / "และ",
 // "then" / "แล้ว" ...), e.g. "วางคลิปทั้งหมด แล้วใส่ฟิลเตอร์ขาวดำ ใส่ทรานซิชันสไลด์ ใส่ข้อความ \"สวัสดี\" ที่ 3 วินาที แล้วส่งออก 1080p".
 EditPlan parseEditPrompt(const QString& text);
+
+// ---- the local language model (llama.cpp server + Qwen3.5) -------------------------------------------------------------------------------
+// The model is only a translator from a free sentence to the same steps: it answers with JSON that a grammar forces into the shapes below, and
+// planFromLlmJson checks every step again (known actions, names from the catalogs, sane numbers) before anything can run.
+QString llmSystemPrompt();
+QJsonObject llmSchema();                          // JSON schema of the answer ({"steps": [...]}), used as the grammar of the server
+EditPlan planFromLlmJson(const QByteArray& json);  // invalid steps go to plan.unknown, never to steps
 
 } // namespace dv::ai

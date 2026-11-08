@@ -42,7 +42,7 @@ Diagnostics: `--list-products <file.json>` writes what the hub sees; `--screensh
 Tests: `tst_hub` (version resources, registry scan incl. broken / unknown programs, setup discovery, update detection, running a setup / uninstaller with exit code and
 silent switches through a test double, only-DriveVault files are started, persistence, document lookup) and `tst_window` (the real window offscreen against a fake
 registry: every program shows its own colour; Thai differs from English). The installer behaviour of Master Pro (install by the program installer, registry, Start Menu,
-refusal while a program is installed, uninstall, empty-folder clean-up) is tested by `..\DriveVault Video Editor Pro\scripts\test-installer.ps1` (66 checks).
+refusal while a program is installed, uninstall, empty-folder clean-up) is tested by `..\DriveVault Video Editor Pro\scripts\test-installer.ps1` (68 checks).
 
 ## Status
 

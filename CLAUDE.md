@@ -10,7 +10,7 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 
 | Folder | Program |
 |---|---|
-| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.8.0 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
+| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.9.0 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
 | `apps/drivevault-master-pro` | DriveVault Master Pro 1.3.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
 | `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md). |
@@ -38,7 +38,7 @@ Planned (do not pretend they exist): Image Editor Pro, Audio Editor Pro. New pro
 ## Commands (PowerShell 5.1, from the repository root)
 
 ```powershell
-.\scripts\build-all.ps1                       # Master Pro, then Video Editor: build + tests + installers + installer test (66 checks)
+.\scripts\build-all.ps1                       # Master Pro, then Video Editor: build + tests + installers + installer test (68 checks)
 .\scripts\build-all.ps1 -SkipBuild            # package existing release builds
 .\scripts\build-all.ps1 -Sign                 # signed release (needs DV_SIGN_PFX / DV_SIGN_THUMBPRINT)
 .\scripts\check-agent-files.ps1               # CLAUDE.md and AGENTS.md identical everywhere?

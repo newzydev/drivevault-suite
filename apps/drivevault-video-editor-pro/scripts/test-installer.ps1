@@ -131,6 +131,7 @@ Check 'FFmpeg runtime installed (avcodec, avformat, swscale)' ((Test-Path (Join-
 Check 'FFmpeg license shipped' (Test-Path (Join-Path $installDir 'licenses\FFmpeg-LICENSE.txt'))
 Check 'whisper.cpp engine installed (ai\whisper)' ((Test-Path (Join-Path $installDir 'ai\whisper\whisper-cli.exe')) -and (Test-Path (Join-Path $installDir 'ai\whisper\ggml-base.dll')))
 Check 'whisper.cpp license shipped' (Test-Path (Join-Path $installDir 'licenses\whisper.cpp-LICENSE.txt'))
+Check 'llama.cpp engine installed (ai\llama) with its licenses' ((Test-Path (Join-Path $installDir 'ai\llama\llama-server.exe')) -and (Test-Path (Join-Path $installDir 'ai\llama\llama-server-impl.dll')) -and (Test-Path (Join-Path $installDir 'licenses\llama.cpp-LICENSE.txt')) -and (Test-Path (Join-Path $installDir 'licenses\LLVM-OpenMP-LICENSE.txt')))
 Check 'uninstaller installed' ($null -ne (Get-ChildItem $installDir -Filter 'unins*.exe' -ErrorAction SilentlyContinue))
 Check 'uninstall registry entry present' (Test-Path $uninstallKey)
 $reg = Get-ItemProperty $uninstallKey -ErrorAction SilentlyContinue
@@ -141,11 +142,11 @@ Check 'Start Menu shortcut created (folder DriveVault)' (Test-Path $startMenu)
 
 # ---- Phase 6: packaging contents --------------------------------------------------------------------------------
 $verInstalled = (Get-Item (Join-Path $installDir 'DriveVaultVideoEditorPro.exe')).VersionInfo
-Check 'executable carries version 1.8.0 and publisher' ($verInstalled.ProductVersion -eq '1.8.0' -and $verInstalled.CompanyName -eq 'DriveVault') "version=$($verInstalled.ProductVersion) company=$($verInstalled.CompanyName)"
+Check 'executable carries version 1.9.0 and publisher' ($verInstalled.ProductVersion -eq '1.9.0' -and $verInstalled.CompanyName -eq 'DriveVault') "version=$($verInstalled.ProductVersion) company=$($verInstalled.CompanyName)"
 $manifest = Get-Content (Join-Path $installDir 'product.json') -Raw -ErrorAction SilentlyContinue | ConvertFrom-Json -ErrorAction SilentlyContinue
-Check 'product.json (hub manifest) is valid' ($manifest.id -eq 'drivevault.videoeditor' -and $manifest.accentColor -eq '#8B5CF6' -and $manifest.executable -eq 'DriveVaultVideoEditorPro.exe' -and $manifest.version -eq '1.8.0')
+Check 'product.json (hub manifest) is valid' ($manifest.id -eq 'drivevault.videoeditor' -and $manifest.accentColor -eq '#8B5CF6' -and $manifest.executable -eq 'DriveVaultVideoEditorPro.exe' -and $manifest.version -eq '1.9.0')
 $prod = Get-ItemProperty $productKey -ErrorAction SilentlyContinue
-Check 'hub registry entry (Software\DriveVault\Products\VideoEditorPro)' ($prod.InstallDir -eq $installDir -and $prod.Version -eq '1.8.0' -and $prod.AccentColor -eq '#8B5CF6' -and (Test-Path $prod.Executable)) "InstallDir=$($prod.InstallDir)"
+Check 'hub registry entry (Software\DriveVault\Products\VideoEditorPro)' ($prod.InstallDir -eq $installDir -and $prod.Version -eq '1.9.0' -and $prod.AccentColor -eq '#8B5CF6' -and (Test-Path $prod.Executable)) "InstallDir=$($prod.InstallDir)"
 Check 'user guide Thai + English, release notes installed' ((Test-Path (Join-Path $installDir 'docs\user-guide.th.html')) -and (Test-Path (Join-Path $installDir 'docs\user-guide.en.html')) -and (Test-Path (Join-Path $installDir 'docs\release-notes.txt')))
 Check 'LGPL text, third-party notices and dependency manifest installed' ((Test-Path (Join-Path $installDir 'licenses\LGPL-3.0.txt')) -and (Test-Path (Join-Path $installDir 'licenses\THIRD-PARTY-NOTICES.txt')) -and (Test-Path (Join-Path $installDir 'licenses\dependency-manifest.json')))
 Check 'Visual C++ runtime shipped app-local (program + whisper)' ((Test-Path (Join-Path $installDir 'msvcp140.dll')) -and (Test-Path (Join-Path $installDir 'vcruntime140_1.dll')) -and (Test-Path (Join-Path $installDir 'ai\whisper\vcruntime140.dll')))
@@ -155,6 +156,9 @@ Check 'clean-machine check: every import of the installed files resolves' ($LAST
 $w = Join-Path $installDir 'ai\whisper\whisper-cli.exe'
 cmd /c "set PATH=$env:SystemRoot\System32;$env:SystemRoot&& `"$w`" --help >nul 2>&1"
 Check 'whisper-cli starts with a minimal PATH' ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
+$l = Join-Path $installDir 'ai\llama\llama-server.exe'
+cmd /c "set PATH=$env:SystemRoot\System32;$env:SystemRoot&& `"$l`" --version >nul 2>&1"
+Check 'llama-server starts with a minimal PATH' ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
 
 # ---- DriveVault Master Pro: installed by this installer, in the suite folder ------------------------------------------------------
 Check 'Master Pro installed automatically in the suite folder' (Test-Path $masterExe) $masterExe
@@ -166,7 +170,7 @@ Check 'Master Pro has an installers folder and its licenses' ((Test-Path (Join-P
 Check 'the Video Editor folder sits inside the Master Pro folder' ($installDir -eq (Join-Path $suiteDir 'Common\DriveVault Video Editor Pro') -and $installDir.StartsWith($suiteDir + '\') -and (Test-Path (Join-Path $installDir 'DriveVaultVideoEditorPro.exe')))
 $seen = MasterProducts $masterExe 'installed'
 $ve = $seen | Where-Object { $_.id -eq 'drivevault.videoeditor' }
-Check 'Master Pro (clean PATH) lists the Video Editor as installed' ($null -ne $ve -and $ve.installed -eq $true -and $ve.version -eq '1.8.0' -and $ve.status -eq 'installed' -and $ve.installDir -eq $installDir -and $ve.canUninstall -eq $true) "status=$($ve.status) version=$($ve.version)"
+Check 'Master Pro (clean PATH) lists the Video Editor as installed' ($null -ne $ve -and $ve.installed -eq $true -and $ve.version -eq '1.9.0' -and $ve.status -eq 'installed' -and $ve.installDir -eq $installDir -and $ve.canUninstall -eq $true) "status=$($ve.status) version=$($ve.version)"
 Check 'Master Pro lists the planned programs as coming soon' ((@($seen | Where-Object { $_.status -eq 'comingSoon' -and $_.section -eq 'multimedia' }).Count) -eq 2)
 $mpng = Join-Path $Work 'master-window.png'
 cmd /c "set PATH=$env:SystemRoot\System32;$env:SystemRoot&& set QT_QUICK_BACKEND=software&& `"$masterExe`" --data-dir `"$Work\master-data`" --lang th --screenshot `"$mpng`" --size 1120x740" | Out-Null

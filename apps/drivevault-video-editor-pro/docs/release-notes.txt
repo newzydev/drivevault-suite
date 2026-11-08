@@ -1,6 +1,19 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.9.0
+-------------
+  - New: a local language model for "Edit by prompt". With it installed, the button "Understand with local AI" (Ctrl+Enter) turns a FREE sentence in Thai or English into the
+    editing steps (for example "make it look like an old film", "open with a fade from black", "cut every 5 seconds and add a flash"). The steps are shown first and nothing
+    changes until you press Edit; the whole prompt is still one undo step. Typing alone still shows the instant keyword plan.
+  - The model is Qwen3.5 4B (Alibaba, Apache 2.0) run by llama.cpp (MIT) as a separate program on this PC only (127.0.0.1); nothing is sent anywhere. It is NOT installed
+    with the program: press "Download" in the Speech models section (2.74 GB from Hugging Face; the size and SHA-256 are checked) or put the file in the model folder.
+    It starts on the first request (about 3 GB of memory), stops after 10 idle minutes and can be switched off or deleted there.
+  - Honest limits: it is a small model - in our own 30-sentence test (written by us, Thai and English) it understood 27 of 30 and answered in a median of 6 seconds on a
+    Ryzen 5 7640HS without a graphics card; it can still pick a wrong name or add a step you did not ask for, which is why the plan is shown first. Without the model,
+    or when it fails, the keyword plan is used as before.
+  - Installer: the llama.cpp engine (about 45 MB) is installed in ai\llama with its licences; the installer test has 2 more checks (68).
+
 Version 1.8.0
 -------------
   - New: "Edit by prompt" (AI tab, first section). Type what you want in Thai or English - for example: place all clips, add the black and white filter, add the slide

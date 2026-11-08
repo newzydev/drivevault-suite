@@ -1,5 +1,7 @@
 #include "EditPlanner.h"
 
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QRegularExpression>
 
 #include <algorithm>
@@ -454,6 +456,155 @@ EditPlan parseEditPrompt(const QString& raw)
             continue;
         }
         plan.unknown << shown;
+    }
+    return plan;
+}
+
+// ---- language model bridge ------------------------------------------------------------------------------------------------------------
+
+namespace {
+QString firstThai(const QStringList& aliases)
+{
+    for (const QString& a : aliases)
+        for (QChar c : a)
+            if (c.unicode() >= 0x0E00 && c.unicode() <= 0x0E7F)
+                return a;
+    return {};
+}
+QString catalogLine(const QList<CatalogEntry>& list)
+{
+    QStringList parts;
+    for (const CatalogEntry& e : list) {
+        const QString thai = firstThai(e.aliases);
+        parts << e.id + QLatin1Char('=') + e.label + (thai.isEmpty() ? QString() : QLatin1Char('/') + thai);
+    }
+    return parts.join(QLatin1String(", "));
+}
+QJsonArray idList(const QList<CatalogEntry>& list)
+{
+    QJsonArray ids;
+    for (const CatalogEntry& e : list)
+        ids.append(e.id);
+    return ids;
+}
+bool hasId(const QList<CatalogEntry>& list, const QString& id)
+{
+    for (const CatalogEntry& e : list)
+        if (e.id == id)
+            return true;
+    return false;
+}
+QJsonObject shape(const char* action, const QJsonObject& properties, const QStringList& required)
+{
+    QJsonObject props = properties;
+    props.insert(QStringLiteral("action"), QJsonObject{{"const", QString::fromLatin1(action)}});
+    QJsonArray req{QStringLiteral("action")};
+    for (const QString& r : required)
+        req.append(r);
+    return {{"type", "object"}, {"properties", props}, {"required", req}, {"additionalProperties", false}};
+}
+} // namespace
+
+QString llmSystemPrompt()
+{
+    return QStringLiteral(
+               "You turn a video editor request (Thai or English) into editing steps. Answer with JSON only.\n"
+               "Actions:\n"
+               "- place_all: put every imported clip on the timeline in order.\n"
+               "- split_at: cut the timeline at \"seconds\".\n"
+               "- split_every: cut every \"every\" seconds.\n"
+               "- add_text: add a text clip with \"text\" (the exact words to show) in a style \"name\", at \"seconds\" (0 if not said).\n"
+               "- apply_filter: colour look \"name\".\n"
+               "- apply_effect: effect \"name\".\n"
+               "- apply_transition: transition \"name\", direction \"in\" (start of clip) or \"out\" (end of clip).\n"
+               "- export: export the video, \"preset\" is 720p, 1080p, 1440p or 4k (\"\" if not said).\n"
+               "Use only these names.\n")
+        + QStringLiteral("Filters:\n") + catalogLine(lookCatalog()) + QStringLiteral("\nEffects:\n") + catalogLine(effectCatalog())
+        + QStringLiteral("\nTransitions:\n") + catalogLine(transitionCatalog()) + QStringLiteral("\nText styles:\n") + catalogLine(textStyleCatalog())
+        + QStringLiteral("\nGive each step only the fields it needs, as compact JSON. Several requests in one sentence give several steps in order. "
+                        "If the request is not about editing the video, return {\"steps\": []}.");
+}
+
+QJsonObject llmSchema()
+{
+    const QJsonObject number{{"type", "number"}};
+    const QJsonObject text{{"type", "string"}};
+    QJsonArray shapes;
+    shapes.append(shape("place_all", {}, {}));
+    shapes.append(shape("split_at", {{"seconds", number}}, {"seconds"}));
+    shapes.append(shape("split_every", {{"every", number}}, {"every"}));
+    shapes.append(shape("add_text", {{"text", text}, {"name", QJsonObject{{"enum", idList(textStyleCatalog())}}}, {"seconds", number}}, {"text", "name", "seconds"}));
+    shapes.append(shape("apply_filter", {{"name", QJsonObject{{"enum", idList(lookCatalog())}}}}, {"name"}));
+    shapes.append(shape("apply_effect", {{"name", QJsonObject{{"enum", idList(effectCatalog())}}}}, {"name"}));
+    shapes.append(shape("apply_transition", {{"name", QJsonObject{{"enum", idList(transitionCatalog())}}}, {"direction", QJsonObject{{"enum", QJsonArray{"in", "out"}}}}},
+                        {"name", "direction"}));
+    shapes.append(shape("export", {{"preset", QJsonObject{{"enum", QJsonArray{"", "720p", "1080p", "1440p", "4k"}}}}}, {"preset"}));
+    const QJsonObject items{{"anyOf", shapes}};
+    return {{"type", "object"},
+            {"properties", QJsonObject{{"steps", QJsonObject{{"type", "array"}, {"items", items}}}}},
+            {"required", QJsonArray{"steps"}},
+            {"additionalProperties", false}};
+}
+
+EditPlan planFromLlmJson(const QByteArray& json)
+{
+    EditPlan plan;
+    QJsonParseError error;
+    const QJsonDocument doc = QJsonDocument::fromJson(json, &error);
+    if (error.error != QJsonParseError::NoError || !doc.isObject() || !doc.object().value(QStringLiteral("steps")).isArray()) {
+        plan.unknown << QStringLiteral("(the answer of the model could not be read)");
+        return plan;
+    }
+    static const QStringList presets = {"", "720p", "1080p", "1440p", "4k"};
+    static const QStringList outTypes = {"fade", "dip", "wipe", "slide", "zoom", "spin", "flash", "none"};
+    int index = 0;
+    for (const QJsonValue& v : doc.object().value(QStringLiteral("steps")).toArray()) {
+        ++index;
+        const QJsonObject o = v.toObject();
+        const QString action = o.value(QStringLiteral("action")).toString();
+        const QString name = o.value(QStringLiteral("name")).toString();
+        const double seconds = o.value(QStringLiteral("seconds")).toDouble(0);
+        EditStep s;
+        auto reject = [&](const QString& why) { plan.unknown << QStringLiteral("%1 (%2)").arg(action.isEmpty() ? QStringLiteral("step %1").arg(index) : action, why); };
+        if (action == QLatin1String("place_all")) {
+            s.kind = EditStep::PlaceAll;
+        } else if (action == QLatin1String("split_at")) {
+            if (!(seconds > 0 && seconds < 86400)) { reject(QStringLiteral("time")); continue; }
+            s.kind = EditStep::SplitAt;
+            s.seconds = seconds;
+        } else if (action == QLatin1String("split_every")) {
+            const double every = o.value(QStringLiteral("every")).toDouble(0);
+            if (!(every >= 0.1 && every < 86400)) { reject(QStringLiteral("interval")); continue; }
+            s.kind = EditStep::SplitEvery;
+            s.every = every;
+        } else if (action == QLatin1String("add_text")) {
+            if (!hasId(textStyleCatalog(), name)) { reject(QStringLiteral("style")); continue; }
+            s.kind = EditStep::AddText;
+            s.id = name;
+            s.text = o.value(QStringLiteral("text")).toString().trimmed().left(200);
+            s.seconds = seconds >= 0 && seconds < 86400 ? seconds : -1;
+        } else if (action == QLatin1String("apply_filter") || action == QLatin1String("apply_effect")) {
+            const bool look = action == QLatin1String("apply_filter");
+            if (!hasId(look ? lookCatalog() : effectCatalog(), name)) { reject(QStringLiteral("name")); continue; }
+            s.kind = look ? EditStep::Look : EditStep::Effect;
+            s.id = name;
+        } else if (action == QLatin1String("apply_transition")) {
+            const QString direction = o.value(QStringLiteral("direction")).toString();
+            if (!hasId(transitionCatalog(), name) || (direction != QLatin1String("in") && direction != QLatin1String("out"))) { reject(QStringLiteral("name")); continue; }
+            if (direction == QLatin1String("out") && !outTypes.contains(name)) { reject(QStringLiteral("not available at the end of a clip")); continue; }
+            s.kind = EditStep::Transition;
+            s.id = name;
+            s.direction = direction;
+        } else if (action == QLatin1String("export")) {
+            const QString preset = o.value(QStringLiteral("preset")).toString();
+            if (!presets.contains(preset)) { reject(QStringLiteral("preset")); continue; }
+            s.kind = EditStep::Export;
+            s.preset = preset;
+        } else {
+            reject(QStringLiteral("unknown action"));
+            continue;
+        }
+        plan.steps << s;
     }
     return plan;
 }

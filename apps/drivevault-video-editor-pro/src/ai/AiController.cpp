@@ -43,8 +43,20 @@ AiController::AiController(ProjectManager* project, SettingsManager* settings, Q
     , m_project(project)
     , m_settings(settings)
     , m_models(settings)
+    , m_llm(settings)
 {
+    m_pendingMap = planToMap(ai::EditPlan(), QStringLiteral("keyword"));          // QML reads steps / valid before the first keystroke
     connect(&m_models, &ModelManager::modelsChanged, this, &AiController::statusChanged);
+    connect(&m_llm, &LocalLlm::planFinished, this, [this](bool ok, const QByteArray& content, const QString& message) {
+        if (m_llmText.isEmpty())
+            return;                                    // the text was changed while the model worked: its answer no longer fits
+        m_llmText.clear();
+        if (!ok) {
+            emit llmFailed(message);
+            return;
+        }
+        setPending(ai::planFromLlmJson(content), QStringLiteral("ai"));
+    });
     connect(m_settings, &SettingsManager::valueChanged, this, [this](const QString& key) {
         if (key == QLatin1String("aiEnabled") || key == QLatin1String("aiModelsLocation") || key == QLatin1String("aiModel"))
             emit statusChanged();
@@ -564,7 +576,11 @@ QString entryName(const QList<ai::CatalogEntry>& list, const QString& id)
 
 QVariantMap AiController::planEdit(const QString& text) const
 {
-    const ai::EditPlan plan = ai::parseEditPrompt(text);
+    return planToMap(ai::parseEditPrompt(text), QStringLiteral("keyword"));
+}
+
+QVariantMap AiController::planToMap(const ai::EditPlan& plan, const QString& source) const
+{
     auto target = [&](int n) {
         return n == 0 ? tr("every video clip") : n < 0 ? tr("the selected clip") : tr("clip %1").arg(n);
     };
@@ -599,12 +615,44 @@ QVariantMap AiController::planEdit(const QString& text) const
     QVariantList unknown;
     for (const QString& u : plan.unknown)
         unknown << u;
-    return {{"valid", !plan.steps.isEmpty()}, {"steps", steps}, {"unknown", unknown}, {"exportRequested", exportRequested}, {"exportPreset", exportPreset}};
+    return {{"valid", !plan.steps.isEmpty()}, {"steps", steps}, {"unknown", unknown}, {"exportRequested", exportRequested}, {"exportPreset", exportPreset}, {"source", source}};
 }
 
 QString AiController::applyEditPrompt(const QString& text)
 {
-    const ai::EditPlan plan = ai::parseEditPrompt(text);
+    return executePlan(ai::parseEditPrompt(text));
+}
+
+void AiController::setPending(const ai::EditPlan& plan, const QString& source)
+{
+    m_pendingPlan = plan;
+    m_pendingMap = planToMap(plan, source);
+    emit pendingPlanChanged();
+}
+
+void AiController::previewEdit(const QString& text)
+{
+    m_llmText.clear();                       // a typed change makes an answer of the model that is still coming obsolete
+    setPending(ai::parseEditPrompt(text), QStringLiteral("keyword"));
+}
+
+QString AiController::understandWithLlm(const QString& text)
+{
+    if (text.trimmed().isEmpty())
+        return tr("Write what to do first.");
+    const QString problem = m_llm.requestPlan(text);
+    if (problem.isEmpty())
+        m_llmText = text;
+    return problem;
+}
+
+QString AiController::applyPendingPlan()
+{
+    return executePlan(m_pendingPlan);
+}
+
+QString AiController::executePlan(const ai::EditPlan& plan)
+{
     if (plan.steps.isEmpty())
         return tr("I did not understand that. Try: \"place all clips, add the filter black and white, add the slide transition, add the text Hello at 3 seconds\".");
     TimelineModel* tl = m_project->timeline();

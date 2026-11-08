@@ -369,302 +369,356 @@
         <translation>ตัดต่อด้วยคำสั่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="163"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="164"/>
         <source>Describe the edit, e.g. place all clips, add the black and white filter, add the slide transition, add the text &quot;Hello&quot; at 3 seconds, export 1080p</source>
         <translation>พิมพ์สิ่งที่ต้องการ เช่น วางคลิปทั้งหมด ใส่ฟิลเตอร์ขาวดำ ใส่ทรานซิชันสไลด์ ใส่ข้อความ &quot;สวัสดี&quot; ที่ 3 วินาที ส่งออก 1080p</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="177"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="185"/>
         <source>Place all clips, add the filter cinematic and the transition dissolve</source>
         <translation>วางคลิปทั้งหมด ใส่ฟิลเตอร์ซีนีมา และทรานซิชันละลาย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="178"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="186"/>
         <source>Split every 10 seconds</source>
         <translation>ตัดทุก 10 วินาที</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="179"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="187"/>
         <source>Add the text &quot;Hello&quot; at 2 seconds, then export 1080p</source>
         <translation>ใส่ข้อความ &quot;สวัสดี&quot; ที่ 2 วินาที แล้วส่งออก 1080p</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="218"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="226"/>
         <source>Not understood: %1</source>
         <translation>ไม่เข้าใจ: %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="230"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="234"/>
+        <source>The language model could not help: %1 The keyword plan is shown instead.</source>
+        <translation>โมเดลภาษาช่วยไม่ได้: %1 แสดงแผนจากคำสำคัญแทน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="242"/>
+        <source>Understood by the language model</source>
+        <translation>เข้าใจโดยโมเดลภาษา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="242"/>
+        <source>Understood by keywords</source>
+        <translation>เข้าใจโดยคำสำคัญ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="254"/>
+        <source>Starting the model…</source>
+        <translation>กำลังเริ่มโมเดล…</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="254"/>
+        <source>Thinking…</source>
+        <translation>กำลังคิด…</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="254"/>
+        <source>Understand with local AI</source>
+        <translation>ให้ AI ในเครื่องทำความเข้าใจ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="257"/>
+        <source>Ctrl+Enter. The model runs on this PC only; the first answer takes longer while it starts.</source>
+        <translation>Ctrl+Enter โมเดลทำงานในเครื่องนี้เท่านั้น คำตอบแรกใช้เวลานานกว่าเพราะต้องเริ่มโมเดลก่อน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="263"/>
         <source>Edit</source>
         <translation>แก้ไข</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="238"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="271"/>
         <source>Done. Everything the prompt did is one step: Undo (Ctrl+Z) takes it back.</source>
         <translation>เสร็จแล้ว ทุกอย่างที่คำสั่งทำนับเป็นหนึ่งขั้น กดเลิกทำ (Ctrl+Z) เพื่อย้อนกลับ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="245"/>
         <source>Works offline on this PC with a fixed set of Thai and English words (it is not a chat model). It can place all clips, split, add text, effects, transitions and filters, and start an export. Put the words of a text in quotation marks. Anything it does not understand is listed above and skipped.</source>
-        <translation>ทำงานออฟไลน์ในเครื่องนี้ด้วยชุดคำไทย/อังกฤษที่กำหนดไว้ (ไม่ใช่โมเดลแชต) สั่งได้: วางคลิปทั้งหมด ตัดคลิป ใส่ข้อความ เอฟเฟกต์ ทรานซิชัน ฟิลเตอร์ และเริ่มส่งออก ใส่เครื่องหมายคำพูดครอบคำของข้อความ ส่วนที่ไม่เข้าใจจะแสดงไว้ด้านบนและข้ามไป</translation>
+        <translation type="vanished">ทำงานออฟไลน์ในเครื่องนี้ด้วยชุดคำไทย/อังกฤษที่กำหนดไว้ (ไม่ใช่โมเดลแชต) สั่งได้: วางคลิปทั้งหมด ตัดคลิป ใส่ข้อความ เอฟเฟกต์ ทรานซิชัน ฟิลเตอร์ และเริ่มส่งออก ใส่เครื่องหมายคำพูดครอบคำของข้อความ ส่วนที่ไม่เข้าใจจะแสดงไว้ด้านบนและข้ามไป</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="252"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="281"/>
+        <source>The language model is working on this PC. Nothing is sent anywhere.</source>
+        <translation>โมเดลภาษากำลังทำงานในเครื่องนี้ ไม่มีอะไรถูกส่งออกไปที่ไหน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="289"/>
+        <source>To understand free sentences, install the language model in the Speech models section below.</source>
+        <translation>เพื่อให้เข้าใจประโยคอิสระ ให้ติดตั้งโมเดลภาษาในส่วน โมเดลเสียง ด้านล่าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="290"/>
+        <source>The language model engine is not part of this installation.</source>
+        <translation>ชุดติดตั้งนี้ไม่มีเอนจินของโมเดลภาษา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="295"/>
+        <source>Works offline on this PC with a fixed set of Thai and English words (it is not a chat model) and, when the language model is installed, understands free sentences too. It can place all clips, split, add text, effects, transitions and filters, and start an export. Put the words of a text in quotation marks. Anything it does not understand is listed above and skipped.</source>
+        <translation>ทำงานออฟไลน์ในเครื่องนี้ด้วยชุดคำไทย/อังกฤษที่กำหนดไว้ (ไม่ใช่โมเดลแชต) และเมื่อติดตั้งโมเดลภาษาแล้วจะเข้าใจประโยคอิสระด้วย สั่งได้: วางคลิปทั้งหมด ตัดคลิป ใส่ข้อความ เอฟเฟกต์ ทรานซิชัน ฟิลเตอร์ และเริ่มส่งออก ใส่เครื่องหมายคำพูดครอบคำของข้อความ ส่วนที่ไม่เข้าใจจะแสดงไว้ด้านบนและข้ามไป</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="302"/>
         <source>Assistant</source>
         <translation>ผู้ช่วย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="261"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="311"/>
         <source>e.g. “create Thai subtitles”</source>
         <translation>เช่น “สร้างซับไทยให้คลิปนี้”</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="278"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="328"/>
         <source>Do it</source>
         <translation>ทำเลย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="284"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="334"/>
         <source>The assistant understands a fixed set of Thai and English requests (it is not a chat model). It only runs the features below and never edits anything outside the project. Results are shown for your confirmation.</source>
         <translation>ผู้ช่วยเข้าใจคำสั่งภาษาไทยและอังกฤษชุดหนึ่งที่กำหนดไว้ (ไม่ใช่โมเดลแชต) ใช้ได้เฉพาะฟีเจอร์ด้านล่างและไม่แก้ไขสิ่งใดนอกโปรเจกต์ ผลลัพธ์จะแสดงให้คุณยืนยัน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="290"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="340"/>
         <source>Auto captions</source>
         <translation>ซับอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="299"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="349"/>
         <source>Engine missing</source>
         <translation>ไม่พบเอนจิน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="305"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="355"/>
         <source>Language</source>
         <translation>ภาษา</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="311"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="361"/>
         <source>Detect automatically</source>
         <translation>ตรวจจับอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="321"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="371"/>
         <source>Transcribe timeline</source>
         <translation>ถอดเสียงไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="327"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="377"/>
         <source>A speech model is required. Download or import one in the model manager below.</source>
         <translation>ต้องมีโมเดลเสียง กรุณาดาวน์โหลดหรือนำเข้าในตัวจัดการโมเดลด้านล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="328"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="378"/>
         <source>The speech engine (whisper.cpp) was not found next to the application.</source>
         <translation>ไม่พบเอนจินถอดเสียง (whisper.cpp) ข้างโปรแกรม</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/editor/AiPanel.qml" line="339"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="389"/>
         <source>… and %n more phrase(s).</source>
         <translation>
             <numerusform>… และอีก %n ประโยค</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="343"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="393"/>
         <source>Add to timeline</source>
         <translation>เพิ่มลงไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="344"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="394"/>
         <source>Discard</source>
         <translation>ทิ้ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="347"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="397"/>
         <source>Automatic captions are not always accurate, especially with noise, music or names. Added captions are normal subtitle clips: select one to correct its text; File → Export or the Export workspace saves them as SRT.</source>
         <translation>ซับอัตโนมัติอาจไม่แม่นยำเสมอไป โดยเฉพาะเมื่อมีเสียงรบกวน เพลง หรือชื่อเฉพาะ ซับที่เพิ่มเป็นคลิปซับไตเติลปกติ: เลือกคลิปเพื่อแก้ข้อความ และส่งออกเป็น SRT ได้ในพื้นที่ส่งออก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="353"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="403"/>
         <source>Silence detection</source>
         <translation>ตรวจจับความเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="359"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="409"/>
         <source>Threshold</source>
         <translation>เกณฑ์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="365"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="415"/>
         <source>Min. length</source>
         <translation>ความยาวขั้นต่ำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="374"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="424"/>
         <source>Find silent passages</source>
         <translation>หาช่วงที่เงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="388"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="438"/>
         <source>Go to this passage</source>
         <translation>ไปที่ช่วงนี้</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/editor/AiPanel.qml" line="391"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="441"/>
         <source>… and %n more. All of them are highlighted in the timeline.</source>
         <translation>
             <numerusform>… และอีก %n ช่วง ทุกช่วงถูกไฮไลต์ในไทม์ไลน์</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="395"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="445"/>
         <source>Remove all…</source>
         <translation>ลบทั้งหมด…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="396"/>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="443"/>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="564"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="446"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="493"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="614"/>
         <source>Clear</source>
         <translation>ล้าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="404"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="454"/>
         <source>Smart cut suggestions</source>
         <translation>แนะนำจุดตัดอัจฉริยะ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="410"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="460"/>
         <source>Sensitivity</source>
         <translation>ความไว</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="418"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="468"/>
         <source>Suggest cut points</source>
         <translation>แนะนำจุดตัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="424"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="474"/>
         <source>Looks for scene changes inside clips and for pauses (using the silence settings above). Nothing is cut until you split.</source>
         <translation>มองหาการเปลี่ยนฉากภายในคลิปและช่วงหยุด (ใช้ค่าความเงียบด้านบน) ยังไม่มีอะไรถูกตัดจนกว่าคุณจะสั่งแบ่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="434"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="484"/>
         <source>Go to this point</source>
         <translation>ไปที่จุดนี้</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="435"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="485"/>
         <source>Split here</source>
         <translation>แบ่งตรงนี้</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/editor/AiPanel.qml" line="438"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="488"/>
         <source>… and %n more.</source>
         <translation>
             <numerusform>… และอีก %n รายการ</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="442"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="492"/>
         <source>Split at all…</source>
         <translation>แบ่งทุกจุด…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="451"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="501"/>
         <source>Audio enhancement</source>
         <translation>ปรับปรุงเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="457"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="507"/>
         <source>Noise reduction</source>
         <translation>ลดเสียงรบกวน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="463"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="513"/>
         <source>Remove rumble</source>
         <translation>ลดเสียงอู้</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="469"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="519"/>
         <source>Even out level</source>
         <translation>ปรับระดับเสียงให้สม่ำเสมอ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="478"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="528"/>
         <source>Enhance selected audio</source>
         <translation>ปรับปรุงเสียงที่เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="484"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="534"/>
         <source>Select an audio clip first. Uses spectral noise reduction (classical signal processing, no neural model) and writes a cleaned copy into the project&apos;s AI folder; the clip then uses the copy and Undo restores the original.</source>
         <translation>เลือกคลิปเสียงก่อน ใช้การลดเสียงรบกวนด้วยสเปกตรัม (การประมวลผลสัญญาณแบบคลาสสิก ไม่ใช้โมเดลเครือข่ายประสาท) และเขียนสำเนาที่ทำความสะอาดแล้วในโฟลเดอร์ AI ของโปรเจกต์ คลิปจะใช้สำเนานั้น และเลิกทำจะคืนต้นฉบับ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="491"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="541"/>
         <source>Object tracking</source>
         <translation>ติดตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="505"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="555"/>
         <source>Show region</source>
         <translation>แสดงพื้นที่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="514"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="564"/>
         <source>Left</source>
         <translation>ซ้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="514"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="564"/>
         <source>Top</source>
         <translation>บน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="515"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="565"/>
         <source>Width</source>
         <translation>กว้าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="515"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="565"/>
         <source>Height</source>
         <translation>สูง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="530"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="580"/>
         <source>Select a video clip, move the playhead to a frame where the subject is visible, place the rectangle over it (drag it on the monitor or use the sliders) and track.</source>
         <translation>เลือกคลิปวิดีโอ เลื่อนเพลย์เฮดไปที่เฟรมที่เห็นวัตถุ วางกรอบทับวัตถุ (ลากบนมอนิเตอร์หรือใช้แถบเลื่อน) แล้วเริ่มติดตาม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="536"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="586"/>
         <source>Track from playhead</source>
         <translation>ติดตามจากเพลย์เฮด</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/editor/AiPanel.qml" line="545"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="595"/>
         <source>%n frame(s) tracked, average match %1 %</source>
         <translation>
             <numerusform>ติดตามแล้ว %n เฟรม ความตรงเฉลี่ย %1 %</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="555"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="605"/>
         <source>Stabilize clip</source>
         <translation>ทำให้คลิปนิ่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="560"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="610"/>
         <source>Selected clip follows</source>
         <translation>คลิปที่เลือกตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="567"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="617"/>
         <source>Stabilize counter-moves the tracked clip; &quot;follows&quot; moves another video or image clip (for example a logo on a layer above) with the subject. Both write Position keyframes you can edit in the Inspector.</source>
         <translation>ทำให้นิ่งคือขยับคลิปที่ติดตามสวนทางกัน ส่วน &quot;ตาม&quot; คือให้คลิปวิดีโอหรือภาพอื่น (เช่น โลโก้บนเลเยอร์ด้านบน) เคลื่อนที่ตามวัตถุ ทั้งสองแบบสร้างคีย์เฟรมตำแหน่งที่แก้ไขได้ในอินสเปกเตอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="573"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="623"/>
         <source>Speech models</source>
         <translation>โมเดลเสียง</translation>
     </message>
@@ -850,383 +904,383 @@
 <context>
     <name>EditPlanner</name>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="31"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="33"/>
         <source>Vivid</source>
         <translation>สดใส</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="32"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="34"/>
         <source>Warm</source>
         <translation>โทนอุ่น</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="33"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="35"/>
         <source>Cool</source>
         <translation>โทนเย็น</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="34"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="36"/>
         <source>Black &amp; white</source>
         <translation>ขาวดำ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="35"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="37"/>
         <source>Faded</source>
         <translation>ซีดจาง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="36"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="38"/>
         <source>Cinematic</source>
         <translation>ภาพยนตร์</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="37"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="39"/>
         <source>Bright</source>
         <translation>สว่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="38"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="40"/>
         <source>Dark</source>
         <translation>มืด</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="39"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="41"/>
         <source>Film</source>
         <translation>ฟิล์ม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="40"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="42"/>
         <source>Vintage</source>
         <translation>วินเทจ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="41"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="43"/>
         <source>Sepia</source>
         <translation>ซีเปีย</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="42"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="44"/>
         <source>Retro</source>
         <translation>เรโทร</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="43"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="45"/>
         <source>Noir</source>
         <translation>นัวร์</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="44"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="46"/>
         <source>Bleach</source>
         <translation>ฟอกสี</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="45"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="47"/>
         <source>Sunset</source>
         <translation>พระอาทิตย์ตก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="46"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="48"/>
         <source>Golden hour</source>
         <translation>แสงทอง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="47"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="49"/>
         <source>Ocean</source>
         <translation>มหาสมุทร</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="48"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="50"/>
         <source>Forest</source>
         <translation>ป่า</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="49"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="51"/>
         <source>Neon night</source>
         <translation>ราตรีนีออน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="50"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="52"/>
         <source>Pastel</source>
         <translation>พาสเทล</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="51"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="53"/>
         <source>Moody</source>
         <translation>หม่นลึก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="52"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="54"/>
         <source>Teal and orange</source>
         <translation>ฟ้าเขียวกับส้ม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="53"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="55"/>
         <source>Punchy</source>
         <translation>จัดจ้าน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="54"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="56"/>
         <source>Original</source>
         <translation>ต้นฉบับ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="63"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="65"/>
         <source>Light blur</source>
         <translation>เบลอเบา</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="64"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="66"/>
         <source>Strong blur</source>
         <translation>เบลอแรง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="65"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="67"/>
         <source>Soft blur</source>
         <translation>เบลอเบา</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="66"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="68"/>
         <source>Extra sharp</source>
         <translation>คมพิเศษ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="67"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="69"/>
         <source>Sharpen</source>
         <translation>ความคมชัด</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="68"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="70"/>
         <source>Dark edges</source>
         <translation>ขอบมืด</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="69"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="71"/>
         <source>Vignette</source>
         <translation>ขอบมืด</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="70"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="72"/>
         <source>Dream</source>
         <translation>ฝันหวาน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="71"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="73"/>
         <source>Soft portrait</source>
         <translation>พอร์ตเทรตนุ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="72"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="74"/>
         <source>Focus</source>
         <translation>โฟกัส</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="73"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="75"/>
         <source>Crisp</source>
         <translation>คมกริบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="74"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="76"/>
         <source>Wide bars</source>
         <translation>แถบกว้าง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="75"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="77"/>
         <source>Cinema bars</source>
         <translation>แถบหนัง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="76"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="78"/>
         <source>Letterbox</source>
         <translation>เลตเตอร์บ็อกซ์</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="77"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="79"/>
         <source>Side bars</source>
         <translation>แถบข้าง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="78"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="80"/>
         <source>Zoom 160%</source>
         <translation>ซูม 160%</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="79"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="81"/>
         <source>Zoom 125%</source>
         <translation>ซูม 125%</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="80"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="82"/>
         <source>Tilt left</source>
         <translation>เอียงซ้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="81"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="83"/>
         <source>Tilt right</source>
         <translation>เอียงขวา</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="82"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="84"/>
         <source>Normal size</source>
         <translation>ขนาดปกติ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="83"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="85"/>
         <source>Remove effects</source>
         <translation>ลบเอฟเฟกต์</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="91"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="93"/>
         <source>Cross dissolve</source>
         <translation>ครอสดิสโซลฟ์</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="92"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="94"/>
         <source>Dip to black</source>
         <translation>จางผ่านสีดำ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="93"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="95"/>
         <source>Fade from black</source>
         <translation>ค่อยๆ สว่างจากสีดำ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="94"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="96"/>
         <source>Flash</source>
         <translation>แฟลช</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="95"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="97"/>
         <source>Wipe left</source>
         <translation>เช็ดไปซ้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="96"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="98"/>
         <source>Wipe down</source>
         <translation>เช็ดลง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="97"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="99"/>
         <source>Wipe up</source>
         <translation>เช็ดขึ้น</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="98"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="100"/>
         <source>Wipe right</source>
         <translation>เช็ดไปขวา</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="99"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="101"/>
         <source>Slide from left</source>
         <translation>สไลด์จากซ้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="100"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="102"/>
         <source>Slide from bottom</source>
         <translation>สไลด์จากล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="101"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="103"/>
         <source>Slide from top</source>
         <translation>สไลด์จากบน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="102"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="104"/>
         <source>Slide from right</source>
         <translation>สไลด์จากขวา</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="103"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="105"/>
         <source>Zoom out</source>
         <translation>ซูมออก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="104"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="106"/>
         <source>Zoom in</source>
         <translation>ซูมเข้า</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="105"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="107"/>
         <source>Spin</source>
         <translation>หมุน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="106"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="108"/>
         <source>None</source>
         <translation>ไม่มี</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="114"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="116"/>
         <source>Lower third</source>
         <translation>แถบชื่อล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="115"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="117"/>
         <source>Subtitle</source>
         <translation>ซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="116"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="118"/>
         <source>Caption</source>
         <translation>คำบรรยายภาพ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="117"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="119"/>
         <source>Tag</source>
         <translation>ป้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="118"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="120"/>
         <source>01</source>
         <translation>01</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="119"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="121"/>
         <source>BIG TEXT</source>
         <translation>ตัวใหญ่</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="120"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="122"/>
         <source>Outline</source>
         <translation>เส้นขอบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="121"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="123"/>
         <source>IMPACT</source>
         <translation>อิมแพกต์</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="122"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="124"/>
         <source>ALERT</source>
         <translation>เตือนภัย</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="123"/>
-        <location filename="../../src/ai/EditPlanner.cpp" line="124"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="125"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="126"/>
         <source>Neon</source>
         <translation>นีออน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="125"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="127"/>
         <source>Gold</source>
         <translation>ทอง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="126"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="128"/>
         <source>Elegant</source>
         <translation>หรูหรา</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="127"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="129"/>
         <source>Handwriting</source>
         <translation>ลายมือ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="128"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="130"/>
         <source>Typewriter</source>
         <translation>พิมพ์ดีด</translation>
     </message>
     <message>
-        <location filename="../../src/ai/EditPlanner.cpp" line="129"/>
+        <location filename="../../src/ai/EditPlanner.cpp" line="131"/>
         <source>Title</source>
         <translation>ชื่อเรื่อง</translation>
     </message>
@@ -3515,6 +3569,7 @@
     </message>
     <message>
         <location filename="../../src/ui/editor/ModelManagerView.qml" line="30"/>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="126"/>
         <source>Delete</source>
         <translation>ลบ</translation>
     </message>
@@ -3525,6 +3580,7 @@
     </message>
     <message>
         <location filename="../../src/ui/editor/ModelManagerView.qml" line="37"/>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="119"/>
         <source>Download failed: %1</source>
         <translation>ดาวน์โหลดไม่สำเร็จ: %1</translation>
     </message>
@@ -3550,23 +3606,79 @@
     </message>
     <message>
         <location filename="../../src/ui/editor/ModelManagerView.qml" line="92"/>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="192"/>
         <source>Delete the model file</source>
         <translation>ลบไฟล์โมเดล</translation>
     </message>
     <message>
         <location filename="../../src/ui/editor/ModelManagerView.qml" line="111"/>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="171"/>
         <source>Cancel</source>
         <translation>ยกเลิก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ModelManagerView.qml" line="116"/>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="119"/>
+        <source>Language model downloaded.</source>
+        <translation>ดาวน์โหลดโมเดลภาษาแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="124"/>
+        <source>Delete the language model?</source>
+        <translation>ลบโมเดลภาษา?</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="125"/>
+        <source>The model file is removed from the model folder. You can download it again later.</source>
+        <translation>ไฟล์โมเดลจะถูกลบจากโฟลเดอร์โมเดล ดาวน์โหลดใหม่ได้ภายหลัง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="146"/>
+        <source>Language model for prompts (%1)</source>
+        <translation>โมเดลภาษาสำหรับคำสั่ง (%1)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="150"/>
+        <source>Engine missing</source>
+        <translation>ไม่พบเอนจิน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="150"/>
+        <source>Ready</source>
+        <translation>พร้อมใช้งาน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="150"/>
+        <source>Not installed</source>
+        <translation>ยังไม่ได้ติดตั้ง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="155"/>
+        <source>Understands free Thai and English sentences for &quot;Edit by prompt&quot;. It runs on this computer only (about 3 GB of memory while it works) and the plan is always shown before anything is changed. Qwen3.5 by Alibaba (Apache 2.0), run by llama.cpp (MIT).</source>
+        <translation>เข้าใจประโยคไทยและอังกฤษอิสระสำหรับ &quot;ตัดต่อด้วยคำสั่ง&quot; ทำงานในคอมพิวเตอร์เครื่องนี้เท่านั้น (ใช้หน่วยความจำราว 3 GB ขณะทำงาน) และแสดงแผนให้ดูก่อนเปลี่ยนอะไรเสมอ โมเดล Qwen3.5 ของ Alibaba (Apache 2.0) รันด้วย llama.cpp (MIT)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="166"/>
+        <source>Download (%1 MB)</source>
+        <translation>ดาวน์โหลด (%1 MB)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="187"/>
+        <source>Use the language model</source>
+        <translation>ใช้โมเดลภาษา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="201"/>
         <source>Import model…</source>
         <translation>นำเข้าโมเดล…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/ModelManagerView.qml" line="121"/>
+        <location filename="../../src/ui/editor/ModelManagerView.qml" line="206"/>
+        <source>Downloads only start when you press Download. Speech models come from the whisper.cpp project and the language model from Unsloth, both on Hugging Face; audio, video and your prompts never leave this computer.</source>
+        <translation>การดาวน์โหลดเริ่มเมื่อกดปุ่มดาวน์โหลดเท่านั้น โมเดลเสียงมาจากโปรเจกต์ whisper.cpp และโมเดลภาษามาจาก Unsloth ทั้งคู่บน Hugging Face เสียง วิดีโอ และคำสั่งของคุณไม่ออกจากเครื่องนี้</translation>
+    </message>
+    <message>
         <source>Downloads only start when you press Download. Models come from the whisper.cpp project on Hugging Face; audio and video never leave this computer.</source>
-        <translation>การดาวน์โหลดจะเริ่มเมื่อคุณกดดาวน์โหลดเท่านั้น โมเดลมาจากโปรเจกต์ whisper.cpp บน Hugging Face เสียงและวิดีโอไม่ออกจากเครื่องนี้</translation>
+        <translation type="vanished">การดาวน์โหลดจะเริ่มเมื่อคุณกดดาวน์โหลดเท่านั้น โมเดลมาจากโปรเจกต์ whisper.cpp บน Hugging Face เสียงและวิดีโอไม่ออกจากเครื่องนี้</translation>
     </message>
 </context>
 <context>
@@ -5250,390 +5362,395 @@
 <context>
     <name>dv::AiController</name>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="97"/>
+        <location filename="../../src/ai/AiController.cpp" line="108"/>
         <source>Another AI task is running. Wait for it or cancel it.</source>
         <translation>มีงาน AI อื่นกำลังทำงานอยู่ กรุณารอหรือยกเลิก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="141"/>
-        <location filename="../../src/ai/AiController.cpp" line="317"/>
+        <location filename="../../src/ai/AiController.cpp" line="152"/>
+        <location filename="../../src/ai/AiController.cpp" line="328"/>
         <source>Cancelled.</source>
         <translation>ยกเลิกแล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="174"/>
-        <location filename="../../src/ai/AiController.cpp" line="222"/>
-        <location filename="../../src/ai/AiController.cpp" line="295"/>
+        <location filename="../../src/ai/AiController.cpp" line="185"/>
+        <location filename="../../src/ai/AiController.cpp" line="233"/>
+        <location filename="../../src/ai/AiController.cpp" line="306"/>
         <source>The timeline is empty.</source>
         <translation>ไทม์ไลน์ว่างเปล่า</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="176"/>
+        <location filename="../../src/ai/AiController.cpp" line="187"/>
         <source>The timeline has no audio to analyse.</source>
         <translation>ไทม์ไลน์ไม่มีเสียงให้วิเคราะห์</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="181"/>
+        <location filename="../../src/ai/AiController.cpp" line="192"/>
         <source>Looking for silent passages…</source>
         <translation>กำลังหาช่วงที่เงียบ…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="193"/>
+        <location filename="../../src/ai/AiController.cpp" line="204"/>
         <source>No silent passages found with these settings.</source>
         <translation>ไม่พบช่วงเงียบด้วยค่าที่ตั้งไว้</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="194"/>
+        <location filename="../../src/ai/AiController.cpp" line="205"/>
         <source>%n silent passage(s), %1 s in total. Review them in the timeline, then apply.</source>
         <translation>
             <numerusform>พบช่วงเงียบ %n ช่วง รวม %1 วินาที ตรวจดูในไทม์ไลน์แล้วจึงนำไปใช้</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="203"/>
+        <location filename="../../src/ai/AiController.cpp" line="214"/>
         <source>There are no silent passages to remove.</source>
         <translation>ไม่มีช่วงเงียบให้ลบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="206"/>
+        <location filename="../../src/ai/AiController.cpp" line="217"/>
         <source>Silent passages removed. Use Undo to bring them back.</source>
         <translation>ลบช่วงเงียบแล้ว ใช้เลิกทำเพื่อนำกลับมา</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="229"/>
+        <location filename="../../src/ai/AiController.cpp" line="240"/>
         <source>Analysing scenes and pauses…</source>
         <translation>กำลังวิเคราะห์ฉากและช่วงหยุด…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="240"/>
+        <location filename="../../src/ai/AiController.cpp" line="251"/>
         <source>Scene change</source>
         <translation>เปลี่ยนฉาก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="242"/>
+        <location filename="../../src/ai/AiController.cpp" line="253"/>
         <source>Silence starts</source>
         <translation>เริ่มเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="243"/>
+        <location filename="../../src/ai/AiController.cpp" line="254"/>
         <source>Silence ends</source>
         <translation>สิ้นสุดความเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="250"/>
+        <location filename="../../src/ai/AiController.cpp" line="261"/>
         <source>No cut points found with these settings.</source>
         <translation>ไม่พบจุดตัดด้วยค่าที่ตั้งไว้</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="251"/>
+        <location filename="../../src/ai/AiController.cpp" line="262"/>
         <source>%n suggested cut point(s). Nothing was cut yet.</source>
         <translation>
             <numerusform>แนะนำจุดตัด %n จุด ยังไม่มีอะไรถูกตัด</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="259"/>
+        <location filename="../../src/ai/AiController.cpp" line="270"/>
         <source>There is no such suggestion.</source>
         <translation>ไม่มีข้อเสนอนี้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="268"/>
+        <location filename="../../src/ai/AiController.cpp" line="279"/>
         <source>There are no suggestions to apply.</source>
         <translation>ไม่มีข้อเสนอให้ใช้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="270"/>
+        <location filename="../../src/ai/AiController.cpp" line="281"/>
         <source>Apply suggested cuts</source>
         <translation>ใช้จุดตัดที่แนะนำ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="297"/>
+        <location filename="../../src/ai/AiController.cpp" line="308"/>
         <source>The timeline has no audio to transcribe.</source>
         <translation>ไทม์ไลน์ไม่มีเสียงให้ถอด</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="299"/>
+        <location filename="../../src/ai/AiController.cpp" line="310"/>
         <source>The speech engine (whisper.cpp) was not found.</source>
         <translation>ไม่พบเอนจินถอดเสียง (whisper.cpp)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="302"/>
+        <location filename="../../src/ai/AiController.cpp" line="313"/>
         <source>A speech model is required. Download or import one in the model manager.</source>
         <translation>ต้องมีโมเดลเสียง กรุณาดาวน์โหลดหรือนำเข้าในตัวจัดการโมเดล</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="311"/>
+        <location filename="../../src/ai/AiController.cpp" line="322"/>
         <source>Transcribing speech…</source>
         <translation>กำลังถอดเสียง…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="329"/>
+        <location filename="../../src/ai/AiController.cpp" line="340"/>
         <source>No speech was recognised.</source>
         <translation>ไม่พบเสียงพูด</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="330"/>
+        <location filename="../../src/ai/AiController.cpp" line="341"/>
         <source>%n phrase(s) recognised. Automatic captions are not always accurate - check and correct the text.</source>
         <translation>
             <numerusform>จดจำได้ %n ประโยค ซับอัตโนมัติอาจไม่แม่นยำเสมอไป - กรุณาตรวจและแก้ข้อความ</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="338"/>
+        <location filename="../../src/ai/AiController.cpp" line="349"/>
         <source>There are no captions to add.</source>
         <translation>ไม่มีซับให้เพิ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="351"/>
+        <location filename="../../src/ai/AiController.cpp" line="362"/>
         <source>Captions added to the subtitle track. Select a subtitle to edit its text.</source>
         <translation>เพิ่มซับลงแทร็กซับไตเติลแล้ว เลือกซับเพื่อแก้ข้อความ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="370"/>
+        <location filename="../../src/ai/AiController.cpp" line="381"/>
         <source>Select an audio clip on the timeline first.</source>
         <translation>กรุณาเลือกคลิปเสียงในไทม์ไลน์ก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="374"/>
+        <location filename="../../src/ai/AiController.cpp" line="385"/>
         <source>The selected clip has no audio.</source>
         <translation>คลิปที่เลือกไม่มีเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="377"/>
-        <location filename="../../src/ai/AiController.cpp" line="442"/>
+        <location filename="../../src/ai/AiController.cpp" line="388"/>
+        <location filename="../../src/ai/AiController.cpp" line="453"/>
         <source>The media file is missing.</source>
         <translation>ไม่พบไฟล์สื่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="388"/>
+        <location filename="../../src/ai/AiController.cpp" line="399"/>
         <source>Enhancing audio…</source>
         <translation>กำลังปรับปรุงเสียง…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="400"/>
+        <location filename="../../src/ai/AiController.cpp" line="411"/>
         <source>The enhanced file could not be imported.</source>
         <translation>นำเข้าไฟล์ที่ปรับปรุงแล้วไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="412"/>
+        <location filename="../../src/ai/AiController.cpp" line="423"/>
         <source>The clip now uses the enhanced audio. Undo restores the original.</source>
         <translation>คลิปใช้เสียงที่ปรับปรุงแล้ว เลิกทำจะคืนต้นฉบับ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="416"/>
+        <location filename="../../src/ai/AiController.cpp" line="427"/>
         <source>The enhanced file was created but could not be prepared.</source>
         <translation>สร้างไฟล์ที่ปรับปรุงแล้วแต่เตรียมใช้งานไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="430"/>
+        <location filename="../../src/ai/AiController.cpp" line="441"/>
         <source>Select a video clip on the timeline first.</source>
         <translation>กรุณาเลือกคลิปวิดีโอในไทม์ไลน์ก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="433"/>
+        <location filename="../../src/ai/AiController.cpp" line="444"/>
         <source>Titles cannot be tracked.</source>
         <translation>ติดตามชื่อเรื่องไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="438"/>
+        <location filename="../../src/ai/AiController.cpp" line="449"/>
         <source>Move the playhead onto the clip, at the frame where the subject is visible.</source>
         <translation>เลื่อนเพลย์เฮดไปบนคลิป ที่เฟรมที่เห็นวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="448"/>
+        <location filename="../../src/ai/AiController.cpp" line="459"/>
         <source>Tracking…</source>
         <translation>กำลังติดตาม…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="454"/>
+        <location filename="../../src/ai/AiController.cpp" line="465"/>
         <source>Tracking failed.</source>
         <translation>ติดตามไม่สำเร็จ</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="465"/>
+        <location filename="../../src/ai/AiController.cpp" line="476"/>
         <source>Tracked %n frame(s). Choose how to use the motion.</source>
         <translation>
             <numerusform>ติดตามแล้ว %n เฟรม เลือกวิธีใช้การเคลื่อนไหว</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="473"/>
+        <location filename="../../src/ai/AiController.cpp" line="484"/>
         <source>There is no tracking data.</source>
         <translation>ไม่มีข้อมูลการติดตาม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="478"/>
+        <location filename="../../src/ai/AiController.cpp" line="489"/>
         <source>Select the clip that should follow the subject.</source>
         <translation>เลือกคลิปที่ต้องการให้ตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="481"/>
+        <location filename="../../src/ai/AiController.cpp" line="492"/>
         <source>The clip no longer exists.</source>
         <translation>ไม่มีคลิปนี้แล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="483"/>
+        <location filename="../../src/ai/AiController.cpp" line="494"/>
         <source>Titles cannot be keyframed yet. Use a video or image clip.</source>
         <translation>ยังใส่คีย์เฟรมให้ชื่อเรื่องไม่ได้ ใช้คลิปวิดีโอหรือภาพแทน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="485"/>
+        <location filename="../../src/ai/AiController.cpp" line="496"/>
         <source>Choose a clip on a video track.</source>
         <translation>เลือกคลิปบนแทร็กวิดีโอ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="512"/>
+        <location filename="../../src/ai/AiController.cpp" line="523"/>
         <source>Stabilize</source>
         <translation>ทำให้นิ่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="512"/>
+        <location filename="../../src/ai/AiController.cpp" line="523"/>
         <source>Follow tracked subject</source>
         <translation>ตามวัตถุที่ติดตาม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="518"/>
+        <location filename="../../src/ai/AiController.cpp" line="529"/>
         <source>Stabilization keyframes added to the clip (Position X / Y).</source>
         <translation>เพิ่มคีย์เฟรมทำให้นิ่งลงในคลิปแล้ว (ตำแหน่ง X / Y)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="519"/>
+        <location filename="../../src/ai/AiController.cpp" line="530"/>
         <source>Position keyframes added: the clip follows the subject.</source>
         <translation>เพิ่มคีย์เฟรมตำแหน่งแล้ว: คลิปตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="537"/>
+        <location filename="../../src/ai/AiController.cpp" line="548"/>
         <source>Transcribe the timeline audio into subtitles</source>
         <translation>ถอดเสียงของไทม์ไลน์เป็นซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="538"/>
+        <location filename="../../src/ai/AiController.cpp" line="549"/>
         <source>Find silent passages</source>
         <translation>หาช่วงที่เงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="539"/>
+        <location filename="../../src/ai/AiController.cpp" line="550"/>
         <source>Suggest cut points at scene changes and pauses</source>
         <translation>แนะนำจุดตัดที่การเปลี่ยนฉากและช่วงหยุด</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="540"/>
+        <location filename="../../src/ai/AiController.cpp" line="551"/>
         <source>Reduce noise and even out the audio of the selected clip</source>
         <translation>ลดเสียงรบกวนและปรับระดับเสียงของคลิปที่เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="541"/>
+        <location filename="../../src/ai/AiController.cpp" line="552"/>
         <source>Track a region of the selected clip (choose the region in the Tracking section)</source>
         <translation>ติดตามพื้นที่ของคลิปที่เลือก (เลือกพื้นที่ในส่วนติดตามวัตถุ)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="543"/>
+        <location filename="../../src/ai/AiController.cpp" line="554"/>
         <source>I can: create subtitles, find silent passages, suggest cut points, clean up speech audio. Try: &quot;create Thai subtitles&quot;.</source>
         <translation>ฉันทำได้: สร้างซับไตเติล หาช่วงเงียบ แนะนำจุดตัด ทำเสียงพูดให้ชัด ลองพิมพ์: &quot;สร้างซับไทย&quot;</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="545"/>
+        <location filename="../../src/ai/AiController.cpp" line="556"/>
         <source>I did not understand that. Try: &quot;create Thai subtitles&quot;, &quot;find the silent parts&quot;, &quot;suggest cut points&quot; or &quot;make the speech clearer&quot;.</source>
         <translation>ไม่เข้าใจคำสั่งนี้ ลองพิมพ์: &quot;สร้างซับไทย&quot;, &quot;หาช่วงที่เงียบ&quot;, &quot;แนะนำจุดตัด&quot; หรือ &quot;ปรับเสียงพูดให้ชัดขึ้น&quot;</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="569"/>
+        <location filename="../../src/ai/AiController.cpp" line="584"/>
         <source>every video clip</source>
         <translation>ทุกคลิปวิดีโอ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="569"/>
+        <location filename="../../src/ai/AiController.cpp" line="584"/>
         <source>the selected clip</source>
         <translation>คลิปที่เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="569"/>
+        <location filename="../../src/ai/AiController.cpp" line="584"/>
         <source>clip %1</source>
         <translation>คลิปที่ %1</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="576"/>
+        <location filename="../../src/ai/AiController.cpp" line="591"/>
         <source>Place every imported clip on the timeline, one after another</source>
         <translation>วางทุกคลิปที่นำเข้าลงไทม์ไลน์ต่อกันตามลำดับ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="577"/>
+        <location filename="../../src/ai/AiController.cpp" line="592"/>
         <source>Split the timeline at %1 s</source>
         <translation>ตัดไทม์ไลน์ที่ %1 วินาที</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="578"/>
+        <location filename="../../src/ai/AiController.cpp" line="593"/>
         <source>Split the timeline every %1 s</source>
         <translation>ตัดไทม์ไลน์ทุก %1 วินาที</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="582"/>
+        <location filename="../../src/ai/AiController.cpp" line="597"/>
         <source>Add a text clip (style: %1) at %2 s</source>
         <translation>เพิ่มคลิปข้อความ (สไตล์: %1) ที่ %2 วินาที</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="583"/>
+        <location filename="../../src/ai/AiController.cpp" line="598"/>
         <source>Add the text &quot;%1&quot; (style: %2) at %3 s</source>
         <translation>เพิ่มข้อความ &quot;%1&quot; (สไตล์: %2) ที่ %3 วินาที</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="586"/>
+        <location filename="../../src/ai/AiController.cpp" line="601"/>
         <source>Filter &quot;%1&quot; on %2</source>
         <translation>ฟิลเตอร์ &quot;%1&quot; กับ%2</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="587"/>
+        <location filename="../../src/ai/AiController.cpp" line="602"/>
         <source>Effect &quot;%1&quot; on %2</source>
         <translation>เอฟเฟกต์ &quot;%1&quot; กับ%2</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="589"/>
+        <location filename="../../src/ai/AiController.cpp" line="604"/>
         <source>Transition &quot;%1&quot; at the %2 of %3</source>
         <translation>ทรานซิชัน &quot;%1&quot; ที่%2ของ%3</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="590"/>
+        <location filename="../../src/ai/AiController.cpp" line="605"/>
         <source>end</source>
         <translation>ท้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="590"/>
+        <location filename="../../src/ai/AiController.cpp" line="605"/>
         <source>start</source>
         <translation>ต้น</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="595"/>
+        <location filename="../../src/ai/AiController.cpp" line="610"/>
         <source>Export the video with the current export settings</source>
         <translation>ส่งออกวิดีโอด้วยการตั้งค่าส่งออกปัจจุบัน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="595"/>
+        <location filename="../../src/ai/AiController.cpp" line="610"/>
         <source>Export the video (%1)</source>
         <translation>ส่งออกวิดีโอ (%1)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="609"/>
+        <location filename="../../src/ai/AiController.cpp" line="641"/>
+        <source>Write what to do first.</source>
+        <translation>พิมพ์สิ่งที่ต้องการก่อน</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/AiController.cpp" line="656"/>
         <source>I did not understand that. Try: &quot;place all clips, add the filter black and white, add the slide transition, add the text Hello at 3 seconds&quot;.</source>
         <translation>ไม่เข้าใจคำสั่งนี้ ลอง: &quot;วางคลิปทั้งหมด ใส่ฟิลเตอร์ขาวดำ ใส่ทรานซิชันสไลด์ ใส่ข้อความ สวัสดี ที่ 3 วินาที&quot;.</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="644"/>
+        <location filename="../../src/ai/AiController.cpp" line="691"/>
         <source>Edit by prompt</source>
         <translation>ตัดต่อด้วยคำสั่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="676"/>
-        <location filename="../../src/ai/AiController.cpp" line="697"/>
+        <location filename="../../src/ai/AiController.cpp" line="723"/>
+        <location filename="../../src/ai/AiController.cpp" line="744"/>
         <source>There is no video clip to apply it to.</source>
         <translation>ไม่มีคลิปวิดีโอให้ใช้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="721"/>
+        <location filename="../../src/ai/AiController.cpp" line="768"/>
         <source>Choose the region to track in the Tracking section first.</source>
         <translation>กรุณาเลือกพื้นที่ที่จะติดตามในส่วนติดตามวัตถุก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="723"/>
+        <location filename="../../src/ai/AiController.cpp" line="770"/>
         <source>I did not understand that request.</source>
         <translation>ไม่เข้าใจคำขอนี้</translation>
     </message>
@@ -5746,6 +5863,110 @@
         <location filename="../../src/export/ExportController.cpp" line="281"/>
         <source>Export cancelled. No file was written.</source>
         <translation>ยกเลิกการส่งออกแล้ว ไม่มีไฟล์ถูกเขียน</translation>
+    </message>
+</context>
+<context>
+    <name>dv::LocalLlm</name>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="137"/>
+        <source>The language model is already installed.</source>
+        <translation>ติดตั้งโมเดลภาษาแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="144"/>
+        <source>A download is already running.</source>
+        <translation>มีการดาวน์โหลดกำลังทำงานอยู่</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="146"/>
+        <source>Cannot create the model folder.</source>
+        <translation>สร้างโฟลเดอร์โมเดลไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="149"/>
+        <source>There is not enough free disk space for the model (%1 MB needed).</source>
+        <translation>พื้นที่ว่างในดิสก์ไม่พอสำหรับโมเดล (ต้องการ %1 MB)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="157"/>
+        <source>Cannot create the model file.</source>
+        <translation>สร้างไฟล์โมเดลไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="212"/>
+        <source>The downloaded file has the wrong size (%1 of %2 bytes).</source>
+        <translation>ไฟล์ที่ดาวน์โหลดมีขนาดไม่ถูกต้อง (%1 จาก %2 ไบต์)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="215"/>
+        <source>The downloaded file is damaged (the SHA-256 check failed). It was deleted.</source>
+        <translation>ไฟล์ที่ดาวน์โหลดเสียหาย (ตรวจ SHA-256 ไม่ผ่าน) และถูกลบแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="221"/>
+        <source>Cannot save the model file.</source>
+        <translation>บันทึกไฟล์โมเดลไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="243"/>
+        <location filename="../../src/ai/LocalLlm.cpp" line="264"/>
+        <source>The language model is not installed.</source>
+        <translation>ยังไม่ได้ติดตั้งโมเดลภาษา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="245"/>
+        <source>The model is outside the model folder and is not deleted from here.</source>
+        <translation>โมเดลอยู่นอกโฟลเดอร์โมเดล จึงไม่ลบจากที่นี่</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="248"/>
+        <source>Cannot delete the model file.</source>
+        <translation>ลบไฟล์โมเดลไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="258"/>
+        <source>The language model is busy.</source>
+        <translation>โมเดลภาษากำลังทำงานอยู่</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="260"/>
+        <source>The language model is switched off.</source>
+        <translation>ปิดการใช้โมเดลภาษาอยู่</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="262"/>
+        <source>The language model engine (llama-server) is missing.</source>
+        <translation>ไม่พบเอนจินของโมเดลภาษา (llama-server)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="282"/>
+        <source>Cannot find a free local port.</source>
+        <translation>หาพอร์ตในเครื่องที่ว่างไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="296"/>
+        <source>The language model stopped unexpectedly.</source>
+        <translation>โมเดลภาษาหยุดทำงานโดยไม่คาดคิด</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="306"/>
+        <source>The language model could not be started.</source>
+        <translation>เริ่มโมเดลภาษาไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="320"/>
+        <source>The language model did not start in time.</source>
+        <translation>โมเดลภาษาเริ่มไม่ทันเวลา</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="364"/>
+        <source>The language model did not answer: %1</source>
+        <translation>โมเดลภาษาไม่ตอบ: %1</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/LocalLlm.cpp" line="374"/>
+        <source>The language model gave an empty answer.</source>
+        <translation>โมเดลภาษาตอบว่างเปล่า</translation>
     </message>
 </context>
 <context>
@@ -6031,7 +6252,9 @@
     <message numerus="yes">
         <location filename="../../src/project/ProjectManager.cpp" line="360"/>
         <source>%n file(s) are still being analysed and were not placed. Press the button again when they are ready.</source>
-        <translation><numerusform>%n ไฟล์ยังอยู่ระหว่างวิเคราะห์จึงยังไม่ได้วาง กดปุ่มอีกครั้งเมื่อพร้อม</numerusform></translation>
+        <translation>
+            <numerusform>%n ไฟล์ยังอยู่ระหว่างวิเคราะห์จึงยังไม่ได้วาง กดปุ่มอีกครั้งเมื่อพร้อม</numerusform>
+        </translation>
     </message>
     <message>
         <location filename="../../src/project/ProjectManager.cpp" line="376"/>

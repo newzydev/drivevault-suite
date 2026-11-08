@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ai/AiTypes.h"
+#include "ai/EditPlanner.h"
+#include "ai/LocalLlm.h"
 #include "ai/ModelManager.h"
 #include "ai/Tracker.h"
 
@@ -33,6 +35,9 @@ class AiController : public QObject {
     Q_PROPERTY(QVariantList captions READ captions NOTIFY resultsChanged FINAL)       // [{start, end, text, timecode}]
     Q_PROPERTY(QVariantMap tracking READ tracking NOTIFY resultsChanged FINAL)        // {frames, confidence, clipId} or {}
     Q_PROPERTY(QObject* models READ models CONSTANT FINAL)
+    Q_PROPERTY(QObject* llm READ llm CONSTANT FINAL)                                    // the local language model (LocalLlm)
+    // The plan shown in the "Edit by prompt" section: {valid, steps, unknown, exportRequested, exportPreset, source ("keyword" | "ai")}
+    Q_PROPERTY(QVariantMap pendingPlan READ pendingPlan NOTIFY pendingPlanChanged FINAL)
     Q_PROPERTY(bool enabled READ enabled NOTIFY statusChanged FINAL)
     // Region of the picture to track, shown as a rectangle over the monitor: {x, y, w, h} in 0..1, empty = hidden.
     Q_PROPERTY(QVariantMap trackRegion READ trackRegion WRITE setTrackRegion NOTIFY trackRegionChanged FINAL)
@@ -52,6 +57,8 @@ public:
     QVariantList captions() const { return m_captions; }
     QVariantMap tracking() const { return m_tracking; }
     ModelManager* models() { return &m_models; }
+    LocalLlm* llm() { return &m_llm; }
+    QVariantMap pendingPlan() const { return m_pendingMap; }
     QVariantMap trackRegion() const { return m_trackRegion; }
     void setTrackRegion(const QVariantMap& r) { if (r != m_trackRegion) { m_trackRegion = r; emit trackRegionChanged(); } }
 
@@ -80,7 +87,12 @@ public:
     // A deterministic keyword interpreter - not a language model. planEdit only describes; applyEditPrompt carries the steps out as ONE undo step
     // (the export step is left to the caller: {exportRequested, exportPreset}).
     Q_INVOKABLE QVariantMap planEdit(const QString& text) const;   // {valid, steps: [text], unknown: [text], exportRequested, exportPreset}
-    Q_INVOKABLE QString applyEditPrompt(const QString& text);       // "" when done, otherwise the first problem
+    Q_INVOKABLE QString applyEditPrompt(const QString& text);       // keyword plan + run in one go; "" when done, otherwise the first problem
+    // The panel's flow: previewEdit shows the keyword plan while typing; understandWithLlm asks the local language model (async, "" = started) and
+    // shows ITS plan when it arrives (a failure keeps the keyword plan and emits llmFailed); applyPendingPlan runs what is shown (one undo step).
+    Q_INVOKABLE void previewEdit(const QString& text);
+    Q_INVOKABLE QString understandWithLlm(const QString& text);
+    Q_INVOKABLE QString applyPendingPlan();
     Q_INVOKABLE QString runAssistant(const QString& text);                // "" when started / done, otherwise a message
 
     // Tests and shutdown.
@@ -94,6 +106,8 @@ signals:
     void statusChanged();
     void resultsChanged();
     void trackRegionChanged();
+    void pendingPlanChanged();
+    void llmFailed(const QString& message);
     void finished(const QString& task, bool ok);
 
 private:
@@ -106,6 +120,13 @@ private:
     ProjectManager* m_project;
     SettingsManager* m_settings;
     ModelManager m_models;
+    LocalLlm m_llm;
+    ai::EditPlan m_pendingPlan;
+    QVariantMap m_pendingMap;
+    QString m_llmText;                       // the text the model is working on (the answer is ignored when the text changed)
+    QVariantMap planToMap(const ai::EditPlan& plan, const QString& source) const;
+    QString executePlan(const ai::EditPlan& plan);
+    void setPending(const ai::EditPlan& plan, const QString& source);
     QThread* m_thread = nullptr;
     std::atomic_bool m_cancel{false};
     bool m_busy = false;

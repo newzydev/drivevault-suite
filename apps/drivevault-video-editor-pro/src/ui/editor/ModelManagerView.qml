@@ -111,6 +111,91 @@ ColumnLayout {
         AppButton { text: qsTr("Cancel"); variant: "ghost"; implicitHeight: 26; onClicked: root.mm.cancelDownload() }
     }
 
+    // ---- the language model of "Edit by prompt" ---------------------------------------------------------------------------------------
+    readonly property var llm: Ai.llm
+    Connections {
+        target: root.llm
+        function onDownloadFinished(ok, message) {
+            App.toast(ok ? qsTr("Language model downloaded.") : qsTr("Download failed: %1").arg(message), ok ? "success" : "warning")
+        }
+    }
+    ConfirmDialog {
+        id: deleteLlmDialog
+        title: qsTr("Delete the language model?")
+        message: qsTr("The model file is removed from the model folder. You can download it again later.")
+        primaryText: qsTr("Delete")
+        dangerPrimary: true
+        onPrimary: { const e = root.llm.remove(); if (e !== "") App.toast(e, "warning") }
+    }
+    Rectangle {
+        Layout.fillWidth: true
+        Layout.topMargin: 8
+        implicitHeight: llmColumn.implicitHeight + 20
+        radius: Theme.radiusSmall + 2
+        color: Theme.surface
+        border.width: 1
+        border.color: root.llm.available ? Theme.accent : Theme.borderSubtle
+        ColumnLayout {
+            id: llmColumn
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 6
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+                Text { Layout.fillWidth: true; text: qsTr("Language model for prompts (%1)").arg(root.llm.modelName); font.pixelSize: Theme.fontSm; font.weight: Font.DemiBold; color: Theme.text; elide: Text.ElideRight }
+                StatusBadge {
+                    objectName: "llmStatus"
+                    kind: !root.llm.engineAvailable ? "unsupported" : root.llm.installed ? "available" : "modelRequired"
+                    label: !root.llm.engineAvailable ? qsTr("Engine missing") : root.llm.installed ? qsTr("Ready") : qsTr("Not installed")
+                }
+            }
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("Understands free Thai and English sentences for \"Edit by prompt\". It runs on this computer only (about 3 GB of memory while it works) and the plan is always shown before anything is changed. Qwen3.5 by Alibaba (Apache 2.0), run by llama.cpp (MIT).")
+                font.pixelSize: Theme.fontXs
+                color: Theme.textSecondary
+                wrapMode: Text.Wrap
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+                AppButton {
+                    objectName: "llmDownload"
+                    visible: !root.llm.installed && root.llm.engineAvailable && !root.llm.downloading
+                    text: qsTr("Download (%1 MB)").arg(root.llm.modelSizeMb)
+                    iconName: "import"
+                    implicitHeight: 28
+                    onClicked: { const e = root.llm.download(); if (e !== "") App.toast(e, "warning") }
+                }
+                AppButton { visible: root.llm.downloading; text: qsTr("Cancel"); variant: "ghost"; implicitHeight: 26; onClicked: root.llm.cancelDownload() }
+                Rectangle {
+                    visible: root.llm.downloading
+                    Layout.fillWidth: true
+                    height: 6
+                    radius: 3
+                    color: Theme.surfaceHover
+                    Rectangle { width: parent.width * root.llm.downloadProgress; height: parent.height; radius: 3; color: Theme.accent }
+                }
+                Text { visible: root.llm.downloading; text: Math.round(root.llm.downloadProgress * 100) + "%"; font.pixelSize: Theme.fontXs; color: Theme.textSecondary }
+                Item { visible: !root.llm.downloading; Layout.fillWidth: true }
+                AppSwitch {
+                    objectName: "llmEnable"
+                    visible: root.llm.installed
+                    checked: root.llm.enabled
+                    onToggled: root.llm.enabled = checked
+                    Accessible.name: qsTr("Use the language model")
+                }
+                IconButton {
+                    visible: root.llm.installed
+                    iconName: "trash"
+                    tip: qsTr("Delete the model file")
+                    onClicked: deleteLlmDialog.open()
+                }
+            }
+        }
+    }
+
     RowLayout {
         Layout.fillWidth: true
         AppButton { objectName: "modelImport"; iconName: "folder"; text: qsTr("Import model…"); onClicked: importDialog.open() }
@@ -118,7 +203,7 @@ ColumnLayout {
     }
     Text {
         Layout.fillWidth: true
-        text: qsTr("Downloads only start when you press Download. Models come from the whisper.cpp project on Hugging Face; audio and video never leave this computer.")
+        text: qsTr("Downloads only start when you press Download. Speech models come from the whisper.cpp project and the language model from Unsloth, both on Hugging Face; audio, video and your prompts never leave this computer.")
         font.pixelSize: Theme.fontXs
         color: Theme.textDisabled
         wrapMode: Text.Wrap

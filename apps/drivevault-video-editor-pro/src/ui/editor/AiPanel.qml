@@ -144,7 +144,8 @@ Item {
                 controlled: true
                 expanded: root.openSection === "edit"
                 onToggleRequested: root.toggleSection("edit")
-                property var plan: Ai.planEdit(promptField.text)
+                property var plan: Ai.pendingPlan
+                readonly property var llm: Ai.llm
 
                 Rectangle {
                     Layout.fillWidth: true
@@ -167,6 +168,13 @@ Item {
                             font.pixelSize: Theme.fontSm
                             leftPadding: 10; rightPadding: 10; topPadding: 8; bottomPadding: 8
                             background: null
+                            onTextChanged: Ai.previewEdit(text)               // the keyword plan, instantly; the language model answers when asked
+                            Keys.onPressed: event => {
+                                if ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
+                                    event.accepted = true
+                                    understandButton.clicked()
+                                }
+                            }
                         }
                     }
                 }
@@ -221,17 +229,42 @@ Item {
                         wrapMode: Text.Wrap
                     }
                 }
+                Connections {
+                    target: Ai
+                    function onLlmFailed(message) { App.toast(qsTr("The language model could not help: %1 The keyword plan is shown instead.").arg(message), "warning") }
+                }
                 RowLayout {
                     Layout.fillWidth: true
+                    spacing: 8
+                    StatusBadge {
+                        visible: editSection.plan.steps.length > 0 || editSection.plan.unknown.length > 0
+                        kind: editSection.plan.source === "ai" ? "info" : "available"
+                        label: editSection.plan.source === "ai" ? qsTr("Understood by the language model") : qsTr("Understood by keywords")
+                    }
+                    Item { Layout.fillWidth: true }
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+                    AppButton {
+                        id: understandButton
+                        objectName: "aiEditUnderstand"
+                        visible: editSection.llm.available
+                        iconName: "sparkle"
+                        text: editSection.llm.busy ? (editSection.llm.state === "starting" ? qsTr("Starting the model…") : qsTr("Thinking…")) : qsTr("Understand with local AI")
+                        enabled: promptField.text.trim() !== "" && !editSection.llm.busy && !Ai.busy
+                        onClicked: { if (enabled) { const err = Ai.understandWithLlm(promptField.text); if (err !== "") root.report(err) } }
+                        AppToolTip { visible: parent.hovered; text: qsTr("Ctrl+Enter. The model runs on this PC only; the first answer takes longer while it starts.") }
+                    }
                     AppButton {
                         objectName: "aiEditRun"
                         variant: "primary"
                         iconName: "sparkle"
                         text: qsTr("Edit")
-                        enabled: editSection.plan.valid && Projects.isOpen
+                        enabled: editSection.plan.valid && Projects.isOpen && !editSection.llm.busy
                         onClicked: {
-                            const plan = Ai.planEdit(promptField.text)
-                            const err = Ai.applyEditPrompt(promptField.text)
+                            const plan = Ai.pendingPlan
+                            const err = Ai.applyPendingPlan()
                             if (err !== "")
                                 root.report(err)
                             else
@@ -242,7 +275,24 @@ Item {
                     }
                     Item { Layout.fillWidth: true }
                 }
-                Note { text: qsTr("Works offline on this PC with a fixed set of Thai and English words (it is not a chat model). It can place all clips, split, add text, effects, transitions and filters, and start an export. Put the words of a text in quotation marks. Anything it does not understand is listed above and skipped.") }
+                Text {
+                    Layout.fillWidth: true
+                    visible: editSection.llm.busy
+                    text: qsTr("The language model is working on this PC. Nothing is sent anywhere.")
+                    font.pixelSize: Theme.fontXs
+                    color: Theme.textSecondary
+                    wrapMode: Text.Wrap
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: !editSection.llm.available && editSection.llm.enabled
+                    text: editSection.llm.engineAvailable ? qsTr("To understand free sentences, install the language model in the Speech models section below.")
+                                                          : qsTr("The language model engine is not part of this installation.")
+                    font.pixelSize: Theme.fontXs
+                    color: Theme.textDisabled
+                    wrapMode: Text.Wrap
+                }
+                Note { text: qsTr("Works offline on this PC with a fixed set of Thai and English words (it is not a chat model) and, when the language model is installed, understands free sentences too. It can place all clips, split, add text, effects, transitions and filters, and start an export. Put the words of a text in quotation marks. Anything it does not understand is listed above and skipped.") }
             }
 
             // ---- assistant -----------------------------------------------------------------------------------

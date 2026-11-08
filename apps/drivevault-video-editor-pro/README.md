@@ -5,7 +5,7 @@
 Native Windows desktop video editor - C++20, Qt 6 / Qt Quick, FFmpeg, CMake. UI languages: ไทย / English.
 Master specification: [`DriveVault-Video-Editor-Pro-Claude-Code.md`](../../docs/spec/DriveVault-Video-Editor-Pro-Claude-Code.md).
 
-## Status: Version 1.8.0 - Phase 6 product packaging (on top of the Phase 3 editor, the Phase 4 AI tools and the Phase 5 performance work)
+## Status: Version 1.9.0 - Phase 6 product packaging (on top of the Phase 3 editor, the Phase 4 AI tools and the Phase 5 performance work)
 
 Import -> edit -> grade / animate / title -> mix -> save -> reopen -> export works end to end and is covered by automated tests.
 Anything not listed as implemented is visibly disabled or labelled with the phase that delivers it.
@@ -89,7 +89,7 @@ Command line: `DriveVaultVideoEditorPro.exe [project.dvproj] [options]`
 ```powershell
 .\scripts\package.ps1              # build + 14 test suites + windeployqt + runtime + docs + gates + Inno Setup  (add -Sign for a release)
 # -> dist\DriveVault-Video-Editor-Pro-Setup-x64.exe (+ .sha256, dependency-manifest.json)   (about 66 MB incl. Master Pro)
-.\scripts\test-installer.ps1       # 66 checks: install (+ Master Pro installed automatically) -> launch -> export -> Master Pro lists the program -> uninstall -> reinstall -> default location -> suite / hub rules
+.\scripts\test-installer.ps1       # 68 checks: install (+ Master Pro installed automatically) -> launch -> export -> Master Pro lists the program -> uninstall -> reinstall -> default location -> suite / hub rules
 .\scripts\check-dependencies.ps1 -AppDir dist\stage   # clean-machine proxy: every import of every shipped file resolves
 .\scripts\license-audit.ps1 -StageDir dist\stage      # owner + license of every file, FFmpeg must be LGPL, notices present
 .\scripts\test-signing.ps1         # signing pipeline on a copy with a throw-away TEST certificate

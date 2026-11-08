@@ -8,6 +8,7 @@
 #include "ai/AudioAnalysis.h"
 #include "ai/AudioEnhancer.h"
 #include "ai/EditPlanner.h"
+#include "ai/LocalLlm.h"
 #include "ai/ModelManager.h"
 #include "ai/Tracker.h"
 #include "ai/Transcriber.h"
@@ -17,6 +18,8 @@
 #include "project/RecentProjectsModel.h"
 #include "settings/SettingsManager.h"
 
+#include <QCryptographicHash>
+#include <QJsonDocument>
 #include <QProcess>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -187,6 +190,84 @@ private slots:
         QCOMPARE(ai::parseEditPrompt("make a coffee").unknown.size(), 1);
         QCOMPARE(ai::parseEditPrompt("add the neon text Open now").steps.value(0).id, QStringLiteral("neonPink"));
         QCOMPARE(ai::parseEditPrompt("add the neon text Open now").steps.value(0).text, QStringLiteral("Open now"));
+    }
+
+    void theAnswerOfTheLanguageModelIsCheckedBeforeAnythingRuns()
+    {
+        using K = ai::EditStep;
+        const QByteArray good = R"({"steps":[{"action":"place_all"},{"action":"apply_filter","name":"mono"},{"action":"apply_transition","name":"slide","direction":"in"},
+            {"action":"add_text","text":"Hello","name":"gold","seconds":3},{"action":"split_every","every":10},{"action":"export","preset":"4k"}]})";
+        ai::EditPlan p = ai::planFromLlmJson(good);
+        QCOMPARE(p.unknown.size(), 0);
+        QCOMPARE(p.steps.size(), 6);
+        QCOMPARE(p.steps[1].kind, K::Look);
+        QCOMPARE(p.steps[2].direction, QStringLiteral("in"));
+        QCOMPARE(p.steps[3].text, QStringLiteral("Hello"));
+        QCOMPARE(p.steps[3].seconds, 3.0);
+        QCOMPARE(p.steps[5].preset, QStringLiteral("4k"));
+        // nothing outside the catalogs or the number ranges gets through
+        const QByteArray bad = R"({"steps":[{"action":"apply_filter","name":"nonsense"},{"action":"format_disk"},{"action":"split_at","seconds":-5},
+            {"action":"apply_transition","name":"zoomOut","direction":"out"},{"action":"export","preset":"8k"},{"action":"apply_effect","name":"blur"}]})";
+        p = ai::planFromLlmJson(bad);
+        QCOMPARE(p.steps.size(), 1);
+        QCOMPARE(p.steps[0].id, QStringLiteral("blur"));
+        QCOMPARE(p.unknown.size(), 5);
+        QCOMPARE(ai::planFromLlmJson("this is not json").steps.size(), 0);
+        QCOMPARE(ai::planFromLlmJson("{\"steps\": []}").unknown.size(), 0);
+        // the prompt and the grammar are made from the same catalogs
+        QVERIFY(ai::llmSystemPrompt().contains("mono=Black & white/ขาวดำ"));
+        QVERIFY(QJsonDocument(ai::llmSchema()).toJson().contains("tealOrange"));
+    }
+
+    void theLanguageModelFileIsDownloadedAndCheckedOnlyOnRequest()
+    {
+        QSignalSpy done(m_ai->llm(), &LocalLlm::downloadFinished);
+        QByteArray payload(1024 * 1024, 'x');
+        QFile src(p("fake-model.gguf"));
+        QVERIFY(src.open(QIODevice::WriteOnly) && src.write(payload) == payload.size());
+        src.close();
+        const QString url = QUrl::fromLocalFile(p("fake-model.gguf")).toString();
+        // a wrong checksum: the file is deleted and the reason is reported
+        QVERIFY(m_ai->llm()->downloadFrom(url, payload.size(), QString(64, QLatin1Char('0'))).isEmpty());
+        QTRY_COMPARE_WITH_TIMEOUT(done.count(), 1, 10000);
+        QCOMPARE(done.takeFirst().at(0).toBool(), false);
+        QVERIFY(!QFileInfo::exists(m_ai->llm()->modelFolder() + "/Qwen3.5-4B-Q4_K_M.gguf"));
+        QVERIFY(!QFileInfo::exists(m_ai->llm()->modelFolder() + "/Qwen3.5-4B-Q4_K_M.gguf.part"));
+        // the right size and checksum: the file is kept
+        const QString sha = QString::fromLatin1(QCryptographicHash::hash(payload, QCryptographicHash::Sha256).toHex());
+        QVERIFY(m_ai->llm()->downloadFrom(url, payload.size(), sha).isEmpty());
+        QTRY_COMPARE_WITH_TIMEOUT(done.count(), 1, 10000);
+        QCOMPARE(done.takeFirst().at(0).toBool(), true);
+        QCOMPARE(QFileInfo(m_ai->llm()->modelFolder() + "/Qwen3.5-4B-Q4_K_M.gguf").size(), qint64(payload.size()));
+        QFile::remove(m_ai->llm()->modelFolder() + "/Qwen3.5-4B-Q4_K_M.gguf");
+    }
+
+    void theLocalLanguageModelUnderstandsFreeSentences()
+    {
+        LocalLlm* llm = m_ai->llm();
+        if (!llm->engineAvailable() || !llm->installed())
+            QSKIP("llama-server or the language model is not installed on this machine");
+        m_settings->set("aiUseLanguageModel", true);
+        QVERIFY(llm->available());
+        QSignalSpy failed(m_ai.get(), &AiController::llmFailed);
+        QVERIFY(m_ai->understandWithLlm(QString::fromUtf8("ทำให้ภาพเป็นขาวดำ แล้วบันทึกเป็นวิดีโอ 4k")).isEmpty());
+        QVERIFY(!m_ai->understandWithLlm("again").isEmpty());                     // one request at a time
+        llm->waitForIdle(180000);
+        QCOMPARE(failed.count(), 0);
+        QVariantMap plan = m_ai->pendingPlan();
+        QCOMPARE(plan.value("source").toString(), QStringLiteral("ai"));
+        QVERIFY2(plan.value("steps").toList().size() >= 2, qPrintable(QString::number(plan.value("steps").toList().size())));
+        QCOMPARE(plan.value("exportRequested").toBool(), true);
+        QCOMPARE(plan.value("exportPreset").toString(), QStringLiteral("4k"));
+        // a sentence that is not about editing gives an empty plan
+        QVERIFY(m_ai->understandWithLlm(QString::fromUtf8("ชงกาแฟให้หน่อย")).isEmpty());
+        llm->waitForIdle(180000);
+        QCOMPARE(m_ai->pendingPlan().value("valid").toBool(), false);
+        // typing replaces the plan of the model with the keyword plan
+        m_ai->previewEdit("add the filter sepia");
+        QCOMPARE(m_ai->pendingPlan().value("source").toString(), QStringLiteral("keyword"));
+        llm->stopServer();
+        QVERIFY(!llm->busy());
     }
 
     void aFolderBecomesAProjectAndAPromptEditsIt()
