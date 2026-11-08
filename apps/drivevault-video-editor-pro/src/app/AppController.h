@@ -10,6 +10,7 @@ class AppController : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString screen READ screen WRITE setScreen NOTIFY screenChanged FINAL)           // "home" | "editor"
     Q_PROPERTY(QString workspace READ workspace WRITE setWorkspace NOTIFY workspaceChanged FINAL) // media|edit|color|audio|effects|export
+    Q_PROPERTY(bool drawAllClips READ drawAllClips CONSTANT FINAL)       // diagnostics: DV_TIMELINE_ALL=1 builds a delegate for every clip (the old behaviour)
     Q_PROPERTY(bool settingsOpen READ settingsOpen WRITE setSettingsOpen NOTIFY settingsOpenChanged FINAL)
     Q_PROPERTY(QString settingsPage READ settingsPage WRITE setSettingsPage NOTIFY settingsPageChanged FINAL)
     Q_PROPERTY(bool newProjectOpen READ newProjectOpen WRITE setNewProjectOpen NOTIFY newProjectOpenChanged FINAL)
@@ -22,6 +23,7 @@ public:
     QString screen() const { return m_screen; }
     QString workspace() const { return m_workspace; }
     bool settingsOpen() const { return m_settingsOpen; }
+    bool drawAllClips() const { return qEnvironmentVariableIntValue("DV_TIMELINE_ALL") != 0; }
     QString settingsPage() const { return m_settingsPage; }
     bool newProjectOpen() const { return m_newProjectOpen; }
     bool aboutOpen() const { return m_aboutOpen; }

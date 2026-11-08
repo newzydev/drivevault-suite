@@ -19,20 +19,24 @@ ApplicationWindow {
     property bool forceClose: false
     property var pendingAction: null
 
+    // The window opens the way it was closed: maximized or normal, with its normal size and place. The maximized flag does not depend on a stored
+    // normal size (a window that was maximized from the first start has none).
     function restoreGeometry() {
         const g = AppSettings.state("window", null)
-        if (!g || !g.w || !g.h)
+        if (!g)
             return
-        const w = Math.max(minimumWidth, g.w)
-        const h = Math.max(minimumHeight, g.h)
-        // Only restore the position if it is still on a visible screen.
-        const onScreen = g.x > -w + 120 && g.y >= 0 && g.x < Screen.desktopAvailableWidth - 120
-                         && g.y < Screen.desktopAvailableHeight - 80
-        width = w
-        height = h
-        if (onScreen) {
-            x = g.x
-            y = g.y
+        if (g.w && g.h) {
+            const w = Math.max(minimumWidth, g.w)
+            const h = Math.max(minimumHeight, g.h)
+            // Only restore the position if it is still on a visible screen.
+            const onScreen = g.x > -w + 120 && g.y >= 0 && g.x < Screen.desktopAvailableWidth - 120
+                             && g.y < Screen.desktopAvailableHeight - 80
+            width = w
+            height = h
+            if (onScreen) {
+                x = g.x
+                y = g.y
+            }
         }
         if (g.maximized)
             showMaximized()
@@ -41,9 +45,10 @@ ApplicationWindow {
     function saveGeometry() {
         const maximized = visibility === Window.Maximized
         const previous = AppSettings.state("window", {}) || {}      // the stored value can be null
-        AppSettings.setState("window", maximized
-            ? { x: previous.x, y: previous.y, w: previous.w, h: previous.h, maximized: true }
-            : { x: x, y: y, w: width, h: height, maximized: false })
+        if (maximized)       // keep the normal geometry that was stored (the current one is the size of the screen)
+            AppSettings.setState("window", { x: previous.x, y: previous.y, w: previous.w, h: previous.h, maximized: true })
+        else
+            AppSettings.setState("window", { x: x, y: y, w: width, h: height, maximized: false })
     }
 
     function applyTitleBar() {
@@ -141,7 +146,8 @@ ApplicationWindow {
     }
     onWidthChanged: geometryTimer.restart()
     onHeightChanged: geometryTimer.restart()
-    Timer { id: geometryTimer; interval: 600; onTriggered: if (window.visibility === Window.Windowed) window.saveGeometry() }
+    onVisibilityChanged: geometryTimer.restart()
+    Timer { id: geometryTimer; interval: 600; onTriggered: if (window.visibility === Window.Windowed || window.visibility === Window.Maximized) window.saveGeometry() }
 
     // ---- File dialogs ------------------------------------------------------------------------
     FileDialog {

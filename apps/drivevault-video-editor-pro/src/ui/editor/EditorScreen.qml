@@ -73,7 +73,7 @@ Rectangle {
     }
 
     function zoomBy(factor) {
-        pxPerFrame = Math.max(0.25, Math.min(40, pxPerFrame * factor))
+        pxPerFrame = timelinePanel.clampZoom(pxPerFrame * factor)
     }
 
     Component.onCompleted: Qt.callLater(applyWorkspaceLayout)

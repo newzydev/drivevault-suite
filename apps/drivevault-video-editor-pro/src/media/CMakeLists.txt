@@ -22,6 +22,7 @@ add_library(dv_media STATIC
     MediaProbe.cpp MediaProbe.h
     HardwareDecode.cpp HardwareDecode.h
     VideoReader.cpp VideoReader.h
+    FrameThumbs.cpp FrameThumbs.h
     AudioReader.cpp AudioReader.h
     MediaCache.cpp MediaCache.h
     MediaLibrary.cpp MediaLibrary.h)

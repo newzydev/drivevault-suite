@@ -3,6 +3,7 @@
 #include "core/AppPaths.h"
 #include "media/MediaCache.h"
 #include "playback/FrameView.h"
+#include "timeline/TimelineViewModel.h"
 
 #include <QQmlEngine>
 #include <qqml.h>
@@ -54,6 +55,8 @@ void AppContext::registerQmlTypes()
     qmlRegisterSingletonInstance(uri, 1, 0, "Proxies", &proxies);
     qmlRegisterType<FrameView>(uri, 1, 0, "FrameView");
     qmlRegisterType<WaveformItem>(uri, 1, 0, "WaveformItem");
+    qmlRegisterType<FrameStripItem>(uri, 1, 0, "FrameStripItem");
+    qmlRegisterType<TimelineViewModel>(uri, 1, 0, "TimelineViewModel");
     qmlRegisterUncreatableType<TimelineModel>(uri, 1, 0, "TimelineModel", QStringLiteral("owned by Projects"));
     qmlRegisterUncreatableType<MediaLibrary>(uri, 1, 0, "MediaLibrary", QStringLiteral("owned by Projects"));    qmlRegisterUncreatableType<TrackListModel>(uri, 1, 0, "TrackListModel", QStringLiteral("owned by Projects"));
 }

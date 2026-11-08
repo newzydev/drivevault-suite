@@ -8,6 +8,7 @@ import DriveVault.Backend
 // clips with thumbnails and waveforms - move, trim, split, delete, drop media from the media panel.
 Rectangle {
     id: root
+    objectName: "timelinePanel"
 
     property real pxPerFrame: 4
     property string tool: "select"        // select | ripple | roll | slip | slide
@@ -39,7 +40,70 @@ Rectangle {
         return Projects.tracks.count      // below the last track
     }
     readonly property int fps: Math.max(1, Projects.nominalFps)
-    readonly property int totalFrames: fps * 60 * 30   // 30 minutes of addressable timeline
+    // the addressable timeline: at least 10 minutes, and a quarter more than the project (the width in pixels stays small enough to be exact)
+    readonly property int totalFrames: Math.max(fps * 60 * 10, Math.ceil(tl.durationFrames * 1.25) + fps * 120)
+
+    // zoom: all the way out shows the whole project (never less than a 20 second view); all the way in shows one frame 200 pixels wide
+    readonly property real zoomMax: 200
+    readonly property real zoomMin: Math.min(0.25, Math.max(0.002, (lanes.width - 40) / Math.max(tl.durationFrames, fps * 5)))
+    function clampZoom(v) { return Math.max(zoomMin, Math.min(zoomMax, v)) }
+    // zoom with the pixel `zoomAnchorX` of the lanes (the mouse for the wheel, otherwise the playhead or the middle) staying where it is
+    property real zoomAnchorX: -1
+    property real prevPx: pxPerFrame
+    onPxPerFrameChanged: {
+        if (prevPx > 0 && lanes.width > 0) {
+            let ax = zoomAnchorX
+            if (ax < 0) {
+                const phx = Projects.playheadFrame * prevPx - lanes.contentX
+                ax = phx >= 0 && phx <= lanes.width ? phx : lanes.width / 2
+            }
+            const frame = (lanes.contentX + ax) / prevPx
+            lanes.contentX = Math.max(0, Math.min(frame * pxPerFrame - ax, Math.max(0, totalFrames * pxPerFrame - lanes.width)))
+        }
+        prevPx = pxPerFrame
+        zoomAnchorX = -1
+        updateWindow(true)
+    }
+    onZoomMinChanged: if (pxPerFrame < zoomMin) zoomRequested(zoomMin)
+
+    // the part of the timeline that is on screen (in pixels): the clips only draw their pictures there
+    readonly property real viewLeftPx: lanes.contentX
+    readonly property real viewWidthPx: lanes.width
+
+    // only the clips that touch the visible frames (plus one screen on each side) get a delegate; the window moves when the view comes near its edge
+    property real windowFirst: 0
+    property real windowLast: 6000
+    property real windowViewFirst: 0          // where the view started when the window was last moved
+    function updateWindow(force) {
+        if (lanes.width <= 0 || pxPerFrame <= 0)
+            return
+        if (App.drawAllClips) {                 // diagnostics: the old behaviour, a delegate for every clip
+            windowFirst = 0
+            windowLast = 1e12
+            return
+        }
+        const vf = lanes.contentX / pxPerFrame
+        const vl = (lanes.contentX + lanes.width) / pxPerFrame
+        const span = Math.max(1, vl - vf)
+        // small steps (a tenth of a screen): a few delegates are made per scroll step instead of a whole screen at once
+        if (force || Math.abs(vf - windowViewFirst) > span * 0.1 || vf < windowFirst || vl > windowLast) {
+            windowViewFirst = vf
+            windowFirst = Math.max(0, vf - span)
+            windowLast = vl + span
+        }
+    }
+    Connections {
+        target: lanes
+        function onContentXChanged() { root.updateWindow(false) }
+        function onWidthChanged() { root.updateWindow(true) }
+    }
+    Component.onCompleted: Qt.callLater(root.updateWindow, true)
+    TimelineViewModel {
+        id: clipWindow
+        source: Projects.timeline
+        firstFrame: root.windowFirst
+        lastFrame: root.windowLast
+    }
 
     color: Theme.backgroundAlt
     radius: Theme.radius
@@ -241,22 +305,22 @@ Rectangle {
                 tip: qsTr("Snapping")
                 onToggled: AppSettings.set("snapping", checked)
             }
-            IconButton { iconName: "zoomOut"; tip: qsTr("Zoom out") + "  (-)"; onClicked: root.zoomRequested(Math.max(0.25, root.pxPerFrame * 0.8)) }
+            IconButton { iconName: "zoomOut"; tip: qsTr("Zoom out") + "  (-)"; onClicked: root.zoomRequested(root.clampZoom(root.pxPerFrame * 0.8)) }
             AppSlider {
                 implicitWidth: 110
-                from: Math.log(0.25)
-                to: Math.log(40)
+                from: Math.log(root.zoomMin)
+                to: Math.log(root.zoomMax)
                 value: Math.log(root.pxPerFrame)
-                onMoved: root.zoomRequested(Math.exp(value))
+                onMoved: root.zoomRequested(root.clampZoom(Math.exp(value)))
                 Accessible.name: qsTr("Timeline zoom")
             }
-            IconButton { iconName: "zoomIn"; tip: qsTr("Zoom in") + "  (+)"; onClicked: root.zoomRequested(Math.min(40, root.pxPerFrame * 1.25)) }
+            IconButton { iconName: "zoomIn"; tip: qsTr("Zoom in") + "  (+)"; onClicked: root.zoomRequested(root.clampZoom(root.pxPerFrame * 1.25)) }
             IconButton {
                 iconName: "fit"
                 tip: qsTr("Fit timeline")
                 onClicked: {
                     const dur = Math.max(root.tl.durationFrames, root.fps * 5)
-                    root.zoomRequested(Math.max(0.25, Math.min(40, (lanes.width - 40) / dur)))
+                    root.zoomRequested(root.clampZoom((lanes.width - 40) / dur))
                     lanes.contentX = 0
                 }
             }
@@ -428,6 +492,7 @@ Rectangle {
 
                 Flickable {
                     id: lanes
+                    objectName: "timelineLanes"
                     y: root.rulerHeight
                     width: parent.width
                     height: parent.height - root.rulerHeight
@@ -453,16 +518,20 @@ Rectangle {
                     }
                     WheelHandler {
                         acceptedModifiers: Qt.ControlModifier
-                        onWheel: event => root.zoomRequested(Math.max(0.25, Math.min(40, root.pxPerFrame * (event.angleDelta.y > 0 ? 1.15 : 0.87))))
+                        onWheel: event => {
+                            root.zoomAnchorX = Math.max(0, Math.min(lanes.width, event.x - lanes.contentX))      // the frame under the mouse stays under the mouse
+                            root.zoomRequested(root.clampZoom(root.pxPerFrame * (event.angleDelta.y > 0 ? 1.15 : 0.87)))
+                        }
                     }
                     WheelHandler {
                         acceptedModifiers: Qt.ShiftModifier
                         onWheel: event => lanes.contentX = Math.max(0, Math.min(lanes.contentWidth - lanes.width, lanes.contentX - (event.angleDelta.y || event.angleDelta.x)))
                     }
 
-                    // lane backgrounds
+                    // lane backgrounds: only as wide as the screen (a project hours long is millions of pixels wide), kept in view while scrolling
                     Column {
-                        width: lanes.contentWidth
+                        x: lanes.contentX
+                        width: lanes.width
                         Repeater {
                             model: Projects.tracks
                             delegate: Rectangle {
@@ -471,7 +540,7 @@ Rectangle {
                                 required property bool muted
                                 required property bool trackVisible
                                 required property bool locked
-                                width: lanes.contentWidth
+                                width: lanes.width
                                 height: root.heightOf(index)
                                 color: kind === "video" ? Theme.videoTrack : kind === "subtitle" ? Theme.subtitleTrack : Theme.audioTrack
                                 opacity: (kind !== "audio" ? trackVisible : !muted) ? 1 : 0.45
@@ -494,7 +563,7 @@ Rectangle {
                         }
 
                         Repeater {
-                            model: Projects.timeline
+                            model: clipWindow
                             delegate: TimelineClip {
                                 pxPerFrame: root.pxPerFrame
                                 panel: root

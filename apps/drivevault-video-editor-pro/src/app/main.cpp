@@ -1,4 +1,5 @@
 #include "AppContext.h"
+#include "UiBench.h"
 
 #include "core/AppPaths.h"
 #include "core/Logger.h"
@@ -83,8 +84,9 @@ int main(int argc, char* argv[])
     QCommandLineOption sizeOption(QStringLiteral("size"), QStringLiteral("Window size WxH for --screenshot."), QStringLiteral("WxH"));
     QCommandLineOption exportOption(QStringLiteral("export"), QStringLiteral("Render the opened project to <file> (.mp4, .mov or .mkv) without showing the UI, then exit."), QStringLiteral("file"));
     QCommandLineOption presetOption(QStringLiteral("preset"), QStringLiteral("Resolution preset for --export: 720p, 1080p, 1440p or 4k."), QStringLiteral("name"), QStringLiteral("1080p"));
+    QCommandLineOption benchOption(QStringLiteral("ui-bench"), QStringLiteral("Drive the open project (scroll, zoom, play) and write a smoothness report to <file> (diagnostics)."), QStringLiteral("file"));
     QCommandLineOption selectOption(QStringLiteral("select-clip"), QStringLiteral("Select the clip with this index (0 = first) before --screenshot (diagnostics)."), QStringLiteral("index"));
-    parser.addOptions({dataDirOption, screenshotOption, screenOption, pageOption, workspaceOption, langOption, sizeOption, exportOption, presetOption, selectOption});
+    parser.addOptions({dataDirOption, screenshotOption, screenOption, pageOption, workspaceOption, langOption, sizeOption, exportOption, presetOption, selectOption, benchOption});
     parser.process(app);
 
     dv::logging::init();
@@ -161,6 +163,18 @@ int main(int argc, char* argv[])
     }
 
     auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst());
+
+    if (parser.isSet(benchOption) && window) {
+        controller.setScreen(QStringLiteral("editor"));
+        controller.setWorkspace(QStringLiteral("edit"));
+        if (parser.isSet(sizeOption)) {
+            const QStringList wh = parser.value(sizeOption).split(QLatin1Char('x'));
+            if (wh.size() == 2)
+                window->resize(wh.at(0).toInt(), wh.at(1).toInt());
+        }
+        const QString file = parser.value(benchOption);
+        QTimer::singleShot(0, &app, [&, window, file] { QCoreApplication::exit(dv::runUiBench(window, &projects, &ctx.playback, file)); });
+    }
 
     if (parser.isSet(screenshotOption) && window) {
         const QString screen = parser.value(screenOption);

@@ -10,11 +10,11 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 
 | Folder | Program |
 |---|---|
-| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.9.1 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
-| `apps/drivevault-master-pro` | DriveVault Master Pro 1.3.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
+| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.10.0 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
+| `apps/drivevault-master-pro` | DriveVault Master Pro 1.3.1 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
 | `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md). |
-| `docs` | `suite-integration.md` (contract between programs and hub), `spec/` (the owner's master specification - read-only). |
+| `docs` | `suite-integration.md` (contract between programs and hub). |
 | `.tools` (not in git) | Portable toolchain: CMake, Ninja, Qt 6.8.3 msvc2022_64, Inno Setup, FFmpeg (LGPL shared), whisper.cpp + models, Python. |
 
 Planned (do not pretend they exist): Image Editor Pro, Audio Editor Pro. New programs go in `apps/drivevault-<name>` (lower case, words joined with `-`).
@@ -101,7 +101,7 @@ Edit the templates (or the per-product section 6 in the script), run the script,
 | new feature, new setting, new file format support | minor | 1.0.1 -> 1.1.0 |
 | not compatible with what users have (project file or settings cannot be read any more, install layout / registry contract changes) | major | 1.1.0 -> 2.0.0 |
 - Any commit that changes what the program does bumps that program's version **in the same commit**. Docs / agent files / scripts / comments / tests only: no bump.
-- There is no bump script yet, so update **every** place by hand and check with a search for the old number (exclude `build/`, `dist/`, `.tools/`, `docs/spec/`): `CMakeLists.txt` (`project(... VERSION ...)`, the single source for the exe / version resource where used), `src/**/app.rc`, `installer/windows/*.iss` (the `#define AppVersion` default - the Video Editor one is only a fallback, `package.ps1` passes the real number; Master Pro's is the real one), the app's `README.md`, the **download table of the root `README.md`** (one plain Markdown table, a row per program incl. the planned ones; per released program: the version cell, the badge `Download-<version>` / `alt` text and the two links: `releases/download/<tag>/<setup file>` and `releases/tag/<tag>`; the links work once the owner publishes the Release), user guides, `docs/release-notes.txt`, and the tests / `scripts/test-installer.ps1` that assert the number. Keep the Inno `AppId` unchanged.
+- There is no bump script yet, so update **every** place by hand and check with a search for the old number (exclude `build/`, `dist/`, `.tools/`): `CMakeLists.txt` (`project(... VERSION ...)`, the single source for the exe / version resource where used), `src/**/app.rc`, `installer/windows/*.iss` (the `#define AppVersion` default - the Video Editor one is only a fallback, `package.ps1` passes the real number; Master Pro's is the real one), the app's `README.md`, the **download table of the root `README.md`** (one plain Markdown table, a row per program incl. the planned ones; per released program: the version cell, the badge `Download-<version>` / `alt` text and the two links: `releases/download/<tag>/<setup file>` and `releases/tag/<tag>`; the links work once the owner publishes the Release), user guides, `docs/release-notes.txt`, and the tests / `scripts/test-installer.ps1` that assert the number. Keep the Inno `AppId` unchanged.
 - The Video Editor installer carries Master Pro: when Master Pro's version changes, the installers must be rebuilt with `scripts\build-all.ps1` before the owner publishes a release, so both agree (`NeedMaster` installs the newer one) - not on every commit.
 - Add an entry at the **top** of the program's `docs/release-notes.txt` (`vX.Y.Z (YYYY-MM-DD): ...`) in the same commit; Keep the unsigned-installer note while installers are unsigned.
 - **Publishing a release** (what Master Pro's "Check for updates" reads; contract in `docs/suite-integration.md`). The owner does it on GitHub (Releases > Draft a new release; the `gh` CLI is not installed), after the version commit is pushed and `package.ps1` / `scripts\build-all.ps1` passed:

@@ -1,4 +1,5 @@
 #include "timeline/TimelineModel.h"
+#include "timeline/TimelineViewModel.h"
 
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -28,6 +29,43 @@ class TstTimeline : public QObject {
     }
 
 private slots:
+    void theTimelineViewOnlyHoldsTheClipsOnScreen()
+    {
+        QList<ClipData> clips;
+        for (int i = 0; i < 2000; ++i) {            // 2000 clips of 30 frames, one after another
+            ClipData c;
+            c.id = QStringLiteral("c%1").arg(i);
+            c.trackId = QStringLiteral("V1");
+            c.mediaId = QStringLiteral("v");
+            c.startFrame = qint64(i) * 30;
+            c.durationFrames = 30;
+            clips << c;
+        }
+        m->load(clips);
+        TimelineViewModel view;
+        view.setSource(m.get());
+        QCOMPARE(view.rowCount(), 2000);                              // the default window shows everything until the panel narrows it
+        view.setFirstFrame(300);
+        view.setLastFrame(600);
+        QVERIFY2(view.rowCount() >= 10 && view.rowCount() <= 12, qPrintable(QString::number(view.rowCount())));
+        // the clips that touch the window, in the order of the timeline
+        QCOMPARE(view.index(0, 0).data(TimelineModel::IdRole).toString(), QStringLiteral("c9"));
+        // moving the window adds and removes rows one by one (no reset of the whole list)
+        QSignalSpy reset(&view, &QAbstractItemModel::modelReset);
+        view.setFirstFrame(330);
+        view.setLastFrame(630);
+        QCOMPARE(reset.count(), 0);
+        QCOMPARE(view.index(0, 0).data(TimelineModel::IdRole).toString(), QStringLiteral("c10"));
+        // a clip that is added inside the window shows up, one outside does not
+        QCOMPARE(m->addMedia("vs", 1, 400), QString());
+        view.setFirstFrame(0);
+        view.setLastFrame(60'000);
+        QVERIFY(view.rowCount() > 2000);
+        view.setFirstFrame(1'000'000);
+        view.setLastFrame(2'000'000);
+        QCOMPARE(view.rowCount(), 0);
+    }
+
     void init()
     {
         m = std::make_unique<TimelineModel>();

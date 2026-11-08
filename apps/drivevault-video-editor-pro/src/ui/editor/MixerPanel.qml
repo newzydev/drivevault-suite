@@ -15,16 +15,18 @@ Rectangle {
     border.width: 1
     clip: true
 
+    // the strips look at the clip under the playhead: nothing is recomputed while the tab is hidden (the playhead moves 60 times a second)
     property int rev: 0
     Connections {
         target: Projects.timeline
-        function onClipsChanged() { root.rev++ }
-        function onSelectionChanged() { root.rev++ }
+        function onClipsChanged() { if (root.visible) root.rev++ }
+        function onSelectionChanged() { if (root.visible) root.rev++ }
     }
     Connections {
         target: Projects
-        function onPlayheadChanged() { root.rev++ }
+        function onPlayheadChanged() { if (root.visible) root.rev++ }
     }
+    onVisibleChanged: if (visible) rev++
     function report(error) { if (error !== "") App.toast(error, "warning") }
     function panText(p) { return Math.abs(p) < 0.005 ? qsTr("Centre") : (p < 0 ? "L " : "R ") + Math.round(Math.abs(p) * 100) }
     function dbText(v) { return (v > 0 ? "+" : "") + v.toFixed(1) + " dB" }

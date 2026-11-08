@@ -1,6 +1,6 @@
 # DriveVault Video Editor Pro - rules (adds to the repository root file)
 
-Native Windows non-linear video editor: C++20, Qt 6.8 / Qt Quick (QML), FFmpeg 8.1 (LGPL, shared), CMake, Inno Setup. Version 1.9.1, project file schema 3. Thai + English UI. Master spec: `../../docs/spec/DriveVault-Video-Editor-Pro-Claude-Code.md`
+Native Windows non-linear video editor: C++20, Qt 6.8 / Qt Quick (QML), FFmpeg 8.1 (LGPL, shared), CMake, Inno Setup. Version 1.10.0, project file schema 3. Thai + English UI.
 (phases 1-6 are done: foundation, editing, pro editing, AI, performance, packaging).
 
 ## Layout
@@ -11,7 +11,7 @@ docs/         architecture, roadmap, UI design system, user guides (th/en), rele
 ```
 Output: `build/release/bin/DriveVaultVideoEditorPro.exe` (+ test exes), installer `dist/DriveVault-Video-Editor-Pro-Setup-x64.exe`. Both folders are git-ignored.
 
-## Non-negotiables (from the specification)
+## Non-negotiables
 - No fake features. Anything not working is labelled (status badges), never mocked. AI is optional and offline; the editor must work with no model and no network.
 - No Electron / Tauri / WebView. Heavy media / AI work never runs on the UI thread. Every edit is undoable. User data (projects, exports) is never deleted by the app or the uninstaller.
 - Every visible string is translatable: `qsTr` (QML) / `tr` (C++) in English, Thai in `resources/translations/drivevault_th_TH.ts`.

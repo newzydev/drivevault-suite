@@ -16,6 +16,8 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
+#include <functional>
+
 using dv::ClipData;
 using dv::MediaInfo;
 using dv::MediaProbe;
@@ -768,7 +770,7 @@ private slots:
             QVERIFY2(!path.isEmpty() && QFileInfo::exists(path), name);
         }
         QVERIFY(m_ctx->systemInfo.documentPath("../LICENSE.txt").isEmpty());          // only plain file names are looked up
-        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.9.1"));
+        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.10.0"));
         QVERIFY(m_ctx->systemInfo.productName().contains("Video Editor Pro"));
     }
 
@@ -890,6 +892,53 @@ private slots:
     {
         QCOMPARE(m_ctx->controller.screen(), QStringLiteral("home"));
         QCOMPARE(m_ctx->recents.count(), 1);
+    }
+
+    // A project with hundreds of clips: only the clips on screen get a delegate, and the zoom goes from the whole project to a single frame.
+    void theTimelineOnlyBuildsTheClipsOnScreenAndZoomsFromTheWholeProjectToOneFrame()
+    {
+        auto* projects = &m_ctx->projects;
+        if (projects->isOpen())
+            projects->closeProject();
+        QCOMPARE(projects->createProject("Many", media.filePath("manyprojects"), 1280, 720, "30", 48000), QString());
+        m_ctx->controller.setWorkspace("edit");
+        const QString mediaId = projects->media()->importFile(media.filePath("clip.mp4"));
+        QTRY_VERIFY_WITH_TIMEOUT(projects->media()->isReady(mediaId), 15000);
+        auto* tl = projects->timeline();
+        for (int i = 0; i < 400; ++i)                                      // 400 clips of 2 s, with their sound: 800 clips on the timeline
+            QCOMPARE(tl->addMedia(mediaId, -1, qint64(i) * 60), QString());
+        QCOMPARE(tl->clipCount(), 800);
+
+        QQuickItem* panel = nullptr;
+        QTRY_VERIFY_WITH_TIMEOUT((panel = item("timelinePanel")) != nullptr && panel->isVisible() && panel->width() > 300, 5000);
+        std::function<int(QQuickItem*)> countClips = [&](QQuickItem* root) {
+            int n = root->objectName().startsWith(QLatin1String("clip_")) ? 1 : 0;
+            for (QQuickItem* child : root->childItems())
+                n += countClips(child);
+            return n;
+        };
+        auto zoomTo = [&](double px) {
+            QMetaObject::invokeMethod(panel, "zoomRequested", Q_ARG(double, px));
+            QTest::qWait(200);
+        };
+        // at the normal zoom only the clips of the screen (and a margin) exist
+        zoomTo(4);
+        QTRY_VERIFY_WITH_TIMEOUT(countClips(m_window->contentItem()) > 0 && countClips(m_window->contentItem()) < 150, 5000);
+
+        // zoom limits: 200 px per frame at most; at the least the whole project fits the lanes
+        QCOMPARE(panel->property("zoomMax").toDouble(), 200.0);
+        const double zoomMin = panel->property("zoomMin").toDouble();
+        QVERIFY2(zoomMin > 0 && zoomMin < 0.1, qPrintable(QString::number(zoomMin)));       // 24000 frames in about 1600 px
+        zoomTo(zoomMin);
+        QTRY_COMPARE_WITH_TIMEOUT(panel->property("pxPerFrame").toDouble(), zoomMin, 2000);
+        QVERIFY(tl->durationFrames() * zoomMin <= panel->width());                            // everything is inside the panel
+        QTRY_VERIFY_WITH_TIMEOUT(countClips(m_window->contentItem()) >= 700, 5000);           // every clip is a (plain) block
+        zoomTo(1000);                                                                         // too far: the panel keeps it at the maximum
+        QTRY_COMPARE_WITH_TIMEOUT(panel->property("pxPerFrame").toDouble(), 1000.0, 2000);    // the signal itself is not clamped, the panel's own controls are
+        QVERIFY(QMetaObject::invokeMethod(panel, "zoomRequested", Q_ARG(double, 200.0)));
+        QTRY_COMPARE_WITH_TIMEOUT(panel->property("pxPerFrame").toDouble(), 200.0, 2000);
+        QTRY_VERIFY_WITH_TIMEOUT(countClips(m_window->contentItem()) < 40, 5000);             // at one frame per 200 px very few clips are near
+        projects->closeProject();
     }
 
     void noQmlWarningsWereEmitted()

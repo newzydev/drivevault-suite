@@ -1,6 +1,23 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.10.0
+--------------
+  - The timeline stays smooth however much is on it. It used to build the on-screen parts of every clip at once (a project with 848 clips made about 20,000 of them), so
+    opening, scrolling, zooming and playing became slow; now only the clips that are on screen (plus one screen on each side) exist, and clips that are only a few
+    pixels wide are plain coloured blocks drawn together. Measured on a copy of a real project (848 clips) on the same build, old behaviour -> now: playback 14.7 -> 59 frames
+    per second, the slowest frame while zooming 925 ms -> about 100 ms, the slowest frame while scrolling 169 ms -> about 80 ms; a 5,088 clip project (1 h 19 min)
+    plays at 60 frames per second as well. A few single frames can still take 50-100 ms.
+  - Timeline zoom: all the way out shows the whole project (it used to stop at about 1:40 of a 6:38 project), all the way in shows one frame 200 pixels wide (it was 40).
+    Ctrl + mouse wheel zooms around the mouse (the frame under the mouse stays under the mouse); the buttons and keys zoom around the playhead. "Fit timeline" fits the whole project.
+  - The pictures of a video clip are the real frames at their place in the clip (they used to be one picture repeated), so zooming in shows the frames; they are
+    decoded in the background and the still thumbnail is shown until a frame is ready. Only the part of a clip that is on screen is painted (a clip can be millions of
+    pixels wide when zoomed in).
+  - The window remembers that it was maximized and opens maximized again (it did not when the window had been maximized from the first start). Master Pro 1.3.1 does the same.
+  - The Mixer tab does no work while it is hidden.
+  - Diagnostics: DriveVaultVideoEditorPro.exe project.dvproj --ui-bench report.txt scrolls, zooms and plays the open project and writes the frame timings;
+    the environment variable DV_TIMELINE_ALL=1 switches back to building every clip (to compare).
+
 Version 1.9.1
 -------------
   - Fixed the Home screen: the three start buttons were wider than their column and ran into the recent projects panel; now "New Project" has its own wide button and

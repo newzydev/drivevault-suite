@@ -1,6 +1,7 @@
 #include "TestMedia.h"
 
 #include "media/AudioReader.h"
+#include "media/FrameThumbs.h"
 #include "media/MediaCache.h"
 #include "media/MediaLibrary.h"
 #include "media/MediaProbe.h"
@@ -106,6 +107,27 @@ private slots:
         QVERIFY(isBluish(r.frameAt(1500000, s).pixel(80, 60)));      // forward seek
         QCOMPARE(r.frameAt(1500000, s).size(), s);
     }
+    void frameThumbsDecodeInTheBackgroundAndAreCached()
+    {
+        FrameThumbs& thumbs = FrameThumbs::instance();
+        thumbs.clear();
+        QSignalSpy ready(&thumbs, &FrameThumbs::ready);
+        // nothing yet: the call returns at once and the frame is decoded by the worker
+        QVERIFY(thumbs.get(p("clip.mp4"), 200000, 60).isNull());
+        QVERIFY(thumbs.get(p("clip.mp4"), 1500000, 60).isNull());
+        QImage red, blue;
+        QTRY_VERIFY_WITH_TIMEOUT(!(red = thumbs.get(p("clip.mp4"), 200000, 60)).isNull() && !(blue = thumbs.get(p("clip.mp4"), 1500000, 60)).isNull(), 15000);
+        QTRY_VERIFY_WITH_TIMEOUT(ready.count() >= 1, 2000);                 // announced a moment after the frames are there
+        QCOMPARE(red.height(), 60);
+        QVERIFY(isReddish(red.pixel(red.width() / 2, 30)));               // the frame at that time, not one picture for the whole clip
+        QVERIFY(isBluish(blue.pixel(blue.width() / 2, 30)));
+        QVERIFY(thumbs.cachedCount() >= 2);
+        // a file that cannot be read is given up on (and never asked for again)
+        QVERIFY(thumbs.get(p("missing.mp4"), 0, 60).isNull());
+        QTest::qWait(300);
+        QVERIFY(thumbs.get(p("missing.mp4"), 0, 60).isNull());
+    }
+
     void videoReaderStillImage()
     {
         VideoReader r;

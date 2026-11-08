@@ -37,7 +37,7 @@ target_link_libraries(dv_appcore PUBLIC
     Qt6::Gui Qt6::Qml)
 
 # ---- Executable ---------------------------------------------------------------------------------------
-qt_add_executable(dv_app WIN32 main.cpp app.rc)
+qt_add_executable(dv_app WIN32 main.cpp UiBench.cpp UiBench.h app.rc)
 set_target_properties(dv_app PROPERTIES OUTPUT_NAME "DriveVaultVideoEditorPro")
 target_link_libraries(dv_app PRIVATE
     dv_appcore dv_ui dv_uiplugin

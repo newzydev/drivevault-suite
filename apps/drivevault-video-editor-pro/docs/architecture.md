@@ -1,4 +1,4 @@
-# Architecture (version 1.9.1)
+# Architecture (version 1.10.0)
 
 DriveVault Video Editor Pro is a **native Windows desktop application**: C++20, Qt 6 (Qt Quick / QML), FFmpeg, CMake.
 No Electron, Tauri, WebView or web server is involved.
@@ -90,7 +90,7 @@ FFmpeg headers are included only inside `media/` and `export/`; QML never touche
 | Decision | Reason |
 |---|---|
 | FFmpeg LGPL **shared** build, own thin adapters (no MLT in Phase 2) | LGPL-safe dynamic linking; MLT would add GPL-module risk and an extra abstraction for features Phase 2 does not need. Revisit for transitions. |
-| Encoder auto-detection by actually opening each H.264 encoder | Feature detection must reflect real driver / codec availability, with software fallback (spec §3, §11). |
+| Encoder auto-detection by actually opening each H.264 encoder | Feature detection must reflect real driver / codec availability, with software fallback (see the project rules: no fake features). |
 | WinMM `waveOut` for audio output | Built into Windows, no extra dependency or Qt Multimedia module; device position gives a reliable master clock. |
 | Own compositor (QPainter + swscale) | Simple, deterministic and shared by preview and export; effects get a GPU path in Phase 5 if needed. |
 | `QUndoStack` with one generic replace-clips command | Exact undo for every edit with very little code; no per-operation inverse logic to get wrong. |
