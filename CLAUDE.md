@@ -122,6 +122,9 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 |---|---|---|---|---|
 | Master Pro | 1.2.0 | `drivevault-master-pro-v1.2.0` | `6859f14` | 2026-11-07 |
 | Master Pro | 1.3.0 | `drivevault-master-pro-v1.3.0` | `bfc0507` | 2026-11-08 |
+| Master Pro | 1.3.1 | `drivevault-master-pro-v1.3.1` | `4863b0e` | 2026-11-08 |
+| Master Pro | 1.3.2 | `drivevault-master-pro-v1.3.2` | `0c2b21c` | 2026-11-08 |
+| Master Pro | 1.3.3 | `drivevault-master-pro-v1.3.3` | `69f7fae` | 2026-11-08 |
 | Video Editor Pro | 1.0.1 | `drivevault-video-editor-pro-v1.0.1` | `1156f9e` | 2026-11-07 |
 | Video Editor Pro | 1.1.0 | `drivevault-video-editor-pro-v1.1.0` | `6859f14` | 2026-11-07 |
 | Video Editor Pro | 1.1.1 | `drivevault-video-editor-pro-v1.1.1` | `4d5b720` | 2026-11-07 |
@@ -130,6 +133,7 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 | Video Editor Pro | 1.6.0 | `drivevault-video-editor-pro-v1.6.0` | `54bafa6` | 2026-11-07 |
 | Video Editor Pro | 1.7.0 | `drivevault-video-editor-pro-v1.7.0` | `168b741` | 2026-11-08 |
 | Video Editor Pro | 1.9.0 | `drivevault-video-editor-pro-v1.9.0` | `cb08c83` | 2026-11-08 |
+| Video Editor Pro | 1.10.0 | `drivevault-video-editor-pro-v1.10.0` | `4863b0e` | 2026-11-08 |
 
 ## Open items the owner knows about
 
