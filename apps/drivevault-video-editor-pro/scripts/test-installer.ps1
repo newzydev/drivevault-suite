@@ -21,17 +21,39 @@ $masterUninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall
 $masterExe = Join-Path $suiteDir 'DriveVaultMasterPro.exe'
 $results = @()
 
-# The test installs Master Pro itself. A real all-users Master Pro on this PC (HKLM) would make the program installer skip that step and
-# many checks fail for a reason that has nothing to do with the installer, so stop with a clear message instead (use a PC / VM without DriveVault).
+# A real DriveVault on this PC (an all-users install in HKLM) is never touched: the test installs per user, into a temp folder and into
+# %LOCALAPPDATA%, and removes what it created. With a real install present, the few checks that depend on a PC without DriveVault (what the hub lists as
+# installed, Master Pro uninstalling - it refuses while a program is installed, as designed) are marked SKIP instead of failing; they run on a PC / VM
+# without DriveVault. DV_TEST_REQUIRE_CLEAN=1 stops with exit code 3 instead (the old behaviour).
 $realMaster = Get-ItemProperty 'HKLM:\Software\DriveVault\MasterPro' -ErrorAction SilentlyContinue
-if ($realMaster -and -not $env:DV_TEST_ALLOW_REAL_MASTER) {
-    Write-Host "SKIPPED: DriveVault Master Pro $($realMaster.Version) is installed for all users on this PC ($($realMaster.InstallDir))." -ForegroundColor Yellow
-    Write-Host 'The installer test needs a PC (or VM) without DriveVault, or uninstall DriveVault first. Set DV_TEST_ALLOW_REAL_MASTER=1 to run it anyway (Master Pro checks will fail).' -ForegroundColor Yellow
+$realProducts = @{}
+if (Test-Path 'HKLM:\Software\DriveVault\Products') {
+    foreach ($k in Get-ChildItem 'HKLM:\Software\DriveVault\Products') { $realProducts[$k.PSChildName] = (Get-ItemProperty $k.PSPath).Version }
+}
+$realPresent = $null -ne $realMaster -or $realProducts.Count -gt 0
+if ($realPresent -and $env:DV_TEST_REQUIRE_CLEAN) {
+    Write-Host "SKIPPED: DriveVault is installed for all users on this PC (Master Pro $($realMaster.Version) in $($realMaster.InstallDir))." -ForegroundColor Yellow
+    Write-Host 'DV_TEST_REQUIRE_CLEAN is set: run the test on a PC (or VM) without DriveVault, or uninstall DriveVault first.' -ForegroundColor Yellow
     exit 3
 }
+if ($realPresent) {
+    Write-Host "A real DriveVault is installed for all users (Master Pro $($realMaster.Version), programs: $(($realProducts.Keys | Sort-Object) -join ', ')). It is not touched; the checks that need a clean PC are skipped." -ForegroundColor Yellow
+}
+# what exists before the test, so that only what the test created is removed afterwards
+$startFolder = Join-Path ([Environment]::GetFolderPath('Programs')) 'DriveVault'
+$before = @{ masterKey = Test-Path 'HKCU:\Software\DriveVault\MasterPro'; masterUninstall = Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{B3A7C1D4-5E2F-4A86-9C10-7D2E8F4A6B35}_is1'
+             startFolder = Test-Path $startFolder; suite = Test-Path (Join-Path $env:LOCALAPPDATA 'Programs\DriveVault') }
 
 function Check($name, $ok, $detail = '') {
     $script:results += [pscustomobject]@{ Check = $name; Result = $(if ($ok) { 'PASS' } else { 'FAIL' }); Detail = $detail }
+}
+# a check that needs a PC without DriveVault: skipped (and shown as such) when a real install is present
+function CleanPcCheck($name, $ok, $detail = '') {
+    if ($script:realPresent) {
+        $script:results += [pscustomobject]@{ Check = $name; Result = 'SKIP'; Detail = 'a real DriveVault is installed on this PC' }
+    } else {
+        Check $name $ok $detail
+    }
 }
 $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{6E1B7A52-4C3D-4F7E-9A3B-D17E5A0C2F11}_is1'
 
@@ -170,7 +192,7 @@ Check 'Master Pro has an installers folder and its licenses' ((Test-Path (Join-P
 Check 'the Video Editor folder sits inside the Master Pro folder' ($installDir -eq (Join-Path $suiteDir 'Common\DriveVault Video Editor Pro') -and $installDir.StartsWith($suiteDir + '\') -and (Test-Path (Join-Path $installDir 'DriveVaultVideoEditorPro.exe')))
 $seen = MasterProducts $masterExe 'installed'
 $ve = $seen | Where-Object { $_.id -eq 'drivevault.videoeditor' }
-Check 'Master Pro (clean PATH) lists the Video Editor as installed' ($null -ne $ve -and $ve.installed -eq $true -and $ve.version -eq '1.10.0' -and $ve.status -eq 'installed' -and $ve.installDir -eq $installDir -and $ve.canUninstall -eq $true) "status=$($ve.status) version=$($ve.version)"
+CleanPcCheck 'Master Pro (clean PATH) lists the Video Editor as installed' ($null -ne $ve -and $ve.installed -eq $true -and $ve.version -eq '1.10.0' -and $ve.status -eq 'installed' -and $ve.installDir -eq $installDir -and $ve.canUninstall -eq $true) "status=$($ve.status) version=$($ve.version)"
 Check 'Master Pro lists the planned programs as coming soon' ((@($seen | Where-Object { $_.status -eq 'comingSoon' -and $_.section -eq 'multimedia' }).Count) -eq 2)
 $mpng = Join-Path $Work 'master-window.png'
 cmd /c "set PATH=$env:SystemRoot\System32;$env:SystemRoot&& set QT_QUICK_BACKEND=software&& `"$masterExe`" --data-dir `"$Work\master-data`" --lang th --screenshot `"$mpng`" --size 1120x740" | Out-Null
@@ -194,7 +216,7 @@ Check 'program folder itself removed' (-not (Test-Path $installDir))
 Check 'Master Pro stays after the program is uninstalled' ((Test-Path $masterExe) -and (Test-Path $masterUninstallKey) -and (Test-Path $masterKey))
 $seen2 = MasterProducts $masterExe 'after-uninstall'
 $ve2 = $seen2 | Where-Object { $_.id -eq 'drivevault.videoeditor' }
-Check 'Master Pro now shows the Video Editor as not installed' ($null -ne $ve2 -and $ve2.installed -eq $false -and $ve2.status -eq 'notInstalled')
+CleanPcCheck 'Master Pro now shows the Video Editor as not installed' ($null -ne $ve2 -and $ve2.installed -eq $false -and $ve2.status -eq 'notInstalled')
 Check 'user settings kept by silent uninstall' (Test-Path (Join-Path $dataDir 'user-settings-marker.txt'))
 Check 'user project untouched' ((Get-Content $projectFile) -eq 'user project - must never be deleted')
 
@@ -203,7 +225,7 @@ $rc = Install 'thai'
 Check 'reinstall (thai) exit code 0' ($rc -eq 0) "exit=$rc"
 Check 'reinstall: executable present' (Test-Path (Join-Path $installDir 'DriveVaultVideoEditorPro.exe'))
 $thaiLog = Get-Content (Join-Path $Work 'install-thai.log') -Raw -ErrorAction SilentlyContinue
-Check 'reinstall: Master Pro (same version) is not installed a second time' ($thaiLog -notmatch 'MasterProSetup')
+CleanPcCheck 'reinstall: Master Pro (same version) is not installed a second time' ($thaiLog -notmatch 'MasterProSetup')
 Check 'reinstall: Master Pro is still registered' (Test-Path $masterKey)
 Launch 'reinstall'
 ExportCheck 'reinstall'
@@ -212,8 +234,8 @@ Check 'final uninstall exit code 0' ($rc -eq 0) "exit=$rc"
 Check 'final: program files removed' (-not (Test-Path (Join-Path $installDir 'DriveVaultVideoEditorPro.exe')))
 Check 'final: registry entry removed' (-not (Test-Path $uninstallKey))
 $rcMaster = UninstallMaster $suiteDir
-Check 'Master Pro uninstalls once no program is left' ($rcMaster -eq 0) "exit=$rcMaster"
-Check 'Master Pro files, Apps entry and registry removed' ((-not (Test-Path $masterExe)) -and (-not (Test-Path $masterUninstallKey)) -and (-not (Test-Path $masterKey)))
+CleanPcCheck 'Master Pro uninstalls once no program is left' ($rcMaster -eq 0) "exit=$rcMaster"
+CleanPcCheck 'Master Pro files, Apps entry and registry removed' ((-not (Test-Path $masterExe)) -and (-not (Test-Path $masterUninstallKey)) -and (-not (Test-Path $masterKey)))
 Check 'another DriveVault product still untouched after Master Pro is gone' (Test-Path (Join-Path $otherProduct 'keep-me.txt'))
 
 # ---- 4. default location (no /DIR): per-user installs go to %LOCALAPPDATA%\Programs\DriveVault\Common\DriveVault Video Editor Pro ----------
@@ -230,12 +252,35 @@ if ($unins) { Start-Process $unins.FullName -Wait -ArgumentList @('/VERYSILENT',
 Check 'default-location uninstall removes the program folder' (-not (Test-Path $defaultDir))
 Check 'default location: Master Pro was installed in the suite folder' (Test-Path (Join-Path $defaultSuite 'DriveVaultMasterPro.exe')) $defaultSuite
 $rcM2 = UninstallMaster $defaultSuite
-Check 'default location: Master Pro uninstalls' ($rcM2 -eq 0) "exit=$rcM2"
+CleanPcCheck 'default location: Master Pro uninstalls' ($rcM2 -eq 0) "exit=$rcM2"
 for ($i = 0; $i -lt 20 -and (Test-Path $defaultSuite); $i++) { Start-Sleep -Milliseconds 500 }     # the hub's uninstaller removes the empty folder a moment later
-if (-not $hadSuite) { Check 'the shared DriveVault folder is removed when empty' (-not (Test-Path $defaultSuite)) }
-Check 'hub registry key removed after the default-location uninstall' (-not (Test-Path $productKey) -and -not (Test-Path 'HKCU:\Software\DriveVault'))
+if (-not $hadSuite) { CleanPcCheck 'the shared DriveVault folder is removed when empty' (-not (Test-Path $defaultSuite)) }
+CleanPcCheck 'hub registry key removed after the default-location uninstall' (-not (Test-Path $productKey) -and -not (Test-Path 'HKCU:\Software\DriveVault'))
+
+# With a real install on this PC the Master Pro of the test could not uninstall itself (it refuses while a program is installed): remove what the test
+# created - only what did not exist before the test - and prove that the real install is unchanged.
+if ($realPresent) {
+    foreach ($dir in @($suiteDir, $defaultSuite)) {
+        if (($dir -eq $defaultSuite -and $before.suite) -or -not (Test-Path (Join-Path $dir 'DriveVaultMasterPro.exe'))) { continue }
+        Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    if (-not $before.masterKey) { Remove-Item -LiteralPath 'HKCU:\Software\DriveVault\MasterPro' -Recurse -Force -ErrorAction SilentlyContinue }
+    if (-not $before.masterUninstall) { Remove-Item -LiteralPath $masterUninstallKey -Recurse -Force -ErrorAction SilentlyContinue }
+    if (-not $before.startFolder -and (Test-Path $startFolder)) { Remove-Item -LiteralPath $startFolder -Recurse -Force -ErrorAction SilentlyContinue }
+    $afterMaster = Get-ItemProperty 'HKLM:\Software\DriveVault\MasterPro' -ErrorAction SilentlyContinue
+    $unchanged = ($afterMaster.Version -eq $realMaster.Version) -and (Test-Path (Join-Path $realMaster.InstallDir 'DriveVaultMasterPro.exe'))
+    foreach ($key in $realProducts.Keys) {
+        $now = (Get-ItemProperty "HKLM:\Software\DriveVault\Products\$key" -ErrorAction SilentlyContinue).Version
+        if ($now -ne $realProducts[$key]) { $unchanged = $false }
+    }
+    $leftover = (Test-Path 'HKCU:\Software\DriveVault\MasterPro') -and -not $before.masterKey
+    Check 'the real DriveVault install is unchanged and the test left nothing behind' ($unchanged -and -not $leftover) "unchanged=$unchanged leftover=$leftover"
+}
 
 $results | Format-Table -AutoSize -Wrap
 $failed = @($results | Where-Object Result -eq 'FAIL').Count
-Write-Host ("{0} checks, {1} failed" -f $results.Count, $failed) -ForegroundColor $(if ($failed) { 'Red' } else { 'Green' })
+$skipped = @($results | Where-Object Result -eq 'SKIP').Count
+$line = "{0} checks, {1} failed" -f $results.Count, $failed
+if ($skipped) { $line += ", $skipped skipped (they need a PC without DriveVault)" }
+Write-Host $line -ForegroundColor $(if ($failed) { 'Red' } elseif ($skipped) { 'Yellow' } else { 'Green' })
 exit $failed
