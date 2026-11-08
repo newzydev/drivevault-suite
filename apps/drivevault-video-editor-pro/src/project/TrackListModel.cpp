@@ -31,6 +31,9 @@ QVariant TrackListModel::data(const QModelIndex& index, int role) const
     case PanRole: return t.pan;
     case SoloRole: return t.solo;
     case LaneRole: return t.lane;
+    case EqLowRole: return t.eqLow;
+    case EqMidRole: return t.eqMid;
+    case EqHighRole: return t.eqHigh;
     default: return {};
     }
 }
@@ -89,6 +92,16 @@ bool TrackListModel::setData(const QModelIndex& index, const QVariant& value, in
         t.pan = pan;
         break;
     }
+    case EqLowRole:
+    case EqMidRole:
+    case EqHighRole: {
+        double& target = role == EqLowRole ? t.eqLow : role == EqMidRole ? t.eqMid : t.eqHigh;
+        const double db = std::clamp(value.toDouble(), -18.0, 18.0);
+        if (qFuzzyCompare(target + 100, db + 100))
+            return false;
+        target = db;
+        break;
+    }
     default:
         return false;
     }
@@ -100,7 +113,8 @@ bool TrackListModel::setData(const QModelIndex& index, const QVariant& value, in
 QHash<int, QByteArray> TrackListModel::roleNames() const
 {
     return {{IdRole, "trackId"}, {NameRole, "name"}, {KindRole, "kind"}, {MutedRole, "muted"}, {LockedRole, "locked"},
-            {VisibleRole, "trackVisible"}, {GainRole, "gainDb"}, {PanRole, "pan"}, {SoloRole, "solo"}, {LaneRole, "lane"}};
+            {VisibleRole, "trackVisible"}, {GainRole, "gainDb"}, {PanRole, "pan"}, {SoloRole, "solo"}, {LaneRole, "lane"},
+            {EqLowRole, "eqLow"}, {EqMidRole, "eqMid"}, {EqHighRole, "eqHigh"}};
 }
 
 void TrackListModel::setTracks(const QList<TrackInfo>& tracks)
@@ -129,6 +143,13 @@ void TrackListModel::toggle(int row, const QString& property)
 void TrackListModel::setName(int row, const QString& name) { setData(index(row), name, NameRole); }
 void TrackListModel::setGain(int row, double db) { setData(index(row), db, GainRole); }
 void TrackListModel::setPan(int row, double pan) { setData(index(row), pan, PanRole); }
+
+void TrackListModel::setEq(int row, const QString& band, double db)
+{
+    const int role = band == QLatin1String("low") ? EqLowRole : band == QLatin1String("mid") ? EqMidRole : band == QLatin1String("high") ? EqHighRole : -1;
+    if (role >= 0)
+        setData(index(row), db, role);
+}
 
 QString TrackListModel::nextId(const QString& kind) const
 {

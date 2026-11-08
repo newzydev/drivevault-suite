@@ -67,7 +67,6 @@ const QList<SettingsManager::Definition>& SettingsManager::definitions()
         def("aiEnabled", Type::Bool, false),
         def("aiDevice", Type::Choice, "auto", {}, {}, {"auto", "cpu", "gpu"}),
         def("aiModelsLocation", Type::Path, ""),
-        def("aiUseLanguageModel", Type::Bool, true),
         def("aiOfflineOnly", Type::Bool, true),
         def("aiModel", Type::String, ""),
         // Export

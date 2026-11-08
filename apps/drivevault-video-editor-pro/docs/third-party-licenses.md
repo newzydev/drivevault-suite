@@ -46,6 +46,4 @@ Every component above must be re-checked, with exact versions, at the Phase 6 au
 | Component | Version | Use | License | Notes |
 |---|---|---|---|---|
 | whisper.cpp / ggml (prebuilt `whisper-cli.exe` + DLLs, CPU) | release b5454 | Speech to text, started as a separate process | MIT | Shipped in `aiwhisper`; license text in `licenseswhisper.cpp-LICENSE.txt`. |
-| llama.cpp / ggml (prebuilt `llama-server.exe` + DLLs, CPU) | release b12170 | Language model server for "Edit by prompt", started as a separate process on 127.0.0.1 | MIT | Shipped in `ai\llama`; license text in `licenses\llama.cpp-LICENSE.txt`. `libomp.dll` (LLVM OpenMP, Apache-2.0 with LLVM exception): `licenses\LLVM-OpenMP-LICENSE.txt`. |
-| Qwen3.5-4B (GGUF Q4_K_M by Unsloth) | - | Language model for free sentences | Apache-2.0 | **Not** in the installer: the user downloads it (explicit click, Hugging Face; size and SHA-256 are checked). |
-| OpenAI Whisper models (ggml conversions) | tiny / base / small | Speech recognition models | MIT | **Not** in the installer: the user downloads (explicit click, Hugging Face) or imports them. Re-check at the Phase 6 audit. |
+| OpenAI Whisper models (ggml conversions) | base (installed in `ai\models`); tiny / small on request | Speech recognition models | MIT | `base` ships in the installer (about 142 MB), licence text in `licenses\whisper-model-LICENSE.txt`; tiny / small are downloaded or imported by the user. |

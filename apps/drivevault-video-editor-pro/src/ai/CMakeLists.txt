@@ -5,8 +5,6 @@ add_library(dv_ai STATIC
     Tracker.cpp Tracker.h
     Transcriber.cpp Transcriber.h
     Assistant.cpp Assistant.h
-    EditPlanner.cpp EditPlanner.h
-    LocalLlm.cpp LocalLlm.h
     ModelManager.cpp ModelManager.h
     AiController.cpp AiController.h)
 target_include_directories(dv_ai PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

@@ -89,20 +89,17 @@ if (Test-Path (Join-Path $whisperDir 'whisper-cli.exe')) {
     Write-Warning "whisper.cpp not found in $whisperDir - the installer will not contain the captions engine"
 }
 
-# llama.cpp (language model server for "Edit by prompt", MIT): the engine ships, the model (Qwen3.5 4B, Apache 2.0) is downloaded by the user
-$llamaDir = Join-Path $SuiteRoot '.tools\llm\llama'
-if (Test-Path (Join-Path $llamaDir 'llama-server.exe')) {
-    $llamaStage = Join-Path $stage 'ai\llama'
-    New-Item -ItemType Directory -Force $llamaStage | Out-Null
-    foreach ($pattern in 'llama-server.exe', 'llama-server-impl.dll', 'llama.dll', 'llama-common.dll', 'mtmd.dll', 'ggml.dll', 'ggml-base.dll', 'ggml-cpu-*.dll', 'libomp.dll') {
-        Copy-Item (Join-Path $llamaDir $pattern) $llamaStage
-    }
-    Copy-Item (Join-Path $DvRoot 'third_party\llama.cpp-LICENSE.txt') (Join-Path $lic 'llama.cpp-LICENSE.txt')
-    Copy-Item (Join-Path $DvRoot 'third_party\LLVM-OpenMP-LICENSE.txt') (Join-Path $lic 'LLVM-OpenMP-LICENSE.txt')
-    Copy-Item $crtDlls.FullName $llamaStage                   # llama-server is a separate program: it needs its own copy
+# Speech model (Whisper base, MIT weights by OpenAI, ggml conversion by whisper.cpp): installed with the program so captions work right after setup (about 142 MB)
+$modelFile = Join-Path $SuiteRoot '.tools\whisper\models\ggml-base.bin'
+if (Test-Path $modelFile) {
+    $modelStage = Join-Path $stage 'ai\models'
+    New-Item -ItemType Directory -Force $modelStage | Out-Null
+    Copy-Item $modelFile $modelStage
+    Copy-Item (Join-Path $DvRoot 'third_party\whisper-model-LICENSE.txt') (Join-Path $lic 'whisper-model-LICENSE.txt')
 } else {
-    Write-Warning "llama.cpp not found in $llamaDir - the installer will not contain the language model engine"
+    Write-Warning "ggml-base.bin not found in $modelFile - the installer will not contain a speech model"
 }
+
 
 # Licenses, notices, documentation and the product manifest for the DriveVault hub.
 Copy-Item (Join-Path $DvRoot 'third_party\LGPL-3.0.txt') $lic

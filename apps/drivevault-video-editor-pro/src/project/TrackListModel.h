@@ -12,7 +12,7 @@ class TrackListModel : public QAbstractListModel {
     Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
 public:
     enum Role {
-        IdRole = Qt::UserRole + 1, NameRole, KindRole, MutedRole, LockedRole, VisibleRole, GainRole, PanRole, SoloRole, LaneRole
+        IdRole = Qt::UserRole + 1, NameRole, KindRole, MutedRole, LockedRole, VisibleRole, GainRole, PanRole, SoloRole, LaneRole, EqLowRole, EqMidRole, EqHighRole
     };
 
     explicit TrackListModel(QObject* parent = nullptr);
@@ -35,6 +35,7 @@ public:
     Q_INVOKABLE void setName(int row, const QString& name);
     Q_INVOKABLE void setGain(int row, double db);
     Q_INVOKABLE void setPan(int row, double pan);
+    Q_INVOKABLE void setEq(int row, const QString& band, double db);      // band: "low" | "mid" | "high"
 
     // Adds a track of `kind` ("video" | "audio" | "subtitle"). New video tracks go on top of the video
     // group, audio tracks below the audio group, the subtitle track on top of everything. Returns the new

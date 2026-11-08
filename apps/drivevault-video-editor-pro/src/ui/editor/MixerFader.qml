@@ -52,13 +52,13 @@ Item {
         }
     }
     Rectangle {                                                // the 0 dB line
-        x: 26; width: 14; height: 1
+        x: slot.x + slot.width / 2 - width / 2; width: 14; height: 1
         y: 10 + fader.posOf(0) * (fader.height - 20)
         color: Qt.rgba(1, 1, 1, 0.35)
     }
     Rectangle {                                                // the handle
         id: handle
-        x: 23; width: 28; height: 14; radius: 4
+        x: slot.x + slot.width / 2 - width / 2; width: 28; height: 14; radius: 4        // centred on the slot
         y: 10 + fader.posOf(fader.value) * (fader.height - 20) - height / 2
         color: ma.pressed || ma.containsMouse ? "#D9DCE3" : "#BFC3CC"
         border.width: 1

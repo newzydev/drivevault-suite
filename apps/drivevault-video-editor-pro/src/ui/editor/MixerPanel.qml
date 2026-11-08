@@ -3,9 +3,9 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import DriveVault.Backend
 
-// The audio mixer (a tab of the timeline panel): one channel strip per audio track - Gain / High / Mid / Low knobs of the clip that is under the
-// playhead on that track, pan, the track fader with solo and mute - and the master fader at the right. Everything drives the same parameters that
-// the inspector, the preview and the export use (clip volume, eqHigh / eqMid / eqLow, track gain / pan, project master level).
+// The audio mixer (a tab of the timeline panel): one channel strip per audio track - High / Mid / Low EQ of the whole track, pan, the track fader with solo
+// and mute - and the master fader at the right. Everything belongs to the track (or the project) and is saved with the project; the preview and the
+// export use the same values (track eqHigh / eqMid / eqLow, gain, pan, project master level).
 Rectangle {
     id: root
 
@@ -15,19 +15,6 @@ Rectangle {
     border.width: 1
     clip: true
 
-    // the strips look at the clip under the playhead: nothing is recomputed while the tab is hidden (the playhead moves 60 times a second)
-    property int rev: 0
-    Connections {
-        target: Projects.timeline
-        function onClipsChanged() { if (root.visible) root.rev++ }
-        function onSelectionChanged() { if (root.visible) root.rev++ }
-    }
-    Connections {
-        target: Projects
-        function onPlayheadChanged() { if (root.visible) root.rev++ }
-    }
-    onVisibleChanged: if (visible) rev++
-    function report(error) { if (error !== "") App.toast(error, "warning") }
     function panText(p) { return Math.abs(p) < 0.005 ? qsTr("Centre") : (p < 0 ? "L " : "R ") + Math.round(Math.abs(p) * 100) }
     function dbText(v) { return (v > 0 ? "+" : "") + v.toFixed(1) + " dB" }
 
@@ -69,7 +56,7 @@ Rectangle {
 
             Row {
                 id: stripRow
-                x: Math.max(0, (strips.width - width) / 2)          // few strips: centred in the panel
+                x: 0                                                 // strips start at the left edge
                 height: strips.height - (stripRow.width > strips.width ? 10 : 0)
                 spacing: 8
                 Repeater {
@@ -84,12 +71,9 @@ Rectangle {
                         required property bool solo
                         required property real gainDb
                         required property real pan
-
-                        // the clip of this track under the playhead (the knobs edit it)
-                        readonly property string clipId: { root.rev; return kind === "audio" ? Projects.timeline.clipAt(index, Projects.playheadFrame) : "" }
-                        readonly property bool hasClip: clipId !== ""
-                        function pv(key) { root.rev; return hasClip ? Projects.timeline.paramValue(clipId, key, Projects.playheadFrame) : 0 }
-                        function setP(key, v) { root.report(Projects.timeline.setParam(clipId, key, v, Projects.playheadFrame)) }
+                        required property real eqLow
+                        required property real eqMid
+                        required property real eqHigh
 
                         visible: kind === "audio"
                         width: visible ? 262 : 0
@@ -104,15 +88,6 @@ Rectangle {
                             font.weight: Font.Bold
                             color: Theme.text
                         }
-                        Text {
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
-                            text: channel.hasClip ? qsTr("Clip under the playhead") : qsTr("No clip at the playhead")
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
-                            font.pixelSize: 10
-                            color: Theme.textDisabled
-                        }
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
@@ -123,44 +98,31 @@ Rectangle {
                                 Layout.alignment: Qt.AlignVCenter
                                 spacing: 0
                                 MixerKnob {
-                                    objectName: "mixGain" + channel.index
-                                    enabled: channel.hasClip
-                                    label: qsTr("Gain")
-                                    implicitWidth: 156
-                                    from: -60; to: 12; resetValue: 0
-                                    value: channel.pv("volume")
-                                    formatter: root.dbText
-                                    onMoved: v => channel.setP("volume", v)
-                                }
-                                MixerKnob {
                                     objectName: "mixHigh" + channel.index
-                                    enabled: channel.hasClip
                                     label: qsTr("High")
                                     implicitWidth: 156
                                     from: -18; to: 18; resetValue: 0
-                                    value: channel.pv("eqHigh")
+                                    value: channel.eqHigh
                                     formatter: root.dbText
-                                    onMoved: v => channel.setP("eqHigh", v)
+                                    onMoved: v => Projects.tracks.setEq(channel.index, "high", Math.abs(v) < 0.25 ? 0 : v)
                                 }
                                 MixerKnob {
                                     objectName: "mixMid" + channel.index
-                                    enabled: channel.hasClip
                                     label: qsTr("Mid")
                                     implicitWidth: 156
                                     from: -18; to: 18; resetValue: 0
-                                    value: channel.pv("eqMid")
+                                    value: channel.eqMid
                                     formatter: root.dbText
-                                    onMoved: v => channel.setP("eqMid", v)
+                                    onMoved: v => Projects.tracks.setEq(channel.index, "mid", Math.abs(v) < 0.25 ? 0 : v)
                                 }
                                 MixerKnob {
                                     objectName: "mixLow" + channel.index
-                                    enabled: channel.hasClip
                                     label: qsTr("Low")
                                     implicitWidth: 156
                                     from: -18; to: 18; resetValue: 0
-                                    value: channel.pv("eqLow")
+                                    value: channel.eqLow
                                     formatter: root.dbText
-                                    onMoved: v => channel.setP("eqLow", v)
+                                    onMoved: v => Projects.tracks.setEq(channel.index, "low", Math.abs(v) < 0.25 ? 0 : v)
                                 }
                                 Rectangle { Layout.fillWidth: true; Layout.topMargin: 3; Layout.bottomMargin: 3; height: 1; color: Theme.borderSubtle }
                                 MixerKnob {

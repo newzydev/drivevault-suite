@@ -107,6 +107,11 @@ AudioReader* AudioMixer::readerFor(const SnapshotClip& clip)
 void AudioMixer::applyEq(Dsp& dsp, const ClipData& clip, int64_t cf, float* buf, int frames, int rate)
 {
     const double gains[3] = {clip.param("eqLow", cf), clip.param("eqMid", cf), clip.param("eqHigh", cf)};
+    applyEqGains(dsp, gains, buf, frames, rate);
+}
+
+void AudioMixer::applyEqGains(Dsp& dsp, const double* gains, float* buf, int frames, int rate)
+{
     static const Shape shapes[3] = {Shape::LowShelf, Shape::Peak, Shape::HighShelf};
     static const double freqs[3] = {120.0, 1000.0, 8000.0};
     for (int b = 0; b < 3; ++b) {
@@ -148,6 +153,19 @@ void AudioMixer::render(int64_t startSample, int frames, float* out, Peaks* peak
 
     const bool anySolo = std::any_of(snap.tracks.begin(), snap.tracks.end(),
                                      [](const TrackInfo& t) { return t.kind == QLatin1String("audio") && t.solo; });
+
+    // Tracks with an EQ are summed into their own buffer first, so the EQ filters the whole track (all its clips) and not a single clip.
+    const auto trackHasEq = [](const TrackInfo& t) {
+        return t.kind == QLatin1String("audio") && (std::abs(t.eqLow) >= 0.05 || std::abs(t.eqMid) >= 0.05 || std::abs(t.eqHigh) >= 0.05);
+    };
+    m_trackBufs.resize(size_t(snap.tracks.size()));
+    for (qsizetype ti = 0; ti < snap.tracks.size(); ++ti) {
+        if (trackHasEq(snap.tracks.at(ti))) {
+            m_trackBufs[size_t(ti)].assign(size_t(frames) * 2, 0.f);
+        } else {
+            m_trackDsp.remove(snap.tracks.at(ti).id);
+        }
+    }
 
     for (const SnapshotClip& sc : snap.clips) {
         if (sc.trackIndex < 0 || sc.trackIndex >= snap.tracks.size())
@@ -206,7 +224,7 @@ void AudioMixer::render(int64_t startSample, int frames, float* out, Peaks* peak
         const float panL = float(std::cos(theta) * std::sqrt(2.0));
         const float panR = float(std::sin(theta) * std::sqrt(2.0));
 
-        float* dst = out + size_t(from - startSample) * 2;
+        float* dst = (trackHasEq(track) ? m_trackBufs[size_t(sc.trackIndex)].data() : out) + size_t(from - startSample) * 2;
         for (int i = 0; i < count; ++i) {
             const int64_t pos = (from - clipStart) + i;
             float g = g0 + (g1 - g0) * float(i) / float(std::max(1, count));
@@ -219,6 +237,21 @@ void AudioMixer::render(int64_t startSample, int frames, float* out, Peaks* peak
             dst[size_t(i) * 2] += m_temp[size_t(i) * 2] * g * panL;
             dst[size_t(i) * 2 + 1] += m_temp[size_t(i) * 2 + 1] * g * panR;
         }
+    }
+
+    for (qsizetype ti = 0; ti < snap.tracks.size(); ++ti) {
+        const TrackInfo& track = snap.tracks.at(ti);
+        if (!trackHasEq(track))
+            continue;
+        std::vector<float>& tb = m_trackBufs[size_t(ti)];
+        Dsp& dsp = m_trackDsp[track.id];
+        if (dsp.expectedStart != startSample)                   // seek / first block: restart the filters
+            dsp = Dsp();
+        dsp.expectedStart = endSample;
+        const double gains[3] = {track.eqLow, track.eqMid, track.eqHigh};
+        applyEqGains(dsp, gains, tb.data(), frames, rate);
+        for (size_t i = 0; i < size_t(frames) * 2; ++i)
+            out[i] += tb[i];
     }
 
     float pl = 0, pr = 0;

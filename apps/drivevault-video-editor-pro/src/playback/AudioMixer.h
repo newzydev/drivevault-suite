@@ -12,7 +12,7 @@
 namespace dv {
 
 // Mixes every audible audio clip of the timeline into interleaved float stereo. Per clip: 3-band EQ, noise gate,
-// volume (keyframable), fade in / out. Per track: gain, pan, mute, solo. The master bus has a soft limiter.
+// volume (keyframable), fade in / out. Per track: 3-band EQ, gain, pan, mute, solo. The master bus has a soft limiter.
 // Shared by live playback and the exporter. One instance = one thread (it owns the decoders and filter states).
 class AudioMixer {
 public:
@@ -47,8 +47,11 @@ private:
 
     AudioReader* readerFor(const SnapshotClip& clip);
     void applyEq(Dsp& dsp, const ClipData& clip, int64_t clipFrame, float* buf, int frames, int rate);
+    static void applyEqGains(Dsp& dsp, const double* gains, float* buf, int frames, int rate);   // gains: low, mid, high (dB)
 
     SnapshotPtr m_snapshot;
+    QHash<QString, Dsp> m_trackDsp;                           // key: track id; only the EQ part is used
+    std::vector<std::vector<float>> m_trackBufs;              // per track index; only tracks with an active EQ are filled
     QHash<QString, std::shared_ptr<AudioReader>> m_readers;   // key: track index + path
     QHash<QString, Dsp> m_dsp;                                // key: clip id
     QSet<QString> m_failed;

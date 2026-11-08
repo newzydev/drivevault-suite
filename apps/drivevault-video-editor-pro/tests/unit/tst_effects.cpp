@@ -569,6 +569,49 @@ private slots:
         QVERIFY(AudioMixer::softLimit(3.f) <= 1.0f && AudioMixer::softLimit(3.f) >= AudioMixer::softLimit(1.2f) && AudioMixer::softLimit(1.2f) < 1.0f);
         QCOMPARE(AudioMixer::softLimit(-3.f), -AudioMixer::softLimit(3.f));
     }
+    void trackEqFiltersTheWholeTrack()
+    {
+        auto s = snap();
+        addAudio(*s, "low", "A1", p("low.wav"));
+        addAudio(*s, "low2", "A1", p("low.wav"), 90, 90);                                // a second clip on the same track
+        const double low = rms(mix(*s, 24000, 9600));
+        const double low2 = rms(mix(*s, 48000 * 3 + 24000, 9600));
+        s->tracks[3].eqLow = -18.0;                                                       // the EQ of the track A1, not of a clip
+        QVERIFY(rms(mix(*s, 24000, 9600)) < low * 0.3);
+        QVERIFY(rms(mix(*s, 48000 * 3 + 24000, 9600)) < low2 * 0.3);                      // both clips are cut
+        s->tracks[3].eqLow = 0;
+        QVERIFY(std::abs(rms(mix(*s, 24000, 9600)) / low - 1.0) < 1e-3);                  // flat again: untouched
+
+        auto s2 = snap();
+        addAudio(*s2, "high", "A1", p("high.wav"));
+        const double high = rms(mix(*s2, 24000, 9600));
+        s2->tracks[3].eqLow = -18.0;                                                      // a 9 kHz tone is not touched by the low shelf
+        QVERIFY(std::abs(rms(mix(*s2, 24000, 9600)) / high - 1.0) < 0.1);
+        s2->tracks[3].eqHigh = 18.0;
+        QVERIFY(rms(mix(*s2, 24000, 9600)) > high * 2.0);
+        // another track is not affected
+        addAudio(*s2, "other", "A2", p("high.wav"));
+        s2->clips.back().trackIndex = 4;
+        s2->tracks[3].eqHigh = 0;
+        s2->tracks[3].eqLow = 0;
+        const double both = rms(mix(*s2, 24000, 9600));
+        s2->tracks[3].eqHigh = 18.0;
+        QVERIFY(rms(mix(*s2, 24000, 9600)) > both * 1.3);
+        s2->tracks[4].eqHigh = 18.0;
+        QVERIFY(rms(mix(*s2, 24000, 9600)) > both * 2.0);
+
+        // the filter state is continuous across blocks: two half-size renders equal one big render
+        const auto whole = mix(*s2, 24000, 4800);
+        AudioMixer m;
+        m.setSnapshot(std::make_shared<RenderSnapshot>(*s2));
+        std::vector<float> a(2400 * 2), b(2400 * 2);
+        m.render(24000, 2400, a.data());
+        m.render(26400, 2400, b.data());
+        for (size_t i = 0; i < a.size(); ++i) {
+            QVERIFY(std::abs(whole[i] - a[i]) < 1e-3f);
+            QVERIFY(std::abs(whole[i + a.size()] - b[i]) < 1e-3f);
+        }
+    }
 };
 
 QTEST_MAIN(TstEffects)

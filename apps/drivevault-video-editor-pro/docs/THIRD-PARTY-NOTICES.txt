@@ -25,14 +25,9 @@ The full license texts are in the "licenses" folder next to this file. The machi
 
 3. whisper.cpp / ggml (whisper-cli.exe and its DLLs, folder ai\whisper)  -  MIT      licenses\whisper.cpp-LICENSE.txt
    Copyright (c) 2023-2026 The ggml authors. Runs as a separate program for automatic captions.
-   Speech models (OpenAI Whisper, ggml format, MIT) are NOT installed; you download or import them yourself.
+   The speech model "base" (OpenAI Whisper, MIT, ggml format) is installed in the folder ai\models  -  licenses\whisper-model-LICENSE.txt
+   (Copyright (c) 2022 OpenAI). Other models (tiny, small) are downloaded or imported by you.
    Recognition results can contain errors.
-
-3a. llama.cpp / ggml (llama-server.exe and its DLLs, folder ai\llama)  -  MIT      licenses\llama.cpp-LICENSE.txt
-   Copyright (c) 2023-2026 The ggml authors. Runs as a separate program on this PC only (127.0.0.1) for "Edit by prompt".
-   libomp.dll is the LLVM OpenMP runtime (Apache License 2.0 with LLVM exceptions)  licenses\LLVM-OpenMP-LICENSE.txt
-   The language model (Qwen3.5 4B by Alibaba, Apache License 2.0; GGUF quantisation by Unsloth) is NOT installed; you download it yourself
-   from Hugging Face with a button. Its answers can be wrong: the program shows the plan before anything is changed.
 
 4. Inter font  and  Noto Sans Thai font  -  SIL Open Font License 1.1                 licenses\OFL-Inter.txt, licenses\OFL-NotoSansThai.txt
 

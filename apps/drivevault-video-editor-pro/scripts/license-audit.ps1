@@ -31,10 +31,8 @@ function Get-Owner([string]$rel) {
         if ($name -eq 'whisper-cli.exe' -or $name -eq 'whisper.dll' -or $name -like 'ggml*.dll') { return @('whisper.cpp / ggml', 'MIT') }
         return $null
     }
-    if ($r -like 'ai\llama\*') {
-        if ($name -match '^(msvcp|vcruntime|vcomp|concrt)') { return @('Microsoft Visual C++ runtime', 'Microsoft redistributable terms') }
-        if ($name -eq 'libomp.dll') { return @('LLVM OpenMP runtime', 'Apache-2.0 with LLVM exception') }
-        if ($name -eq 'llama-server.exe' -or $name -like 'llama*.dll' -or $name -eq 'mtmd.dll' -or $name -like 'ggml*.dll') { return @('llama.cpp / ggml', 'MIT') }
+    if ($r -like 'ai\models\*') {
+        if ($name -eq 'ggml-base.bin') { return @('Whisper base speech model (OpenAI, ggml format by whisper.cpp)', 'MIT') }
         return $null
     }
     if ($name -match '^(msvcp|vcruntime|vcomp|concrt)\d*(_\d+)?\.dll$') { return @('Microsoft Visual C++ runtime', 'Microsoft redistributable terms') }
@@ -78,7 +76,7 @@ foreach ($f in $files) {
 if (-not ($files | Where-Object { $_.Name -like 'msvcp140.dll' -and $_.DirectoryName -eq $StageDir })) { $problems.Add('The Visual C++ runtime (msvcp140.dll) is not shipped next to the program.') }
 
 # ---- 4. license texts and notices that must accompany the binaries ---------------------------------------------------------
-$required = 'LICENSE.txt', 'LGPL-3.0.txt', 'FFmpeg-LICENSE.txt', 'whisper.cpp-LICENSE.txt', 'llama.cpp-LICENSE.txt', 'LLVM-OpenMP-LICENSE.txt', 'OFL-Inter.txt', 'OFL-NotoSansThai.txt', 'THIRD-PARTY-NOTICES.txt'
+$required = 'LICENSE.txt', 'LGPL-3.0.txt', 'FFmpeg-LICENSE.txt', 'whisper.cpp-LICENSE.txt', 'whisper-model-LICENSE.txt', 'OFL-Inter.txt', 'OFL-NotoSansThai.txt', 'THIRD-PARTY-NOTICES.txt'
 foreach ($n in $required) {
     if (-not (Test-Path (Join-Path $StageDir "licenses\$n"))) { $problems.Add("Missing in licenses\: $n") }
 }

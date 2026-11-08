@@ -7,8 +7,6 @@
 #include "ai/Assistant.h"
 #include "ai/AudioAnalysis.h"
 #include "ai/AudioEnhancer.h"
-#include "ai/EditPlanner.h"
-#include "ai/LocalLlm.h"
 #include "ai/ModelManager.h"
 #include "ai/Tracker.h"
 #include "ai/Transcriber.h"
@@ -143,134 +141,7 @@ private slots:
     }
 
     // ---- audio enhancement ----------------------------------------------------------------------------------------
-    void editPromptsAreUnderstoodInThaiAndEnglish()
-    {
-        using K = ai::EditStep;
-        // English: several requests in one sentence
-        ai::EditPlan a = ai::parseEditPrompt("Place all clips, add the black and white filter, add the slide transition, add the text \"Hello, world\" at 3 seconds then export 1080p");
-        QCOMPARE(a.unknown.size(), 0);
-        QCOMPARE(a.steps.size(), 5);
-        QCOMPARE(a.steps[0].kind, K::PlaceAll);
-        QCOMPARE(a.steps[1].kind, K::Look);
-        QCOMPARE(a.steps[1].id, QStringLiteral("mono"));
-        QCOMPARE(a.steps[2].kind, K::Transition);
-        QCOMPARE(a.steps[2].id, QStringLiteral("slide"));
-        QCOMPARE(a.steps[2].direction, QStringLiteral("in"));
-        QCOMPARE(a.steps[3].kind, K::AddText);
-        QCOMPARE(a.steps[3].text, QStringLiteral("Hello, world"));      // the comma inside the quotes is not a separator
-        QCOMPARE(a.steps[3].seconds, 3.0);
-        QCOMPARE(a.steps[4].kind, K::Export);
-        QCOMPARE(a.steps[4].preset, QStringLiteral("1080p"));
-
-        // Thai
-        ai::EditPlan t = ai::parseEditPrompt(QString::fromUtf8("วางคลิปทั้งหมดตามลำดับ แล้วใส่ฟิลเตอร์ขาวดำ ใส่เอฟเฟกต์เบลอแรง ใส่ทรานซิชันสไลด์ ใส่ข้อความ \"สวัสดี\" ที่ 2 วินาที แล้วส่งออก 4k"));
-        QCOMPARE(t.unknown.size(), 0);
-        QCOMPARE(t.steps.size(), 6);
-        QCOMPARE(t.steps[0].kind, K::PlaceAll);
-        QCOMPARE(t.steps[1].id, QStringLiteral("mono"));
-        QCOMPARE(t.steps[2].kind, K::Effect);
-        QCOMPARE(t.steps[2].id, QStringLiteral("blurStrong"));          // the longest name wins over "เบลอ"
-        QCOMPARE(t.steps[3].id, QStringLiteral("slide"));
-        QCOMPARE(t.steps[4].text, QString::fromUtf8("สวัสดี"));
-        QCOMPARE(t.steps[4].seconds, 2.0);
-        QCOMPARE(t.steps[5].preset, QStringLiteral("4k"));
-
-        // splitting: one time, a list of times, "every N seconds", minutes and seconds
-        ai::EditPlan sp = ai::parseEditPrompt("split at 5, 10 and 15 seconds");
-        QCOMPARE(sp.steps.size(), 3);
-        QCOMPARE(sp.steps[2].seconds, 15.0);
-        QCOMPARE(ai::parseEditPrompt(QString::fromUtf8("ตัดทุก 10 วินาที")).steps.value(0).every, 10.0);
-        QCOMPARE(ai::parseEditPrompt("cut at 1 minute 30 seconds").steps.value(0).seconds, 90.0);
-        QCOMPARE(ai::parseEditPrompt("split at 01:05").steps.value(0).seconds, 65.0);
-        // targets, "the end of the clip", names without a keyword, and what is not understood
-        QCOMPARE(ai::parseEditPrompt("add a blur effect to clip 2").steps.value(0).clipNumber, 2);
-        QCOMPARE(ai::parseEditPrompt("add a fade transition at the end of the clip").steps.value(0).direction, QStringLiteral("out"));
-        QCOMPARE(ai::parseEditPrompt(QString::fromUtf8("ใส่ฟิลเตอร์วินเทจ")).steps.value(0).id, QStringLiteral("vintage"));
-        QCOMPARE(ai::parseEditPrompt("make a coffee").steps.size(), 0);
-        QCOMPARE(ai::parseEditPrompt("make a coffee").unknown.size(), 1);
-        QCOMPARE(ai::parseEditPrompt("add the neon text Open now").steps.value(0).id, QStringLiteral("neonPink"));
-        QCOMPARE(ai::parseEditPrompt("add the neon text Open now").steps.value(0).text, QStringLiteral("Open now"));
-    }
-
-    void theAnswerOfTheLanguageModelIsCheckedBeforeAnythingRuns()
-    {
-        using K = ai::EditStep;
-        const QByteArray good = R"({"steps":[{"action":"place_all"},{"action":"apply_filter","name":"mono"},{"action":"apply_transition","name":"slide","direction":"in"},
-            {"action":"add_text","text":"Hello","name":"gold","seconds":3},{"action":"split_every","every":10},{"action":"export","preset":"4k"}]})";
-        ai::EditPlan p = ai::planFromLlmJson(good);
-        QCOMPARE(p.unknown.size(), 0);
-        QCOMPARE(p.steps.size(), 6);
-        QCOMPARE(p.steps[1].kind, K::Look);
-        QCOMPARE(p.steps[2].direction, QStringLiteral("in"));
-        QCOMPARE(p.steps[3].text, QStringLiteral("Hello"));
-        QCOMPARE(p.steps[3].seconds, 3.0);
-        QCOMPARE(p.steps[5].preset, QStringLiteral("4k"));
-        // nothing outside the catalogs or the number ranges gets through
-        const QByteArray bad = R"({"steps":[{"action":"apply_filter","name":"nonsense"},{"action":"format_disk"},{"action":"split_at","seconds":-5},
-            {"action":"apply_transition","name":"zoomOut","direction":"out"},{"action":"export","preset":"8k"},{"action":"apply_effect","name":"blur"}]})";
-        p = ai::planFromLlmJson(bad);
-        QCOMPARE(p.steps.size(), 1);
-        QCOMPARE(p.steps[0].id, QStringLiteral("blur"));
-        QCOMPARE(p.unknown.size(), 5);
-        QCOMPARE(ai::planFromLlmJson("this is not json").steps.size(), 0);
-        QCOMPARE(ai::planFromLlmJson("{\"steps\": []}").unknown.size(), 0);
-        // the prompt and the grammar are made from the same catalogs
-        QVERIFY(ai::llmSystemPrompt().contains("mono=Black & white/ขาวดำ"));
-        QVERIFY(QJsonDocument(ai::llmSchema()).toJson().contains("tealOrange"));
-    }
-
-    void theLanguageModelFileIsDownloadedAndCheckedOnlyOnRequest()
-    {
-        QSignalSpy done(m_ai->llm(), &LocalLlm::downloadFinished);
-        QByteArray payload(1024 * 1024, 'x');
-        QFile src(p("fake-model.gguf"));
-        QVERIFY(src.open(QIODevice::WriteOnly) && src.write(payload) == payload.size());
-        src.close();
-        const QString url = QUrl::fromLocalFile(p("fake-model.gguf")).toString();
-        // a wrong checksum: the file is deleted and the reason is reported
-        QVERIFY(m_ai->llm()->downloadFrom(url, payload.size(), QString(64, QLatin1Char('0'))).isEmpty());
-        QTRY_COMPARE_WITH_TIMEOUT(done.count(), 1, 10000);
-        QCOMPARE(done.takeFirst().at(0).toBool(), false);
-        QVERIFY(!QFileInfo::exists(m_ai->llm()->modelFolder() + "/Qwen3.5-4B-Q4_K_M.gguf"));
-        QVERIFY(!QFileInfo::exists(m_ai->llm()->modelFolder() + "/Qwen3.5-4B-Q4_K_M.gguf.part"));
-        // the right size and checksum: the file is kept
-        const QString sha = QString::fromLatin1(QCryptographicHash::hash(payload, QCryptographicHash::Sha256).toHex());
-        QVERIFY(m_ai->llm()->downloadFrom(url, payload.size(), sha).isEmpty());
-        QTRY_COMPARE_WITH_TIMEOUT(done.count(), 1, 10000);
-        QCOMPARE(done.takeFirst().at(0).toBool(), true);
-        QCOMPARE(QFileInfo(m_ai->llm()->modelFolder() + "/Qwen3.5-4B-Q4_K_M.gguf").size(), qint64(payload.size()));
-        QFile::remove(m_ai->llm()->modelFolder() + "/Qwen3.5-4B-Q4_K_M.gguf");
-    }
-
-    void theLocalLanguageModelUnderstandsFreeSentences()
-    {
-        LocalLlm* llm = m_ai->llm();
-        if (!llm->engineAvailable() || !llm->installed())
-            QSKIP("llama-server or the language model is not installed on this machine");
-        m_settings->set("aiUseLanguageModel", true);
-        QVERIFY(llm->available());
-        QSignalSpy failed(m_ai.get(), &AiController::llmFailed);
-        QVERIFY(m_ai->understandWithLlm(QString::fromUtf8("ทำให้ภาพเป็นขาวดำ แล้วบันทึกเป็นวิดีโอ 4k")).isEmpty());
-        QVERIFY(!m_ai->understandWithLlm("again").isEmpty());                     // one request at a time
-        llm->waitForIdle(180000);
-        QCOMPARE(failed.count(), 0);
-        QVariantMap plan = m_ai->pendingPlan();
-        QCOMPARE(plan.value("source").toString(), QStringLiteral("ai"));
-        QVERIFY2(plan.value("steps").toList().size() >= 2, qPrintable(QString::number(plan.value("steps").toList().size())));
-        QCOMPARE(plan.value("exportRequested").toBool(), true);
-        QCOMPARE(plan.value("exportPreset").toString(), QStringLiteral("4k"));
-        // a sentence that is not about editing gives an empty plan
-        QVERIFY(m_ai->understandWithLlm(QString::fromUtf8("ชงกาแฟให้หน่อย")).isEmpty());
-        llm->waitForIdle(180000);
-        QCOMPARE(m_ai->pendingPlan().value("valid").toBool(), false);
-        // typing replaces the plan of the model with the keyword plan
-        m_ai->previewEdit("add the filter sepia");
-        QCOMPARE(m_ai->pendingPlan().value("source").toString(), QStringLiteral("keyword"));
-        llm->stopServer();
-        QVERIFY(!llm->busy());
-    }
-
-    void aFolderBecomesAProjectAndAPromptEditsIt()
+    void aFolderBecomesAProjectAndAllItsClipsArePlaced()
     {
         QDir().mkpath(p("shoot"));
         QVERIFY(testmedia::runFfmpeg({"-f", "lavfi", "-i", "testsrc=size=640x360:rate=25:duration=2", "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
@@ -290,41 +161,22 @@ private slots:
         m_pm->media()->waitForIdle();
 
         auto* tl = m_pm->timeline();
-        QVERIFY(!m_ai->planEdit("place all clips")["steps"].toList().isEmpty());
-        QCOMPARE(m_ai->applyEditPrompt("place all clips, add the black and white filter, add the slide transition, add the text \"Hello\" at 1 second"), QString());
-        // a clip 1 (video + its sound) then b clip 2, the music on its own track from 0, the title at 1 s
+        QCOMPARE(m_pm->placeAllMedia(), QString());
+        // a clip 1 (video + its sound) then b clip 2, the music on its own track from 0
         QList<ClipData> video;
         QString musicTrack;
-        int titles = 0;
         for (const ClipData& c : tl->clips()) {
-            if (c.isTitle()) { ++titles; QCOMPARE(c.startFrame, qint64(25)); continue; }
             if (c.trackId.startsWith("V"))
                 video << c;
             if (m_pm->media()->describe(c.mediaId).value("kind").toString() == QLatin1String("audio") && c.startFrame == 0)
                 musicTrack = c.trackId;
         }
-        QCOMPARE(titles, 1);
         QCOMPARE(video.size(), 2);
         std::sort(video.begin(), video.end(), [](const ClipData& x, const ClipData& y) { return x.startFrame < y.startFrame; });
         QCOMPARE(video[0].startFrame, qint64(0));
         QCOMPARE(video[1].startFrame, video[0].endFrame());            // one after another
-        const double satDef = tl->paramInfo("saturation").value("def").toDouble();
-        for (const ClipData& c : video) {
-            QVERIFY(tl->paramValue(c.id, "saturation", c.startFrame) < satDef - 0.5);                // black and white
-            QCOMPARE(tl->clipInfo(c.id).value("transIn").toString(), QStringLiteral("slide"));
-        }
         QVERIFY(!musicTrack.isEmpty());
-
-        // everything the prompt did is one undo step
-        const int clipsAfter = tl->clipCount();
-        QVERIFY(clipsAfter > 3);
-        tl->undo();
-        QCOMPARE(tl->clipCount(), 0);
-        tl->redo();
-        QCOMPARE(tl->clipCount(), clipsAfter);
-
-        // something that cannot be done is reported and never half-applied silently
-        QVERIFY(!m_ai->applyEditPrompt("make a coffee").isEmpty());
+        QVERIFY(tl->clipCount() > 3);
         m_pm->closeProject();
     }
 

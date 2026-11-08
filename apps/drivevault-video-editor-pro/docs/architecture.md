@@ -1,4 +1,4 @@
-# Architecture (version 1.10.1)
+# Architecture (version 1.11.0)
 
 DriveVault Video Editor Pro is a **native Windows desktop application**: C++20, Qt 6 (Qt Quick / QML), FFmpeg, CMake.
 No Electron, Tauri, WebView or web server is involved.

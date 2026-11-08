@@ -53,6 +53,9 @@ struct TrackInfo {
     bool visible = true;
     double gainDb = 0;   // audio tracks: channel fader
     double pan = 0;      // audio tracks: -1 (left) .. +1 (right)
+    double eqLow = 0;    // audio tracks: 3-band EQ of the whole track (dB, -18 .. +18), applied after the clips are summed
+    double eqMid = 0;
+    double eqHigh = 0;
     bool solo = false;
     int lane = 1;        // height of the lane on the timeline: 0 compact, 1 normal, 2 tall
 

@@ -54,6 +54,9 @@ QStringList ModelManager::searchDirs() const
     const QString env = qEnvironmentVariable("DV_WHISPER_MODELS");
     if (!env.isEmpty())
         dirs << env;
+    const QString bundled = QCoreApplication::applicationDirPath() + QStringLiteral("/ai/models");     // installed with the program (ggml-base.bin)
+    if (QFileInfo(bundled).isDir())
+        dirs << bundled;
     QDir d(QCoreApplication::applicationDirPath());     // development tree: .tools\whisper\models
     for (int i = 0; i < 6; ++i) {
         const QString dev = d.filePath(QStringLiteral(".tools/whisper/models"));

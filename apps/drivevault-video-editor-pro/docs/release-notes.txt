@@ -1,6 +1,16 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.11.0 (2026-11-08)
+--------------
+  - Mixer: the channel strips now start at the left edge. The High / Mid / Low EQ knobs belong to the audio TRACK (they used to change only the clip under the playhead):
+    they filter everything on that track, play in the preview, are exported and are saved in the project (older project files open with the EQ flat). The per-clip
+    EQ and volume stay in the Inspector. The "Gain" knob was removed from the strip - the fader of the strip is the track gain. The fader handle is centred on its slot.
+  - Removed: AI "Edit by prompt" (the section in the AI tab, the language model and its Download card, the llama.cpp engine). It did not work well enough. The AI
+    Assistant, captions, silence detection, cut suggestions, enhancement and tracking are unchanged.
+  - The Whisper base speech model (about 142 MB, MIT) is now installed with the program, so auto captions work right after setup without a download.
+    The installer is larger by about the size of the model.
+
 Version 1.10.1 (2026-11-08)
 --------------
   - Recent projects are no longer empty after a new install or an update on a PC that has no recent-projects list (for example after the settings were removed

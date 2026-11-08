@@ -21,6 +21,9 @@ private slots:
         d.tracks[0].lane = 0;          // lane heights (collapsed / tall) are saved
         d.tracks[1].lane = 2;
         d.masterGainDb = -7.5;         // the master fader is saved
+        d.tracks.last().eqLow = -4.5;  // the EQ of a track is saved (older files have none: flat)
+        d.tracks.last().eqMid = 3.0;
+        d.tracks.last().eqHigh = 18.0;
 
         ProjectData out;
         QString error;
@@ -34,6 +37,9 @@ private slots:
         QCOMPARE(out.tracks.at(0).lane, 0);
         QCOMPARE(out.tracks.at(1).lane, 2);
         QCOMPARE(out.masterGainDb, -7.5);
+        QCOMPARE(out.tracks.last().eqLow, -4.5);
+        QCOMPARE(out.tracks.last().eqMid, 3.0);
+        QCOMPARE(out.tracks.last().eqHigh, 18.0);
 
         // a project file from before the lane heights existed opens with normal lanes
         QJsonObject root = ProjectFile::toJson(d);
