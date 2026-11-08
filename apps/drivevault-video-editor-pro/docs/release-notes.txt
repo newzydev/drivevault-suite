@@ -1,6 +1,11 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.10.1 (2026-11-08)
+--------------
+  - Recent projects are no longer empty after a new install or an update on a PC that has no recent-projects list (for example after the settings were removed
+    when uninstalling): the list is rebuilt from the projects in Documents\DriveVault Projects, newest first. A list you cleared yourself stays empty.
+
 Version 1.10.0
 --------------
   - The timeline stays smooth however much is on it. It used to build the on-screen parts of every clip at once (a project with 848 clips made about 20,000 of them), so

@@ -13,6 +13,8 @@
 #include <QJsonObject>
 #include <QLocale>
 
+#include <algorithm>
+
 namespace dv {
 
 namespace {
@@ -63,6 +65,18 @@ bool RecentProjectsModel::load(const QString& file)
 
     QFile f(m_file);
     bool ok = true;
+    const bool seed = file.isEmpty() && !f.exists();
+    if (seed) {
+        // No list yet (new PC, or the settings folder was removed by an uninstall): rebuild it from the default projects folder.
+        QFileInfoList found;
+        const QDir root(paths::defaultProjectsDir());
+        for (const QFileInfo& dir : root.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
+            found += QDir(dir.absoluteFilePath()).entryInfoList({QStringLiteral("*.dvproj")}, QDir::Files);
+        found += root.entryInfoList({QStringLiteral("*.dvproj")}, QDir::Files);
+        std::sort(found.begin(), found.end(), [](const QFileInfo& a, const QFileInfo& b) { return a.lastModified() > b.lastModified(); });
+        for (const QFileInfo& fi : std::as_const(found))
+            m_items.append({fi.completeBaseName(), normalizedPath(fi.absoluteFilePath()), fi.lastModified().toUTC()});
+    }
     if (f.exists()) {
         ok = false;
         if (f.open(QIODevice::ReadOnly)) {
@@ -89,6 +103,8 @@ bool RecentProjectsModel::load(const QString& file)
     trimToLimit();
     endResetModel();
     emit countChanged();
+    if (seed && !m_items.isEmpty())
+        save();
     return ok;
 }
 
