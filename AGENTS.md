@@ -112,6 +112,25 @@ Edit the templates (or the per-product section 6 in the script), run the script,
 - Say the new version number in the summary every time you finish a change that bumps it.
 - The root `README.md` is for users (what the programs do, download table, install, update, privacy); developer material lives in `docs/DEVELOPMENT.md`. Keep it that way.
 
+## Published releases (record kept for the agents)
+
+The owner publishes Releases on GitHub by hand. This table is how an agent knows which versions have a Release; a version without a row was committed but **not** released (the installer in `dist\` is then only a local build).
+- When the owner says a Release was published (or asks for it to be recorded), add its row in the same session with a docs commit (`docs(suite): record release <tag>`). Check the tag and the commit it points to with `git ls-remote --tags origin`; never write a row from memory and never add a row for a Release that does not exist.
+- The commit column is the commit the tag points to; the date is that commit's date, not the day the Release was published.
+
+| Program | Version | Tag | Commit | Commit date |
+|---|---|---|---|---|
+| Master Pro | 1.2.0 | `drivevault-master-pro-v1.2.0` | `6859f14` | 2026-11-07 |
+| Master Pro | 1.3.0 | `drivevault-master-pro-v1.3.0` | `bfc0507` | 2026-11-08 |
+| Video Editor Pro | 1.0.1 | `drivevault-video-editor-pro-v1.0.1` | `1156f9e` | 2026-11-07 |
+| Video Editor Pro | 1.1.0 | `drivevault-video-editor-pro-v1.1.0` | `6859f14` | 2026-11-07 |
+| Video Editor Pro | 1.1.1 | `drivevault-video-editor-pro-v1.1.1` | `4d5b720` | 2026-11-07 |
+| Video Editor Pro | 1.3.0 | `drivevault-video-editor-pro-v1.3.0` | `cf0791b` | 2026-11-07 |
+| Video Editor Pro | 1.3.1 | `drivevault-video-editor-pro-v1.3.1` | `eba6a01` | 2026-11-07 |
+| Video Editor Pro | 1.6.0 | `drivevault-video-editor-pro-v1.6.0` | `54bafa6` | 2026-11-07 |
+| Video Editor Pro | 1.7.0 | `drivevault-video-editor-pro-v1.7.0` | `168b741` | 2026-11-08 |
+| Video Editor Pro | 1.9.0 | `drivevault-video-editor-pro-v1.9.0` | `cb08c83` | 2026-11-08 |
+
 ## Open items the owner knows about
 
 Code signing certificate (installers are unsigned), a test on a clean PC / VM (incl. the elevated `C:\Program Files` install), a lawyer's review of the EULA (a drafted text, not yet reviewed),
