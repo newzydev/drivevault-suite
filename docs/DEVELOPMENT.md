@@ -8,7 +8,7 @@ For people who build the programs. Users: see the [README](../README.md).
 | [`apps/drivevault-master-pro`](../apps/drivevault-master-pro) | **DriveVault Master Pro** - the hub that lists, opens, installs, updates (also from GitHub Releases) and uninstalls the programs. Accent colour amber `#F59E0B`. |
 | [`shared/scripts`](../shared/scripts) | Build environment (`env.ps1`), signing, clean-machine dependency check, installer artwork - used by every app. |
 | [`shared/legal`](../shared/legal) | The EULA templates (English + Thai); `make-license.ps1` generates every app's licence texts. |
-| [`docs`](.) | [`suite-integration.md`](suite-integration.md) (the contract between the programs and the hub), [`spec/`](spec) (the master specification). |
+| [`docs`](.) | [`suite-integration.md`](suite-integration.md) (the contract between the programs and the hub). |
 | `.tools` (not in git) | Portable toolchain: CMake, Ninja, Qt 6.8.3, Inno Setup, FFmpeg, whisper.cpp + speech model, Python. |
 
 Installed layout (all users; "just for me" uses `%LOCALAPPDATA%\Programs\DriveVault` instead):
