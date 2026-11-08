@@ -1,6 +1,13 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.3.0
+  New
+  - New look: a hero at the top (headline and a search field that filters the programs by name and description, plus how many programs are installed and how
+    many updates there are), programs grouped in sections, cards that lift under the mouse.
+  - Sections: "Multimedia programs" (Video Editor Pro, Image Editor Pro, Audio Editor Pro) and "Office programs" (Document Pro, Presentation Pro, Spreadsheet Pro,
+    PDF Pro). The office programs do not exist yet: they are shown as "Coming soon" and cannot be installed. Programs the hub does not know go to "Other programs".
+
 v1.2.0
   New
   - Checks for updates automatically once when it opens (all programs and Master Pro itself). The checkbox "Check for updates on start" in the footer switches it off.

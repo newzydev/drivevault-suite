@@ -80,8 +80,17 @@ private slots:
     {
         Hub hub(options());
         hub.setLanguage("en");
-        QCOMPARE(hub.products().size(), 3);
+        QCOMPARE(hub.products().size(), 7);                                 // 3 multimedia + 4 office programs, all but one still planned
         const QVariantMap video = find(hub, "drivevault.videoeditor");
+        QCOMPARE(video.value("section").toString(), QStringLiteral("multimedia"));
+        QCOMPARE(video.value("glyph").toString(), QStringLiteral("V"));
+        for (const QString& id : {"drivevault.document", "drivevault.presentation", "drivevault.spreadsheet", "drivevault.pdf"}) {
+            const QVariantMap m = find(hub, id);
+            QCOMPARE(m.value("section").toString(), QStringLiteral("office"));
+            QCOMPARE(m.value("status").toString(), QStringLiteral("comingSoon"));      // they do not exist: never offered as installable
+            QVERIFY(!m.value("canInstall").toBool());
+            QVERIFY(!m.value("onlineInstall").toBool());
+        }
         QCOMPARE(video.value("status").toString(), QStringLiteral("notInstalled"));
         QCOMPARE(video.value("installerPath").typeId(), int(QMetaType::QString));     // never "undefined" in QML
         QCOMPARE(video.value("accent").toString(), QStringLiteral("#8B5CF6"));
@@ -126,7 +135,8 @@ private slots:
         QVERIFY(!extra.isEmpty());
         QCOMPARE(extra.value("status").toString(), QStringLiteral("installed"));
         QCOMPARE(extra.value("accent").toString(), QStringLiteral("#EC4899"));
-        QCOMPARE(hub.products().size(), 4);
+        QCOMPARE(hub.products().size(), 8);
+        QCOMPARE(extra.value("section").toString(), QStringLiteral("other"));       // a program the hub does not know gets its own section
     }
 
     void setupFilesInTheFoldersOfferInstallAndUpdateAndRunWithTheRightResult()

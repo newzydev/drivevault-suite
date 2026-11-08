@@ -167,7 +167,7 @@ Check 'the Video Editor folder sits inside the Master Pro folder' ($installDir -
 $seen = MasterProducts $masterExe 'installed'
 $ve = $seen | Where-Object { $_.id -eq 'drivevault.videoeditor' }
 Check 'Master Pro (clean PATH) lists the Video Editor as installed' ($null -ne $ve -and $ve.installed -eq $true -and $ve.version -eq '1.6.0' -and $ve.status -eq 'installed' -and $ve.installDir -eq $installDir -and $ve.canUninstall -eq $true) "status=$($ve.status) version=$($ve.version)"
-Check 'Master Pro lists the planned programs as coming soon' ((@($seen | Where-Object { $_.status -eq 'comingSoon' }).Count) -eq 2)
+Check 'Master Pro lists the planned programs as coming soon' ((@($seen | Where-Object { $_.status -eq 'comingSoon' -and $_.section -eq 'multimedia' }).Count) -eq 2)
 $mpng = Join-Path $Work 'master-window.png'
 cmd /c "set PATH=$env:SystemRoot\System32;$env:SystemRoot&& set QT_QUICK_BACKEND=software&& `"$masterExe`" --data-dir `"$Work\master-data`" --lang th --screenshot `"$mpng`" --size 1120x740" | Out-Null
 Check 'Master Pro window renders (clean PATH)' (($LASTEXITCODE -eq 0) -and (Test-Path $mpng) -and ((Get-Item $mpng).Length -gt 20000)) "exit=$LASTEXITCODE"

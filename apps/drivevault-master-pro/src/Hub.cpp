@@ -41,19 +41,41 @@ struct CatalogEntry {
     bool planned;
     const char16_t* descEn;
     const char16_t* descTh;
+    const char* section;      // "multimedia" | "office" (a hub section; programs it does not know go to "other")
+    const char* glyph;        // the letter(s) on the card
 };
 
 // The DriveVault suite as it is planned. Only programs with planned == false exist today.
 const CatalogEntry kCatalog[] = {
     {"drivevault.videoeditor", "VideoEditorPro", "DriveVault Video Editor Pro", "#8B5CF6", false,
      u"Professional video editing: multitrack timeline, colour, effects, titles, audio mixing and offline AI tools.",
-     u"ตัดต่อวิดีโอระดับมืออาชีพ: ไทม์ไลน์หลายแทร็ก สี เอฟเฟกต์ ชื่อเรื่อง มิกซ์เสียง และเครื่องมือ AI แบบออฟไลน์"},
+     u"ตัดต่อวิดีโอระดับมืออาชีพ: ไทม์ไลน์หลายแทร็ก สี เอฟเฟกต์ ชื่อเรื่อง มิกซ์เสียง และเครื่องมือ AI แบบออฟไลน์",
+     "multimedia", "V"},
     {"drivevault.imageeditor", "ImageEditorPro", "DriveVault Image Editor Pro", "#3B82F6", true,
      u"Photo and graphics editing. Planned - not available yet.",
-     u"ตัดต่อและแต่งภาพ อยู่ในแผน - ยังไม่พร้อมใช้งาน"},
+     u"ตัดต่อและแต่งภาพ อยู่ในแผน - ยังไม่พร้อมใช้งาน",
+     "multimedia", "I"},
     {"drivevault.audioeditor", "AudioEditorPro", "DriveVault Audio Editor Pro", "#10B981", true,
      u"Audio recording, editing and mastering. Planned - not available yet.",
-     u"บันทึก ตัดต่อ และมาสเตอร์เสียง อยู่ในแผน - ยังไม่พร้อมใช้งาน"},
+     u"บันทึก ตัดต่อ และมาสเตอร์เสียง อยู่ในแผน - ยังไม่พร้อมใช้งาน",
+     "multimedia", "A"},
+    // the office programs that are planned (they do not exist yet)
+    {"drivevault.document", "DocumentPro", "DriveVault Document Pro", "#3B82F6", true,
+     u"Write and format documents. Planned - not available yet.",
+     u"เขียนและจัดรูปแบบเอกสาร อยู่ในแผน - ยังไม่พร้อมใช้งาน",
+     "office", "D"},
+    {"drivevault.presentation", "PresentationPro", "DriveVault Presentation Pro", "#F97316", true,
+     u"Create presentations and slides. Planned - not available yet.",
+     u"สร้างงานนำเสนอและสไลด์ อยู่ในแผน - ยังไม่พร้อมใช้งาน",
+     "office", "P"},
+    {"drivevault.spreadsheet", "SpreadsheetPro", "DriveVault Spreadsheet Pro", "#14B8A6", true,
+     u"Tables, formulas and charts. Planned - not available yet.",
+     u"ตาราง สูตร และแผนภูมิ อยู่ในแผน - ยังไม่พร้อมใช้งาน",
+     "office", "S"},
+    {"drivevault.pdf", "PdfPro", "DriveVault PDF Pro", "#EF4444", true,
+     u"Read, merge, split and edit PDF files. Planned - not available yet.",
+     u"อ่าน รวม แยก และแก้ไขไฟล์ PDF อยู่ในแผน - ยังไม่พร้อมใช้งาน",
+     "office", "PDF"},
 };
 
 struct Registered {
@@ -257,6 +279,7 @@ void Hub::refresh()
     for (const CatalogEntry& c : kCatalog) {
         QVariantMap p{{"id", QString::fromLatin1(c.id)}, {"key", QString::fromLatin1(c.key)}, {"name", QString::fromLatin1(c.name)},
                       {"accent", QString::fromLatin1(c.accent)}, {"planned", c.planned},
+                      {"section", QString::fromLatin1(c.section)}, {"glyph", QString::fromLatin1(c.glyph)},
                       {"description", QString::fromUtf16(th ? c.descTh : c.descEn)}};
         const Registered* pick = nullptr;
         for (const Registered& r : regs)
@@ -280,7 +303,9 @@ void Hub::refresh()
                 id = o.value("id").toString();
         }
         QVariantMap p{{"id", id}, {"key", r.key}, {"name", name}, {"accent", r.accent.isEmpty() ? QStringLiteral("#6B7280") : r.accent},
-                      {"planned", false}, {"description", r.publisher.isEmpty() ? QString() : r.publisher}};
+                      {"planned", false}, {"section", QStringLiteral("other")},
+                      {"glyph", QString(name).remove(QStringLiteral("DriveVault ")).left(1).toUpper()},
+                      {"description", r.publisher.isEmpty() ? QString() : r.publisher}};
         fill(p, &r, name);
         p["status"] = p.value("installed").toBool() ? "installed" : "broken";
         list.append(p);

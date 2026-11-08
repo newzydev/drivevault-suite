@@ -27,6 +27,10 @@ Rectangle {
     border.color: hover.hovered ? card.accent : Theme.borderSubtle
     opacity: status === "comingSoon" ? 0.75 : 1
     HoverHandler { id: hover }
+    transform: Translate {                                                   // the card lifts a little under the mouse
+        y: hover.hovered && card.status !== "comingSoon" ? -3 : 0
+        Behavior on y { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+    }
     Behavior on border.color { ColorAnimation { duration: 120 } }
 
     // coloured header
@@ -40,6 +44,17 @@ Rectangle {
             GradientStop { position: 0.0; color: card.accent }
             GradientStop { position: 1.0; color: Qt.darker(card.accent, 1.9) }
         }
+        Rectangle {                                                          // soft light on the upper half
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: parent.height * 0.6
+            radius: card.radius
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.16) }
+                GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0.0) }
+            }
+        }
         Rectangle {
             x: 20
             anchors.verticalCenter: parent.verticalCenter
@@ -49,8 +64,8 @@ Rectangle {
             border.color: Qt.rgba(1, 1, 1, 0.45)
             Text {
                 anchors.centerIn: parent
-                text: card.product.name.replace("DriveVault ", "").charAt(0)
-                font.pixelSize: 28
+                text: card.product.glyph
+                font.pixelSize: card.product.glyph.length > 2 ? 17 : 28
                 font.weight: Font.Bold
                 color: "#FFFFFF"
             }

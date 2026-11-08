@@ -50,6 +50,24 @@ ApplicationWindow {
     }
     onClosing: Hub.saveWindowState(visibility === Window.Maximized, normalX, normalY, normalWidth, normalHeight)
 
+    // ---- sections, search and the numbers of the hero ------------------------------------------------------------------------
+    readonly property var sections: [ { key: "multimedia" }, { key: "office" }, { key: "other" } ]
+    function matches(p) {
+        const q = searchField.text.trim().toLowerCase()
+        return q === "" || (p.name + " " + p.description).toLowerCase().indexOf(q) >= 0
+    }
+    function countIn(section) {
+        let n = 0
+        const list = Hub.products
+        for (let i = 0; i < list.length; ++i)
+            if (list[i].section === section && matches(list[i]))
+                ++n
+        return n
+    }
+    function totalMatches() { return countIn("multimedia") + countIn("office") + countIn("other") }
+    function installedCount() { let n = 0; for (const p of Hub.products) if (p.installed === true) ++n; return n }
+    function updateCount() { let n = 0; for (const p of Hub.products) if (p.updateAvailable === true || p.onlineUpdate === true) ++n; if (Hub.selfUpdateVersion !== "") ++n; return n }
+
     property string notice: ""
     function showNotice(text) { notice = text; noticeTimer.restart() }
 
@@ -105,35 +123,32 @@ ApplicationWindow {
         anchors.fill: parent
         spacing: 0
 
-        // ---- header ---------------------------------------------------------------------------------------------
+        // ---- top bar ----------------------------------------------------------------------------------------------
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 84
-            color: Theme.backgroundAlt
+            implicitHeight: 64
+            color: "#0D0E11"
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 28
                 anchors.rightMargin: 24
-                spacing: 16
-                Image { source: "qrc:/qt/qml/DriveVault/Master/resources/icons/app.png"; Layout.preferredWidth: 48; Layout.preferredHeight: 48; sourceSize.width: 96; smooth: true }
-                ColumnLayout {
-                    spacing: 2
-                    Text { text: Tr.s("title"); font.pixelSize: 22; font.weight: Font.Bold; color: Theme.text }
-                    Text { text: Tr.s("subtitle"); font.pixelSize: 13; color: Theme.textSecondary }
-                }
+                spacing: 12
+                Image { source: "qrc:/qt/qml/DriveVault/Master/resources/icons/app.png"; Layout.preferredWidth: 34; Layout.preferredHeight: 34; sourceSize.width: 68; smooth: true }
+                Text { text: Tr.s("title"); font.pixelSize: 17; font.weight: Font.Bold; color: Theme.text }
                 Item { Layout.fillWidth: true }
                 Text { text: Tr.s("language"); font.pixelSize: 12; color: Theme.textDisabled }
-                MButton { objectName: "langTh"; text: "ไทย"; variant: Hub.language === "th" ? "primary" : "secondary"; implicitWidth: 56; leftPadding: 8; rightPadding: 8; onClicked: Hub.language = "th" }
-                MButton { objectName: "langEn"; text: "EN"; variant: Hub.language === "en" ? "primary" : "secondary"; implicitWidth: 48; leftPadding: 8; rightPadding: 8; onClicked: Hub.language = "en" }
+                MButton { objectName: "langTh"; text: "ไทย"; compact: true; variant: Hub.language === "th" ? "primary" : "secondary"; implicitWidth: 52; leftPadding: 8; rightPadding: 8; onClicked: Hub.language = "th" }
+                MButton { objectName: "langEn"; text: "EN"; compact: true; variant: Hub.language === "en" ? "primary" : "secondary"; implicitWidth: 44; leftPadding: 8; rightPadding: 8; onClicked: Hub.language = "en" }
                 MButton {
                     objectName: "checkUpdates"
+                    compact: true
                     text: Hub.checking ? Tr.s("checking") : Tr.s("checkUpdates")
                     enabled: !Hub.busy && !Hub.checking
                     onClicked: { const e = Hub.checkForUpdates(); if (e !== "") win.showNotice(e) }
                 }
-                MButton { objectName: "refresh"; text: Tr.s("refresh"); onClicked: Hub.refresh() }
-                MButton { objectName: "about"; text: Tr.s("about"); variant: "ghost"; onClicked: aboutDialog.open() }
+                MButton { objectName: "refresh"; compact: true; text: Tr.s("refresh"); onClicked: Hub.refresh() }
+                MButton { objectName: "about"; compact: true; text: Tr.s("about"); variant: "ghost"; onClicked: aboutDialog.open() }
             }
         }
 
@@ -169,33 +184,185 @@ ApplicationWindow {
             }
         }
 
-        // ---- programs ------------------------------------------------------------------------------------------------
+        // ---- hero + programs by section --------------------------------------------------------------------------------------------
         Flickable {
+            id: scroller
             Layout.fillWidth: true
             Layout.fillHeight: true
-            contentHeight: grid.implicitHeight + 64
+            contentHeight: page.implicitHeight
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             ScrollBar.vertical: ScrollBar {}
 
             ColumnLayout {
-                x: 28
-                y: 24
-                width: parent.width - 56
-                spacing: 16
-                Text { text: Tr.s("programs"); font.pixelSize: 12; font.weight: Font.DemiBold; font.capitalization: Font.AllUppercase; font.letterSpacing: 1; color: Theme.textDisabled }
-                Flow {
-                    id: grid
+                id: page
+                width: scroller.width
+                spacing: 0
+
+                // hero: a warm glow, the headline and the search field
+                Rectangle {
+                    id: hero
+                    objectName: "hero"
                     Layout.fillWidth: true
-                    spacing: 20
+                    implicitHeight: 250
+                    clip: true
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#2A1D0A" }
+                        GradientStop { position: 0.55; color: "#17130E" }
+                        GradientStop { position: 1.0; color: Theme.background }
+                    }
+                    Rectangle { width: 460; height: 460; radius: 230; x: hero.width - 330; y: -250; color: Qt.alpha(Theme.accent, 0.13) }
+                    Rectangle { width: 300; height: 300; radius: 150; x: hero.width - 150; y: 60; color: Qt.alpha(Theme.accent, 0.07) }
+                    Rectangle { width: 340; height: 340; radius: 170; x: -120; y: 90; color: Qt.alpha("#8B5CF6", 0.07) }
+
+                    ColumnLayout {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: 40
+                        anchors.rightMargin: 40
+                        spacing: 10
+                        Text {
+                            Layout.fillWidth: true
+                            text: Tr.s("heroTitle")
+                            font.pixelSize: 32
+                            font.weight: Font.Bold
+                            color: Theme.text
+                            wrapMode: Text.Wrap
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: Tr.s("subtitle")
+                            font.pixelSize: 15
+                            color: Theme.textSecondary
+                            wrapMode: Text.Wrap
+                        }
+                        Item { Layout.preferredHeight: 6 }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 16
+
+                            TextField {
+                                id: searchField
+                                objectName: "searchField"
+                                Layout.fillWidth: true
+                                Layout.maximumWidth: 560
+                                implicitHeight: 50
+                                placeholderText: Tr.s("searchPlaceholder")
+                                placeholderTextColor: Theme.textDisabled
+                                color: Theme.text
+                                font.pixelSize: 15
+                                selectByMouse: true
+                                leftPadding: 50
+                                rightPadding: 44
+                                verticalAlignment: TextInput.AlignVCenter
+                                background: Rectangle {
+                                    radius: height / 2
+                                    color: "#CC1B1D24"
+                                    border.width: searchField.activeFocus ? 2 : 1
+                                    border.color: searchField.activeFocus ? Theme.accent : Theme.border
+                                    Behavior on border.color { ColorAnimation { duration: 120 } }
+                                }
+                                Item {                                     // magnifier, drawn (no icon font needed)
+                                    x: 20
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 18; height: 18
+                                    Rectangle { x: 0; y: 0; width: 12; height: 12; radius: 6; color: "transparent"; border.width: 2; border.color: searchField.activeFocus ? Theme.accent : Theme.textSecondary }
+                                    Rectangle { x: 10; y: 12; width: 8; height: 2; radius: 1; rotation: 45; color: searchField.activeFocus ? Theme.accent : Theme.textSecondary }
+                                }
+                                Text {                                     // clear
+                                    visible: searchField.text !== ""
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 18
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "✕"
+                                    font.pixelSize: 14
+                                    color: Theme.textSecondary
+                                    MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor; onClicked: searchField.clear() }
+                                }
+                            }
+
+                            // what is going on at a glance
+                            Row {
+                                spacing: 10
+                                Repeater {
+                                    model: [ { text: Tr.s("installedCount").replace("%1", win.installedCount()), tone: Theme.success },
+                                             { text: Tr.s("updatesCount").replace("%1", win.updateCount()), tone: Theme.info } ]
+                                    delegate: Rectangle {
+                                        required property var modelData
+                                        height: 30
+                                        width: chipLabel.implicitWidth + 24
+                                        radius: 15
+                                        color: Qt.alpha(modelData.tone, 0.14)
+                                        border.width: 1
+                                        border.color: Qt.alpha(modelData.tone, 0.5)
+                                        Text { id: chipLabel; anchors.centerIn: parent; text: parent.modelData.text; font.pixelSize: 12; font.weight: Font.Medium; color: parent.modelData.tone }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // the sections
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 40
+                    Layout.rightMargin: 40
+                    Layout.topMargin: 8
+                    Layout.bottomMargin: 40
+                    spacing: 30
+
+                    Text {
+                        objectName: "noResults"
+                        visible: win.totalMatches() === 0
+                        Layout.fillWidth: true
+                        text: Tr.s("noResults")
+                        font.pixelSize: 15
+                        color: Theme.textSecondary
+                        horizontalAlignment: Text.AlignHCenter
+                        topPadding: 40
+                    }
+
                     Repeater {
-                        model: Hub.products
-                        delegate: ProductCard {
+                        model: win.sections
+                        delegate: ColumnLayout {
+                            id: block
                             required property var modelData
-                            product: modelData
-                            onUninstallRequested: p => { confirm.product = p; confirm.open() }
-                            onBrowseRequested: setupDialog.open()
-                            onError: text => win.showNotice(text)
+                            objectName: "section_" + modelData.key
+                            visible: win.countIn(modelData.key) > 0
+                            Layout.fillWidth: true
+                            spacing: 16
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 12
+                                Text { text: Tr.s("sec_" + block.modelData.key); font.pixelSize: 19; font.weight: Font.Bold; color: Theme.text }
+                                Rectangle {
+                                    height: 22
+                                    width: countText.implicitWidth + 16
+                                    radius: 11
+                                    color: Theme.surface
+                                    Text { id: countText; anchors.centerIn: parent; text: win.countIn(block.modelData.key); font.pixelSize: 12; font.weight: Font.Medium; color: Theme.textSecondary }
+                                }
+                                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.borderSubtle }
+                            }
+
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 22
+                                Repeater {
+                                    model: Hub.products
+                                    delegate: ProductCard {
+                                        required property var modelData
+                                        product: modelData
+                                        visible: modelData.section === block.modelData.key && win.matches(modelData)
+                                        onUninstallRequested: p => { confirm.product = p; confirm.open() }
+                                        onBrowseRequested: setupDialog.open()
+                                        onError: text => win.showNotice(text)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
