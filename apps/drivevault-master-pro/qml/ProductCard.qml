@@ -20,7 +20,10 @@ Rectangle {
 
     objectName: "card_" + key
     implicitWidth: 320
-    implicitHeight: body.y + body.implicitHeight + 20
+    // every card is as tall as the tallest one (Main sets equalHeight from the neededHeight of all cards)
+    readonly property real neededHeight: body.y + body.implicitHeight + 20
+    property real equalHeight: 0
+    implicitHeight: Math.max(neededHeight, equalHeight)
     radius: Theme.radius + 2
     color: Theme.backgroundAlt
     border.width: 1
@@ -180,14 +183,43 @@ Rectangle {
             enabled: !Hub.busy
             onClicked: { const e = Hub.installProduct(card.product.id); if (e !== "") card.error(e) }
         }
-        MButton {
-            objectName: "launch_" + card.key
+        RowLayout {                                                       // open + a quiet "more" button (folder, uninstall)
             Layout.fillWidth: true
             visible: status === "installed"
-            variant: card.hasUpdate ? "secondary" : "primary"; tint: card.accent
-            text: Tr.s("launch")
-            enabled: !Hub.busy
-            onClicked: { const e = Hub.launch(card.product.id); if (e !== "") card.error(e) }
+            spacing: 8
+            MButton {
+                objectName: "launch_" + card.key
+                Layout.fillWidth: true
+                variant: card.hasUpdate ? "secondary" : "primary"; tint: card.accent
+                text: Tr.s("launch")
+                enabled: !Hub.busy
+                onClicked: { const e = Hub.launch(card.product.id); if (e !== "") card.error(e) }
+            }
+            MButton {
+                objectName: "more_" + card.key
+                variant: "secondary"
+                Layout.preferredWidth: 40
+                leftPadding: 0; rightPadding: 0
+                text: "⋯"
+                font.pixelSize: 18
+                onClicked: moreMenu.popup(0, height + 4)
+                MMenu {
+                    id: moreMenu
+                    implicitWidth: 220
+                    MMenuItem {
+                        objectName: "folder_" + card.key
+                        text: Tr.s("folder")
+                        onTriggered: { const e = Hub.openFolder(card.product.id); if (e !== "") card.error(e) }
+                    }
+                    MMenuItem {
+                        objectName: "uninstall_" + card.key
+                        danger: true
+                        text: Tr.s("uninstall")
+                        enabled: card.product.canUninstall === true && !Hub.busy
+                        onTriggered: card.uninstallRequested(card.product)
+                    }
+                }
+            }
         }
         MButton {
             objectName: "browse_" + card.key
@@ -195,30 +227,6 @@ Rectangle {
             visible: (status === "notInstalled" || status === "broken") && card.product.installerPath === ""
             text: Tr.s("browse")
             onClicked: card.browseRequested()
-        }
-
-        // ---- secondary actions (side by side) --------------------------------------------------------------------------------------
-        RowLayout {
-            Layout.fillWidth: true
-            visible: status === "installed"
-            spacing: 8
-            MButton {
-                objectName: "folder_" + card.key
-                Layout.fillWidth: true
-                compact: true
-                text: Tr.s("folder")
-                onClicked: { const e = Hub.openFolder(card.product.id); if (e !== "") card.error(e) }
-            }
-            MButton {
-                objectName: "uninstall_" + card.key
-                Layout.fillWidth: true
-                compact: true
-                visible: card.product.canUninstall === true
-                variant: "danger"
-                text: Tr.s("uninstall")
-                enabled: !Hub.busy
-                onClicked: card.uninstallRequested(card.product)
-            }
         }
     }
 }

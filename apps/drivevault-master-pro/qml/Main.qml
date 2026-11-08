@@ -51,6 +51,20 @@ ApplicationWindow {
     onClosing: Hub.saveWindowState(visibility === Window.Maximized, normalX, normalY, normalWidth, normalHeight)
 
     // ---- sections, search and the numbers of the hero ------------------------------------------------------------------------
+    // all program cards get the height of the tallest one
+    property var neededByKey: ({})
+    property real cardHeight: 0
+    function setNeeded(key, h) {
+        if (neededByKey[key] === h)
+            return
+        const copy = Object.assign({}, neededByKey)
+        copy[key] = h
+        neededByKey = copy
+        let m = 0
+        for (const k of Object.keys(copy))
+            m = Math.max(m, copy[k])
+        cardHeight = m
+    }
     readonly property var sections: [ { key: "multimedia" }, { key: "office" }, { key: "other" } ]
     function matches(p) {
         const q = searchField.text.trim().toLowerCase()
@@ -137,9 +151,40 @@ ApplicationWindow {
                 Image { source: "qrc:/qt/qml/DriveVault/Master/resources/icons/app.png"; Layout.preferredWidth: 34; Layout.preferredHeight: 34; sourceSize.width: 68; smooth: true }
                 Text { text: Tr.s("title"); font.pixelSize: 17; font.weight: Font.Bold; color: Theme.text }
                 Item { Layout.fillWidth: true }
-                Text { text: Tr.s("language"); font.pixelSize: 12; color: Theme.textDisabled }
-                MButton { objectName: "langTh"; text: "ไทย"; compact: true; variant: Hub.language === "th" ? "primary" : "secondary"; implicitWidth: 52; leftPadding: 8; rightPadding: 8; onClicked: Hub.language = "th" }
-                MButton { objectName: "langEn"; text: "EN"; compact: true; variant: Hub.language === "en" ? "primary" : "secondary"; implicitWidth: 44; leftPadding: 8; rightPadding: 8; onClicked: Hub.language = "en" }
+                // language: one small switch
+                Rectangle {
+                    implicitHeight: 32
+                    implicitWidth: langRow.implicitWidth + 6
+                    radius: 16
+                    color: Theme.surface
+                    border.width: 1
+                    border.color: Theme.border
+                    Row {
+                        id: langRow
+                        anchors.centerIn: parent
+                        spacing: 2
+                        Repeater {
+                            model: [ { code: "th", label: "ไทย", name: "langTh" }, { code: "en", label: "EN", name: "langEn" } ]
+                            delegate: AbstractButton {
+                                required property var modelData
+                                objectName: modelData.name
+                                readonly property bool current: Hub.language === modelData.code
+                                implicitWidth: 46; implicitHeight: 26
+                                hoverEnabled: true
+                                onClicked: Hub.language = modelData.code
+                                contentItem: Text {
+                                    text: parent.modelData.label
+                                    font.pixelSize: 12
+                                    font.weight: Font.DemiBold
+                                    color: parent.current ? Theme.readableOn(Theme.accent) : Theme.textSecondary
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                background: Rectangle { radius: 13; color: parent.current ? Theme.accent : parent.hovered ? Theme.surfaceHover : "transparent" }
+                            }
+                        }
+                    }
+                }
                 MButton {
                     objectName: "checkUpdates"
                     compact: true
@@ -147,8 +192,26 @@ ApplicationWindow {
                     enabled: !Hub.busy && !Hub.checking
                     onClicked: { const e = Hub.checkForUpdates(); if (e !== "") win.showNotice(e) }
                 }
-                MButton { objectName: "refresh"; compact: true; text: Tr.s("refresh"); onClicked: Hub.refresh() }
-                MButton { objectName: "about"; compact: true; text: Tr.s("about"); variant: "ghost"; onClicked: aboutDialog.open() }
+                // everything else (rarely needed) is in this menu
+                MButton {
+                    objectName: "moreMenu"
+                    compact: true
+                    Layout.preferredWidth: 34
+                    leftPadding: 0; rightPadding: 0
+                    text: "⋯"
+                    font.pixelSize: 18
+                    onClicked: topMenu.popup(width - topMenu.implicitWidth, height + 6)
+                    MMenu {
+                        id: topMenu
+                        implicitWidth: 280
+                        MMenuItem { objectName: "addFolder"; text: Tr.s("addFolder"); onTriggered: folderDialog.open() }
+                        MMenuItem { objectName: "openInstallers"; text: Tr.s("openInstallers"); onTriggered: Hub.openInstallersFolder() }
+                        MenuSeparator { padding: 4; contentItem: Rectangle { implicitHeight: 1; color: Theme.border } }
+                        MMenuItem { objectName: "autoCheck"; text: Tr.s("autoCheck"); checkable: true; checked: Hub.autoCheck; onTriggered: Hub.autoCheck = checked }
+                        MenuSeparator { padding: 4; contentItem: Rectangle { implicitHeight: 1; color: Theme.border } }
+                        MMenuItem { objectName: "about"; text: Tr.s("about"); onTriggered: aboutDialog.open() }
+                    }
+                }
             }
         }
 
@@ -282,23 +345,16 @@ ApplicationWindow {
                                 }
                             }
 
-                            // what is going on at a glance
-                            Row {
-                                spacing: 10
-                                Repeater {
-                                    model: [ { text: Tr.s("installedCount").replace("%1", win.installedCount()), tone: Theme.success },
-                                             { text: Tr.s("updatesCount").replace("%1", win.updateCount()), tone: Theme.info } ]
-                                    delegate: Rectangle {
-                                        required property var modelData
-                                        height: 30
-                                        width: chipLabel.implicitWidth + 24
-                                        radius: 15
-                                        color: Qt.alpha(modelData.tone, 0.14)
-                                        border.width: 1
-                                        border.color: Qt.alpha(modelData.tone, 0.5)
-                                        Text { id: chipLabel; anchors.centerIn: parent; text: parent.modelData.text; font.pixelSize: 12; font.weight: Font.Medium; color: parent.modelData.tone }
-                                    }
-                                }
+                            // only when something needs attention
+                            Rectangle {
+                                visible: win.updateCount() > 0
+                                height: 30
+                                width: updatesLabel.implicitWidth + 24
+                                radius: 15
+                                color: Qt.alpha(Theme.info, 0.14)
+                                border.width: 1
+                                border.color: Qt.alpha(Theme.info, 0.5)
+                                Text { id: updatesLabel; anchors.centerIn: parent; text: Tr.s("updatesCount").replace("%1", win.updateCount()); font.pixelSize: 12; font.weight: Font.Medium; color: Theme.info }
                             }
                         }
                     }
@@ -357,6 +413,9 @@ ApplicationWindow {
                                         required property var modelData
                                         product: modelData
                                         visible: modelData.section === block.modelData.key && win.matches(modelData)
+                                        equalHeight: win.cardHeight
+                                        onNeededHeightChanged: win.setNeeded(modelData.key, neededHeight)
+                                        Component.onCompleted: win.setNeeded(modelData.key, neededHeight)
                                         onUninstallRequested: p => { confirm.product = p; confirm.open() }
                                         onBrowseRequested: setupDialog.open()
                                         onError: text => win.showNotice(text)
@@ -369,71 +428,33 @@ ApplicationWindow {
             }
         }
 
-        // ---- installer folders + status ----------------------------------------------------------------------------------
+        // ---- status line ---------------------------------------------------------------------------------------------------------
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: footer.implicitHeight + 24
-            color: Theme.backgroundAlt
+            implicitHeight: 36
+            color: "#0D0E11"
             Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.borderSubtle }
-            ColumnLayout {
-                id: footer
+            RowLayout {
                 anchors.fill: parent
-                anchors.margins: 12
                 anchors.leftMargin: 28
                 anchors.rightMargin: 24
-                spacing: 6
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 10
-                    Text { text: Tr.s("installers"); font.pixelSize: 12; font.weight: Font.DemiBold; color: Theme.textSecondary }
-                    Text { Layout.fillWidth: true; text: Hub.installerFolders.join("   ·   "); font.pixelSize: 12; color: Theme.textDisabled; elide: Text.ElideMiddle }
-                    MButton { objectName: "addFolder"; text: Tr.s("addFolder"); implicitHeight: 28; onClicked: folderDialog.open() }
-                    MButton { objectName: "openInstallers"; text: Tr.s("openInstallers"); implicitHeight: 28; onClicked: Hub.openInstallersFolder() }
+                spacing: 10
+                BusyIndicator { running: Hub.busy || Hub.checking; visible: Hub.busy || Hub.checking; implicitWidth: 18; implicitHeight: 18 }
+                ProgressBar {
+                    objectName: "downloadProgress"
+                    visible: Hub.downloadProgress >= 0
+                    value: Hub.downloadProgress
+                    implicitWidth: 140
                 }
-                RowLayout {
+                Text {
+                    objectName: "statusText"
                     Layout.fillWidth: true
-                    spacing: 10
-                    BusyIndicator { running: Hub.busy || Hub.checking; visible: Hub.busy || Hub.checking; implicitWidth: 20; implicitHeight: 20 }
-                    ProgressBar {
-                        objectName: "downloadProgress"
-                        visible: Hub.downloadProgress >= 0
-                        value: Hub.downloadProgress
-                        implicitWidth: 140
-                    }
-                    Text {
-                        objectName: "statusText"
-                        Layout.fillWidth: true
-                        text: Hub.busy || Hub.checking ? Hub.message : win.notice
-                        font.pixelSize: 13
-                        color: Hub.busy || Hub.checking ? Theme.accent : Theme.textSecondary
-                        elide: Text.ElideRight
-                    }
-                    CheckBox {
-                        id: autoCheckBox
-                        objectName: "autoCheck"
-                        checked: Hub.autoCheck
-                        onToggled: Hub.autoCheck = checked
-                        padding: 0
-                        spacing: 8
-                        contentItem: Text {
-                            leftPadding: autoCheckBox.indicator.width + autoCheckBox.spacing
-                            text: Tr.s("autoCheck")
-                            font.pixelSize: 12
-                            color: Theme.textSecondary
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        indicator: Rectangle {
-                            implicitWidth: 18; implicitHeight: 18
-                            y: (autoCheckBox.height - height) / 2
-                            radius: 5
-                            color: autoCheckBox.checked ? Theme.accent : "transparent"
-                            border.width: 1
-                            border.color: autoCheckBox.checked ? Theme.accent : Theme.border
-                            Text { anchors.centerIn: parent; visible: autoCheckBox.checked; text: "✓"; font.pixelSize: 12; font.weight: Font.Bold; color: Theme.readableOn(Theme.accent) }
-                        }
-                    }
-                    Text { text: "v" + Hub.version; font.pixelSize: 12; color: Theme.textDisabled }
+                    text: Hub.busy || Hub.checking ? Hub.message : win.notice
+                    font.pixelSize: 12
+                    color: Hub.busy || Hub.checking ? Theme.accent : Theme.textSecondary
+                    elide: Text.ElideRight
                 }
+                Text { text: "v" + Hub.version; font.pixelSize: 12; color: Theme.textDisabled }
             }
         }
     }

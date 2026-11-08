@@ -44,6 +44,8 @@ qt_add_qml_module(DriveVaultMasterPro
         qml/ProductCard.qml
         qml/AboutDialog.qml
         qml/MButton.qml
+        qml/MMenu.qml
+        qml/MMenuItem.qml
     RESOURCES
         resources/icons/app.png
         resources/fonts/Inter-Variable.ttf

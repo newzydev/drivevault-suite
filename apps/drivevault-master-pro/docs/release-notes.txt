@@ -3,8 +3,11 @@ DriveVault Master Pro - release notes
 
 v1.3.0
   New
-  - New look: a hero at the top (headline and a search field that filters the programs by name and description, plus how many programs are installed and how
-    many updates there are), programs grouped in sections, cards that lift under the mouse.
+  - New look: a hero at the top (headline and a search field that filters the programs by name and description, and an updates badge when there is one),
+    programs grouped in sections, cards that lift under the mouse.
+  - Calmer screen: the top bar has only the language switch, "Check for updates" and a "..." menu (add installer folder, open installers folder, check for
+    updates on start, about); the Refresh button and the installer-folder list at the bottom are gone (the list refreshes itself); a program card has "Open"
+    and a "..." button (open folder, uninstall) instead of two extra buttons; the hero shows an updates badge only when there is an update.
   - Sections: "Multimedia programs" (Video Editor Pro, Image Editor Pro, Audio Editor Pro) and "Office programs" (Document Pro, Presentation Pro, Spreadsheet Pro,
     PDF Pro). The office programs do not exist yet: they are shown as "Coming soon" and cannot be installed. Programs the hub does not know go to "Other programs".
 
