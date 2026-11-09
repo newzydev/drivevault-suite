@@ -2,6 +2,16 @@ DriveVault PDF Pro - release notes
 ==================================
 (In development: no version has been released yet. These notes are for the developers.)
 
+v0.6.0 (2026-11-09) - Phase 4 finished: forms, notes, polygons, autosave
+  New
+  - Fill in forms (button "Form"): AcroForm text fields, tick boxes, lists and radio groups; saved as a new copy that every viewer shows.
+  - The reader now draws form fields and their values (before, fields were blank).
+  - Sticky notes and polygons in the edit bar.
+  - Autosave of unsaved edits and an offer to restore them when the file is opened again.
+  Limits
+  - Forms: no XFA, no Thai in fields (the form fonts have none), no signatures; tested on a generated form only.
+  - Edits are still burned into the pages when saved (no editable annotations).
+
 v0.5.0 (2026-11-09) - Phase 4: add text, pictures and shapes
   New
   - Edit bar: text (Thai and English, shaped), pictures, rectangle, ellipse, line, arrow, pen, highlight, underline, strike-out, stamps; select, move, resize, turn, order, colour, fill, line width, opacity, font, size, bold, italic, alignment; undo / redo.

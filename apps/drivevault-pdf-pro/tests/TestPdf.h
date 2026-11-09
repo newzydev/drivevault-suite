@@ -143,3 +143,42 @@ inline QByteArray makePhotoDoc()
     return out;
 }
 } // namespace testpdf
+
+namespace testpdf {
+// One page with a fill-in form: text "name", read-only text "locked", checkbox "agree", combo "country", radio group "size" (S / L).
+inline QByteArray makeFormDoc()
+{
+    auto stream = [](const QByteArray& dict, const QByteArray& data) {
+        return "<< " + dict + " /Length " + QByteArray::number(data.size()) + " >>\nstream\n" + data + "\nendstream";
+    };
+    const QByteArray da = "/DA (/Helv 12 Tf 0 g) ";
+    const QList<QByteArray> bodies = {
+        "<< /Type /Catalog /Pages 2 0 R /AcroForm 6 0 R >>",
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R /Annots [7 0 R 8 0 R 9 0 R 10 0 R 14 0 R 15 0 R] >>",
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+        stream("", "BT /F1 18 Tf 72 740 Td (Application form) Tj ET"),
+        "<< /Fields [7 0 R 8 0 R 9 0 R 10 0 R 11 0 R] /DR << /Font << /Helv 4 0 R >> >> /DA (/Helv 12 Tf 0 g) >>",
+        "<< /Type /Annot /Subtype /Widget /FT /Tx /T (name) /Rect [72 650 300 680] " + da + "/F 4 /P 3 0 R >>",
+        "<< /Type /Annot /Subtype /Widget /FT /Tx /Ff 1 /T (locked) /V (fixed) /Rect [72 600 300 630] " + da + "/F 4 /P 3 0 R >>",
+        "<< /Type /Annot /Subtype /Widget /FT /Btn /T (agree) /V /Off /AS /Off /Rect [72 550 92 570] /F 4 /P 3 0 R /AP << /N << /Yes 12 0 R /Off 13 0 R >> >> >>",
+        "<< /Type /Annot /Subtype /Widget /FT /Ch /Ff 131072 /T (country) /Opt [(Thailand) (Japan) (France)] /Rect [72 500 300 530] " + da + "/F 4 /P 3 0 R >>",
+        "<< /FT /Btn /Ff 32768 /T (size) /V /Off /Kids [14 0 R 15 0 R] >>",
+        stream("/Type /XObject /Subtype /Form /BBox [0 0 20 20]", "0 g 3 3 14 14 re f"),
+        stream("/Type /XObject /Subtype /Form /BBox [0 0 20 20]", ""),
+        "<< /Type /Annot /Subtype /Widget /Parent 11 0 R /AS /Off /Rect [72 450 92 470] /F 4 /P 3 0 R /AP << /N << /S 12 0 R /Off 13 0 R >> >> >>",
+        "<< /Type /Annot /Subtype /Widget /Parent 11 0 R /AS /Off /Rect [120 450 140 470] /F 4 /P 3 0 R /AP << /N << /L 12 0 R /Off 13 0 R >> >> >>"};
+    QByteArray out = "%PDF-1.5\n%\xE2\xE3\xCF\xD3\n";
+    QList<qint64> offsets;
+    for (int i = 0; i < bodies.size(); ++i) {
+        offsets.append(out.size());
+        out += QByteArray::number(i + 1) + " 0 obj\n" + bodies.at(i) + "\nendobj\n";
+    }
+    const qint64 xref = out.size();
+    out += "xref\n0 " + QByteArray::number(bodies.size() + 1) + "\n0000000000 65535 f \n";
+    for (qint64 o : offsets)
+        out += QByteArray::number(o).rightJustified(10, '0') + " 00000 n \n";
+    out += "trailer\n<< /Size " + QByteArray::number(bodies.size() + 1) + " /Root 1 0 R >>\nstartxref\n" + QByteArray::number(xref) + "\n%%EOF\n";
+    return out;
+}
+} // namespace testpdf

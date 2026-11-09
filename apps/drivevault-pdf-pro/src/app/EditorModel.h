@@ -25,6 +25,8 @@ class EditorModel : public QObject {
     Q_PROPERTY(QString tool READ tool WRITE setTool NOTIFY toolChanged FINAL)
     Q_PROPERTY(int selectedId READ selectedId NOTIFY selectionChanged FINAL)
     Q_PROPERTY(int editingId READ editingId NOTIFY editingChanged FINAL)                         // the text item being typed into (not drawn by the overlay)
+    Q_PROPERTY(bool polygonOpen READ polygonOpen NOTIFY changed FINAL)                           // corners are being added
+    Q_PROPERTY(bool recoverable READ recoverable NOTIFY changed FINAL)                            // unsaved edits of an earlier run were found for the open file
     Q_PROPERTY(int rev READ rev NOTIFY changed FINAL)                                            // changes whenever the overlay of the open file changes
     Q_PROPERTY(int count READ count NOTIFY changed FINAL)                                        // items + marks of the open file
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY changed FINAL)
@@ -57,6 +59,8 @@ public:
     void setTool(const QString& tool);
     int selectedId() const { return m_selected; }
     int editingId() const { return m_editing; }
+    bool polygonOpen() const { return m_poly != 0; }
+    bool recoverable() const { return m_recoverable; }
     int rev() const { return m_rev; }
     int count() const;
     bool canUndo() const;
@@ -95,6 +99,11 @@ public:
     Q_INVOKABLE void updateDraft(double x, double y);                                     // drag
     Q_INVOKABLE bool endDraft();                                                          // release: false when the item was too small and was dropped
     Q_INVOKABLE QString addImage(int page, const QString& pathOrUrl, double x, double y);  // "" or "format" | "file"
+    // polygon: click for each corner (beginPolygon, addPolygonPoint ...), movePolygon follows the pointer, finishPolygon closes it (false: fewer than 3 corners, dropped)
+    Q_INVOKABLE int beginPolygon(int page, double x, double y);
+    Q_INVOKABLE void addPolygonPoint(double x, double y);
+    Q_INVOKABLE void movePolygon(double x, double y);
+    Q_INVOKABLE bool finishPolygon();
     Q_INVOKABLE int addStamp(int page, double x, double y, const QString& text);
 
     // ---- editing (all undoable)
@@ -113,6 +122,10 @@ public:
     Q_INVOKABLE void redo();
     Q_INVOKABLE void discardEdits();                      // forget all edits of the open file
     Q_INVOKABLE bool modifiedFor(int tabId) const;        // that file has edits that are not saved
+    // autosave: the edits of every changed file are written to <data dir>/recovery a moment after each change and found again when the file is opened
+    Q_INVOKABLE bool restoreRecovery();                    // put the edits of the earlier run back
+    Q_INVOKABLE void declineRecovery();                    // delete them
+    Q_INVOKABLE void forgetRecovery();                     // delete the recovery files of all open files (the user chose to quit without saving)
 
     // ---- on every page: watermark, page numbers, header, footer
     // type: watermark | pageNumber | header | footer. m: {text, font, size, bold, italic, color, opacity, align, from (1 based), to (1 based, 0 = last)}
@@ -152,6 +165,7 @@ private:
         std::vector<Snapshot> redo;
         int nextId = 1;
         bool dirty = false;
+        QString path;                   // the file this belongs to (for the recovery file)
     };
     State* state();                     // of the open file (created when needed); null when no file is open
     const State* state() const;
@@ -175,6 +189,12 @@ private:
     bool m_inGesture = false;
     bool m_gestureSnapshot = false;
     int m_draft = 0;
+    int m_poly = 0;
+    bool m_recoverable = false;
+    class QTimer* m_autosave = nullptr;
+    QString recoveryPath(const QString& file) const;
+    void writeRecovery();
+    void checkRecovery();
     QPointF m_draftStart;
     bool m_busy = false;
     double m_progress = 0.0;

@@ -5,6 +5,7 @@
 #include "PageImageProvider.h"
 #include "Compressor.h"
 #include "EditorModel.h"
+#include "FormFiller.h"
 #include "OverlayImageProvider.h"
 #include "PageListModel.h"
 #include "TestPdf.h"
@@ -47,6 +48,7 @@ class TstUiFlow : public QObject {
     dp::PageListModel* m_org = nullptr;
     dp::Compressor* m_cmp = nullptr;
     dp::EditorModel* m_edit = nullptr;
+    dp::FormFiller* m_forms = nullptr;
     QQmlApplicationEngine* m_engine = nullptr;
     QQuickWindow* m_window = nullptr;
     QString m_sixPath;
@@ -188,10 +190,12 @@ private slots:
         m_org = new dp::PageListModel(m_doc);
         m_cmp = new dp::Compressor(m_doc);
         m_edit = new dp::EditorModel(m_doc);
+        m_forms = new dp::FormFiller(m_doc);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Doc", m_doc);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Organizer", m_org);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Compressor", m_cmp);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Editor", m_edit);
+        qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Forms", m_forms);
         m_engine = new QQmlApplicationEngine;
         m_engine->addImageProvider(QStringLiteral("pdf"), new dp::PageImageProvider(m_doc));
         m_engine->addImageProvider(QStringLiteral("ovl"), new dp::OverlayImageProvider(m_doc, m_edit));
@@ -209,6 +213,7 @@ private slots:
     {
         m_doc->close();
         delete m_engine;
+        delete m_forms;
         delete m_edit;
         delete m_cmp;
         delete m_org;
@@ -776,6 +781,40 @@ private slots:
         QVERIFY(click("editClose"));
         QVERIFY(!m_edit->active());
         m_edit->discardEdits();
+        m_doc->close();
+    }
+
+    void theFormDialogListsTheFieldsFillsThemAndSavesACopy()
+    {
+        fresh(write("form.pdf", testpdf::makeFormDoc()), "form.pdf");
+        // the reader draws the (empty) fields without errors; then the dialog
+        QVERIFY(click("formButton"));
+        QObject* dialog = m_window->findChild<QObject*>("formDialog");
+        QVERIFY(dialog);
+        QTRY_VERIFY_WITH_TIMEOUT(dialog->property("opened").toBool(), 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(visible("formField_name") && visible("formField_agree") && visible("formField_country"), 8000);
+        QVERIFY(!find("formSave")->isEnabled());                                 // nothing typed yet
+        QVERIFY(!find("formField_locked")->isEnabled());                         // read-only
+        QVERIFY(typeInto("formField_name", "Somchai", false));
+        QVERIFY(click("formField_agree"));
+        QTRY_VERIFY_WITH_TIMEOUT(find("formSave")->isEnabled(), 3000);
+        const QString out = m_dir.filePath("form-filled.pdf");
+        QFile::remove(out);
+        QVERIFY(QMetaObject::invokeMethod(dialog, "save", Q_ARG(QVariant, out), Q_ARG(QVariant, false)));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("formOpenResult"), 10000);
+        QVERIFY(text("formMessage").contains("2"));
+        auto filled = dp::pdf::PdfDocument::open(out, {}, nullptr);
+        QVERIFY(filled);
+        const QImage img = filled->render(0, 1.0, nullptr, 0);
+        int ink = 0;
+        for (int y = 112; y < 138; ++y)
+            for (int x = 76; x < 296; ++x)
+                if (QColor(img.pixel(x, y)).lightness() < 110)
+                    ++ink;
+        QVERIFY2(ink > 40, qPrintable(QString::number(ink)));
+        filled.reset();
+        QVERIFY(click("formClose"));
+        QTRY_VERIFY_WITH_TIMEOUT(!dialog->property("opened").toBool(), 5000);
         m_doc->close();
     }
 

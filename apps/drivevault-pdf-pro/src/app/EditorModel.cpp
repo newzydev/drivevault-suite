@@ -3,7 +3,14 @@
 
 #include "DocumentController.h"
 
+#include <QCryptographicHash>
 #include <QDir>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QSaveFile>
+#include <QTimer>
 #include <QFileInfo>
 #include <QSet>
 #include <QFontDatabase>
@@ -37,6 +44,8 @@ QString kindName(Kind k)
     case Kind::Underline: return QStringLiteral("underline");
     case Kind::Strike: return QStringLiteral("strike");
     case Kind::Stamp: return QStringLiteral("stamp");
+    case Kind::Polygon: return QStringLiteral("polygon");
+    case Kind::Note: return QStringLiteral("note");
     }
     return {};
 }
@@ -44,7 +53,7 @@ QString kindName(Kind k)
 bool kindFromTool(const QString& tool, Kind& out)
 {
     static const QList<Kind> all = {Kind::Text, Kind::Image, Kind::Rect, Kind::Ellipse, Kind::Line, Kind::Arrow,
-                                    Kind::Pen, Kind::Highlight, Kind::Underline, Kind::Strike, Kind::Stamp};
+                                    Kind::Pen, Kind::Highlight, Kind::Underline, Kind::Strike, Kind::Stamp, Kind::Polygon, Kind::Note};
     for (Kind k : all)
         if (kindName(k) == tool) {
             out = k;
@@ -54,6 +63,7 @@ bool kindFromTool(const QString& tool, Kind& out)
 }
 
 bool isLine(Kind k) { return k == Kind::Line || k == Kind::Arrow; }
+bool isPts(Kind k) { return k == Kind::Pen || k == Kind::Polygon; }
 
 double distanceToSegment(const QPointF& p, const QPointF& a, const QPointF& b)
 {
@@ -116,6 +126,12 @@ EditorModel::EditorModel(DocumentController* controller, QObject* parent)
         emit changed();
     });
     connect(controller, &DocumentController::tabsChanged, this, [this] { pruneClosedTabs(); });
+    m_autosave = new QTimer(this);
+    m_autosave->setSingleShot(true);
+    m_autosave->setInterval(2000);
+    connect(m_autosave, &QTimer::timeout, this, [this] { writeRecovery(); });
+    connect(controller, &DocumentController::documentChanged, this, [this] { checkRecovery(); });
+    checkRecovery();
 }
 
 EditorModel::~EditorModel()
@@ -134,6 +150,8 @@ void EditorModel::pruneClosedTabs()
     bool removed = false;
     for (auto it = m_states.begin(); it != m_states.end();) {
         if (!open.contains(it->first)) {
+            if (!it->second.path.isEmpty())
+                QFile::remove(recoveryPath(it->second.path));
             it = m_states.erase(it);
             removed = true;
         } else {
@@ -149,7 +167,10 @@ EditorModel::State* EditorModel::state()
     const int id = m_controller->docId();
     if (id <= 0 || !m_controller->isOpen())
         return nullptr;
-    return &m_states[id];
+    State& st = m_states[id];
+    if (st.path.isEmpty())
+        st.path = m_controller->filePath();
+    return &st;
 }
 
 const EditorModel::State* EditorModel::state() const
@@ -228,6 +249,8 @@ void EditorModel::setTool(const QString& tool)
     if (m_tool == tool)
         return;
     endEdit();
+    if (m_poly != 0)
+        finishPolygon();
     m_tool = tool;
     if (tool != QLatin1String("select")) {
         m_selected = 0;
@@ -263,6 +286,8 @@ void EditorModel::touch()
     if (State* s = state())
         s->dirty = true;
     ++m_rev;
+    if (m_autosave)
+        m_autosave->start();
     emit changed();
 }
 
@@ -289,13 +314,15 @@ EditItem EditorModel::newItem(int page, Kind kind) const
     it.text.clear();
     it.imagePath.clear();
     it.angle = 0;
-    if (kind != Kind::Rect && kind != Kind::Ellipse && kind != Kind::Text && kind != Kind::Stamp)
+    if (kind != Kind::Rect && kind != Kind::Ellipse && kind != Kind::Text && kind != Kind::Stamp && kind != Kind::Polygon && kind != Kind::Note)
         it.fill = QColor();
     if (kind == Kind::Highlight) {
         if (m_style.color == QColor(0, 0, 0))
             it.color = QColor(255, 235, 0);
         it.opacity = 0.4 * m_style.opacity;
     }
+    if (kind == Kind::Note)
+        it.fill = QColor(255, 240, 140);
     if (kind == Kind::Stamp) {
         it.color = m_style.color == QColor(0, 0, 0) ? QColor(200, 30, 30) : m_style.color;
         it.angle = -12;
@@ -325,7 +352,7 @@ void EditorModel::loadStyleFrom(const EditItem& it)
     m_style.fill = it.fill;
     m_style.width = it.width;
     m_style.opacity = it.opacity;
-    if (it.kind == Kind::Text || it.kind == Kind::Stamp) {
+    if (it.kind == Kind::Text || it.kind == Kind::Stamp || it.kind == Kind::Note) {
         m_style.font = it.font;
         m_style.fontSize = it.fontSize;
         m_style.bold = it.bold;
@@ -376,13 +403,15 @@ int EditorModel::hitTest(int page, double x, double y) const
         if (isLine(it.kind)) {
             if (distanceToSegment(p, it.a, it.b) <= std::max(5.0, it.width / 2 + 3))
                 return it.id;
-        } else if (it.kind == Kind::Pen) {
+        } else if (isPts(it.kind)) {
             const double tol = std::max(5.0, it.width / 2 + 3);
             if (it.points.size() == 1 && std::hypot(x - it.points[0].x(), y - it.points[0].y()) <= tol)
                 return it.id;
             for (int k = 1; k < it.points.size(); ++k)
                 if (distanceToSegment(p, it.points[k - 1], it.points[k]) <= tol)
                     return it.id;
+            if (it.kind == Kind::Polygon && QPolygonF(it.points).containsPoint(p, Qt::OddEvenFill))
+                return it.id;
         } else {
             QRectF box = it.bounds();
             if (it.kind == Kind::Underline || it.kind == Kind::Strike)
@@ -444,7 +473,7 @@ int EditorModel::beginDraft(int page, const QString& tool, double x, double y)
     QMutexLocker lock(&m_mutex);
     Kind kind;
     State* s = state();
-    if (!s || !kindFromTool(tool, kind) || kind == Kind::Image)
+    if (!s || !kindFromTool(tool, kind) || kind == Kind::Image || kind == Kind::Polygon)
         return 0;
     endEdit();
     beginGesture();
@@ -454,7 +483,7 @@ int EditorModel::beginDraft(int page, const QString& tool, double x, double y)
     m_draftStart = QPointF(x, y);
     if (isLine(kind)) {
         it.a = it.b = m_draftStart;
-    } else if (kind == Kind::Pen) {
+    } else if (isPts(kind)) {
         it.points = {m_draftStart};
     } else {
         it.rect = QRectF(m_draftStart, QSizeF(0, 0));
@@ -476,7 +505,7 @@ void EditorModel::updateDraft(double x, double y)
     const QPointF p(x, y);
     if (isLine(it->kind))
         it->b = p;
-    else if (it->kind == Kind::Pen) {
+    else if (isPts(it->kind)) {
         const QPointF last = it->points.last();
         if (std::hypot(p.x() - last.x(), p.y() - last.y()) >= 0.8)
             it->points.append(p);
@@ -498,14 +527,14 @@ bool EditorModel::endDraft()
         return false;
     }
     bool keep = true;
-    if (it->kind == Kind::Text) {
+    if (it->kind == Kind::Text || it->kind == Kind::Note) {
         if (it->rect.width() < 20 || it->rect.height() < 12)
-            it->rect = QRectF(it->rect.topLeft(), QSizeF(std::max(220.0, it->rect.width()), it->fontSize * 1.6 + 6));
+            it->rect = QRectF(it->rect.topLeft(), QSizeF(std::max(it->kind == Kind::Note ? 180.0 : 220.0, it->rect.width()), std::max(it->kind == Kind::Note ? 100.0 : 0.0, it->fontSize * 1.6 + 6)));
     } else if (it->kind == Kind::Stamp) {
         it->rect = QRectF(m_draftStart, QSizeF(std::max(160.0, it->rect.width()), std::max(40.0, it->fontSize * 2.2)));
     } else if (isLine(it->kind)) {
         keep = std::hypot(it->b.x() - it->a.x(), it->b.y() - it->a.y()) >= 3;
-    } else if (it->kind == Kind::Pen) {
+    } else if (isPts(it->kind)) {
         keep = !it->points.isEmpty();
     } else if (it->kind == Kind::Underline || it->kind == Kind::Strike) {
         keep = it->rect.width() >= 3;
@@ -624,7 +653,7 @@ void EditorModel::dragHandle(int handle, double x, double y)
     QRectF nr = QRectF(QPointF(l, t), QPointF(r, b)).normalized();
     if (nr.width() < 4) nr.setWidth(4);
     if (nr.height() < 4) nr.setHeight(4);
-    if (it->kind == Kind::Pen) {
+    if (isPts(it->kind)) {
         for (QPointF& pt : it->points) {
             const double fx = old.width() > 0 ? (pt.x() - old.left()) / old.width() : 0.5;
             const double fy = old.height() > 0 ? (pt.y() - old.top()) / old.height() : 0.5;
@@ -640,7 +669,7 @@ void EditorModel::rotateSelected(double degrees)
 {
     QMutexLocker lock(&m_mutex);
     EditItem* it = find(m_selected);
-    if (!it || isLine(it->kind) || it->kind == Kind::Pen)
+    if (!it || isLine(it->kind) || isPts(it->kind))
         return;
     pushUndo();
     it = find(m_selected);
@@ -653,7 +682,7 @@ void EditorModel::beginEdit(int id)
 {
     QMutexLocker lock(&m_mutex);
     const EditItem* it = find(id);
-    if (!it || (it->kind != Kind::Text && it->kind != Kind::Stamp))
+    if (!it || (it->kind != Kind::Text && it->kind != Kind::Stamp && it->kind != Kind::Note))
         return;
     m_selected = id;
     m_editing = id;
@@ -775,7 +804,11 @@ void EditorModel::discardEdits()
     if (!s)
         return;
     endEdit();
+    const QString file = s->path;
     *s = State();
+    s->path = file;
+    if (!file.isEmpty())
+        QFile::remove(recoveryPath(file));
     m_selected = 0;
     emit selectionChanged();
     touch();
@@ -942,8 +975,10 @@ QString EditorModel::save(const QString& outPath, bool overwrite)
             m_progress = r.ok ? 1.0 : m_progress;
             if (r.ok) {
                 QMutexLocker lock(&m_mutex);
-                if (auto it = m_states.find(tabId); it != m_states.end())
+                if (auto it = m_states.find(tabId); it != m_states.end()) {
                     it->second.dirty = false;
+                    QFile::remove(recoveryPath(it->second.path));
+                }
                 emit changed();
             }
             emit savingChanged();
@@ -968,6 +1003,255 @@ bool EditorModel::modifiedFor(int tabId) const
     QMutexLocker lock(&m_mutex);
     const auto it = m_states.find(tabId);
     return it != m_states.end() && it->second.dirty && (!it->second.now.items.isEmpty() || !it->second.now.marks.isEmpty());
+}
+
+} // namespace dp
+
+namespace dp {
+
+int EditorModel::beginPolygon(int page, double x, double y)
+{
+    QMutexLocker lock(&m_mutex);
+    State* s = state();
+    if (!s || m_poly != 0)
+        return 0;
+    endEdit();
+    beginGesture();
+    pushUndo();
+    EditItem it = newItem(page, Kind::Polygon);
+    it.id = s->nextId++;
+    it.points = {QPointF(x, y), QPointF(x, y)};         // the last point follows the pointer
+    s->now.items.append(it);
+    m_poly = it.id;
+    m_selected = it.id;
+    touch();
+    emit selectionChanged();
+    return it.id;
+}
+
+void EditorModel::addPolygonPoint(double x, double y)
+{
+    QMutexLocker lock(&m_mutex);
+    EditItem* it = find(m_poly);
+    if (!it)
+        return;
+    it->points.last() = QPointF(x, y);
+    it->points.append(QPointF(x, y));
+    touch();
+}
+
+void EditorModel::movePolygon(double x, double y)
+{
+    QMutexLocker lock(&m_mutex);
+    EditItem* it = find(m_poly);
+    if (!it)
+        return;
+    it->points.last() = QPointF(x, y);
+    touch();
+}
+
+bool EditorModel::finishPolygon()
+{
+    QMutexLocker lock(&m_mutex);
+    State* s = state();
+    EditItem* it = find(m_poly);
+    const int id = m_poly;
+    m_poly = 0;
+    if (!s || !it) {
+        endGesture();
+        return false;
+    }
+    it->points.removeLast();                           // the one that followed the pointer
+    // a double click adds the same corner twice
+    while (it->points.size() > 1 && it->points.last() == it->points[it->points.size() - 2])
+        it->points.removeLast();
+    const bool keep = it->points.size() >= 3;
+    if (!keep) {
+        s->now = s->undo.back();
+        s->undo.pop_back();
+        m_selected = 0;
+        emit selectionChanged();
+    } else {
+        m_selected = id;
+    }
+    endGesture();
+    touch();
+    return keep;
+}
+
+} // namespace dp
+
+// ---- autosave and recovery -------------------------------------------------------------------------------------------------------------
+namespace dp {
+
+namespace {
+
+QJsonObject pointJson(const QPointF& p) { return {{"x", p.x()}, {"y", p.y()}}; }
+QPointF pointOf(const QJsonValue& v) { return QPointF(v.toObject().value("x").toDouble(), v.toObject().value("y").toDouble()); }
+QString colorJson(const QColor& c) { return c.isValid() ? c.name(QColor::HexArgb) : QString(); }
+QColor colorOf(const QString& s) { return s.isEmpty() ? QColor() : QColor(s); }
+
+QJsonObject itemJson(const EditItem& it)
+{
+    QJsonArray pts;
+    for (const QPointF& p : it.points)
+        pts.append(pointJson(p));
+    return {{"id", it.id}, {"kind", kindName(it.kind)}, {"page", it.page},
+            {"rect", QJsonArray{it.rect.x(), it.rect.y(), it.rect.width(), it.rect.height()}},
+            {"a", pointJson(it.a)}, {"b", pointJson(it.b)}, {"points", pts}, {"text", it.text}, {"font", it.font}, {"fontSize", it.fontSize},
+            {"bold", it.bold}, {"italic", it.italic}, {"align", it.align}, {"color", colorJson(it.color)}, {"fill", colorJson(it.fill)},
+            {"width", it.width}, {"opacity", it.opacity}, {"angle", it.angle}, {"imagePath", it.imagePath}};
+}
+
+bool itemFromJson(const QJsonObject& o, EditItem& it)
+{
+    Kind kind;
+    if (!kindFromTool(o.value("kind").toString(), kind))
+        return false;
+    it.kind = kind;
+    it.id = o.value("id").toInt();
+    it.page = o.value("page").toInt();
+    const QJsonArray r = o.value("rect").toArray();
+    if (r.size() == 4)
+        it.rect = QRectF(r[0].toDouble(), r[1].toDouble(), r[2].toDouble(), r[3].toDouble());
+    it.a = pointOf(o.value("a"));
+    it.b = pointOf(o.value("b"));
+    for (const QJsonValue& v : o.value("points").toArray())
+        it.points.append(pointOf(v));
+    it.text = o.value("text").toString();
+    it.font = o.value("font").toString();
+    it.fontSize = o.value("fontSize").toDouble(14);
+    it.bold = o.value("bold").toBool();
+    it.italic = o.value("italic").toBool();
+    it.align = o.value("align").toInt();
+    it.color = colorOf(o.value("color").toString());
+    it.fill = colorOf(o.value("fill").toString());
+    it.width = o.value("width").toDouble(2);
+    it.opacity = o.value("opacity").toDouble(1);
+    it.angle = o.value("angle").toDouble();
+    it.imagePath = o.value("imagePath").toString();
+    return it.id > 0 && it.page >= 0;
+}
+
+QJsonObject markJson(const MarkDef& m)
+{
+    return {{"type", int(m.type)}, {"text", m.text}, {"font", m.font}, {"size", m.fontSize}, {"bold", m.bold}, {"italic", m.italic},
+            {"color", colorJson(m.color)}, {"opacity", m.opacity}, {"align", m.align}, {"from", m.fromPage}, {"to", m.toPage}};
+}
+
+MarkDef markFromJson(const QJsonObject& o)
+{
+    MarkDef m;
+    m.type = MarkDef::Type(std::clamp(o.value("type").toInt(), 0, 3));
+    m.text = o.value("text").toString();
+    m.font = o.value("font").toString();
+    m.fontSize = o.value("size").toDouble(12);
+    m.bold = o.value("bold").toBool();
+    m.italic = o.value("italic").toBool();
+    m.color = colorOf(o.value("color").toString());
+    m.opacity = o.value("opacity").toDouble(1);
+    m.align = o.value("align").toInt(1);
+    m.fromPage = o.value("from").toInt();
+    m.toPage = o.value("to").toInt(-1);
+    return m;
+}
+
+} // namespace
+
+QString EditorModel::recoveryPath(const QString& file) const
+{
+    const QByteArray key = QDir::toNativeSeparators(QFileInfo(file).absoluteFilePath()).toLower().toUtf8();
+    return m_controller->dataDir() + QStringLiteral("/recovery/") + QString::fromLatin1(QCryptographicHash::hash(key, QCryptographicHash::Sha1).toHex())
+           + QStringLiteral(".json");
+}
+
+void EditorModel::writeRecovery()
+{
+    QMutexLocker lock(&m_mutex);
+    for (auto& [id, st] : m_states) {
+        if (st.path.isEmpty() || !st.dirty || (st.now.items.isEmpty() && st.now.marks.isEmpty()))
+            continue;
+        QJsonArray items;
+        for (const EditItem& it : st.now.items)
+            items.append(itemJson(it));
+        QJsonArray marks;
+        for (const MarkDef& m : st.now.marks)
+            marks.append(markJson(m));
+        const QString file = recoveryPath(st.path);
+        QDir().mkpath(QFileInfo(file).absolutePath());
+        QSaveFile out(file);
+        if (out.open(QIODevice::WriteOnly)) {
+            out.write(QJsonDocument(QJsonObject{{"version", 1}, {"file", st.path}, {"items", items}, {"marks", marks}}).toJson(QJsonDocument::Compact));
+            out.commit();
+        }
+    }
+}
+
+void EditorModel::checkRecovery()
+{
+    QMutexLocker lock(&m_mutex);
+    bool found = false;
+    if (m_controller->isOpen()) {
+        const State* s = state();
+        found = QFileInfo::exists(recoveryPath(m_controller->filePath())) && (!s || (s->now.items.isEmpty() && s->now.marks.isEmpty() && !s->dirty));
+    }
+    if (found != m_recoverable) {
+        m_recoverable = found;
+        emit changed();
+    }
+}
+
+bool EditorModel::restoreRecovery()
+{
+    QMutexLocker lock(&m_mutex);
+    State* s = state();
+    if (!s || !m_recoverable)
+        return false;
+    QFile in(recoveryPath(s->path));
+    if (!in.open(QIODevice::ReadOnly))
+        return false;
+    const QJsonObject root = QJsonDocument::fromJson(in.readAll()).object();
+    in.close();
+    if (root.value("version").toInt() != 1)
+        return false;
+    Snapshot snap;
+    int maxId = 0;
+    for (const QJsonValue& v : root.value("items").toArray()) {
+        EditItem it;
+        if (itemFromJson(v.toObject(), it)) {
+            maxId = std::max(maxId, it.id);
+            snap.items.append(it);
+        }
+    }
+    for (const QJsonValue& v : root.value("marks").toArray())
+        snap.marks.append(markFromJson(v.toObject()));
+    if (snap.items.isEmpty() && snap.marks.isEmpty())
+        return false;
+    s->now = snap;
+    s->nextId = maxId + 1;
+    s->dirty = true;
+    m_recoverable = false;
+    touch();
+    return true;
+}
+
+void EditorModel::declineRecovery()
+{
+    QMutexLocker lock(&m_mutex);
+    if (m_controller->isOpen())
+        QFile::remove(recoveryPath(m_controller->filePath()));
+    if (m_recoverable) {
+        m_recoverable = false;
+        emit changed();
+    }
+}
+
+void EditorModel::forgetRecovery()
+{
+    QMutexLocker lock(&m_mutex);
+    for (const auto& [id, st] : m_states)
+        if (!st.path.isEmpty())
+            QFile::remove(recoveryPath(st.path));
 }
 
 } // namespace dp

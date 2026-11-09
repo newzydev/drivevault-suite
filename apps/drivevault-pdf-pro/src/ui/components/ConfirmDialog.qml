@@ -11,6 +11,7 @@ Popup {
     property string confirmText: ""
     property string cancelText: ""
     signal confirmed()
+    signal declined()
 
     parent: Overlay.overlay
     anchors.centerIn: parent
@@ -29,7 +30,7 @@ Popup {
         RowLayout {
             Layout.fillWidth: true
             Item { Layout.fillWidth: true }
-            PButton { objectName: "confirmCancel"; variant: "ghost"; text: dlg.cancelText; onClicked: dlg.close() }
+            PButton { objectName: "confirmCancel"; variant: "ghost"; text: dlg.cancelText; onClicked: { dlg.close(); dlg.declined() } }
             PButton { objectName: "confirmYes"; variant: "primary"; text: dlg.confirmText; onClicked: { dlg.close(); dlg.confirmed() } }
         }
     }

@@ -4,6 +4,7 @@
 
 #include <fpdf_annot.h>
 #include <fpdf_doc.h>
+#include <fpdf_formfill.h>
 #include <fpdf_text.h>
 #include <fpdfview.h>
 
@@ -164,6 +165,8 @@ QString annotationType(int subtype)
 struct PdfDocument::Impl {
     FileSource source;
     FPDF_DOCUMENT doc = nullptr;
+    FPDF_FORMFILLINFO formInfo{};               // the form fill environment draws the fields of a fill-in form (FPDF_RenderPageBitmap does not)
+    FPDF_FORMHANDLE form = nullptr;
 };
 
 std::shared_ptr<PdfDocument> PdfDocument::open(const QString& path, const QString& password, OpenError* error)
@@ -207,6 +210,10 @@ std::shared_ptr<PdfDocument> PdfDocument::open(const QString& path, const QStrin
         self->m_impl->doc = nullptr;
         return fail(OpenError::Format);
     }
+    self->m_impl->formInfo.version = 1;
+    self->m_impl->form = FPDFDOC_InitFormFillEnvironment(self->m_impl->doc, &self->m_impl->formInfo);
+    if (self->m_impl->form)
+        FPDF_SetFormFieldHighlightAlpha(self->m_impl->form, 0);          // no tinted fields
     self->m_pageSizes.reserve(count);
     for (int i = 0; i < count; ++i) {
         FS_SIZEF size{0, 0};
@@ -223,6 +230,10 @@ PdfDocument::~PdfDocument()
 {
     if (m_impl && m_impl->doc) {
         QMutexLocker lock(&pdfiumMutex());
+        if (m_impl->form) {
+            FPDFDOC_ExitFormFillEnvironment(m_impl->form);
+            m_impl->form = nullptr;
+        }
         FPDF_CloseDocument(m_impl->doc);
         m_impl->doc = nullptr;
     }
@@ -261,14 +272,20 @@ QImage PdfDocument::render(int page, double pxPerPt, const std::atomic_bool* can
     if (cancel && cancel->load())
         return {};
     FPDF_PAGE fpdfPage = FPDF_LoadPage(m_impl->doc, page);
+    if (fpdfPage && m_impl->form)
+        FORM_OnAfterLoadPage(fpdfPage, m_impl->form);
     if (!fpdfPage)
         return {};
     // BGRx: the byte order of QImage::Format_RGB32 on little endian machines
     FPDF_BITMAP bitmap = FPDFBitmap_CreateEx(w, h, FPDFBitmap_BGRx, image.bits(), int(image.bytesPerLine()));
     if (bitmap) {
         FPDF_RenderPageBitmap(bitmap, fpdfPage, 0, 0, w, h, rotation, FPDF_ANNOT);
+        if (m_impl->form)
+            FPDF_FFLDraw(m_impl->form, bitmap, fpdfPage, 0, 0, w, h, rotation, FPDF_ANNOT);
         FPDFBitmap_Destroy(bitmap);
     }
+    if (m_impl->form)
+        FORM_OnBeforeClosePage(fpdfPage, m_impl->form);
     FPDF_ClosePage(fpdfPage);
     return bitmap ? image : QImage();
 }

@@ -59,6 +59,7 @@ public:
     int pageCount() const;
     QString fileName() const;
     QString filePath() const;
+    QString dataDir() const { return m_dataDir; }
     int docId() const;
     QVariantList tabs() const;
     int currentTab() const;

@@ -34,5 +34,6 @@ qt_add_qml_module(dp_ui
         screens/SplitDialog.qml
         screens/CompressDialog.qml
         screens/EditBar.qml
-        screens/MarkDialog.qml)
+        screens/MarkDialog.qml
+        screens/FormDialog.qml)
 target_link_libraries(dp_ui PRIVATE Qt6::Quick Qt6::QuickControls2)

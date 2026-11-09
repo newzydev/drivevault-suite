@@ -13,6 +13,7 @@ Item {
     signal splitRequested()
     signal compressRequested()
     signal openPathRequested(string path)
+    signal formRequested()
 
     // ---- view state ---------------------------------------------------------------------------------------------------
     property real zoom: 1.0                       // 1.0 = 100 % = 96 dpi on screen
@@ -182,6 +183,11 @@ Item {
     function editPress(vx, vy) {
         finishEditing()
         const h = hit(vx, vy)
+        if (Editor.polygonOpen) {
+            if (h && h.page === editPage)
+                Editor.addPolygonPoint(h.x, h.y)
+            return
+        }
         if (!h) {
             if (Editor.tool === "select")
                 Editor.select(0)
@@ -211,6 +217,8 @@ Item {
                 Editor.pendingImage = ""
                 Editor.tool = "select"
             }
+        } else if (tool === "polygon") {
+            Editor.beginPolygon(h.page, h.x, h.y)
         } else if (tool === "stamp") {
             Editor.addStamp(h.page, h.x, h.y, editBar.stampText)
             Editor.tool = "select"
@@ -219,6 +227,12 @@ Item {
         }
     }
     function editMove(vx, vy) {
+        if (Editor.polygonOpen) {
+            const p = hit(vx, vy)
+            if (p && p.page === editPage)
+                Editor.movePolygon(p.x, p.y)
+            return
+        }
         if (editMode === "")
             return
         const h = hit(vx, vy)
@@ -238,7 +252,7 @@ Item {
             Editor.endGesture()
         } else if (editMode === "draw") {
             const kept = Editor.endDraft()
-            if (kept && Editor.tool === "text") {
+            if (kept && (Editor.tool === "text" || Editor.tool === "note")) {
                 Editor.tool = "select"
                 startEditing(Editor.selectedId)
             }
@@ -303,7 +317,7 @@ Item {
         }
         function onSearchTarget(page, y) { viewer.goTo(page, y) }
     }
-    Component.onCompleted: restoreView()
+    Component.onCompleted: { restoreView(); offerRecovery() }
     onWidthChanged: applyFit()
     onHeightChanged: applyFit()
     onPxPerPtChanged: renderTimer.restart()
@@ -395,6 +409,7 @@ Item {
                 PButton { objectName: "splitButton"; compact: true; text: Tr.s("toolSplitShort"); variant: "ghost"; tip: Tr.s("toolSplit"); onClicked: viewer.splitRequested() }
                 PButton { objectName: "compressButton"; compact: true; text: Tr.s("toolCompressShort"); variant: "ghost"; tip: Tr.s("toolCompress"); onClicked: viewer.compressRequested() }
                 PButton { objectName: "editButton"; compact: true; text: Tr.s("toolEdit"); variant: Editor.active ? "secondary" : "ghost"; tip: Doc.rotation === 0 ? Tr.s("toolEditTip") : Tr.s("editNeedsNoRotation"); enabled: Doc.rotation === 0 || Editor.active; onClicked: Editor.active = !Editor.active }
+                PButton { objectName: "formButton"; compact: true; text: Tr.s("toolFormShort"); variant: "ghost"; tip: Tr.s("toolForm"); onClicked: viewer.formRequested() }
 
                 LanguageSwitch {}
             }
@@ -506,6 +521,7 @@ Item {
                     Keys.onPressed: event => {
                         if (viewer.editOn && Editor.editingId === 0) {
                             const ctrl = (event.modifiers & Qt.ControlModifier) !== 0
+                            if (Editor.polygonOpen && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Escape)) { Editor.finishPolygon(); event.accepted = true; return }
                             if (event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace) { Editor.deleteSelected(); event.accepted = true; return }
                             if (ctrl && event.key === Qt.Key_Z && !(event.modifiers & Qt.ShiftModifier)) { Editor.undo(); event.accepted = true; return }
                             if (ctrl && (event.key === Qt.Key_Y || (event.key === Qt.Key_Z && (event.modifiers & Qt.ShiftModifier)))) { Editor.redo(); event.accepted = true; return }
@@ -576,7 +592,7 @@ Item {
                         lastX = mouse.x
                         lastY = mouse.y
                         if (viewer.editOn) {
-                            if (pressed && viewer.editMode !== "")
+                            if (Editor.polygonOpen || (pressed && viewer.editMode !== ""))
                                 viewer.editMove(mouse.x, mouse.y)
                             return
                         }
@@ -592,7 +608,9 @@ Item {
                         }
                     }
                     onDoubleClicked: mouse => {
-                        if (viewer.editOn && Editor.tool === "select") {
+                        if (viewer.editOn && Editor.polygonOpen) {
+                            Editor.finishPolygon()
+                        } else if (viewer.editOn && Editor.tool === "select") {
                             const h = viewer.hit(mouse.x, mouse.y)
                             const id = h ? Editor.hitTest(h.page, h.x, h.y) : 0
                             if (id > 0) {
@@ -674,6 +692,25 @@ Item {
             Keys.onEscapePressed: viewer.finishEditing()
         }
     }
+    // unsaved edits of an earlier run (autosave) are offered once per file
+    property string recoverAsked: ""
+    function offerRecovery() {
+        if (Editor.recoverable && Doc.filePath !== recoverAsked && !recoverAsk.opened) {
+            recoverAsked = Doc.filePath
+            recoverAsk.open()
+        }
+    }
+    Connections { target: Editor; function onChanged() { viewer.offerRecovery() } }
+    ConfirmDialog {
+        id: recoverAsk
+        objectName: "recoverAsk"
+        title: Tr.s("recoverTitle")
+        text: Tr.s("recoverText")
+        confirmText: Tr.s("recoverRestore")
+        cancelText: Tr.s("recoverDiscard")
+        onConfirmed: { Editor.restoreRecovery(); Editor.active = true }
+        onDeclined: Editor.declineRecovery()
+    }
     ConfirmDialog {
         id: closeAsk
         property int tabIndex: -1
@@ -712,6 +749,6 @@ Item {
     Shortcut {
         sequences: ["Escape"]
         enabled: !printDialog.opened && !linkDialog.opened && !(Window.window && Window.window.visibility === Window.FullScreen)
-        onActivated: { if (Editor.editingId > 0) viewer.finishEditing(); else if (viewer.searchOpen) viewer.closeSearch(); else Doc.clearSelection() }
+        onActivated: { if (Editor.polygonOpen) Editor.finishPolygon(); else if (Editor.editingId > 0) viewer.finishEditing(); else if (viewer.searchOpen) viewer.closeSearch(); else Doc.clearSelection() }
     }
 }

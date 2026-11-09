@@ -15,15 +15,15 @@
 namespace dp::tools {
 
 // What the user can put on a page. All positions are in points, origin at the top left of the page as it is shown without view rotation.
-enum class Kind { Text, Image, Rect, Ellipse, Line, Arrow, Pen, Highlight, Underline, Strike, Stamp };
+enum class Kind { Text, Image, Rect, Ellipse, Line, Arrow, Pen, Highlight, Underline, Strike, Stamp, Polygon, Note };
 
 struct EditItem {
     int id = 0;
     Kind kind = Kind::Rect;
     int page = 0;                 // 0-based
-    QRectF rect;                  // Text, Image, Rect, Ellipse, Highlight, Underline, Strike, Stamp
+    QRectF rect;                  // Text, Note, Image, Rect, Ellipse, Highlight, Underline, Strike, Stamp
     QPointF a, b;                 // Line, Arrow: the two ends
-    QVector<QPointF> points;      // Pen
+    QVector<QPointF> points;      // Pen, Polygon
     QString text;                 // Text, Stamp
     QString font = QStringLiteral("Noto Sans Thai");
     double fontSize = 14;         // points

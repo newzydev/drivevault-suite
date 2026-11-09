@@ -3,6 +3,7 @@ add_library(dp_pdftools STATIC
     PdfTools.cpp PdfTools.h
     SplitPlan.cpp SplitPlan.h
     Compress.cpp Compress.h
-    Overlay.cpp Overlay.h)
+    Overlay.cpp Overlay.h
+    Forms.cpp Forms.h)
 target_include_directories(dp_pdftools PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(dp_pdftools PUBLIC Qt6::Core Qt6::Gui qpdf)

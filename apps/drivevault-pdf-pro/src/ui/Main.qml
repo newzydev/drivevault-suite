@@ -80,6 +80,7 @@ ApplicationWindow {
             onOrganizeRequested: organizer.begin("organize")
             onSplitRequested: splitDialog.open()
             onCompressRequested: compressDialog.open()
+            onFormRequested: formDialog.open()
         }
     }
     Component {
@@ -125,13 +126,17 @@ ApplicationWindow {
         onOpenResultRequested: path => win.openPath(path)
     }
     SplitDialog { id: splitDialog }
+    FormDialog {
+        id: formDialog
+        onOpenResultRequested: path => win.openPath(path)
+    }
     ConfirmDialog {
         id: windowAsk
         title: Tr.s("closeUnsavedTitle")
         text: Tr.s("closeUnsavedAll")
         confirmText: Tr.s("closeAnyway")
         cancelText: Tr.s("keepEditing")
-        onConfirmed: { win.closeConfirmed = true; win.close() }
+        onConfirmed: { Editor.forgetRecovery(); win.closeConfirmed = true; win.close() }
     }
     CompressDialog {
         id: compressDialog

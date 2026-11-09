@@ -259,7 +259,8 @@ QRectF EditItem::bounds() const
     case Kind::Line:
     case Kind::Arrow:
         return QRectF(a, b).normalized();
-    case Kind::Pen: {
+    case Kind::Pen:
+    case Kind::Polygon: {
         if (points.isEmpty())
             return {};
         double x0 = points[0].x(), x1 = x0, y0 = points[0].y(), y1 = y0;
@@ -386,6 +387,21 @@ void paintItem(QPainter& p, const EditItem& it, TextRuns* runs)
         }
         break;
     }
+    case Kind::Polygon: {
+        p.setPen(it.width > 0 ? outline : Qt::NoPen);
+        p.setBrush(it.fill.isValid() ? QBrush(it.fill) : Qt::NoBrush);
+        if (it.points.size() >= 2)
+            p.drawPolygon(QPolygonF(it.points));
+        break;
+    }
+    case Kind::Note: {
+        // a sticky note: a yellow card with a darker edge and the text on it
+        p.setPen(QPen(it.color.darker(160), 1));
+        p.setBrush(it.fill.isValid() ? QBrush(it.fill) : QBrush(QColor(255, 240, 140)));
+        p.drawRect(it.rect);
+        drawText(p, it.rect.adjusted(5, 4, -5, -4), it.text, it, it.color, box.center(), runs);
+        break;
+    }
     case Kind::Highlight:
         p.fillRect(it.rect, it.color);
         break;
@@ -442,7 +458,7 @@ QStringList restrictedFonts(const QList<EditItem>& items, const QList<MarkDef>& 
 {
     QSet<QString> families;
     for (const EditItem& it : items)
-        if (it.kind == Kind::Text || it.kind == Kind::Stamp)
+        if (it.kind == Kind::Text || it.kind == Kind::Stamp || it.kind == Kind::Note)
             families.insert(it.font);
     for (const MarkDef& m : marks)
         families.insert(m.font);

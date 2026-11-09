@@ -18,7 +18,7 @@ Rectangle {
     property string pendingPath: ""
     signal openResultRequested(string path)
     readonly property var swatches: ["#000000", "#EF4444", "#F59E0B", "#22C55E", "#3B82F6", "#8B5CF6", "#FFFFFF", "#6B7280"]
-    readonly property var toolNames: ["select", "text", "image", "rect", "ellipse", "line", "arrow", "pen", "highlight", "underline", "strike", "stamp"]
+    readonly property var toolNames: ["select", "text", "image", "rect", "ellipse", "line", "arrow", "pen", "highlight", "underline", "strike", "stamp", "polygon", "note"]
 
     implicitHeight: flow.implicitHeight + 16 + msgRow.height
     color: "#14161B"

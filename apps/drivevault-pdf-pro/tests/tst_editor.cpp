@@ -7,6 +7,7 @@
 #include "pdfengine/PdfiumRuntime.h"
 #include "pdftools/Overlay.h"
 
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QFontDatabase>
@@ -581,6 +582,134 @@ private slots:
         QVERIFY(at(doc->render(0, 1.0, nullptr, 0), 160, 140).red() > 190);
         QVERIFY(doc->pageText(1).contains("p. 2"));
         QCOMPARE(PdfDocument::open(in, {}, nullptr)->pageText(1).contains("p. 2"), false);   // the open file was not touched
+    }
+
+    void polygonsAndNotesArePaintedAndHit()
+    {
+        const QString in = write("pn.pdf", testpdf::make(1));
+        EditItem poly;
+        poly.kind = Kind::Polygon;
+        poly.points = {QPointF(100, 100), QPointF(250, 100), QPointF(175, 220)};         // a triangle
+        poly.fill = QColor(20, 160, 20);
+        poly.width = 0;
+        EditItem note;
+        note.kind = Kind::Note;
+        note.rect = QRectF(300, 300, 180, 100);
+        note.text = QString::fromUtf8("โน้ต: ตรวจแล้ว");
+        note.font = "Noto Sans Thai";
+        note.fontSize = 14;
+        note.fill = QColor(255, 240, 140);
+        const EditResult r = save(in, m_dir.filePath("pn-out.pdf"), {pageEdits(0, QSizeF(612, 792), {poly, note})});
+        QVERIFY2(r.ok, qPrintable(r.error + r.detail));
+        QVERIFY(check(m_dir.filePath("pn-out.pdf")));
+        auto doc = PdfDocument::open(m_dir.filePath("pn-out.pdf"), {}, nullptr);
+        const QImage img = doc->render(0, 1.0, nullptr, 0);
+        QVERIFY(at(img, 175, 130).green() > 140 && at(img, 175, 130).red() < 60);       // inside the triangle
+        QVERIFY(at(img, 110, 200).lightness() > 240);                                     // outside it (the corner of its box)
+        QVERIFY(at(img, 470, 395).red() > 240 && at(img, 470, 395).blue() < 200);        // the yellow note, away from its text
+        QVERIFY2(doc->pageText(0).contains(note.text), qPrintable(doc->pageText(0)));
+
+        dp::DocumentController c(m_dir.filePath("dm5"));
+        dp::EditorModel e(&c);
+        QCOMPARE(c.open(write("pn2.pdf", testpdf::make(1))), QString());
+        QCOMPARE(e.beginDraft(0, "polygon", 1, 1), 0);                                    // a polygon is made by clicks, not by a drag
+        const int id = e.beginPolygon(0, 100, 100);
+        QVERIFY(id > 0 && e.polygonOpen());
+        e.movePolygon(200, 100);
+        e.addPolygonPoint(200, 100);
+        e.movePolygon(150, 200);
+        e.addPolygonPoint(150, 200);
+        e.movePolygon(160, 210);
+        QVERIFY(e.finishPolygon());
+        QVERIFY(!e.polygonOpen());
+        QCOMPARE(e.hitTest(0, 150, 130), id);                                             // inside, not only on the edge
+        QCOMPARE(e.hitTest(0, 400, 400), 0);
+        QCOMPARE(e.itemInfo(id).value("handles").toList().size(), 8);
+        // two corners are no polygon
+        e.beginPolygon(0, 300, 300);
+        e.addPolygonPoint(350, 300);
+        QVERIFY(!e.finishPolygon());
+        QCOMPARE(e.count(), 1);
+        // a note starts with the yellow card and a usable size
+        const int note1 = e.beginDraft(0, "note", 300, 300);
+        QVERIFY(e.endDraft());
+        QVERIFY(e.itemInfo(note1).value("w").toDouble() >= 180 && e.itemInfo(note1).value("h").toDouble() >= 100);
+        QVERIFY(e.hasFill() == false);                                                    // the next item is not yellow because of it
+        e.beginEdit(note1);
+        QCOMPARE(e.editingId(), note1);
+        e.endEdit();
+    }
+
+    void unsavedEditsSurviveAClosedProgramAndCanBeRestoredOrDeleted()
+    {
+        const QString file = write("rec.pdf", testpdf::make(1));
+        const QString data = m_dir.filePath("recdata");
+        {
+            dp::DocumentController c(data);
+            dp::EditorModel e(&c);
+            QCOMPARE(c.open(file), QString());
+            QVERIFY(!e.recoverable());
+            const int id = e.beginDraft(0, "rect", 100, 100);
+            e.updateDraft(220, 180);
+            QVERIFY(e.endDraft());
+            e.setStyle("fill", QColor(10, 20, 200));
+            e.setMark("pageNumber", {{"text", "No. {n}"}, {"font", "Inter"}});
+            const int t = e.beginDraft(0, "text", 100, 300);
+            QVERIFY(e.endDraft());
+            e.setText(t, QString::fromUtf8("กู้คืนได้"));
+            QVERIFY(id > 0);
+            QTest::qWait(2600);                                                       // the autosave runs a moment after the last change
+            QVERIFY(QDir(data + "/recovery").entryList({"*.json"}).size() == 1);
+        }                                                                              // "the program is closed" without saving
+        {
+            dp::DocumentController c(data);
+            dp::EditorModel e(&c);
+            QCOMPARE(c.open(file), QString());
+            QVERIFY(e.recoverable());
+            QCOMPARE(e.count(), 0);
+            QVERIFY(e.restoreRecovery());
+            QVERIFY(!e.recoverable());
+            QCOMPARE(e.count(), 3);                                                    // rectangle, text, page number mark
+            QVERIFY(e.modified());
+            QVERIFY(e.hitTest(0, 150, 130) > 0);
+            const int text = e.hitTest(0, 150, 310);
+            QVERIFY(text > 0);
+            QCOMPARE(e.itemInfo(text).value("text").toString(), QString::fromUtf8("กู้คืนได้"));
+            QCOMPARE(e.mark("pageNumber").value("text").toString(), QStringLiteral("No. {n}"));
+            // new items do not clash with the restored ones
+            const int next = e.beginDraft(0, "ellipse", 300, 100);
+            e.updateDraft(380, 160);
+            QVERIFY(e.endDraft());
+            QVERIFY(next > text);
+            e.undo();
+            // saving makes the recovery file unnecessary
+            QSignalSpy done(&e, &dp::EditorModel::saveFinished);
+            QCOMPARE(e.save(m_dir.filePath("rec-out.pdf")), QString());
+            QVERIFY(QTest::qWaitFor([&] { return done.count() > 0; }, 30000));
+            QVERIFY(done.first().at(0).toBool());
+            QCOMPARE(QDir(data + "/recovery").entryList({"*.json"}).size(), 0);
+        }
+        {   // declining deletes it
+            dp::DocumentController c(data);
+            dp::EditorModel e(&c);
+            QCOMPARE(c.open(file), QString());
+            QVERIFY(!e.recoverable());
+            e.beginDraft(0, "rect", 10, 10);
+            e.updateDraft(90, 90);
+            QVERIFY(e.endDraft());
+            QTest::qWait(2600);
+        }
+        {
+            dp::DocumentController c(data);
+            dp::EditorModel e(&c);
+            QCOMPARE(c.open(file), QString());
+            QVERIFY(e.recoverable());
+            e.declineRecovery();
+            QVERIFY(!e.recoverable());
+            QCOMPARE(QDir(data + "/recovery").entryList({"*.json"}).size(), 0);
+            dp::EditorModel again(&c);
+            QVERIFY(!again.recoverable());
+        }
     }
 
     void bundledFontsMayBeEmbedded()
