@@ -3,15 +3,18 @@
 Native Windows PDF program of the DriveVault suite (C++20, Qt 6.8 / Qt Quick, PDFium, qpdf). Works on this computer only - nothing is uploaded.
 Accent colour red `#EF4444`. The full plan and the phases are in [`docs/PDF-Pro-Plan.md`](docs/PDF-Pro-Plan.md).
 
-## Status: version 0.2.0 - in development, NOT released (Phase 1 done: the reader)
+## Status: version 0.3.0 - in development, NOT released (Phase 1 the reader and Phase 2 merge / split / organize are done)
 
 | Works now (tested) | Not built yet (planned, see the plan) |
 |---|---|
-| Open a PDF (button, Ctrl+O, drag and drop, recent files, command line), several files in **tabs** | Merge / split / organize pages (Phase 2) |
-| Continuous page view or **two pages per row**, thumbnails, page field, prev / next, Page Up / Down, Home / End | Compress (Phase 3) |
-| Zoom (steps, Ctrl+wheel, 100 %, fit width, fit page), **rotate the view**, **dark pages** (view only), full screen (F11) | Add text / images / shapes, comments, forms (Phase 4) |
-| **Find** in the whole file (match case, whole word, highlights, next / previous, Ctrl+F, F3) | Export to images / ZIP, protect / unlock (Phase 5) |
-| **Select text with the mouse, copy** (Ctrl+C, right click menu, select all) - across pages | Redaction (Phase 6) |
+| **Organize pages** (button "Pages"): thumbnails, select, **drag to reorder**, delete, duplicate, turn 90 degrees, **crop margins**, insert blank pages, add pages of other files, undo / redo; saves a **new** file (nothing is changed in place, an existing file is replaced only after a question) | Compress (Phase 3) |
+| **Merge files** (Home screen or "Add files" in the organizer; protected files ask for their password; delete the pages you do not want after adding) | Add text / images / shapes, comments, forms (Phase 4) |
+| **Split** (button "Split"): by page ranges, every N pages, by top level bookmarks, or by a maximum file size; live list of the files that will be written; a failed or cancelled split leaves no files | Export to images / ZIP, protect / unlock (Phase 5) |
+| Open a PDF (button, Ctrl+O, drag and drop, recent files, command line), several files in **tabs** | Redaction (Phase 6) |
+| Continuous page view or **two pages per row**, thumbnails, page field, prev / next, Page Up / Down, Home / End | |
+| Zoom (steps, Ctrl+wheel, 100 %, fit width, fit page), **rotate the view**, **dark pages** (view only), full screen (F11) | |
+| **Find** in the whole file (match case, whole word, highlights, next / previous, Ctrl+F, F3) | |
+| **Select text with the mouse, copy** (Ctrl+C, right click menu, select all) - across pages | |
 | **Bookmarks** (outline) and a **comments / markup list**; links in the file (to a page, or to a web address after a question) | Installer, Master Pro integration, release |
 | **Printing** (printer, page range, copies, colour, fit to paper) | Reading order / accessibility tools, text-to-speech |
 | Files with an open password (asks for it, a wrong password is refused) | OCR, digital signatures (not in the plan) |
@@ -47,13 +50,18 @@ Executable options: `file.pdf` (open it), `--password text`, `--lang th|en`, `--
 ```
 src/core/        Version.h.in (generated version header)
 src/pdfengine/   the only code that calls PDFium: PdfDocument (open, render, text, search, selection helpers, outline, links, annotations), PdfiumRuntime (the one lock + init)
-src/app/         DocumentController (tabs and state for QML), PageImageProvider (image://pdf/...), PrintTask, PageRange, main.cpp
+src/pdftools/    the only code that calls qpdf: PdfTools (write a new file from a list of pages: merge, reorder, rotate, crop, blank pages, split by size), SplitPlan (split plans, file names)
+src/app/         DocumentController (tabs, split), PageListModel (the organizer list with undo), PageImageProvider (image://pdf/...), PrintTask, PageRange, main.cpp
 src/ui/          QML module DriveVault.PdfPro.UI (Main, screens/, components/)
-tests/           tst_pdfengine, tst_controller, tst_ui_flow (real clicks and keys, fails on QML warnings), tst_perf
+tests/           tst_pdfengine, tst_pdftools, tst_organizer, tst_controller, tst_ui_flow (real clicks and keys, fails on QML warnings), tst_perf
 resources/       fonts (OFL), icons (made by scripts\make-icon.ps1)
 ```
 
 ## Known limits (honest list)
+- Organize / merge / split write a new file from the pages: **bookmarks and form fields are not copied** (the dialog says so after saving), links to pages that are not in the new file are removed, a protected source gives an **unprotected** result (protect / unlock is Phase 5). Comments and markup on the pages are kept.
+- Crop makes the visible page smaller; the content outside the box stays inside the file (it is not removed - use redaction, Phase 6, for that).
+- There is no page range box when adding a file: add it, then delete the pages you do not want. Thumbnails are drawn one by one (no limit tests with thousands of pages in the organizer yet).
+- The merge / split dialogs were tested with generated files and by real mouse drags offscreen; files from other programs (scans, forms, Office exports) were not available.
 - Files larger than 4 GB are refused (PDFium file access uses a 32 bit length on Windows).
 - A page is rendered as one image (at most 64 million pixels, about 245 MB); there is no tiled rendering of only the visible part yet, so extreme zoom on a big page is heavy.
 - Thai text in a PDF written by Qt (the test file) keeps every letter but not the exact place of the vowel / tone marks when extracted; real files from Word and other programs were not available to test. The writer for Phase 4 has to do better.

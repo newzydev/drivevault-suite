@@ -8,6 +8,7 @@ Item {
     id: home
 
     signal openRequested()
+    signal mergeRequested()
     signal openPathRequested(string path)
 
     Rectangle {
@@ -75,6 +76,11 @@ Item {
             color: Theme.textDisabled
             font.pixelSize: Theme.fontSm
             horizontalAlignment: Text.AlignHCenter
+        }
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 10
+            PButton { objectName: "homeMerge"; text: Tr.s("toolMerge"); onClicked: home.mergeRequested() }
         }
 
         Item { Layout.preferredHeight: 18 }

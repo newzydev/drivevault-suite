@@ -2,6 +2,7 @@
 
 #include "PageRange.h"
 #include "PrintTask.h"
+#include "pdftools/SplitPlan.h"
 
 #include "dp/Version.h"
 
@@ -70,6 +71,8 @@ DocumentController::~DocumentController()
         m_searchCancel->store(true);
     if (m_printCancel)
         m_printCancel->store(true);
+    if (m_splitCancel)
+        m_splitCancel->store(true);
     QThreadPool::globalInstance()->waitForDone(15000);
 }
 
@@ -169,6 +172,8 @@ std::shared_ptr<pdf::PdfDocument> DocumentController::documentFor(int id) const
     for (const Tab& t : m_tabs)
         if (t.id == id)
             return t.doc;
+    if (const auto it = m_extras.find(id); it != m_extras.end())
+        return it->second;
     return nullptr;
 }
 
@@ -207,6 +212,7 @@ QString DocumentController::open(const QString& pathOrUrl, const QString& passwo
         Tab tab;
         tab.id = m_nextId++;
         tab.doc = doc;
+        tab.password = password;
         tab.view = saved;
         tab.rotation = ((saved.value(QStringLiteral("rotation")).toInt() % 4) + 4) % 4;
         m_tabs.push_back(std::move(tab));
@@ -736,6 +742,175 @@ void DocumentController::cancelPrint()
 {
     if (m_printCancel)
         m_printCancel->store(true);
+}
+
+// ---- splitting -------------------------------------------------------------------------------------------------------------
+
+namespace {
+QString baseNameOf(const QString& path)
+{
+    return QFileInfo(path).completeBaseName();
+}
+
+// the parts of a file for a split mode (not "size": that needs the real files); empty = not valid
+QList<tools::SplitPart> splitPartsFor(const std::shared_ptr<pdf::PdfDocument>& doc, const QString& mode, const QVariant& param)
+{
+    if (mode == QLatin1String("ranges")) {
+        bool ok = false;
+        const auto parts = tools::splitByRanges(param.toString(), doc->pageCount(), &ok);
+        return ok ? parts : QList<tools::SplitPart>();
+    }
+    if (mode == QLatin1String("every"))
+        return tools::splitEvery(param.toInt(), doc->pageCount());
+    if (mode == QLatin1String("bookmarks")) {
+        QList<QPair<QString, int>> top;
+        for (const pdf::OutlineItem& item : doc->outline())
+            if (item.level == 0 && item.page >= 0)
+                top.append({item.title, item.page});
+        return tools::splitByBookmarks(top, doc->pageCount());
+    }
+    return {};
+}
+} // namespace
+
+DocumentController::SourceInfo DocumentController::currentSource() const
+{
+    QMutexLocker lock(&m_mutex);
+    SourceInfo info;
+    if (const Tab* t = current()) {
+        info.id = t->id;
+        info.doc = t->doc;
+        info.path = t->doc->path();
+        info.password = t->password;
+    }
+    return info;
+}
+
+int DocumentController::registerExtra(std::shared_ptr<pdf::PdfDocument> doc)
+{
+    QMutexLocker lock(&m_mutex);
+    const int id = m_nextId++;
+    m_extras[id] = std::move(doc);
+    return id;
+}
+
+void DocumentController::unregisterExtra(int id)
+{
+    QMutexLocker lock(&m_mutex);
+    m_extras.erase(id);
+}
+
+QVariantList DocumentController::splitPreview(const QString& mode, const QVariant& param) const
+{
+    QVariantList out;
+    const auto doc = currentDoc();
+    if (!doc)
+        return out;
+    const QString stem = tools::safeFileName(baseNameOf(doc->path()));
+    for (const tools::SplitPart& part : splitPartsFor(doc, mode, param))
+        out.append(QVariantMap{{QStringLiteral("name"), stem + QLatin1Char('-') + part.suffix + QStringLiteral(".pdf")},
+                               {QStringLiteral("pages"), tools::rangeLabel(part.pages)},
+                               {QStringLiteral("count"), int(part.pages.size())}});
+    return out;
+}
+
+QString DocumentController::startSplit(const QVariantMap& options)
+{
+    const SourceInfo src = currentSource();
+    if (!src.doc)
+        return QStringLiteral("noDocument");
+    if (m_splitting)
+        return QStringLiteral("busy");
+    const QString mode = options.value(QStringLiteral("mode")).toString();
+    const QString outDir = options.value(QStringLiteral("outDir")).toString();
+    if (outDir.isEmpty() || !QDir().mkpath(outDir))
+        return QStringLiteral("noFolder");
+
+    // the plan: known now for ranges / every / bookmarks; "size" is measured in the background task
+    QList<tools::SplitPart> parts;
+    qint64 maxBytes = 0;
+    if (mode == QLatin1String("size")) {
+        maxBytes = qint64(options.value(QStringLiteral("sizeMb")).toDouble() * 1024 * 1024);
+        if (maxBytes < 4096)
+            return QStringLiteral("badRange");
+    } else {
+        const QVariant param = mode == QLatin1String("every") ? options.value(QStringLiteral("n")) : options.value(QStringLiteral("text"));
+        parts = splitPartsFor(src.doc, mode, param);
+        if (parts.isEmpty())
+            return mode == QLatin1String("bookmarks") ? QStringLiteral("noParts") : QStringLiteral("badRange");
+    }
+
+    m_splitCancel = std::make_shared<std::atomic_bool>(false);
+    auto cancel = m_splitCancel;
+    m_splitting = true;
+    m_splitProgress = 0.0;
+    emit splitChanged();
+    const QString stem = baseNameOf(src.path);
+    QThreadPool::globalInstance()->start(QRunnable::create([this, src, parts, maxBytes, outDir, stem, cancel]() mutable {
+        auto report = [this](double fraction) {
+            QMetaObject::invokeMethod(this, [this, fraction] { m_splitProgress = fraction; emit splitChanged(); }, Qt::QueuedConnection);
+        };
+        QStringList files;
+        QStringList warnings;
+        QString error;
+        QString errorFile;
+        bool ok = true;
+        if (maxBytes > 0) {
+            parts = tools::planSplitBySize(src.path, src.password, maxBytes, [&](int done, int total) {
+                report(0.3 * done / std::max(1, total));
+                return !cancel->load();
+            }, &error);
+            ok = !parts.isEmpty();
+        }
+        const double base = maxBytes > 0 ? 0.3 : 0.0;
+        for (int i = 0; ok && i < parts.size(); ++i) {
+            if (cancel->load()) {
+                ok = false;
+                error = QStringLiteral("cancelled");
+                break;
+            }
+            QList<tools::PageSpec> specs;
+            for (int p : parts.at(i).pages) {
+                tools::PageSpec s;
+                s.file = src.path;
+                s.password = src.password;
+                s.page = p;
+                specs.append(s);
+            }
+            const QString path = tools::uniqueOutputPath(outDir, stem, parts.at(i).suffix);
+            const tools::WriteResult r = tools::writePages(specs, path);
+            if (!r.ok) {
+                ok = false;
+                error = r.error;
+                errorFile = r.errorFile;
+                break;
+            }
+            files << QDir::toNativeSeparators(path);
+            for (const QString& w : r.warnings)
+                if (!warnings.contains(w) && !w.startsWith(QLatin1String("linksRemoved")))
+                    warnings << w;
+            report(base + (1.0 - base) * (i + 1) / parts.size());
+        }
+        if (!ok && !files.isEmpty()) {
+            // a split that failed or was cancelled removes what it already wrote: half of a result is not a result
+            for (const QString& f : std::as_const(files))
+                QFile::remove(f);
+            files.clear();
+        }
+        QMetaObject::invokeMethod(this, [this, ok, error, files, warnings, errorFile] {
+            m_splitting = false;
+            m_splitProgress = ok ? 1.0 : m_splitProgress;
+            emit splitChanged();
+            emit splitFinished(ok, error, files, warnings, errorFile);
+        }, Qt::QueuedConnection);
+    }));
+    return {};
+}
+
+void DocumentController::cancelSplit()
+{
+    if (m_splitCancel)
+        m_splitCancel->store(true);
 }
 
 } // namespace dp

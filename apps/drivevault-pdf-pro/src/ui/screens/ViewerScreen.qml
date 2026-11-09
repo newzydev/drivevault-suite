@@ -9,6 +9,8 @@ Item {
     id: viewer
 
     signal openRequested()
+    signal organizeRequested()
+    signal splitRequested()
 
     // ---- view state ---------------------------------------------------------------------------------------------------
     property real zoom: 1.0                       // 1.0 = 100 % = 96 dpi on screen
@@ -206,18 +208,22 @@ Item {
         // tool bar
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 52
+            implicitHeight: Math.max(52, toolFlow.implicitHeight + 16)
             color: "#0D0E11"
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
-            RowLayout {
-                anchors.fill: parent
+            Flow {
+                id: toolFlow
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.topMargin: 8
                 anchors.leftMargin: 12
                 anchors.rightMargin: 12
                 spacing: 6
 
                 PButton { objectName: "toggleSidebar"; compact: true; glyph: "sidebar"; tip: Tr.s("thumbnails"); variant: viewer.showSidebar ? "secondary" : "ghost"; onClicked: viewer.showSidebar = !viewer.showSidebar }
                 PButton { objectName: "toolbarOpen"; compact: true; text: Tr.s("openFile"); onClicked: viewer.openRequested() }
-                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; color: Theme.border; Layout.leftMargin: 2; Layout.rightMargin: 2 }
+                Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
 
                 PButton { objectName: "prevPage"; compact: true; text: "‹"; tip: Tr.s("prevPage"); enabled: viewer.currentPage > 0; onClicked: viewer.goTo(viewer.currentPage - 1) }
                 TextField {
@@ -244,7 +250,7 @@ Item {
                 }
                 AppText { text: Tr.f("pageOf", Doc.pageCount); color: Theme.textSecondary }
                 PButton { objectName: "nextPage"; compact: true; text: "›"; tip: Tr.s("nextPage"); enabled: viewer.currentPage < Doc.pageCount - 1; onClicked: viewer.goTo(viewer.currentPage + 1) }
-                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; color: Theme.border; Layout.leftMargin: 2; Layout.rightMargin: 2 }
+                Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
 
                 PButton { objectName: "zoomOut"; compact: true; text: "−"; tip: Tr.s("zoomOut"); onClicked: viewer.zoomOut() }
                 PButton {
@@ -259,7 +265,7 @@ Item {
                 PButton { objectName: "zoomIn"; compact: true; text: "+"; tip: Tr.s("zoomIn"); onClicked: viewer.zoomIn() }
                 PButton { objectName: "fitWidth"; compact: true; text: Tr.s("fitWidth"); variant: viewer.zoomMode === "fitWidth" ? "secondary" : "ghost"; onClicked: viewer.fit("fitWidth") }
                 PButton { objectName: "fitPage"; compact: true; text: Tr.s("fitPage"); variant: viewer.zoomMode === "fitPage" ? "secondary" : "ghost"; onClicked: viewer.fit("fitPage") }
-                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; color: Theme.border; Layout.leftMargin: 2; Layout.rightMargin: 2 }
+                Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
 
                 PButton {
                     objectName: "viewMode"
@@ -270,12 +276,13 @@ Item {
                 }
                 PButton { objectName: "rotate"; compact: true; glyph: "rotate"; tip: Tr.s("rotateRight"); onClicked: Doc.rotateView(1) }
                 PButton { objectName: "darkPages"; compact: true; glyph: "dark"; tip: Tr.s("darkPages"); variant: Doc.darkPages ? "secondary" : "ghost"; onClicked: Doc.darkPages = !Doc.darkPages }
-                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; color: Theme.border; Layout.leftMargin: 2; Layout.rightMargin: 2 }
+                Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
 
                 PButton { objectName: "findButton"; compact: true; text: Tr.s("find"); variant: viewer.searchOpen ? "secondary" : "ghost"; onClicked: viewer.searchOpen ? viewer.closeSearch() : viewer.openSearch() }
                 PButton { objectName: "printButton"; compact: true; text: Tr.s("print"); variant: "ghost"; onClicked: printDialog.open() }
+                PButton { objectName: "organizeButton"; compact: true; text: Tr.s("toolOrganizeShort"); variant: "ghost"; tip: Tr.s("toolOrganize"); onClicked: viewer.organizeRequested() }
+                PButton { objectName: "splitButton"; compact: true; text: Tr.s("toolSplitShort"); variant: "ghost"; tip: Tr.s("toolSplit"); onClicked: viewer.splitRequested() }
 
-                Item { Layout.fillWidth: true }
                 LanguageSwitch {}
             }
         }

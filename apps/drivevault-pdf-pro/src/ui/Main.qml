@@ -65,12 +65,17 @@ ApplicationWindow {
     onClosing: { if (screenLoader.item && screenLoader.item.flushSave) screenLoader.item.flushSave() }      // keep the view of the open file
     Component {
         id: viewerComponent
-        ViewerScreen { onOpenRequested: fileDialog.open() }
+        ViewerScreen {
+            onOpenRequested: fileDialog.open()
+            onOrganizeRequested: organizer.begin("organize")
+            onSplitRequested: splitDialog.open()
+        }
     }
     Component {
         id: homeComponent
         HomeScreen {
             onOpenRequested: fileDialog.open()
+            onMergeRequested: organizer.begin("merge")
             onOpenPathRequested: path => win.openPath(path)
         }
     }
@@ -104,6 +109,11 @@ ApplicationWindow {
         nameFilters: [Tr.s("pdfFiles")]
         onAccepted: win.openPath(selectedFile.toString())
     }
+    OrganizerDialog {
+        id: organizer
+        onOpenResultRequested: path => win.openPath(path)
+    }
+    SplitDialog { id: splitDialog }
     PasswordDialog {
         id: passwordDialog
         onSubmitted: (path, password) => win.openPath(path, password)

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultPdfPro
-    VERSION 0.2.0
+    VERSION 0.3.0
     DESCRIPTION "DriveVault PDF Pro - read, merge, split, compress, edit, protect and redact PDF files"
     LANGUAGES CXX)
 
@@ -42,7 +42,24 @@ set_target_properties(pdfium PROPERTIES
 file(MAKE_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 file(COPY "${DP_PDFIUM_DIR}/bin/pdfium.dll" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
+# ---- qpdf (Apache-2.0): the file structure - merge, split, reorder, rotate, crop - from .toolsqpdf ----------------------------------
+set(DP_QPDF_DIR "${CMAKE_SOURCE_DIR}/../../.tools/qpdf" CACHE PATH "qpdf msvc64 release (include/, lib/qpdf.lib, bin/qpdf30.dll)")
+if(DEFINED ENV{DV_QPDF_DIR})
+    set(DP_QPDF_DIR "$ENV{DV_QPDF_DIR}")
+endif()
+if(NOT EXISTS "${DP_QPDF_DIR}/include/qpdf/QPDF.hh")
+    message(FATAL_ERROR "qpdf not found in ${DP_QPDF_DIR}. See README.md (Prerequisites) or pass -DDP_QPDF_DIR=<dir>.")
+endif()
+add_library(qpdf SHARED IMPORTED)
+set_target_properties(qpdf PROPERTIES
+    IMPORTED_IMPLIB "${DP_QPDF_DIR}/lib/qpdf.lib"
+    IMPORTED_LOCATION "${DP_QPDF_DIR}/bin/qpdf30.dll")
+target_include_directories(qpdf SYSTEM INTERFACE "${DP_QPDF_DIR}/include")
+file(GLOB DP_QPDF_DLLS "${DP_QPDF_DIR}/bin/*.dll")
+file(COPY ${DP_QPDF_DLLS} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
 add_subdirectory(src/pdfengine)
+add_subdirectory(src/pdftools)
 add_subdirectory(src/ui)
 add_subdirectory(src/app)
 

@@ -28,5 +28,7 @@ qt_add_qml_module(dp_ui
         screens/SearchBar.qml
         screens/SidePanel.qml
         screens/LinkDialog.qml
-        screens/PrintDialog.qml)
+        screens/PrintDialog.qml
+        screens/OrganizerDialog.qml
+        screens/SplitDialog.qml)
 target_link_libraries(dp_ui PRIVATE Qt6::Quick Qt6::QuickControls2)

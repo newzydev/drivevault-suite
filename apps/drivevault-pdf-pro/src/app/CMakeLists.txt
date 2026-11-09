@@ -13,9 +13,10 @@ add_library(dp_appcore STATIC
     DocumentController.cpp DocumentController.h
     PageImageProvider.cpp PageImageProvider.h
     PageRange.cpp PageRange.h
-    PrintTask.cpp PrintTask.h)
+    PrintTask.cpp PrintTask.h
+    PageListModel.cpp PageListModel.h)
 target_include_directories(dp_appcore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(dp_appcore PUBLIC dp_pdfengine Qt6::Gui Qt6::Qml Qt6::Quick Qt6::PrintSupport)
+target_link_libraries(dp_appcore PUBLIC dp_pdfengine dp_pdftools Qt6::Gui Qt6::Qml Qt6::Quick Qt6::PrintSupport)
 
 # ---- Executable ----------------------------------------------------------------------------------------------------
 qt_add_executable(dp_app WIN32 main.cpp app.rc)

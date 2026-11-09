@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pdfengine/PdfDocument.h"
+#include "pdftools/PdfTools.h"
 
 #include <QHash>
 #include <QMutex>
@@ -46,6 +47,9 @@ class DocumentController : public QObject {
     // printing
     Q_PROPERTY(bool printing READ printing NOTIFY printingChanged FINAL)
     Q_PROPERTY(double printProgress READ printProgress NOTIFY printingChanged FINAL)
+    // splitting the current file
+    Q_PROPERTY(bool splitting READ splitting NOTIFY splitChanged FINAL)
+    Q_PROPERTY(double splitProgress READ splitProgress NOTIFY splitChanged FINAL)
 
 public:
     explicit DocumentController(const QString& dataDir, QObject* parent = nullptr);
@@ -75,6 +79,8 @@ public:
     bool annotationsLoading() const { return m_annotationsLoading; }
     bool printing() const { return m_printing; }
     double printProgress() const { return m_printProgress; }
+    bool splitting() const { return m_splitting; }
+    double splitProgress() const { return m_splitProgress; }
 
     // ---- documents and tabs -----------------------------------------------------------------------------------------------
     // "" when opened (an already open file just becomes the current tab), otherwise an error code:
@@ -123,6 +129,27 @@ public:
     Q_INVOKABLE QString startPrint(const QVariantMap& options);
     Q_INVOKABLE void cancelPrint();
 
+    // ---- splitting the current file (the file itself is never changed; the parts are new files) -----------------------------
+    // mode: "ranges" (param: text such as "1-3,5,8-", one file per part), "every" (param: pages per file), "bookmarks" (one file per top level bookmark).
+    // Returns [{name, pages, count}] = the files that would be written; empty when the mode / text is not valid for this file.
+    Q_INVOKABLE QVariantList splitPreview(const QString& mode, const QVariant& param) const;
+    // options: {mode, text, n, sizeMb, outDir}; mode may also be "size" (each file stays under sizeMb megabytes; measured by writing).
+    // Returns "" when started, otherwise: "noDocument", "badRange", "noParts", "noFolder", "busy".
+    Q_INVOKABLE QString startSplit(const QVariantMap& options);
+    Q_INVOKABLE void cancelSplit();
+
+    // ---- for the page organizer ------------------------------------------------------------------------------------------
+    struct SourceInfo {
+        int id = 0;
+        std::shared_ptr<pdf::PdfDocument> doc;
+        QString path;
+        QString password;
+    };
+    SourceInfo currentSource() const;
+    // Makes a document known to the image provider under a new id (for the thumbnails of the organizer); unregister when it is not needed any more.
+    int registerExtra(std::shared_ptr<pdf::PdfDocument> doc);
+    void unregisterExtra(int id);
+
     // For the image provider and tests (any thread): the open document with this id, else null.
     std::shared_ptr<pdf::PdfDocument> documentFor(int id) const;
     int rotationFor(int id) const;
@@ -140,6 +167,8 @@ signals:
     void annotationsChanged();
     void printingChanged();
     void printFinished(bool ok, const QString& message);
+    void splitChanged();
+    void splitFinished(bool ok, const QString& error, const QStringList& files, const QStringList& warnings, const QString& errorFile);
 
 private:
     struct Tab {
@@ -147,6 +176,7 @@ private:
         std::shared_ptr<pdf::PdfDocument> doc;
         int rotation = 0;
         QVariantMap view;
+        QString password;                                     // in memory only: the pages of a protected file are written with it
     };
     struct SelPoint {
         int page = -1;
@@ -201,6 +231,11 @@ private:
     bool m_printing = false;
     double m_printProgress = 0.0;
     std::shared_ptr<std::atomic_bool> m_printCancel;
+
+    bool m_splitting = false;
+    double m_splitProgress = 0.0;
+    std::shared_ptr<std::atomic_bool> m_splitCancel;
+    std::map<int, std::shared_ptr<pdf::PdfDocument>> m_extras;      // documents of the organizer (guarded by m_mutex)
 };
 
 } // namespace dp

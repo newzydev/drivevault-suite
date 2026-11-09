@@ -3,10 +3,12 @@
 // Fails on any QML warning.
 #include "DocumentController.h"
 #include "PageImageProvider.h"
+#include "PageListModel.h"
 #include "TestPdf.h"
 #include "pdfengine/PdfiumRuntime.h"
 
 #include <QClipboard>
+#include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
@@ -39,6 +41,7 @@ class TstUiFlow : public QObject {
     Q_OBJECT
     QTemporaryDir m_dir;
     dp::DocumentController* m_doc = nullptr;
+    dp::PageListModel* m_org = nullptr;
     QQmlApplicationEngine* m_engine = nullptr;
     QQuickWindow* m_window = nullptr;
     QString m_sixPath;
@@ -177,7 +180,9 @@ private slots:
         QQuickStyle::setStyle(QStringLiteral("Basic"));
         m_doc = new dp::DocumentController(m_dir.filePath("data"));
         m_doc->setLanguage("en");
+        m_org = new dp::PageListModel(m_doc);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Doc", m_doc);
+        qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Organizer", m_org);
         m_engine = new QQmlApplicationEngine;
         m_engine->addImageProvider(QStringLiteral("pdf"), new dp::PageImageProvider(m_doc));
         m_engine->loadFromModule("DriveVault.PdfPro.UI", "Main");
@@ -194,6 +199,7 @@ private slots:
     {
         m_doc->close();
         delete m_engine;
+        delete m_org;
         delete m_doc;
         dp::pdf::shutdownPdfium();
         qInstallMessageHandler(g_previous);
@@ -519,6 +525,112 @@ private slots:
         QVERIFY(QMetaObject::invokeMethod(m_window, "openPath", Q_ARG(QVariant, write("junk.pdf", "this is not a pdf")), Q_ARG(QVariant, QVariant())));
         QVERIFY(waitFor([&] { QQuickItem* b = find("noticeBanner"); return b && b->isVisible(); }));
         QVERIFY(!m_doc->isOpen());
+    }
+
+    void thePageOrganizerSelectsDeletesDragsAndSaves()
+    {
+        fresh(m_sixPath, "six.pdf");
+        QVERIFY(click("organizeButton"));
+        QObject* dialog = m_window->findChild<QObject*>("organizerDialog");
+        QVERIFY(dialog);
+        QTRY_VERIFY_WITH_TIMEOUT(dialog->property("opened").toBool(), 5000);
+        QTRY_COMPARE_WITH_TIMEOUT(m_org->count(), 6, 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(find("orgPage_5") != nullptr, 5000);
+        QVERIFY(!find("orgDelete")->isEnabled());                                // nothing selected
+
+        QVERIFY(click("orgPage_1"));
+        QVERIFY(find("orgDelete")->isEnabled());
+        QVERIFY(text("orgCount").contains("1"));
+        QVERIFY(click("orgDelete"));
+        QTRY_COMPARE_WITH_TIMEOUT(m_org->count(), 5, 3000);
+        QVERIFY(click("orgUndo"));
+        QTRY_COMPARE_WITH_TIMEOUT(m_org->count(), 6, 3000);
+        QVERIFY(m_org->canRedo());
+
+        // drag the first page onto the fourth place
+        QQuickItem* from = find("orgPage_0");
+        QQuickItem* to = find("orgPage_3");
+        QVERIFY(from && to);
+        const QPoint a = from->mapToScene(QPointF(from->width() / 2, from->height() / 2)).toPoint();
+        const QPoint b = to->mapToScene(QPointF(to->width() / 2, to->height() / 2)).toPoint();
+        QTest::mousePress(m_window, Qt::LeftButton, {}, a);
+        for (int i = 1; i <= 12; ++i) {
+            QTest::mouseMove(m_window, a + (b - a) * i / 12);
+            QTest::qWait(25);
+        }
+        QTest::mouseRelease(m_window, Qt::LeftButton, {}, b);
+        QTRY_COMPARE_WITH_TIMEOUT(m_org->data(m_org->index(3), dp::PageListModel::PageRole).toInt(), 0, 3000);
+        QVERIFY(m_org->modified());
+
+        // turning a page changes its shown size
+        QVERIFY(click("orgPage_0"));
+        QVERIFY(click("orgRotateRight"));
+        QCOMPARE(m_org->data(m_org->index(0), dp::PageListModel::RotationRole).toInt(), 1);
+
+        // save through the same function the file dialog calls
+        const QString out = m_dir.filePath("organized-ui.pdf");
+        QFile::remove(out);
+        QVERIFY(QMetaObject::invokeMethod(dialog, "saveTo", Q_ARG(QVariant, out), Q_ARG(QVariant, QVariantList()), Q_ARG(QVariant, false)));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("orgResult"), 10000);
+        QVERIFY(QFileInfo::exists(out));
+        // again: the file exists, so the dialog asks before replacing it
+        QVERIFY(QMetaObject::invokeMethod(dialog, "saveTo", Q_ARG(QVariant, out), Q_ARG(QVariant, QVariantList()), Q_ARG(QVariant, false)));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("orgReplaceYes"), 3000);
+        QVERIFY(click("orgReplaceNo"));
+        QVERIFY(!visible("orgReplaceYes"));
+
+        QVERIFY(click("orgClose"));                                              // saved: closes without asking
+        QTRY_VERIFY_WITH_TIMEOUT(!dialog->property("opened").toBool(), 5000);
+        QCOMPARE(m_org->count(), 0);
+        m_doc->close();
+    }
+
+    void unsavedChangesAreNotLostWithoutAsking()
+    {
+        fresh(m_sixPath, "six.pdf");
+        QVERIFY(click("organizeButton"));
+        QObject* dialog = m_window->findChild<QObject*>("organizerDialog");
+        QTRY_VERIFY_WITH_TIMEOUT(dialog->property("opened").toBool() && find("orgPage_0") != nullptr, 5000);
+        QVERIFY(click("orgPage_0"));
+        QVERIFY(click("orgDelete"));
+        QTRY_COMPARE_WITH_TIMEOUT(m_org->count(), 5, 3000);
+        QVERIFY(click("orgClose"));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("orgDiscardYes"), 3000);
+        QVERIFY(dialog->property("opened").toBool());
+        QVERIFY(click("orgDiscardNo"));
+        QVERIFY(click("orgClose"));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("orgDiscardYes"), 3000);
+        QVERIFY(click("orgDiscardYes"));
+        QTRY_VERIFY_WITH_TIMEOUT(!dialog->property("opened").toBool(), 5000);
+        m_doc->close();
+    }
+
+    void theSplitDialogShowsThePreviewAndWritesTheFiles()
+    {
+        fresh(m_sixPath, "six.pdf");
+        QVERIFY(click("splitButton"));
+        QObject* dialog = m_window->findChild<QObject*>("splitDialog");
+        QVERIFY(dialog);
+        QTRY_VERIFY_WITH_TIMEOUT(dialog->property("opened").toBool(), 5000);
+        QVERIFY(!find("splitStart")->isEnabled());                               // ranges mode, nothing typed
+        QVERIFY(typeInto("splitRangeField", "1-2, 5", false));
+        QTRY_COMPARE_WITH_TIMEOUT(dialog->property("preview").toList().size(), 2, 3000);
+        QVERIFY(find("splitStart")->isEnabled());
+        QVERIFY(!find("splitBookmarks")->isEnabled());                            // no bookmarks in this file
+        QVERIFY(typeInto("splitRangeField", "9", false));                        // page 9 does not exist in 6 pages
+        QTRY_COMPARE_WITH_TIMEOUT(dialog->property("preview").toList().size(), 0, 3000);
+        QVERIFY(!find("splitStart")->isEnabled());
+        QVERIFY(typeInto("splitRangeField", "2-3, 6", false));
+        QTRY_COMPARE_WITH_TIMEOUT(dialog->property("preview").toList().size(), 2, 3000);
+
+        const QString outDir = m_dir.filePath("ui-split");
+        find("splitFolderField")->setProperty("text", outDir);
+        QVERIFY(click("splitStart"));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("splitDone"), 15000);
+        QCOMPARE(QDir(outDir).entryList({"*.pdf"}).size(), 2);
+        QVERIFY(click("splitCancel"));                                           // "Close" when idle
+        QTRY_VERIFY_WITH_TIMEOUT(!dialog->property("opened").toBool(), 5000);
+        m_doc->close();
     }
 
     void noQmlWarningsWereEmitted()

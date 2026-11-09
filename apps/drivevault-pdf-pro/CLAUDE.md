@@ -1,11 +1,12 @@
 # DriveVault PDF Pro - rules (adds to the repository root file)
 
-Native Windows PDF program: C++20, Qt 6.8 / Qt Quick (QML), PDFium (reading / rendering), qpdf (file structure, planned from Phase 2), CMake. Version 0.2.0 - **in development, not released, no installer yet** (Phase 1, the reader, is done).
+Native Windows PDF program: C++20, Qt 6.8 / Qt Quick (QML), PDFium (reading / rendering), qpdf (file structure: merge, split, reorder), CMake. Version 0.3.0 - **in development, not released, no installer yet** (Phase 1, the reader, and Phase 2, merge / split / organize, are done).
 The plan with all phases and the owner's decisions is `docs/PDF-Pro-Plan.md` - read it first; do not build features that are not in the plan and do not label a planned feature as available.
 
 ## Layout
 ```
-src/pdfengine/  the only code that touches PDFium (see src/CLAUDE.md)     src/app/  DocumentController, PageImageProvider, main.cpp
+src/pdfengine/  the only code that touches PDFium (see src/CLAUDE.md)     src/app/  DocumentController, PageListModel, PageImageProvider, main.cpp
+src/pdftools/   the only code that touches qpdf (write a new file from pages)
 src/ui/         QML module DriveVault.PdfPro.UI                           tests/    Qt Test suites (see tests/CLAUDE.md)
 resources/      fonts, icons                                              scripts/  build.ps1, make-icon.ps1
 ```
@@ -19,7 +20,7 @@ Output: `build/release/bin/DriveVaultPdfPro.exe` (+ `pdfium.dll` copied next to 
 
 ## Commands (from this folder)
 ```powershell
-.\scripts\build.ps1 -Test        # configure + build Release + 4 ctest suites (about 15 s of tests)
+.\scripts\build.ps1 -Test        # configure + build Release + 6 ctest suites
 ..\..\scripts\run-pdf-pro.bat    # smoke start / look at the program (no install)
 ```
 

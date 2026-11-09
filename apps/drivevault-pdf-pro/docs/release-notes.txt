@@ -2,6 +2,18 @@ DriveVault PDF Pro - release notes
 ==================================
 (In development: no version has been released yet. These notes are for the developers.)
 
+v0.3.0 (2026-11-09) - Phase 2: merge, split and organize pages
+  New
+  - Organize pages: thumbnails, select (Ctrl / Shift), drag to reorder, delete, duplicate, turn, crop margins, blank pages, pages of other files, undo / redo. Saves a new file; the original is never changed and an existing file is replaced only after a question.
+  - Merge files (Home screen, or add files inside the organizer). Protected files ask for their password.
+  - Split: page ranges, every N pages, top level bookmarks, or a maximum file size; shows the files before writing; a failed or cancelled split removes what it wrote.
+  - qpdf 12.4.2 (Apache-2.0) is used for the file structure.
+  Limits
+  - Bookmarks and form fields are not copied; links to pages that are not in the new file are removed; the result of a protected file is unprotected.
+  - Crop hides the margins; the content stays in the file.
+  Changed
+  - The tool bar wraps to a second line on narrow windows (it ran out of the window at 1240 px).
+
 v0.2.0 (2026-11-09) - Phase 1: the reader is complete
   New
   - Several files at once in tabs; the same file is not opened twice.

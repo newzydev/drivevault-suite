@@ -1,6 +1,6 @@
 function(dp_add_test name)
     add_executable(${name} ${name}.cpp)
-    target_link_libraries(${name} PRIVATE dp_pdfengine dp_appcore Qt6::Test ${ARGN})
+    target_link_libraries(${name} PRIVATE dp_pdfengine dp_pdftools dp_appcore Qt6::Test ${ARGN})
     target_compile_definitions(${name} PRIVATE DP_TEST_QPDF="${CMAKE_SOURCE_DIR}/../../.tools/qpdf/bin/qpdf.exe"
         DP_TEST_FONT_THAI="${CMAKE_SOURCE_DIR}/resources/fonts/NotoSansThai-Variable.ttf")
     add_test(NAME ${name} COMMAND ${name})
@@ -12,3 +12,5 @@ dp_add_test(tst_pdfengine)
 dp_add_test(tst_controller)
 dp_add_test(tst_ui_flow dp_ui dp_uiplugin dp_resources Qt6::Quick Qt6::QuickControls2)
 dp_add_test(tst_perf psapi)
+dp_add_test(tst_pdftools)
+dp_add_test(tst_organizer)
