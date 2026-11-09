@@ -37,5 +37,6 @@ qt_add_qml_module(dp_ui
         screens/MarkDialog.qml
         screens/FormDialog.qml
         screens/ImageExportDialog.qml
-        screens/SecurityDialog.qml)
+        screens/SecurityDialog.qml
+        screens/RedactionBar.qml)
 target_link_libraries(dp_ui PRIVATE Qt6::Quick Qt6::QuickControls2)

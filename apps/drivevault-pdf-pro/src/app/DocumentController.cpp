@@ -3,6 +3,7 @@
 #include "PageRange.h"
 #include "PrintTask.h"
 #include "ImageExport.h"
+#include "Redaction.h"
 #include "pdftools/Security.h"
 #include "pdftools/SplitPlan.h"
 
@@ -871,6 +872,101 @@ void DocumentController::finishOutput(const QString& error, const QString& path)
     m_outputBusy = false;
     emit outputChanged();
     emit outputFinished(error, error.isEmpty() ? path : QString());
+}
+
+QString DocumentController::startRedactionScan(const QString& query, bool regex)
+{
+    if (m_outputBusy)
+        return QStringLiteral("busy");
+    const auto doc = currentDoc();
+    if (!doc)
+        return QStringLiteral("noDocument");
+    if (currentRotation() != 0)
+        return QStringLiteral("redactRotation");
+    const QRegularExpression pattern(regex ? query : QRegularExpression::escape(query),
+                                     QRegularExpression::CaseInsensitiveOption | QRegularExpression::UseUnicodePropertiesOption);
+    if (query.trimmed().isEmpty() || query.size() > 512 || !pattern.isValid())
+        return QStringLiteral("redactPattern");
+
+    const int sourceId = docId();
+    const auto cancel = std::make_shared<std::atomic_bool>(false);
+    m_imageCancel = cancel;
+    m_outputBusy = true;
+    m_outputProgress = 0;
+    emit outputChanged();
+    m_outputPool.start(QRunnable::create([this, doc, sourceId, pattern, cancel] {
+        constexpr int maxMarks = 2000;
+        QVariantList marks;
+        QString error;
+        for (int page = 0; page < doc->pageCount() && !cancel->load() && error.isEmpty(); ++page) {
+            const auto bounds = QRectF(QPointF(), doc->pageSizePt(page));
+            for (const auto& hit : doc->matchPage(page, pattern, maxMarks + 1)) {
+                for (const auto& rect : hit.rects) {
+                    const auto r = rect.adjusted(-2, -2, 2, 2).intersected(bounds);
+                    if (r.isEmpty())
+                        continue;
+                    marks.append(QVariantMap{{"page", page}, {"x", r.x()}, {"y", r.y()}, {"w", r.width()}, {"h", r.height()}});
+                }
+                if (marks.size() > maxMarks) {
+                    error = QStringLiteral("redactTooMany");
+                    break;
+                }
+            }
+        }
+        if (cancel->load())
+            error = QStringLiteral("cancelled");
+        if (error.isEmpty() && marks.isEmpty())
+            error = QStringLiteral("redactNoMatches");
+        if (!error.isEmpty())
+            marks.clear();
+        QMetaObject::invokeMethod(this, [this, sourceId, error, marks] {
+            m_imageCancel.reset();
+            m_outputBusy = false;
+            emit outputChanged();
+            emit redactionScanFinished(sourceId, error, marks);
+        }, Qt::QueuedConnection);
+    }));
+    return {};
+}
+
+QString DocumentController::startRedaction(const QVariantList& marks, const QString& color, const QString& label, const QString& path)
+{
+    if (m_outputBusy)
+        return QStringLiteral("busy");
+    const auto doc = currentDoc();
+    if (!doc)
+        return QStringLiteral("noDocument");
+    if (currentRotation() != 0)
+        return QStringLiteral("redactRotation");
+    if (marks.isEmpty() || marks.size() > 2000)
+        return QStringLiteral("redactMarks");
+    const QString destination = QFileInfo(localPath(path)).absoluteFilePath();
+    if (QFileInfo(destination).suffix().compare(QLatin1String("pdf"), Qt::CaseInsensitive) != 0)
+        return QStringLiteral("pdfSuffix");
+    QList<RedactionMark> areas;
+    for (const auto& value : marks) {
+        const auto mark = value.toMap();
+        areas.append({mark.value("page", -1).toInt(), QRectF(mark.value("x").toDouble(), mark.value("y").toDouble(),
+                      mark.value("w").toDouble(), mark.value("h").toDouble())});
+    }
+    const auto cancel = std::make_shared<std::atomic_bool>(false);
+    m_imageCancel = cancel;
+    m_outputBusy = true;
+    m_outputProgress = 0;
+    emit outputChanged();
+    m_outputPool.start(QRunnable::create([this, doc, areas, color, label, destination, cancel] {
+        const QString error = redactPdf(*doc, destination, areas, QColor(color), label, [this, cancel](int done, int total) {
+            if (cancel->load())
+                return false;
+            QMetaObject::invokeMethod(this, [this, done, total] {
+                m_outputProgress = double(done) / total;
+                emit outputChanged();
+            }, Qt::QueuedConnection);
+            return true;
+        });
+        QMetaObject::invokeMethod(this, [this, error, destination] { finishOutput(error, destination); }, Qt::QueuedConnection);
+    }));
+    return {};
 }
 
 // ---- splitting -------------------------------------------------------------------------------------------------------------

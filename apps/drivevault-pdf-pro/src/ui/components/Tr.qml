@@ -332,7 +332,32 @@ QtObject {
         "output_alreadyProtected": ["This PDF already has protection. Unlock it before applying new protection.", "PDF นี้มีการป้องกันอยู่แล้ว โปรดปลดล็อกก่อนตั้งการป้องกันใหม่"],
         "output_notProtected": ["This PDF has no password or permission restrictions.", "PDF นี้ไม่มีรหัสผ่านหรือข้อจำกัดสิทธิ์"],
         "output_noDocument": ["Open a PDF first.", "เปิด PDF ก่อน"],
-        "output_authorization": ["Confirm that you have permission to unlock this PDF.", "ยืนยันว่าคุณมีสิทธิ์ปลดล็อก PDF นี้"]
+        "output_authorization": ["Confirm that you have permission to unlock this PDF.", "ยืนยันว่าคุณมีสิทธิ์ปลดล็อก PDF นี้"],
+        "redactTitle": ["Redact PDF", "ปิดบังข้อมูล PDF"],
+        "redactHint": ["Drag over areas or find text to mark them. Review every mark. Save any pending edits before using this tool.", "ลากกรอบหรือค้นหาข้อความเพื่อทำเครื่องหมาย ตรวจทุกตำแหน่งก่อนบันทึก หากมีการแก้ไขค้างอยู่ให้บันทึกก่อนใช้เครื่องมือนี้"],
+        "redactText": ["Text to redact", "ข้อความที่จะปิดบัง"],
+        "redactPattern": ["Regular expression", "นิพจน์ปกติ (Regex)"],
+        "redactId": ["Thai ID number", "เลขบัตรประชาชนไทย"],
+        "redactPhone": ["Thai phone", "เบอร์โทรไทย"],
+        "redactEmail": ["Email", "อีเมล"],
+        "redactBank": ["Thai bank account (10 digits)", "เลขบัญชีไทย (10 หลัก)"],
+        "redactScan": ["Find and mark", "ค้นหาและทำเครื่องหมาย"],
+        "redactMark": ["Mark %1 · Page %2", "กรอบ %1 · หน้า %2"],
+        "redactEmpty": ["No marks yet", "ยังไม่มีกรอบ"],
+        "redactRemove": ["Remove mark", "ลบกรอบ"],
+        "redactBlack": ["Black", "สีดำ"],
+        "redactWhite": ["White", "สีขาว"],
+        "redactRed": ["Red", "สีแดง"],
+        "redactLabel": ["Optional text inside each box", "ข้อความในกรอบ (ไม่บังคับ)"],
+        "redactApply": ["Apply redaction", "บันทึกฉบับปิดบังข้อมูล"],
+        "redactConfirm": ["This permanently replaces the marked areas. The new PDF contains only page images. Searchable text, links, forms, bookmarks, metadata and attachments will be removed from the copy. The original remains available. Review the new file before sharing it.", "พื้นที่ที่ทำเครื่องหมายจะถูกแทนที่ถาวร สำเนา PDF จะมีเฉพาะภาพหน้าเอกสาร ข้อความที่ค้นหาได้ ลิงก์ ฟอร์ม บุ๊กมาร์ก เมทาดาทา และไฟล์แนบจะถูกนำออกจากสำเนา ต้นฉบับยังอยู่ โปรดตรวจสำเนาก่อนส่งต่อ"],
+        "output_redactPattern": ["Enter valid text or a regular expression.", "ใส่ข้อความหรือนิพจน์ปกติที่ถูกต้อง"],
+        "output_redactTooMany": ["There are too many marks. Narrow the search or remove marks first.", "มีกรอบมากเกินไป โปรดจำกัดการค้นหาหรือลบกรอบก่อน"],
+        "output_redactNoMatches": ["No matching text was found. You can still drag over the page to mark an area.", "ไม่พบข้อความที่ตรงกัน ยังสามารถลากกรอบบนหน้าได้"],
+        "output_redactMarks": ["Choose valid areas and an opaque box color.", "เลือกพื้นที่ที่ถูกต้องและสีกรอบทึบ"],
+        "output_redactRotation": ["Reset the view rotation before marking areas.", "คืนค่าการหมุนมุมมองก่อนทำเครื่องหมาย"],
+        "output_redactProtected": ["Unlock an authorized copy first, then open it to redact.", "ปลดล็อกสำเนาที่คุณมีสิทธิ์ก่อน แล้วเปิดสำเนาเพื่อปิดบังข้อมูล"],
+        "output_redactVerify": ["Verification failed. No output file was kept.", "ตรวจสอบผลไม่ผ่าน จึงไม่ได้เก็บไฟล์ผลลัพธ์"]
     })
     function warning(code) {
         if (code === "bookmarks") return s("warnBookmarks")

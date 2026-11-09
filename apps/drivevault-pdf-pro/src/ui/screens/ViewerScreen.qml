@@ -37,6 +37,19 @@ Item {
         return !!a && a.hasOwnProperty("selectedText")
     }
     property string linkCursor: ""
+    property var redactStart: null
+
+    function updateRedactDrag(x, y) {
+        if (!redactStart)
+            return
+        const page = redactStart.page
+        const origin = pageToView(page, 0, 0)
+        const point = pointer.mapFromItem(viewer, origin.x, origin.y)
+        const px = Math.max(0, Math.min(Doc.pageWidthPt(page), (x - point.x) / pxPerPt))
+        const py = Math.max(0, Math.min(Doc.pageHeightPt(page), (y - point.y) / pxPerPt))
+        redactions.preview = { page: page, x: Math.min(redactStart.x, px), y: Math.min(redactStart.y, py),
+            w: Math.abs(redactStart.x - px), h: Math.abs(redactStart.y - py) }
+    }
 
     function measure() {
         let w = 0, h = 0
@@ -401,7 +414,7 @@ Item {
                     tip: viewer.viewMode === "twoPage" ? Tr.s("viewContinuous") : Tr.s("viewTwoPage")
                     onClicked: viewer.setViewMode(viewer.viewMode === "twoPage" ? "continuous" : "twoPage")
                 }
-                PButton { objectName: "rotate"; compact: true; glyph: "rotate"; tip: Tr.s("rotateRight"); onClicked: Doc.rotateView(1) }
+                PButton { objectName: "rotate"; compact: true; glyph: "rotate"; tip: Tr.s("rotateRight"); enabled: !redactions.visible; onClicked: Doc.rotateView(1) }
                 PButton { objectName: "darkPages"; compact: true; glyph: "dark"; tip: Tr.s("darkPages"); variant: Doc.darkPages ? "secondary" : "ghost"; onClicked: Doc.darkPages = !Doc.darkPages }
                 Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
 
@@ -410,7 +423,7 @@ Item {
                 PButton { objectName: "organizeButton"; compact: true; text: Tr.s("toolOrganizeShort"); variant: "ghost"; tip: Tr.s("toolOrganize"); onClicked: viewer.organizeRequested() }
                 PButton { objectName: "splitButton"; compact: true; text: Tr.s("toolSplitShort"); variant: "ghost"; tip: Tr.s("toolSplit"); onClicked: viewer.splitRequested() }
                 PButton { objectName: "compressButton"; compact: true; text: Tr.s("toolCompressShort"); variant: "ghost"; tip: Tr.s("toolCompress"); onClicked: viewer.compressRequested() }
-                PButton { objectName: "editButton"; compact: true; text: Tr.s("toolEdit"); variant: Editor.active ? "secondary" : "ghost"; tip: Doc.rotation === 0 ? Tr.s("toolEditTip") : Tr.s("editNeedsNoRotation"); enabled: Doc.rotation === 0 || Editor.active; onClicked: Editor.active = !Editor.active }
+                PButton { objectName: "editButton"; compact: true; text: Tr.s("toolEdit"); variant: Editor.active ? "secondary" : "ghost"; tip: Doc.rotation === 0 ? Tr.s("toolEditTip") : Tr.s("editNeedsNoRotation"); enabled: !redactions.visible && (Doc.rotation === 0 || Editor.active); onClicked: Editor.active = !Editor.active }
                 PButton { objectName: "formButton"; compact: true; text: Tr.s("toolFormShort"); variant: "ghost"; tip: Tr.s("toolForm"); onClicked: viewer.formRequested() }
                 PButton {
                     id: outputButton
@@ -418,13 +431,25 @@ Item {
                     compact: true
                     variant: "ghost"
                     text: Tr.s("outputTools")
-                    enabled: !Doc.outputBusy
+                    enabled: !Doc.outputBusy && !redactions.visible
                     onClicked: outputMenu.popup(outputButton, 0, outputButton.height)
                     PMenu {
                         id: outputMenu
                         PMenuItem { objectName: "exportImagesAction"; text: Tr.s("exportImages"); onTriggered: viewer.imageExportRequested(viewer.currentPage) }
                         PMenuItem { objectName: "protectPdfAction"; text: Tr.s("protectPdf"); onTriggered: viewer.securityRequested(false) }
                         PMenuItem { objectName: "unlockPdfAction"; text: Tr.s("unlockPdf"); onTriggered: viewer.securityRequested(true) }
+                        PMenuItem {
+                            objectName: "redactAction"
+                            text: Tr.s("redactTitle")
+                            onTriggered: {
+                                if (Doc.rotation !== 0)
+                                    Doc.rotateView(-Doc.rotation)
+                                Editor.active = false
+                                viewer.closeSearch()
+                                Doc.clearSelection()
+                                redactions.begin()
+                            }
+                        }
                     }
                 }
 
@@ -437,6 +462,13 @@ Item {
             Layout.fillWidth: true
             visible: Editor.active
             onOpenResultRequested: path => viewer.openPathRequested(path)
+        }
+        RedactionBar {
+            id: redactions
+            Layout.fillWidth: true
+            onGoTo: (page, y) => viewer.goTo(page, y)
+            onOpenResult: path => viewer.openPathRequested(path)
+            onVisibleChanged: if (!visible) viewer.redactStart = null
         }
 
         SearchBar {
@@ -526,6 +558,10 @@ Item {
                                     pxPerPt: viewer.pxPerPt
                                     renderScale: viewer.renderScale
                                     dpr: viewer.dpr
+                                    redactMode: redactions.visible
+                                    redactMarks: redactions.visible ? redactions.marks.filter(m => m.page === pageIndex) : []
+                                    redactPreview: redactions.visible && redactions.preview && redactions.preview.page === pageIndex
+                                        ? redactions.preview : null
                                 }
                             }
                         }
@@ -572,7 +608,7 @@ Item {
                     anchors.bottomMargin: 14
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     hoverEnabled: true
-                    cursorShape: viewer.editOn && Editor.tool !== "select" ? Qt.CrossCursor : (viewer.linkCursor !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor)
+                    cursorShape: redactions.visible || (viewer.editOn && Editor.tool !== "select") ? Qt.CrossCursor : (viewer.linkCursor !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor)
                     property real pressX: 0
                     property real pressY: 0
                     property real lastX: 0
@@ -588,6 +624,11 @@ Item {
                         pagesView.forceActiveFocus()
                         if (viewer.searchOpen && !searchBar.activeFocus)
                             pagesView.forceActiveFocus()
+                        if (redactions.visible) {
+                            if (mouse.button === Qt.LeftButton && !Doc.outputBusy)
+                                viewer.redactStart = viewer.hit(mouse.x, mouse.y)
+                            return
+                        }
                         if (mouse.button === Qt.RightButton) {
                             pageMenu.popup()
                             return
@@ -608,6 +649,10 @@ Item {
                     onPositionChanged: mouse => {
                         lastX = mouse.x
                         lastY = mouse.y
+                        if (redactions.visible) {
+                            viewer.updateRedactDrag(mouse.x, mouse.y)
+                            return
+                        }
                         if (viewer.editOn) {
                             if (Editor.polygonOpen || (pressed && viewer.editMode !== ""))
                                 viewer.editMove(mouse.x, mouse.y)
@@ -637,6 +682,15 @@ Item {
                         }
                     }
                     onReleased: mouse => {
+                        if (redactions.visible) {
+                            viewer.updateRedactDrag(mouse.x, mouse.y)
+                            const mark = redactions.preview
+                            if (mark && mark.w >= 2 && mark.h >= 2)
+                                redactions.addMarks([mark])
+                            viewer.redactStart = null
+                            redactions.preview = null
+                            return
+                        }
                         if (viewer.editOn) {
                             viewer.editRelease()
                             return
@@ -650,6 +704,10 @@ Item {
                             if (link.kind !== "none")
                                 viewer.followLink(link)
                         }
+                    }
+                    onCanceled: {
+                        viewer.redactStart = null
+                        redactions.preview = null
                     }
                     onExited: viewer.linkCursor = ""
                     // the hand cursor over a link (looked up a moment after the pointer stops, not on every move)

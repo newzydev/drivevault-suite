@@ -139,6 +139,8 @@ public:
     Q_INVOKABLE QString startImageExport(const QVariantMap& options, const QString& path);
     Q_INVOKABLE void cancelImageExport();
     Q_INVOKABLE QString startSecuritySave(const QVariantMap& options, const QString& path);
+    Q_INVOKABLE QString startRedactionScan(const QString& query, bool regex);
+    Q_INVOKABLE QString startRedaction(const QVariantList& marks, const QString& color, const QString& label, const QString& path);
 
     // ---- splitting the current file (the file itself is never changed; the parts are new files) -----------------------------
     // mode: "ranges" (param: text such as "1-3,5,8-", one file per part), "every" (param: pages per file), "bookmarks" (one file per top level bookmark).
@@ -180,6 +182,7 @@ signals:
     void printFinished(bool ok, const QString& message);
     void outputChanged();
     void outputFinished(const QString& error, const QString& path);
+    void redactionScanFinished(int sourceId, const QString& error, const QVariantList& marks);
     void splitChanged();
     void splitFinished(bool ok, const QString& error, const QStringList& files, const QStringList& warnings, const QString& errorFile);
 

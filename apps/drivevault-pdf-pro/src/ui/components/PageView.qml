@@ -16,6 +16,9 @@ Item {
     readonly property real ph: { Doc.docId; Doc.rotation; return Doc.pageHeightPt(pageIndex) * pxPerPt }
     property var searchRects: []
     property var selectionRects: []
+    property var redactMarks: []
+    property var redactPreview: null
+    property bool redactMode: false
 
     width: pw
     height: ph
@@ -58,11 +61,25 @@ Item {
     Image {
         objectName: "overlay_" + pv.pageIndex
         anchors.fill: parent
-        visible: Editor.count > 0
+        visible: !pv.redactMode && Editor.count > 0
         asynchronous: true
         cache: false
         smooth: true
         source: Editor.count > 0 ? "image://ovl/" + Doc.docId + "/" + pv.pageIndex + "/" + Math.round(pv.renderScale * pv.dpr * 1000) + "/" + Doc.rotation + "/" + Editor.rev : ""
+    }
+    Repeater {
+        model: pv.redactPreview ? pv.redactMarks.concat([pv.redactPreview]) : pv.redactMarks
+        delegate: Rectangle {
+            required property var modelData
+            objectName: "redactionMark_" + pv.pageIndex
+            x: modelData.x * pv.pxPerPt
+            y: modelData.y * pv.pxPerPt
+            width: modelData.w * pv.pxPerPt
+            height: modelData.h * pv.pxPerPt
+            color: "#66EF4444"
+            border.color: "#DC2626"
+            border.width: 2
+        }
     }
     // the frame and handles of the selected item
     readonly property var sel: { Editor.rev; Editor.selectedId; return Editor.active && Doc.rotation === 0 && Editor.selectedId > 0 ? Editor.selectedInfo() : ({}) }

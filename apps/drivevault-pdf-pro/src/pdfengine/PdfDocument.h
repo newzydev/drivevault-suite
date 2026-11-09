@@ -4,6 +4,7 @@
 #include <QList>
 #include <QPointF>
 #include <QRectF>
+#include <QRegularExpression>
 #include <QSizeF>
 #include <QString>
 
@@ -73,6 +74,8 @@ public:
     QList<QRectF> textRects(int page, int start, int count, int rotation = 0) const;
     // All matches of `text` on one page (case insensitive unless `matchCase`).
     QList<SearchHit> searchPage(int page, const QString& text, bool matchCase, bool wholeWord, int rotation = 0) const;
+    QList<SearchHit> matchPage(int page, const QRegularExpression& pattern, int limit) const;
+    bool isEncrypted() const;
 
     // ---- structure ------------------------------------------------------------------------------------------------------------
     QList<OutlineItem> outline() const;

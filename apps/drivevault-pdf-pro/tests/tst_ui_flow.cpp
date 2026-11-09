@@ -873,6 +873,46 @@ private slots:
         QTRY_VERIFY(!security->property("opened").toBool());
     }
 
+    void redactionReviewsDrawnAndFoundMarksBeforeSaving()
+    {
+        const QString name = "redaction-ui.pdf";
+        const QList<QSizeF> sizes(6, QSizeF(612, 792));
+        fresh(write(name, testpdf::make(sizes, {"First page", "Page 2", "name@example.org"})), name);
+        QVERIFY(click("outputButton"));
+        QTRY_VERIFY(visible("redactAction"));
+        QVERIFY(click("redactAction"));
+        auto* bar = find("redactionBar");
+        QVERIFY(bar && bar->isVisible());
+        QVERIFY(!find("redactApply")->isEnabled());
+        const QPoint start = pagePoint(0, 65, 65);
+        const QPoint end = pagePoint(0, 195, 120);
+        QTest::mousePress(m_window, Qt::LeftButton, {}, start);
+        QTest::mouseMove(m_window, end, 50);
+        QTest::mouseRelease(m_window, Qt::LeftButton, {}, end);
+        QTRY_COMPARE(bar->property("marks").value<QJSValue>().property("length").toInt(), 1);
+        QVERIFY(visible("redactionMark_0"));
+        QVERIFY(typeInto("redactQuery", "Page 2", false));
+        QVERIFY(click("redactScan"));
+        QTRY_COMPARE(bar->property("marks").value<QJSValue>().property("length").toInt(), 2);
+        find("redactSearchMode")->setProperty("currentIndex", 4);
+        QVERIFY(click("redactScan"));
+        QTRY_COMPARE(bar->property("marks").value<QJSValue>().property("length").toInt(), 3);
+        QVERIFY(click("redactRemove"));
+        QCOMPARE(bar->property("marks").value<QJSValue>().property("length").toInt(), 2);
+        QVERIFY(click("redactApply"));
+        QTRY_VERIFY(visible("confirmCancel"));
+        QVERIFY(click("confirmCancel"));
+        const auto output = m_dir.filePath("redacted-ui.pdf");
+        QVERIFY(QMetaObject::invokeMethod(bar, "save", Q_ARG(QVariant, output)));
+        QTRY_COMPARE_WITH_TIMEOUT(bar->property("result").toString(), output, 12000);
+        const auto result = dp::pdf::PdfDocument::open(output, {}, nullptr);
+        QVERIFY(result);
+        QCOMPARE(result->pageCount(), 6);
+        QCOMPARE(result->charCount(1), 0);
+        QVERIFY(click("redactClose"));
+        QVERIFY(!bar->isVisible());
+    }
+
     void noQmlWarningsWereEmitted()
     {
         QVERIFY2(g_qmlProblems.isEmpty(), qPrintable(g_qmlProblems.join("\n")));

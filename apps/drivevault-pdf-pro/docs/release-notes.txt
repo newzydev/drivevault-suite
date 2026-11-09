@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (In development: no version has been released yet. These notes are for the developers.)
 
+v0.8.0 (2026-11-09): Add verified redaction to an image-only PDF
+  - Draw areas or mark text with literal search, regular expressions and presets. Review each mark and choose a color or optional label.
+  - Replace marked pixels and build a new PDF from sanitized page images. The copy drops searchable text and interactive structures on every page.
+  - Verify the PDF structure, image data, extracted text and mask appearance before publishing the copy.
+
 v0.7.0 (2026-11-09): Phase 5 adds image export and PDF protection
   - Export selected pages as PNG (optional transparency) or JPEG (adjustable quality), at 72–600 DPI.
   - Save one image, a ZIP, or a new image folder. Multi-page export shows progress and can be cancelled.

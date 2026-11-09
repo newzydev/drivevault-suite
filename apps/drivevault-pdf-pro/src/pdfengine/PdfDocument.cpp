@@ -392,6 +392,63 @@ QList<SearchHit> PdfDocument::searchPage(int page, const QString& text, bool mat
 
 // ---- structure -------------------------------------------------------------------------------------------------------------
 
+QList<SearchHit> PdfDocument::matchPage(int page, const QRegularExpression& pattern, int limit) const
+{
+    QList<SearchHit> hits;
+    if (page < 0 || page >= m_pageSizes.size() || !pattern.isValid() || limit <= 0)
+        return hits;
+    QString text;
+    QList<int> indices;
+    {
+        QMutexLocker lock(&pdfiumMutex());
+        PageHandle h(m_impl->doc, page, true);
+        if (!h.text)
+            return hits;
+        const int count = FPDFText_CountChars(h.text);
+        for (int i = 0; i < count; ++i) {
+            const char32_t ch = FPDFText_GetUnicode(h.text, i);
+            if (!ch || ch > 0x10ffff || (ch >= 0xd800 && ch <= 0xdfff))
+                continue;
+            if (ch > 0xffff) {
+                text.append(QChar::highSurrogate(ch));
+                indices.append(i);
+                text.append(QChar::lowSurrogate(ch));
+            } else {
+                text.append(QChar(ushort(ch)));
+            }
+            indices.append(i);
+        }
+    }
+    QList<QPair<int, int>> ranges;
+    auto matches = pattern.globalMatch(text);
+    while (ranges.size() < limit && matches.hasNext()) {
+        const auto match = matches.next();
+        if (match.capturedLength() == 0)
+            continue;
+        const int start = indices.at(match.capturedStart());
+        const int end = indices.at(match.capturedEnd() - 1);
+        ranges.append({start, end - start + 1});
+    }
+    if (ranges.isEmpty())
+        return hits;
+    QMutexLocker lock(&pdfiumMutex());
+    PageHandle h(m_impl->doc, page, true);
+    if (!h.text)
+        return hits;
+    for (const auto& [start, length] : ranges) {
+        auto rects = textRectsOf(h.page, h.text, m_pageSizes.at(page), 0, start, length);
+        if (!rects.isEmpty())
+            hits.append({page, std::move(rects)});
+    }
+    return hits;
+}
+
+bool PdfDocument::isEncrypted() const
+{
+    QMutexLocker lock(&pdfiumMutex());
+    return FPDF_GetSecurityHandlerRevision(m_impl->doc) >= 0;
+}
+
 QList<OutlineItem> PdfDocument::outline() const
 {
     QList<OutlineItem> out;

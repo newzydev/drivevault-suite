@@ -5,6 +5,7 @@ add_library(dp_pdftools STATIC
     Compress.cpp Compress.h
     Overlay.cpp Overlay.h
     Forms.cpp Forms.h
-    Security.cpp Security.h)
+    Security.cpp Security.h
+    RedactionAudit.cpp RedactionAudit.h)
 target_include_directories(dp_pdftools PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(dp_pdftools PUBLIC Qt6::Core Qt6::Gui qpdf)
