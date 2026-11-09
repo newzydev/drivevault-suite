@@ -34,7 +34,8 @@ Popup {
             Layout.fillWidth: true
             Layout.leftMargin: 24; Layout.rightMargin: 24
             text: Tr.s("aboutText")
-            wrapMode: Text.Wrap; lineHeight: Tr.bodyLine
+            wrapMode: Text.Wrap; lineHeightMode: Text.FixedHeight; lineHeight: thaiLine.implicitHeight
+            Text { id: thaiLine; visible: false; text: "ก"; font: parent.font }
             font.pixelSize: 13
             color: Theme.textSecondary
         }
@@ -42,7 +43,8 @@ Popup {
             Layout.fillWidth: true
             Layout.leftMargin: 24; Layout.rightMargin: 24
             text: Tr.s("honest")
-            wrapMode: Text.Wrap; lineHeight: Tr.bodyLine
+            wrapMode: Text.Wrap; lineHeightMode: Text.FixedHeight; lineHeight: thaiLine2.implicitHeight
+            Text { id: thaiLine2; visible: false; text: "ก"; font: parent.font }
             font.pixelSize: 12
             color: Theme.textDisabled
         }

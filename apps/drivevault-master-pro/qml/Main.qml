@@ -139,7 +139,11 @@ ApplicationWindow {
         contentItem: ColumnLayout {
             spacing: 14
             Text { Layout.fillWidth: true; text: Tr.s("confirmUninstall").replace("%1", confirm.product.name); font.pixelSize: 17; font.weight: Font.DemiBold; color: Theme.text; wrapMode: Text.Wrap }
-            Text { Layout.fillWidth: true; text: Tr.s("confirmText"); font.pixelSize: 13; color: Theme.textSecondary; wrapMode: Text.Wrap; lineHeight: Tr.bodyLine }
+            Text {
+                Layout.fillWidth: true; text: Tr.s("confirmText"); font.pixelSize: 13; color: Theme.textSecondary; wrapMode: Text.Wrap
+                lineHeightMode: Text.FixedHeight; lineHeight: thaiLine.implicitHeight
+                Text { id: thaiLine; visible: false; text: "ก"; font: parent.font }
+            }
             RowLayout {
                 Item { Layout.fillWidth: true }
                 MButton { objectName: "confirmCancel"; variant: "ghost"; text: Tr.s("cancel"); onClicked: confirm.close() }
@@ -324,6 +328,9 @@ ApplicationWindow {
                             color: Theme.text
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.Wrap
+                            verticalAlignment: Text.AlignVCenter
+                            Layout.minimumHeight: titleThai.implicitHeight          // as tall as a Thai line: both languages lay out the same
+                            Text { id: titleThai; visible: false; text: "ก"; font: parent.font }
                         }
                         Text {
                             Layout.fillWidth: true
@@ -332,6 +339,9 @@ ApplicationWindow {
                             color: Theme.textSecondary
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.Wrap
+                            verticalAlignment: Text.AlignVCenter
+                            Layout.minimumHeight: subThai.implicitHeight
+                            Text { id: subThai; visible: false; text: "ก"; font: parent.font }
                         }
                         Item { Layout.preferredHeight: 10 }
 
@@ -525,7 +535,12 @@ ApplicationWindow {
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: 12
-                                Text { text: Tr.s("sec_" + block.modelData.key); font.pixelSize: 19; font.weight: Font.Bold; color: Theme.text }
+                                Text {
+                                    text: Tr.s("sec_" + block.modelData.key); font.pixelSize: 19; font.weight: Font.Bold; color: Theme.text
+                                    verticalAlignment: Text.AlignVCenter
+                                    Layout.minimumHeight: secThai.implicitHeight
+                                    Text { id: secThai; visible: false; text: "ก"; font: parent.font }
+                                }
                                 Rectangle {
                                     height: 22
                                     width: countText.implicitWidth + 16

@@ -133,7 +133,9 @@ Rectangle {
             font.pixelSize: 13
             color: Theme.textSecondary
             wrapMode: Text.Wrap
-            lineHeight: Tr.bodyLine
+            lineHeightMode: Text.FixedHeight
+            lineHeight: thaiLine.implicitHeight                 // every language uses the height of a Thai line
+            Text { id: thaiLine; visible: false; text: "ก"; font: parent.font }
             maximumLineCount: 3
             elide: Text.ElideRight
         }
@@ -145,7 +147,9 @@ Rectangle {
             font.pixelSize: 12
             color: card.product.installerPath !== "" ? Theme.success : Theme.textDisabled
             wrapMode: Text.Wrap
-            lineHeight: Tr.bodyLine
+            lineHeightMode: Text.FixedHeight
+            lineHeight: thaiLine2.implicitHeight                 // every language uses the height of a Thai line
+            Text { id: thaiLine2; visible: false; text: "ก"; font: parent.font }
         }
 
         // ---- main actions (full width) -------------------------------------------------------------------------------------------

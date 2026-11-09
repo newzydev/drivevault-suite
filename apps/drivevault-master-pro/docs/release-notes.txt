@@ -1,6 +1,11 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.4.4 (2026-11-09)
+  Fixed
+  - Thai and English now lay out the home screen identically: the headline, the sub-title and the section titles keep the height of a Thai line, so the search bar
+    and the program cards sit at the same place in both languages. Paragraphs use the same line height in both languages too.
+
 v1.4.3 (2026-11-09)
   Fixed
   - English paragraphs (program descriptions, About, uninstall confirmation) have more space between the lines; Thai is unchanged.
