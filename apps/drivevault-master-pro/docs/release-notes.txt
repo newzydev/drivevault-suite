@@ -1,6 +1,11 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.4.2 (2026-11-09)
+  Fixed
+  - Clicking an empty place of the window (hero, gaps between programs, the top bar) now really takes the focus out of the search field, so the orange frame and the
+    blinking caret go away. (1.4.1 tried to do this with a handler that never received the clicks.)
+
 v1.4.1 (2026-11-09)
   Fixed
   - The search field now lets go of the keyboard focus (orange frame and blinking caret) when you click anywhere outside it, or press Esc.

@@ -102,16 +102,6 @@ ApplicationWindow {
     function installedCount() { let n = 0; for (const p of Hub.products) if (p.installed === true) ++n; return n }
     function updateCount() { let n = 0; for (const p of Hub.products) if (p.updateAvailable === true || p.onlineUpdate === true) ++n; if (Hub.selfUpdateVersion !== "") ++n; return n }
 
-    // A click anywhere outside the search bar (or Esc in the field) takes the keyboard focus away, so the orange frame and the caret go.
-    // The handler only watches (passive grab): buttons and cards still get their clicks.
-    TapHandler {
-        onTapped: eventPoint => {
-            const p = searchBar.mapFromItem(null, eventPoint.scenePosition.x, eventPoint.scenePosition.y)
-            if (p.x < 0 || p.y < 0 || p.x > searchBar.width || p.y > searchBar.height)
-                searchField.focus = false
-        }
-    }
-
     property string notice: ""
     function showNotice(text) { notice = text; noticeTimer.restart() }
 
@@ -162,6 +152,10 @@ ApplicationWindow {
             }
         }
     }
+
+    // A click on an empty place (or Esc in the search field) takes the keyboard focus away, so the orange frame and the caret go.
+    // These areas lie BEHIND the content, so buttons, cards and the search bar get their clicks first (one more sits in the scroll view).
+    MouseArea { anchors.fill: parent; z: -1; onPressed: searchField.focus = false }
 
     ColumnLayout {
         anchors.fill: parent
@@ -286,6 +280,13 @@ ApplicationWindow {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             ScrollBar.vertical: ScrollBar {}
+            MouseArea {                                          // empty places of the page (hero, gaps) release the search focus
+                parent: scroller.contentItem
+                z: -1
+                width: scroller.width
+                height: Math.max(scroller.height, page.implicitHeight)
+                onPressed: searchField.focus = false
+            }
 
             ColumnLayout {
                 id: page
