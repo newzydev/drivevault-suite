@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultMasterPro
-    VERSION 1.4.7
+    VERSION 1.5.0
     DESCRIPTION "DriveVault Master Pro - installs, launches and updates the DriveVault programs"
     LANGUAGES CXX)
 
@@ -46,6 +46,7 @@ qt_add_qml_module(DriveVaultMasterPro
         qml/MButton.qml
         qml/MMenu.qml
         qml/MMenuItem.qml
+        qml/WindowButton.qml
     RESOURCES
         resources/icons/app.png
         resources/fonts/Inter-Variable.ttf

@@ -14,6 +14,7 @@ ApplicationWindow {
     minimumWidth: 760
     minimumHeight: 560
     title: "DriveVault Master Pro"
+    flags: Qt.Window | Qt.FramelessWindowHint        // our own title bar (the top bar) replaces the Windows one
     color: Theme.background
 
     // ---- the window opens the way it was closed: maximized or normal, with its normal size and place ----------------------------
@@ -157,6 +158,27 @@ ApplicationWindow {
         }
     }
 
+    function toggleMaximized() { if (visibility === Window.Maximized) showNormal(); else showMaximized() }
+
+    // Resize edges: a window without the Windows frame has none, so thin strips along the sides and corners start the system resize.
+    component ResizeEdge: MouseArea {
+        required property int edges
+        property alias shape: area.cursorShape
+        id: area
+        enabled: win.visibility === Window.Windowed
+        hoverEnabled: true
+        z: 2000
+        onPressed: win.startSystemResize(edges)
+    }
+    ResizeEdge { edges: Qt.LeftEdge;  shape: Qt.SizeHorCursor; x: 0; y: 10; width: 5; height: win.height - 20 }
+    ResizeEdge { edges: Qt.RightEdge; shape: Qt.SizeHorCursor; x: win.width - 5; y: 10; width: 5; height: win.height - 20 }
+    ResizeEdge { edges: Qt.TopEdge;    shape: Qt.SizeVerCursor; x: 10; y: 0; width: win.width - 20; height: 5 }
+    ResizeEdge { edges: Qt.BottomEdge; shape: Qt.SizeVerCursor; x: 10; y: win.height - 5; width: win.width - 20; height: 5 }
+    ResizeEdge { edges: Qt.LeftEdge | Qt.TopEdge;     shape: Qt.SizeFDiagCursor; x: 0; y: 0; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.RightEdge | Qt.BottomEdge; shape: Qt.SizeFDiagCursor; x: win.width - 10; y: win.height - 10; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.RightEdge | Qt.TopEdge;    shape: Qt.SizeBDiagCursor; x: win.width - 10; y: 0; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.LeftEdge | Qt.BottomEdge;  shape: Qt.SizeBDiagCursor; x: 0; y: win.height - 10; width: 10; height: 10 }
+
     // A click on an empty place (or Esc in the search field) takes the keyboard focus away, so the orange frame and the caret go.
     // These areas lie BEHIND the content, so buttons, cards and the search bar get their clicks first (one more sits in the scroll view).
     MouseArea { anchors.fill: parent; z: -1; onPressed: searchField.focus = false }
@@ -171,10 +193,22 @@ ApplicationWindow {
             implicitHeight: 64
             color: "#0D0E11"
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
+            // the bar is the title bar: drag an empty place to move the window, double-click it to maximize / restore
+            Item {
+                anchors.fill: parent
+                DragHandler {
+                    target: null
+                    onActiveChanged: if (active) win.startSystemMove()
+                }
+                TapHandler {
+                    acceptedButtons: Qt.LeftButton
+                    onDoubleTapped: win.toggleMaximized()
+                }
+            }
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 28
-                anchors.rightMargin: 24
+                anchors.rightMargin: 0
                 spacing: 12
                 Image { source: "qrc:/qt/qml/DriveVault/Master/resources/icons/app.png"; Layout.preferredWidth: 34; Layout.preferredHeight: 34; sourceSize.width: 68; smooth: true }
                 Text { text: Tr.s("title"); font.pixelSize: 17; font.weight: Font.Bold; color: Theme.text }
@@ -226,6 +260,7 @@ ApplicationWindow {
                     objectName: "moreMenu"
                     compact: true
                     Layout.preferredWidth: 34
+                    Layout.rightMargin: 4
                     leftPadding: 0; rightPadding: 0
                     text: "⋯"
                     font.pixelSize: 18
@@ -240,6 +275,15 @@ ApplicationWindow {
                         MenuSeparator { padding: 4; contentItem: Rectangle { implicitHeight: 1; color: Theme.border } }
                         MMenuItem { objectName: "about"; text: Tr.s("about"); onTriggered: aboutDialog.open() }
                     }
+                }
+                // window buttons (flush with the top right corner)
+                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; color: Theme.border }
+                Row {
+                    Layout.fillHeight: true
+                    spacing: 0
+                    WindowButton { objectName: "winMinimize"; kind: "minimize"; text: Tr.s("minimize"); height: parent.height; onClicked: win.showMinimized() }
+                    WindowButton { objectName: "winMaximize"; kind: win.visibility === Window.Maximized ? "restore" : "maximize"; text: win.visibility === Window.Maximized ? Tr.s("restore") : Tr.s("maximize"); height: parent.height; onClicked: win.toggleMaximized() }
+                    WindowButton { objectName: "winClose"; kind: "close"; text: Tr.s("close"); height: parent.height; onClicked: win.close() }
                 }
             }
         }

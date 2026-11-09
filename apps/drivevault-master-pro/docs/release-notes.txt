@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.5.0 (2026-11-09)
+  New
+  - Master Pro has its own title bar: the Windows title bar is gone and the top bar of the program does its job. Drag an empty place of it to move the window,
+    double-click it to maximize / restore, and use the new minimize, maximize / restore and close buttons at the right end. The window can still be resized from its
+    edges and corners.
+
 v1.4.7 (2026-11-09)
   Fixed
   - The "..." buttons (top bar and program cards) close their menu when clicked again, like the category button (before, the menu closed and opened again at once).

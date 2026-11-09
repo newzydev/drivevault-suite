@@ -16,11 +16,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "DriveVault"
             VALUE "FileDescription", "DriveVault Master Pro"
-            VALUE "FileVersion", "1.4.7.0"
+            VALUE "FileVersion", "1.5.0.0"
             VALUE "InternalName", "DriveVaultMasterPro"
             VALUE "OriginalFilename", "DriveVaultMasterPro.exe"
             VALUE "ProductName", "DriveVault Master Pro"
-            VALUE "ProductVersion", "1.4.7"
+            VALUE "ProductVersion", "1.5.0"
         END
     END
     BLOCK "VarFileInfo"
