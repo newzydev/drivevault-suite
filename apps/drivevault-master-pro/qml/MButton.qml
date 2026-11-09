@@ -18,6 +18,7 @@ Button {
     font.weight: variant === "primary" ? Font.DemiBold : Font.Medium
     hoverEnabled: true
     focusPolicy: Qt.StrongFocus
+    HoverHandler { cursorShape: control.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor }      // hand over a button that can be pressed
 
     readonly property bool isPrimary: variant === "primary"
     readonly property color textColor: !enabled ? Theme.textDisabled

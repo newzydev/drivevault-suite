@@ -200,6 +200,7 @@ ApplicationWindow {
                                 implicitWidth: 46; implicitHeight: 26
                                 hoverEnabled: true
                                 onClicked: Hub.language = modelData.code
+                                HoverHandler { cursorShape: Qt.PointingHandCursor }
                                 contentItem: Text {
                                     text: parent.modelData.label
                                     font.pixelSize: 12

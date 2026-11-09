@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.4.5 (2026-11-09)
+  Fixed
+  - The mouse pointer is a hand over buttons, the language switch and menu entries (it stays an arrow over a button that is disabled).
+
 v1.4.4 (2026-11-09)
   Fixed
   - Thai and English now lay out the home screen identically: the headline, the sub-title and the section titles keep the height of a Thai line, so the search bar

@@ -11,6 +11,7 @@ MenuItem {
     leftPadding: 14
     rightPadding: 14
     font.pixelSize: 13
+    HoverHandler { cursorShape: item.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor }
 
     contentItem: Row {
         spacing: 10
