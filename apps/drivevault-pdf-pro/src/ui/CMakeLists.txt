@@ -1,0 +1,23 @@
+set_source_files_properties(
+    components/Theme.qml components/Tr.qml components/ThaiMetrics.qml
+    PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+
+# Static QML module with the whole UI. The backend object "Doc" is registered by main.cpp under "DriveVault.PdfPro.Backend".
+qt_add_qml_module(dp_ui
+    STATIC
+    URI DriveVault.PdfPro.UI
+    VERSION 1.0
+    RESOURCE_PREFIX /qt/qml
+    OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml/DriveVault/PdfPro/UI
+    QML_FILES
+        Main.qml
+        components/Theme.qml
+        components/Tr.qml
+        components/ThaiMetrics.qml
+        components/AppText.qml
+        components/PButton.qml
+        components/LanguageSwitch.qml
+        screens/HomeScreen.qml
+        screens/ViewerScreen.qml
+        screens/PasswordDialog.qml)
+target_link_libraries(dp_ui PRIVATE Qt6::Quick Qt6::QuickControls2)

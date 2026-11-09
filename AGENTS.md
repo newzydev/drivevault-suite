@@ -12,10 +12,11 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 |---|---|
 | `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.11.3 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
 | `apps/drivevault-master-pro` | DriveVault Master Pro 1.3.3 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
+| `apps/drivevault-pdf-pro` | DriveVault PDF Pro 0.1.0 - **in development, not released** (reader only so far; plan in `apps/drivevault-pdf-pro/docs/PDF-Pro-Plan.md`; not in Master Pro / no installer yet). PDFium + qpdf. Accent colour red `#EF4444`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
-| `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md), `run-master-pro.bat` / `run-video-editor.bat` (open the Release build without installing: Qt on PATH, then start the exe; extra arguments are passed on - use these for the smoke start). |
+| `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md), `run-master-pro.bat` / `run-video-editor.bat` / `run-pdf-pro.bat` (open the Release build without installing: Qt on PATH, then start the exe; extra arguments are passed on - use these for the smoke start). |
 | `docs` | `suite-integration.md` (contract between programs and hub). |
-| `.tools` (not in git) | Portable toolchain: CMake, Ninja, Qt 6.8.3 msvc2022_64, Inno Setup, FFmpeg (LGPL shared), whisper.cpp + models, Python. |
+| `.tools` (not in git) | Portable toolchain: CMake, Ninja, Qt 6.8.3 msvc2022_64, Inno Setup, FFmpeg (LGPL shared), whisper.cpp + models, PDFium (BSD-3), qpdf (Apache-2.0), Python. |
 
 Planned (do not pretend they exist): Image Editor Pro, Audio Editor Pro. New programs go in `apps/drivevault-<name>` (lower case, words joined with `-`).
 
@@ -91,7 +92,7 @@ Edit the templates (or the per-product section 6 in the script), run the script,
 
 **Commit message** (English, first line at most about 72 characters): `<type>(<scope>): v<new version> <short summary>`
 - `type`: `feat` = new feature (minor), `fix` = bug fix / small change (patch), `feat!` or `fix!` = breaking change (major), and the following need no version number: `docs`, `chore`, `build`, `test`, `refactor`.
-- `scope`: `video-editor`, `master-pro`, `suite` (shared scripts, docs, agent files - spans several programs), `shared`. A change that touches one program's behaviour uses that program's scope and version.
+- `scope`: `video-editor`, `master-pro`, `pdf-pro`, `suite` (shared scripts, docs, agent files - spans several programs), `shared`. A change that touches one program's behaviour uses that program's scope and version.
 - Examples: `fix(video-editor): v1.0.1 export dialog kept the old preset`, `feat(master-pro): v1.1.0 update check from a local folder`, `docs(suite): explain commit and version rules`.
 - The body (optional) says why, and lists what was tested. The first commit `feat: initial DriveVault suite ...` predates this rule.
 

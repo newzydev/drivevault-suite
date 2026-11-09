@@ -1,0 +1,10 @@
+#pragma once
+
+namespace dp::version {
+inline constexpr const char* kProductName = "DriveVault PDF Pro";
+inline constexpr const char* kVersion = "@PROJECT_VERSION@";
+inline constexpr const char* kBuildNumber = "@DP_BUILD_NUMBER@";
+inline constexpr const char* kOrganization = "DriveVault";
+// Folder name below %LOCALAPPDATA%\DriveVault (suite contract: "dataFolder" of product.json)
+inline constexpr const char* kDataFolder = "PdfPro";
+} // namespace dp::version

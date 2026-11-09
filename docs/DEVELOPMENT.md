@@ -28,6 +28,8 @@ Every program installer carries the Master Pro setup and installs it first, so t
    Inno Setup 6 (`.tools\InnoSetup`), an **LGPL shared** FFmpeg build with headers and import libraries (`.tools\ffmpeg`, e.g. BtbN `ffmpeg-n8.1-latest-win64-lgpl-shared`),
    and optionally whisper.cpp (`.tools\whisper\bin\Release\whisper-cli.exe`, models in `.tools\whisper\models`). `scripts\env.ps1` also accepts tools on `PATH`
    and `DV_TOOLS_DIR` / `DV_QT_DIR` / `DV_FFMPEG_DIR` overrides.
+   PDF Pro (in development) also needs **PDFium** (`.tools\pdfium` with `include`, `lib\pdfium.dll.lib`, `bin\pdfium.dll`; the win-x64 build of bblanchon/pdfium-binaries, BSD-3;
+   `DV_PDFIUM_DIR` override) and, for its password tests, **qpdf** (`.tools\qpdf`, the msvc64 release zip, Apache-2.0).
 
 ## Build, test, package
 
