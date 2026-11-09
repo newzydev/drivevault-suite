@@ -1,0 +1,42 @@
+DriveVault PDF Pro - Third-party notices
+=======================================
+
+DriveVault PDF Pro is proprietary software. The following components have
+separate terms that apply to those components.
+
+Qt 6.8.3: Qt Base, Qt Declarative and Qt SVG runtime libraries and plugins,
+unmodified except for deployment paths written by Qt's deployment tool.
+Copyright The Qt Company Ltd. and contributors. Used as shared libraries under
+the GNU LGPL version 3. See LGPL-3.0.txt, GPL-3.0.txt and the Qt build's SPDX
+inventories in licenses\Qt. Qt's bundled third-party attributions:
+https://doc.qt.io/qt-6.8/licenses-used-in-qt.html
+Corresponding Qt source: https://download.qt.io/archive/qt/6.8/6.8.3/single/
+You may replace the Qt DLLs with compatible modified builds. The DriveVault
+licence does not restrict reverse engineering to debug your modifications to
+the LGPL libraries, or other rights granted by their licences.
+
+PDFium, Chromium build 8138: Copyright the PDFium Authors, BSD 3-Clause.
+The Windows build is from bblanchon/pdfium-binaries. The distribution notice
+and all supplied library notices are in licenses\PDFium, including FreeType,
+HarfBuzz, ICU, Little CMS, JPEG, PNG, OpenJPEG and zlib.
+Source: https://pdfium.googlesource.com/pdfium/
+Build: https://github.com/bblanchon/pdfium-binaries/releases/tag/chromium%2F8138
+This build excludes V8 and XFA.
+
+qpdf 12.4.2: Copyright (c) 2005-2021 Jay Berkenbilt and
+Copyright (c) 2022-2026 Jay Berkenbilt and Manfred Holger.
+Apache License 2.0, see Apache-2.0.txt.
+Source: https://github.com/qpdf/qpdf/tree/v12.4.2
+The MSVC x64 build includes zlib and JPEG support. The zlib and libjpeg-turbo
+notices are in licenses\PDFium (zlib.txt, libjpeg_turbo.ijg and libjpeg_turbo.md).
+This software is based in part on the work of the Independent JPEG Group.
+
+Inter and Noto Sans Thai: SIL Open Font License 1.1. See OFL-Inter.txt and
+OFL-NotoSansThai.txt.
+
+Microsoft Visual C++ runtime: redistributed under the Visual Studio
+redistributable terms. The runtime DLLs are installed app-local.
+
+Inno Setup: installer runtime, see Inno-Setup-LICENSE.txt.
+The installer includes a separate DriveVault Master Pro setup, which carries
+its own notices and licence texts.

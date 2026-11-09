@@ -1,0 +1,140 @@
+﻿DriveVault PDF Pro
+END USER LICENSE AGREEMENT (EULA)
+Version 1.0 - November 2026
+
+Please read this agreement before you install or use DriveVault PDF Pro (the "Software"). By installing or using the Software you agree to these terms. If you do not
+agree, do not install or use it. "DriveVault" ("we", "us") is the publisher and licensor of the Software; "you" is the person or organisation that installs or uses it.
+
+1. LICENSE
+We grant you a non-exclusive, non-transferable, revocable licence to install and use the Software on computers that you own or control, for personal and commercial
+purposes, for as long as you comply with this agreement. The Software is licensed, not sold. We keep all rights that are not expressly granted to you.
+
+2. WHAT YOU MAY NOT DO
+You may not (a) copy or redistribute the Software, or make it available to others to download, except that you may keep backup copies of the installer for your own use;
+(b) rent, lease, lend, sublicense or sell the Software; (c) remove or change copyright, trademark or licence notices; (d) reverse engineer, decompile or disassemble the
+Software or try to extract its source code, except to the extent that applicable law allows this despite this restriction or that a licence of a third-party component
+(see section 7) gives you that right for that component; (e) use the Software in a way that breaks the law or the rights of others.
+
+3. YOUR CONTENT
+Your projects, media files, subtitles and exported videos belong to you (or to whoever owns the rights in them). We do not claim any right in them. You are responsible for
+having the rights to the material you edit and export. The Software works on your computer and does not send your content to us.
+
+4. PRIVACY
+The Software works offline. It does not collect usage data, has no telemetry and does not send personal data or your files anywhere. Settings, logs, auto-save copies and
+caches are stored on your computer (in %LOCALAPPDATA%\DriveVault) and are removed on request when you uninstall. The only time the Software uses the internet is when you
+yourself press a button that downloads or checks something (for example a speech model, or "Check for updates" in DriveVault Master Pro, which contacts GitHub - also once when it opens, unless you switch that off); then the server you connect to can see your connection like any website.
+
+5. UPDATES AND THE DRIVEVAULT SUITE
+We may offer new versions, but we are not obliged to. A newer installer replaces the installed version. DriveVault Master Pro, which is installed together with every
+DriveVault program, manages the programs on your computer; it starts only setup files that identify DriveVault as their publisher and only when you ask it to.
+
+6. PRODUCT-SPECIFIC TERMS
+PDF processing runs locally. Review redacted, sanitized and repaired copies before sharing or relying on them. Some PDFs require image-only redaction, which removes searchable text and interactive structures from the copy.
+Document cleanup removes selected document structures; page content, pixels and hidden layers can still contain sensitive data. Some readers may ignore permission restrictions. Unlock documents only when you have permission and the correct password.
+
+7. THIRD-PARTY SOFTWARE
+The Software includes third-party components (for example Qt and FFmpeg under the GNU Lesser General Public Licence v3, whisper.cpp under the MIT licence, fonts under the
+SIL Open Font Licence, and the Microsoft Visual C++ runtime). Each of them is covered by its own licence, which applies to that component and is not restricted by this
+agreement. The notices and licence texts are installed with the Software (folder "licenses", and Help > Third-Party Notices). The LGPL components are used as separate shared
+libraries (DLL files) that you may replace with a compatible version.
+
+8. FORMATS AND PATENTS
+Video and audio formats such as H.264 and AAC may be covered by patents in some countries. We do not grant any patent licence for them. If you distribute or sell encoded
+video commercially you are responsible for obtaining any licences that are required.
+
+9. NO WARRANTY
+To the fullest extent permitted by law the Software is provided "AS IS" and "AS AVAILABLE", without warranty of any kind, express or implied, including warranties of
+merchantability, fitness for a particular purpose, accuracy and non-infringement. We do not promise that the Software will be error-free or uninterrupted, or that it will
+suit your needs. Back up your projects and media regularly.
+
+10. LIMITATION OF LIABILITY
+To the fullest extent permitted by law we are not liable for any indirect, incidental, special or consequential damage, or for loss of data, profit or business, arising from
+the use of or inability to use the Software, even if we were told that such damage might occur. Where liability cannot be excluded by law, it is limited to the amount you paid
+for the Software (or to the minimum amount that the law allows if you paid nothing). Nothing in this agreement excludes liability that cannot be excluded under applicable law,
+including statutory consumer rights.
+
+11. TERMINATION
+This agreement ends automatically if you do not comply with it. You can end it at any time by uninstalling the Software and deleting all copies. After termination you must
+stop using the Software. Sections 2, 3, 7, 8, 9, 10 and 13 continue to apply.
+
+12. CHANGES
+We may publish a new version of this agreement with a new version of the Software. The agreement shown during installation applies to the version you install.
+
+13. GOVERNING LAW AND LANGUAGE
+This agreement is governed by the laws of the Kingdom of Thailand, and the competent courts of Thailand have jurisdiction, without affecting any mandatory consumer rights you have
+under the law of the country where you live. This agreement is provided in Thai and English; if the two versions differ, the Thai version prevails.
+
+14. GENERAL
+This is the entire agreement between you and us about the Software. If a part of it is found to be unenforceable, the rest stays in force. If we do not enforce a right, we do
+not give it up.
+
+Copyright (c) 2026 DriveVault. All rights reserved. DriveVault PDF Pro and DriveVault are names of the publisher. Other names are trademarks of their owners.
+
+====================================================================================================
+
+DriveVault PDF Pro
+ข้อตกลงสัญญาอนุญาตให้ใช้สิทธิซอฟต์แวร์สำหรับผู้ใช้ปลายทาง (EULA)
+เวอร์ชัน 1.0 - พฤศจิกายน 2569 (ค.ศ. 2026)
+
+โปรดอ่านข้อตกลงนี้ก่อนติดตั้งหรือใช้งาน DriveVault PDF Pro ("ซอฟต์แวร์") การติดตั้งหรือใช้งานซอฟต์แวร์ถือว่าคุณยอมรับข้อตกลงนี้
+หากไม่ยอมรับ โปรดอย่าติดตั้งหรือใช้งาน "DriveVault" ("เรา") คือผู้เผยแพร่และผู้อนุญาตให้ใช้สิทธิซอฟต์แวร์ ส่วน "คุณ" คือบุคคลหรือองค์กรที่ติดตั้งหรือใช้ซอฟต์แวร์
+
+1. การอนุญาตให้ใช้สิทธิ
+เราอนุญาตให้คุณติดตั้งและใช้ซอฟต์แวร์บนคอมพิวเตอร์ที่คุณเป็นเจ้าของหรือควบคุม ทั้งเพื่อการส่วนตัวและเชิงพาณิชย์ ตราบเท่าที่คุณปฏิบัติตามข้อตกลงนี้
+เป็นสิทธิแบบไม่จำเพาะเจาะจง โอนให้ผู้อื่นไม่ได้ และเพิกถอนได้ ซอฟต์แวร์นี้ให้ใช้สิทธิ ไม่ได้ขายขาด เราสงวนสิทธิทั้งหมดที่ไม่ได้ให้ไว้อย่างชัดเจน
+
+2. สิ่งที่คุณห้ามทำ
+คุณห้าม (ก) คัดลอกหรือเผยแพร่ซอฟต์แวร์ หรือเปิดให้ผู้อื่นดาวน์โหลด ยกเว้นเก็บสำเนาสำรองของตัวติดตั้งไว้ใช้เอง (ข) ให้เช่า ให้ยืม อนุญาตช่วง หรือขายซอฟต์แวร์
+(ค) ลบหรือแก้ไขประกาศลิขสิทธิ์ เครื่องหมายการค้า หรือสัญญาอนุญาต (ง) ทำวิศวกรรมย้อนกลับ ถอดรหัส หรือพยายามสกัดซอร์สโค้ด เว้นแต่กฎหมายที่ใช้บังคับอนุญาต
+แม้มีข้อห้ามนี้ หรือสัญญาอนุญาตของส่วนประกอบบุคคลที่สาม (ดูข้อ 7) ให้สิทธิแก่คุณสำหรับส่วนประกอบนั้น (จ) ใช้ซอฟต์แวร์ในทางที่ผิดกฎหมายหรือละเมิดสิทธิของผู้อื่น
+
+3. เนื้อหาของคุณ
+โปรเจกต์ ไฟล์สื่อ ซับไตเติล และวิดีโอที่ส่งออกเป็นของคุณ (หรือของผู้ที่ถือสิทธิในเนื้อหานั้น) เราไม่อ้างสิทธิใดๆ ในเนื้อหาเหล่านั้น
+คุณต้องรับผิดชอบให้แน่ใจว่าคุณมีสิทธิในวัสดุที่ตัดต่อและส่งออก ซอฟต์แวร์ทำงานบนเครื่องของคุณและไม่ส่งเนื้อหาของคุณมาให้เรา
+
+4. ความเป็นส่วนตัว
+ซอฟต์แวร์ทำงานแบบออฟไลน์ ไม่เก็บข้อมูลการใช้งาน ไม่มี telemetry และไม่ส่งข้อมูลส่วนบุคคลหรือไฟล์ของคุณไปที่ใด การตั้งค่า ไฟล์บันทึก สำเนาบันทึกอัตโนมัติ และแคชถูกเก็บในเครื่องของคุณ
+(ที่ %LOCALAPPDATA%\DriveVault) และจะถูกลบเมื่อคุณสั่งลบตอนถอนการติดตั้ง ซอฟต์แวร์ใช้อินเทอร์เน็ตเฉพาะเมื่อคุณกดปุ่มที่ดาวน์โหลดสิ่งใดสิ่งหนึ่งเอง (เช่น โมเดลเสียง)
+หรือตรวจสอบสิ่งใดสิ่งหนึ่งเอง (เช่น ปุ่ม "ตรวจหาอัปเดต" ใน DriveVault Master Pro ซึ่งติดต่อ GitHub และติดต่อหนึ่งครั้งเมื่อเปิดโปรแกรม เว้นแต่คุณปิดไว้) ซึ่งเซิร์ฟเวอร์ที่คุณเชื่อมต่อจะเห็นการเชื่อมต่อของคุณเหมือนเว็บไซต์ทั่วไป
+
+5. การอัปเดตและชุดโปรแกรม DriveVault
+เราอาจออกรุ่นใหม่ แต่ไม่มีหน้าที่ต้องทำ ตัวติดตั้งรุ่นใหม่จะแทนที่รุ่นที่ติดตั้งอยู่ DriveVault Master Pro ซึ่งติดตั้งพร้อมกับโปรแกรม DriveVault ทุกตัว
+เป็นตัวจัดการโปรแกรมในเครื่องของคุณ โดยจะเปิดเฉพาะไฟล์ติดตั้งที่ระบุว่า DriveVault เป็นผู้เผยแพร่ และเฉพาะเมื่อคุณสั่งเท่านั้น
+
+6. ข้อกำหนดเฉพาะผลิตภัณฑ์
+การประมวลผล PDF ทำในเครื่อง โปรดตรวจสำเนาที่ปิดบัง ล้างข้อมูล หรือซ่อมแล้วก่อนส่งต่อหรือใช้งาน PDF บางไฟล์ต้องใช้โหมดสำเนาแบบภาพ ซึ่งทำให้สำเนาไม่มีข้อความค้นหาได้และโครงสร้างโต้ตอบ
+การล้างข้อมูลนำโครงสร้างเอกสารที่ระบุออก เนื้อหาหน้า พิกเซล และเลเยอร์ที่ซ่อนยังอาจมีข้อมูลส่วนตัว โปรแกรมอ่านบางตัวอาจไม่ทำตามข้อจำกัดสิทธิ์ โปรดปลดล็อกเฉพาะไฟล์ที่คุณมีสิทธิ์และมีรหัสที่ถูกต้อง
+
+7. ซอฟต์แวร์ของบุคคลที่สาม
+ซอฟต์แวร์มีส่วนประกอบของบุคคลที่สาม (เช่น Qt และ FFmpeg ภายใต้ GNU Lesser General Public License v3, whisper.cpp ภายใต้สัญญาอนุญาต MIT, ฟอนต์ภายใต้ SIL Open Font License
+และ Microsoft Visual C++ runtime) แต่ละส่วนอยู่ภายใต้สัญญาอนุญาตของตัวเอง ซึ่งใช้กับส่วนประกอบนั้นและไม่ถูกจำกัดโดยข้อตกลงนี้ ประกาศและข้อความสัญญาอนุญาตติดตั้งมาพร้อมซอฟต์แวร์
+(โฟลเดอร์ "licenses" และเมนู ช่วยเหลือ > ประกาศของบุคคลที่สาม) ส่วนประกอบ LGPL ใช้เป็นไลบรารีแบบ shared (ไฟล์ DLL) แยกต่างหาก ซึ่งคุณเปลี่ยนเป็นรุ่นที่เข้ากันได้ได้
+
+8. รูปแบบไฟล์และสิทธิบัตร
+รูปแบบวิดีโอและเสียง เช่น H.264 และ AAC อาจอยู่ภายใต้สิทธิบัตรในบางประเทศ เราไม่ให้สิทธิบัตรใดๆ สำหรับรูปแบบเหล่านั้น หากคุณเผยแพร่หรือขายวิดีโอที่เข้ารหัสในเชิงพาณิชย์
+คุณต้องรับผิดชอบขออนุญาตใช้สิทธิที่จำเป็นเอง
+
+9. การไม่รับประกัน
+เท่าที่กฎหมายอนุญาต ซอฟต์แวร์ให้ "ตามสภาพ" และ "ตามที่มี" โดยไม่มีการรับประกันใดๆ ทั้งโดยชัดแจ้งและโดยปริยาย รวมถึงการรับประกันความสามารถในการซื้อขาย ความเหมาะสมกับวัตถุประสงค์เฉพาะ
+ความถูกต้อง และการไม่ละเมิดสิทธิ เราไม่รับรองว่าซอฟต์แวร์จะไม่มีข้อผิดพลาด ทำงานต่อเนื่องไม่ขาดตอน หรือเหมาะกับความต้องการของคุณ โปรดสำรองโปรเจกต์และไฟล์สื่อเป็นประจำ
+
+10. การจำกัดความรับผิด
+เท่าที่กฎหมายอนุญาต เราไม่รับผิดต่อความเสียหายทางอ้อม โดยบังเอิญ เป็นกรณีพิเศษ หรือเป็นผลสืบเนื่อง หรือการสูญหายของข้อมูล กำไร หรือธุรกิจ อันเกิดจากการใช้หรือไม่สามารถใช้ซอฟต์แวร์
+แม้เราจะได้รับแจ้งว่าอาจเกิดความเสียหายเช่นนั้น ในกรณีที่กฎหมายไม่อนุญาตให้ยกเว้นความรับผิด ความรับผิดจำกัดไม่เกินจำนวนเงินที่คุณชำระสำหรับซอฟต์แวร์
+(หรือจำนวนต่ำสุดที่กฎหมายอนุญาตหากคุณไม่ได้ชำระ) ไม่มีข้อใดในข้อตกลงนี้ยกเว้นความรับผิดที่กฎหมายไม่อนุญาตให้ยกเว้น รวมถึงสิทธิของผู้บริโภคตามกฎหมาย
+
+11. การสิ้นสุด
+ข้อตกลงนี้สิ้นสุดโดยอัตโนมัติหากคุณไม่ปฏิบัติตาม คุณสามารถยุติได้ทุกเมื่อโดยถอนการติดตั้งซอฟต์แวร์และลบสำเนาทั้งหมด เมื่อสิ้นสุดแล้วคุณต้องหยุดใช้ซอฟต์แวร์
+ข้อ 2, 3, 7, 8, 9, 10 และ 13 ยังคงมีผลต่อไป
+
+12. การเปลี่ยนแปลง
+เราอาจเผยแพร่ข้อตกลงฉบับใหม่พร้อมซอฟต์แวร์รุ่นใหม่ ข้อตกลงที่แสดงตอนติดตั้งใช้กับรุ่นที่คุณติดตั้ง
+
+13. กฎหมายที่ใช้บังคับและภาษา
+ข้อตกลงนี้อยู่ภายใต้กฎหมายแห่งราชอาณาจักรไทย และศาลที่มีเขตอำนาจในประเทศไทยเป็นผู้พิจารณา โดยไม่กระทบสิทธิของผู้บริโภคที่กฎหมายของประเทศที่คุณอาศัยอยู่บังคับไว้
+ข้อตกลงนี้จัดทำเป็นภาษาไทยและภาษาอังกฤษ หากสองฉบับขัดกัน ให้ถือฉบับภาษาไทยเป็นหลัก
+
+14. ข้อกำหนดทั่วไป
+นี่คือข้อตกลงทั้งหมดระหว่างคุณกับเราเกี่ยวกับซอฟต์แวร์ หากส่วนใดบังคับใช้ไม่ได้ ส่วนที่เหลือยังมีผลบังคับ การที่เราไม่ใช้สิทธิไม่ถือว่าสละสิทธินั้น
+
+ลิขสิทธิ์ (c) 2569 (2026) DriveVault สงวนลิขสิทธิ์ DriveVault PDF Pro และ DriveVault เป็นชื่อของผู้เผยแพร่ ชื่ออื่นเป็นเครื่องหมายการค้าของเจ้าของนั้นๆ

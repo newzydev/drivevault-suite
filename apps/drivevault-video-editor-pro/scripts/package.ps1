@@ -7,6 +7,7 @@ param(
     [switch]$SkipBuild,
     [switch]$Sign,                        # Authenticode-sign with the certificate named in DV_SIGN_PFX / DV_SIGN_THUMBPRINT (see sign.ps1)
     [string]$MasterSetup = '',            # setup of DriveVault Master Pro that travels inside this installer (default: apps\drivevault-master-pro\dist)
+    [ValidatePattern('^[a-zA-Z0-9_-]+$')][string]$ArtifactSubdir, # optional isolated output below dist for compatibility checks
     [switch]$NoMaster                     # build without the hub (only for experiments: a product installer normally installs Master Pro first)
 )
 
@@ -15,6 +16,7 @@ $ErrorActionPreference = 'Stop'
 $ErrorActionPreference = 'Continue'
 
 $dist = Join-Path $DvRoot 'dist'
+if ($ArtifactSubdir) { $dist = Join-Path $dist $ArtifactSubdir }
 $stage = Join-Path $dist 'stage'
 $exe = Join-Path $DvRoot 'build\release\bin\DriveVaultVideoEditorPro.exe'
 
@@ -27,7 +29,12 @@ if (-not (Test-Path $exe)) { throw "Release executable not found: $exe" }
 $version = (Select-String -Path (Join-Path $DvRoot 'CMakeLists.txt') -Pattern 'VERSION\s+(\d+\.\d+\.\d+)').Matches[0].Groups[1].Value
 Write-Host "Packaging version $version" -ForegroundColor Cyan
 
-if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+if (Test-Path -LiteralPath $stage) {
+    $expectedStage = [IO.Path]::GetFullPath($stage)
+    $existing = Get-Item -LiteralPath $stage
+    if ($existing.FullName -ne $expectedStage -or ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Unsafe stage directory' }
+    Remove-Item -LiteralPath $existing.FullName -Recurse -Force
+}
 New-Item -ItemType Directory -Force $stage | Out-Null
 Copy-Item $exe $stage
 
@@ -137,7 +144,7 @@ if (-not $NoMaster) {
     if (-not $MasterSetup) { $MasterSetup = Join-Path (Split-Path -Parent $DvRoot) 'drivevault-master-pro\dist\DriveVault-Master-Pro-Setup-x64.exe' }
     if (-not (Test-Path $MasterSetup)) { throw "DriveVault Master Pro setup not found: $MasterSetup (build it first with its scripts\package.ps1, or pass -NoMaster)" }
     $MasterSetup = (Resolve-Path $MasterSetup).Path
-    $masterVersion = (Get-Item $MasterSetup).VersionInfo.FileVersion
+    $masterVersion = ([string](Get-Item $MasterSetup).VersionInfo.FileVersion).Trim()
     if (-not $masterVersion) { throw "Cannot read the version of $MasterSetup" }
     Write-Host "Including DriveVault Master Pro $masterVersion from $MasterSetup" -ForegroundColor Cyan
     $isccArgs += @("/DMasterSetup=$MasterSetup", "/DMasterVersion=$masterVersion")
@@ -152,7 +159,8 @@ if ($Sign) {
     & "$SuiteRoot\shared\scripts\sign.ps1" -Files $setup
     if ($LASTEXITCODE) { throw 'Signing the installer failed.' }
 }
-$hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+$ErrorActionPreference = 'Stop'
+$hash = & "$SuiteRoot\shared\scripts\file-sha256.ps1" -Path $setup
 "$hash *$(Split-Path $setup -Leaf)" | Set-Content ($setup + '.sha256') -Encoding ASCII
 Get-Item $setup | Select-Object Name, @{n = 'SizeMB'; e = { [math]::Round($_.Length / 1MB, 1) } }, LastWriteTime | Format-List
 Write-Host "Installer: $setup  (SHA-256 $hash)" -ForegroundColor Green

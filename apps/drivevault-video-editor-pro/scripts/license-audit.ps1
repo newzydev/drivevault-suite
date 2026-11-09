@@ -16,6 +16,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+$hashScript = Join-Path (Split-Path -Parent (Split-Path -Parent $root)) 'shared\scripts\file-sha256.ps1'
 $StageDir = (Resolve-Path $StageDir).Path
 if (-not $FfmpegExe) { $FfmpegExe = Join-Path (Split-Path -Parent (Split-Path -Parent $root)) '.tools\ffmpeg\bin\ffmpeg.exe' }
 $problems = New-Object System.Collections.Generic.List[string]
@@ -50,7 +51,7 @@ foreach ($f in $files) {
     if (-not $owner) { $problems.Add("Unknown file (no owner / license): $rel"); continue }
     $entries.Add([pscustomobject][ordered]@{
         path = $rel.Replace('\', '/'); size = $f.Length; owner = $owner[0]; license = $owner[1]
-        sha256 = (Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
+        sha256 = & $hashScript -Path $f.FullName
     })
 }
 
@@ -95,7 +96,7 @@ $manifest = [ordered]@{
     components = @($components); files = $entries.ToArray()
     result = $(if ($problems.Count) { 'FAILED' } else { 'PASSED' })
 }
-$manifestPath = Join-Path $root 'dist\dependency-manifest.json'
+$manifestPath = Join-Path (Split-Path -Parent $StageDir) 'dependency-manifest.json'
 New-Item -ItemType Directory -Force (Split-Path $manifestPath) | Out-Null
 $manifest | ConvertTo-Json -Depth 6 | Set-Content $manifestPath -Encoding UTF8
 $licDir = Join-Path $StageDir 'licenses'

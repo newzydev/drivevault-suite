@@ -4,7 +4,7 @@
 the setup file `DriveVault-<Name>-Setup-x64.exe` and its `DriveVault-<Name>-Setup-x64.exe.sha256` (`<hex> *<file name>`, written by `package.ps1`). The release is not a draft or pre-release; the setup's version resource
 (`CompanyName` DriveVault, `ProductName` = the program, `ProductVersion` = the tag's version) must match. Master Pro reads it when the user presses "Check for updates" and once at start-up (setting, on by default). Master Pro's own release (`drivevault-master-pro-v...`) is offered through a banner and updates Master Pro itself.
 
-DriveVault Video Editor Pro is the first product of the suite (image editor, audio editor ... are planned). **DriveVault Master Pro** (repository `DriveVault Master Pro`, VERSION 1.5.4) is the hub:
+**DriveVault Master Pro** is the hub for Video Editor Pro and PDF Pro (image and audio editors are planned):
 it lists, opens, installs, updates and uninstalls the programs, in the spirit of Creative Cloud. **Every product installer installs Master Pro first** (it carries
 the hub's setup inside and runs it silently when the hub is missing or older). This page is the contract that every product - and the hub - follows.
 
@@ -14,6 +14,7 @@ the hub's setup inside and runs it silently when the hub is missing or older). T
 |---|---|
 | Suite folder = DriveVault Master Pro | `C:\Program Files\DriveVault` (`DriveVaultMasterPro.exe`, registry `Software\DriveVault\MasterPro`) |
 | This product | `C:\Program Files\DriveVault\Common\DriveVault Video Editor Pro` |
+| PDF Pro | `C:\Program Files\DriveVault\Common\DriveVault PDF Pro` |
 | Next products | `C:\Program Files\DriveVault\Common\DriveVault <Product Name>` (the product's full name, with spaces) |
 | Start Menu | one folder **DriveVault** with one shortcut per product |
 | Per-user data | `%LOCALAPPDATA%\DriveVault\<ProductId>` (Video Editor: `VideoEditorPro`) |
@@ -56,11 +57,14 @@ DriveVault-Video-Editor-Pro-Setup-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTA
 Exit code 0 = success. Installing a newer version over an old one upgrades in place (same `AppId`); `Version` in the registry tells the hub which version is installed.
 `AppId` of Video Editor Pro: `{6E1B7A52-4C3D-4F7E-9A3B-D17E5A0C2F11}` - never change it.
 
+PDF Pro uses the same switches and the setup filename `DriveVault-PDF-Pro-Setup-x64.exe`. Its permanent AppId is `{9835145C-1C5A-48CB-A1CE-3F29EC3037BA}`. The registry key and data folder are `PdfPro`, the manifest ID is `drivevault.pdf`, and the release slug is `drivevault-pdf-pro`. Its `OpenWithProgids` registration offers PDF Pro for `.pdf` while leaving the default app under Windows user control.
+
 ## Brand colours (one accent colour per product)
 
 | Product | Accent | Status |
 |---|---|---|
 | Video Editor Pro | **#8B5CF6** (violet) | in use |
+| PDF Pro | **#EF4444** (red) | in use |
 | Image editor | #3B82F6 (blue) | proposal |
 | Audio editor | #10B981 (emerald) | proposal |
 | Master Pro (hub) | #F59E0B (amber) | proposal |
@@ -70,7 +74,7 @@ The accent colour appears in the product icon, the installer artwork (`scripts\m
 
 ## What every new product installer must do for the hub
 
-1. Install into `<suite folder>\DriveVault <Product Name>` and write `Software\DriveVault\Products\<ProductKey>` with `DisplayName, Version, InstallDir, Executable, Manifest, AccentColor, Publisher` **and `Uninstaller`** (`{uninstallexe}`).
+1. Install into `<suite folder>\Common\DriveVault <Product Name>` and write `Software\DriveVault\Products\<ProductKey>` with `DisplayName, Version, InstallDir, Executable, Manifest, AccentColor, Publisher` **and `Uninstaller`** (`{uninstallexe}`).
 2. Carry `DriveVault-Master-Pro-Setup-x64.exe` and run it silently first when `Software\DriveVault\MasterPro` is missing or older: `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /ALLUSERS|/CURRENTUSER /DIR="<suite folder>" /LANG=<language>`
    (see `installer\windows\drivevault.iss`, sections `[Files]`, `[Run]` and the `NeedMaster` code).
 3. Give the setup exe a version resource with `CompanyName = DriveVault` and `ProductName` equal to the product's name: the hub only offers / starts such files.

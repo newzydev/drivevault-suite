@@ -1,6 +1,11 @@
 DriveVault PDF Pro - release notes
 ==================================
-(In development: no version has been released yet. These notes are for the developers.)
+(Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
+
+v1.0.0 (2026-11-09): First Windows installer candidate
+  - English and Thai setup and user guides, optional desktop shortcut and Windows Open with registration.
+  - Includes DriveVault Master Pro 1.5.5 and registers PDF Pro in the suite.
+  - Installer is unsigned in local verification. Clean Windows installation remains an owner-run check.
 
 v0.10.0 (2026-11-09): Add PDF maintenance, batch processing and repair
   - Edit title, author and keywords, inspect or remove named attachments, and clean private document data in a new copy.

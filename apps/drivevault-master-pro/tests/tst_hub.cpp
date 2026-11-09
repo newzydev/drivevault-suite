@@ -82,11 +82,11 @@ private slots:
     {
         Hub hub(options());
         hub.setLanguage("en");
-        QCOMPARE(hub.products().size(), 7);                                 // 3 multimedia + 4 office programs, all but one still planned
+        QCOMPARE(hub.products().size(), 7);                                 // 3 multimedia + 4 office programs
         const QVariantMap video = find(hub, "drivevault.videoeditor");
         QCOMPARE(video.value("section").toString(), QStringLiteral("multimedia"));
         QCOMPARE(video.value("glyph").toString(), QStringLiteral("V"));
-        for (const QString& id : {"drivevault.document", "drivevault.presentation", "drivevault.spreadsheet", "drivevault.pdf"}) {
+        for (const QString& id : {"drivevault.document", "drivevault.presentation", "drivevault.spreadsheet"}) {
             const QVariantMap m = find(hub, id);
             QCOMPARE(m.value("section").toString(), QStringLiteral("office"));
             QCOMPARE(m.value("status").toString(), QStringLiteral("comingSoon"));      // they do not exist: never offered as installable
@@ -94,6 +94,10 @@ private slots:
             QVERIFY(!m.value("onlineInstall").toBool());
         }
         QCOMPARE(video.value("status").toString(), QStringLiteral("notInstalled"));
+        const auto pdf = find(hub, "drivevault.pdf");
+        QCOMPARE(pdf.value("status").toString(), QStringLiteral("notInstalled"));
+        QCOMPARE(pdf.value("key").toString(), QStringLiteral("PdfPro"));
+        QVERIFY(!pdf.value("canInstall").toBool());
         QCOMPARE(video.value("installerPath").typeId(), int(QMetaType::QString));     // never "undefined" in QML
         QCOMPARE(video.value("accent").toString(), QStringLiteral("#8B5CF6"));
         QVERIFY(!video.value("installed").toBool());
@@ -394,6 +398,31 @@ private slots:
         QVERIFY(!other.busy());
         qunsetenv("DM_FAKE_EXIT");
         qunsetenv("DM_FAKE_MARKER");
+    }
+
+    void pdfReleaseIsOfferedWithoutRunningItsInstaller()
+    {
+        const QString name = "DriveVault-PDF-Pro-Setup-x64.exe";
+        QFile feed(p("pdf-feed.json"));
+        QVERIFY(feed.open(QIODevice::WriteOnly));
+        const auto prefix = QUrl::fromLocalFile(p("pdf-release/")).toString();
+        feed.write(QJsonDocument(QJsonArray{QJsonObject{
+            {"tag_name", "drivevault-pdf-pro-v1.0.0"}, {"draft", false}, {"prerelease", false},
+            {"html_url", "https://example.invalid"},
+            {"assets", QJsonArray{QJsonObject{{"name", name}, {"browser_download_url", prefix + name}, {"size", 1}},
+                                  QJsonObject{{"name", name + ".sha256"}, {"browser_download_url", prefix + name + ".sha256"}, {"size", 1}}}}
+        }}).toJson());
+        feed.close();
+        auto opts = options();
+        opts.releasesUrl = QUrl::fromLocalFile(p("pdf-feed.json")).toString();
+        opts.downloadPrefix = prefix;
+        Hub hub(opts);
+        QSignalSpy checked(&hub, &Hub::checkFinished);
+        QVERIFY(hub.checkForUpdates().isEmpty());
+        QTRY_COMPARE(checked.size(), 1);
+        const auto pdf = find(hub, "drivevault.pdf");
+        QCOMPARE(pdf.value("onlineVersion").toString(), QStringLiteral("1.0.0"));
+        QVERIFY(pdf.value("onlineInstall").toBool());
     }
 
     // GitHub sometimes answers 504 for a release file: the hub tries again, and when it gives up it says what the server said.

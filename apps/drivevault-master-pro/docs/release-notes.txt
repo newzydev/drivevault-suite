@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.5.5 (2026-11-09): Recognize PDF Pro installers and online releases
+  - PDF Pro is listed with its actual install status and red accent.
+  - The hub reads the PDF Pro release feed using the same verified-download checks.
+
 v1.5.4 (2026-11-09)
   Changed
   - The "N updates" badge under the search bar is gone. Each program card still says when a newer version is available, and a newer Master Pro is offered in the banner at the top.

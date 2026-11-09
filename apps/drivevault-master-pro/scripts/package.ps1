@@ -49,6 +49,7 @@ $lic = Join-Path $stage 'licenses'
 New-Item -ItemType Directory -Force $lic | Out-Null
 Copy-Item (Join-Path $DvRoot 'LICENSE.txt') $lic
 Copy-Item (Join-Path $DvRoot 'docs\LGPL-3.0.txt') $lic
+Copy-Item (Join-Path $SuiteRoot 'shared\legal\GPL-3.0.txt') $lic
 Copy-Item (Join-Path $DvRoot 'docs\THIRD-PARTY-NOTICES.txt') $lic
 Copy-Item (Join-Path $DvRoot 'resources\fonts\OFL-*.txt') $lic
 
@@ -62,7 +63,7 @@ foreach ($f in Get-ChildItem $stage -Recurse -File) {
     foreach ($m in $gplOnly) { if ($f.Name -like "Qt6$m*.dll") { throw "GPL / commercial-only Qt module in the package: $($f.Name)" } }
     if ($f.Name -match 'd\.dll$' -and $f.Name -like 'Qt6*') { throw "Debug build file in the package: $($f.Name)" }
 }
-foreach ($n in 'LICENSE.txt', 'LGPL-3.0.txt', 'THIRD-PARTY-NOTICES.txt', 'OFL-Inter.txt', 'OFL-NotoSansThai.txt') {
+foreach ($n in 'LICENSE.txt', 'LGPL-3.0.txt', 'GPL-3.0.txt', 'THIRD-PARTY-NOTICES.txt', 'OFL-Inter.txt', 'OFL-NotoSansThai.txt') {
     if (-not (Test-Path (Join-Path $lic $n))) { throw "Missing license file: $n" }
 }
 if ($Sign) {
@@ -80,7 +81,8 @@ if ($Sign) {
     & (Join-Path $mainScripts 'sign.ps1') -Files $setup
     if ($LASTEXITCODE) { throw 'Signing the installer failed.' }
 }
-$hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+$ErrorActionPreference = 'Stop'
+$hash = & (Join-Path $mainScripts 'file-sha256.ps1') -Path $setup
 "$hash *$(Split-Path $setup -Leaf)" | Set-Content ($setup + '.sha256') -Encoding ASCII
 Write-Host "Installer: $setup  (SHA-256 $hash)" -ForegroundColor Green
 if (-not $Sign) { Write-Host 'NOTE: the installer is NOT code-signed.' -ForegroundColor Yellow }

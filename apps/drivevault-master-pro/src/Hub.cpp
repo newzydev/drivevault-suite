@@ -73,9 +73,9 @@ const CatalogEntry kCatalog[] = {
      u"Tables, formulas and charts. Planned - not available yet.",
      u"ตาราง สูตร และแผนภูมิ อยู่ในแผน - ยังไม่พร้อมใช้งาน",
      "office", "S"},
-    {"drivevault.pdf", "PdfPro", "DriveVault PDF Pro", "#EF4444", true,
-     u"Read, merge, split and edit PDF files. Planned - not available yet.",
-     u"อ่าน รวม แยก และแก้ไขไฟล์ PDF อยู่ในแผน - ยังไม่พร้อมใช้งาน",
+    {"drivevault.pdf", "PdfPro", "DriveVault PDF Pro", "#EF4444", false,
+     u"Read, merge, split, edit and protect PDF files.",
+     u"อ่าน รวม แยก แก้ไข และป้องกันไฟล์ PDF",
      "office", "PDF"},
 };
 
@@ -113,6 +113,7 @@ QList<Registered> readRegistry(const QString& root)
 // Release tags are "<slug>-v<x.y.z>" where the slug is the program folder name below apps/ (drivevault-video-editor-pro ...). Programs this hub does not know have no online updates.
 QString slugForKey(const QString& key)
 {
+    if (key.compare(QLatin1String("PdfPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-pdf-pro");
     if (key.compare(QLatin1String("VideoEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-video-editor-pro");
     if (key.compare(QLatin1String("ImageEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-image-editor-pro");
     if (key.compare(QLatin1String("AudioEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-audio-editor-pro");

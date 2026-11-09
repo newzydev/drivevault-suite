@@ -38,7 +38,7 @@ Every program installer carries the Master Pro setup and installs it first, so t
 .\scripts\build-all.ps1 -Sign      # the same, signed (needs DV_SIGN_PFX or DV_SIGN_THUMBPRINT)
 ```
 
-Order matters: the Video Editor installer contains the Master Pro installer, so Master Pro is packaged first. Each app has its own scripts
+Order matters: the Video Editor and PDF Pro installers contain the Master Pro installer, so Master Pro is packaged first. Each app has its own scripts
 (`apps\<app>\scripts\build.ps1 -Test`, `package.ps1`, ...) and README.
 
 Outputs: `apps\drivevault-master-pro\dist\DriveVault-Master-Pro-Setup-x64.exe`, `apps\drivevault-video-editor-pro\dist\DriveVault-Video-Editor-Pro-Setup-x64.exe` (not in git).

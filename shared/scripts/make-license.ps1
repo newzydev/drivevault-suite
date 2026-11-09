@@ -11,6 +11,17 @@ $utf8bom = New-Object System.Text.UTF8Encoding $true
 
 $products = @(
     @{
+        Folder = 'drivevault-pdf-pro'; Name = 'DriveVault PDF Pro'
+        NotesEn = @'
+PDF processing runs locally. Review redacted, sanitized and repaired copies before sharing or relying on them. Some PDFs require image-only redaction, which removes searchable text and interactive structures from the copy.
+Document cleanup removes selected document structures; page content, pixels and hidden layers can still contain sensitive data. Some readers may ignore permission restrictions. Unlock documents only when you have permission and the correct password.
+'@
+        NotesTh = @'
+การประมวลผล PDF ทำในเครื่อง โปรดตรวจสำเนาที่ปิดบัง ล้างข้อมูล หรือซ่อมแล้วก่อนส่งต่อหรือใช้งาน PDF บางไฟล์ต้องใช้โหมดสำเนาแบบภาพ ซึ่งทำให้สำเนาไม่มีข้อความค้นหาได้และโครงสร้างโต้ตอบ
+การล้างข้อมูลนำโครงสร้างเอกสารที่ระบุออก เนื้อหาหน้า พิกเซล และเลเยอร์ที่ซ่อนยังอาจมีข้อมูลส่วนตัว โปรแกรมอ่านบางตัวอาจไม่ทำตามข้อจำกัดสิทธิ์ โปรดปลดล็อกเฉพาะไฟล์ที่คุณมีสิทธิ์และมีรหัสที่ถูกต้อง
+'@
+    },
+    @{
         Folder = 'drivevault-video-editor-pro'; Name = 'DriveVault Video Editor Pro'
         NotesEn = @'
 AI tools (optional, offline): automatic captions, silence detection, cut suggestions, noise reduction, object tracking and the assistant run on your computer. Their results can be

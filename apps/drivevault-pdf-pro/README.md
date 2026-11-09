@@ -3,7 +3,7 @@
 Native Windows PDF program of the DriveVault suite (C++20, Qt 6.8 / Qt Quick, PDFium, qpdf). Works on this computer only - nothing is uploaded.
 Accent colour red `#EF4444`. The full plan and the phases are in [`docs/PDF-Pro-Plan.md`](docs/PDF-Pro-Plan.md).
 
-## Status: version 0.10.0 - in development, NOT released
+## Status: version 1.0.0 - prepared for clean-machine acceptance
 
 | Works now (tested) | Not built yet (planned, see the plan) |
 |---|---|
@@ -30,7 +30,7 @@ Accent colour red `#EF4444`. The full plan and the phases are in [`docs/PDF-Pro-
 | The page, zoom and view mode of each file are remembered | |
 | Thai / English UI with the same sizes and spacing | |
 
-Master Pro still shows "PDF Pro - coming soon": it changes only when a usable installer exists.
+The PDF Pro installer includes Master Pro 1.5.5, which recognizes PDF Pro setup files and official releases. See the [English guide](docs/user-guide.en.html), [Thai guide](docs/user-guide.th.html), and [clean Windows checklist](docs/clean-pc-checklist.md).
 
 ## Measured (synthetic text files made by the tests, this PC; `tests\tst_perf.cpp` prints the numbers as `PERF ...`)
 
@@ -51,6 +51,7 @@ and, for the password tests, **qpdf** (`.tools\qpdf`, Apache-2.0, 12.4.2 msvc64)
 ```powershell
 .\scripts\build.ps1 -Test              # configure + build Release + ctest (12 suites)
 ..\..\scripts\run-pdf-pro.bat          # open the built program without installing it
+.\scripts\package.ps1               # build Master Pro's installer first
 ```
 
 Executable options: `file.pdf` (open it), `--password text`, `--lang th|en`, `--data-dir dir`, `--size WxH --screenshot out.png` (diagnostics: writes a picture of the window and exits).
@@ -90,4 +91,4 @@ resources/       fonts (OFL), icons (made by scripts\make-icon.ps1)
 - Thai text in a PDF written by Qt (the test file) keeps every letter but not the exact place of the vowel / tone marks when extracted; real files from Word and other programs were not available to test. The writer for Phase 4 has to do better.
 - The mouse cursor is an arrow or a hand over links; there is no text cursor over text. Double click does not select a word.
 - Printing was tested to a PDF file; a real printer (and a per-page paper orientation change) was not tried.
-- No code signing and no installer yet; the third-party notices (PDFium and its bundled libraries, qpdf, Inter, Noto Sans Thai) must be written before any release.
+- The local installer is unsigned unless built with `package.ps1 -Sign` and a signing certificate. A separate clean-PC install and uninstall must be checked by the owner before publication.
