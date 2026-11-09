@@ -82,7 +82,10 @@ ApplicationWindow {
         cardHeight = m
     }
     readonly property var sections: [ { key: "multimedia" }, { key: "office" }, { key: "other" } ]
+    property string category: ""          // "" = all categories, otherwise a section key
     function matches(p) {
+        if (category !== "" && p.section !== category)
+            return false
         const q = searchField.text.trim().toLowerCase()
         return q === "" || (p.name + " " + p.description).toLowerCase().indexOf(q) >= 0
     }
@@ -283,7 +286,7 @@ ApplicationWindow {
                     id: hero
                     objectName: "hero"
                     Layout.fillWidth: true
-                    implicitHeight: 250
+                    implicitHeight: 290
                     clip: true
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: "#2A1D0A" }
@@ -304,9 +307,10 @@ ApplicationWindow {
                         Text {
                             Layout.fillWidth: true
                             text: Tr.s("heroTitle")
-                            font.pixelSize: 32
+                            font.pixelSize: 34
                             font.weight: Font.Bold
                             color: Theme.text
+                            horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.Wrap
                         }
                         Text {
@@ -314,64 +318,155 @@ ApplicationWindow {
                             text: Tr.s("subtitle")
                             font.pixelSize: 15
                             color: Theme.textSecondary
+                            horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.Wrap
                         }
-                        Item { Layout.preferredHeight: 6 }
-                        RowLayout {
+                        Item { Layout.preferredHeight: 10 }
+
+                        // search bar: [ category v | magnifier  text  x ] in one rounded field
+                        Rectangle {
+                            id: searchBar
+                            objectName: "searchBar"
+                            Layout.alignment: Qt.AlignHCenter
                             Layout.fillWidth: true
-                            spacing: 16
+                            Layout.maximumWidth: 700
+                            implicitHeight: 54
+                            radius: height / 2
+                            color: "#E61B1D24"
+                            border.width: searchField.activeFocus || categoryButton.menuOpen ? 2 : 1
+                            border.color: searchField.activeFocus || categoryButton.menuOpen ? Theme.accent : Theme.border
+                            Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                            // category drop-down (the list is the section list: a new section appears here by itself)
+                            Item {
+                                id: categoryButton
+                                objectName: "categoryButton"
+                                readonly property bool menuOpen: categoryMenu.visible
+                                readonly property string label: Tr.s(win.category === "" ? "cat_all" : "cat_" + win.category)
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                width: Math.min(220, labelText.implicitWidth + 62)
+                                Accessible.role: Accessible.Button
+                                Accessible.name: Tr.s("categoryLabel") + ": " + label
+
+                                Rectangle {                                // hover / open highlight, inside the rounded bar
+                                    anchors.fill: parent
+                                    anchors.margins: 5
+                                    radius: height / 2
+                                    color: catMouse.containsMouse || categoryButton.menuOpen ? Theme.surfaceHover : "transparent"
+                                    Behavior on color { ColorAnimation { duration: 100 } }
+                                }
+                                Text {
+                                    id: labelText
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 22
+                                    anchors.right: chevron.left
+                                    anchors.rightMargin: 8
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: categoryButton.label
+                                    font.pixelSize: 14
+                                    font.weight: Font.DemiBold
+                                    color: Theme.text
+                                    elide: Text.ElideRight
+                                }
+                                Text {                                     // chevron, rotates while the menu is open
+                                    id: chevron
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 18
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "⌄"
+                                    font.pixelSize: 16
+                                    font.weight: Font.Bold
+                                    color: categoryButton.menuOpen ? Theme.accent : Theme.textSecondary
+                                    rotation: categoryButton.menuOpen ? 180 : 0
+                                    Behavior on rotation { NumberAnimation { duration: 120 } }
+                                }
+                                MouseArea {
+                                    id: catMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: categoryMenu.visible ? categoryMenu.close() : categoryMenu.popup(5, categoryButton.height + 8)
+                                }
+                                MMenu {
+                                    id: categoryMenu
+                                    implicitWidth: 240
+                                    MMenuItem {
+                                        objectName: "category_all"
+                                        text: Tr.s("cat_all")
+                                        checkable: true
+                                        checked: win.category === ""
+                                        onTriggered: { win.category = ""; checked = true }
+                                    }
+                                    Repeater {
+                                        model: win.sections
+                                        delegate: MMenuItem {
+                                            required property var modelData
+                                            objectName: "category_" + modelData.key
+                                            text: Tr.s("cat_" + modelData.key)
+                                            checkable: true
+                                            checked: win.category === modelData.key
+                                            onTriggered: { win.category = modelData.key; checked = true }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Rectangle { id: divider; x: categoryButton.width; anchors.verticalCenter: parent.verticalCenter; width: 1; height: 26; color: Theme.border }
+
+                            Item {                                         // magnifier, drawn (no icon font needed)
+                                id: magnifier
+                                x: divider.x + 20
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 18; height: 18
+                                Rectangle { x: 0; y: 0; width: 12; height: 12; radius: 6; color: "transparent"; border.width: 2; border.color: searchField.activeFocus ? Theme.accent : Theme.textSecondary }
+                                Rectangle { x: 10; y: 12; width: 8; height: 2; radius: 1; rotation: 45; color: searchField.activeFocus ? Theme.accent : Theme.textSecondary }
+                            }
 
                             TextField {
                                 id: searchField
                                 objectName: "searchField"
-                                Layout.fillWidth: true
-                                Layout.maximumWidth: 560
-                                implicitHeight: 50
+                                anchors.left: magnifier.right
+                                anchors.leftMargin: 6
+                                anchors.right: parent.right
+                                anchors.rightMargin: 44
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: parent.height - 8
                                 placeholderText: Tr.s("searchPlaceholder")
                                 placeholderTextColor: Theme.textDisabled
                                 color: Theme.text
                                 font.pixelSize: 15
                                 selectByMouse: true
-                                leftPadding: 50
-                                rightPadding: 44
+                                leftPadding: 8
+                                rightPadding: 0
                                 verticalAlignment: TextInput.AlignVCenter
-                                background: Rectangle {
-                                    radius: height / 2
-                                    color: "#CC1B1D24"
-                                    border.width: searchField.activeFocus ? 2 : 1
-                                    border.color: searchField.activeFocus ? Theme.accent : Theme.border
-                                    Behavior on border.color { ColorAnimation { duration: 120 } }
-                                }
-                                Item {                                     // magnifier, drawn (no icon font needed)
-                                    x: 20
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 18; height: 18
-                                    Rectangle { x: 0; y: 0; width: 12; height: 12; radius: 6; color: "transparent"; border.width: 2; border.color: searchField.activeFocus ? Theme.accent : Theme.textSecondary }
-                                    Rectangle { x: 10; y: 12; width: 8; height: 2; radius: 1; rotation: 45; color: searchField.activeFocus ? Theme.accent : Theme.textSecondary }
-                                }
-                                Text {                                     // clear
-                                    visible: searchField.text !== ""
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: 18
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: "✕"
-                                    font.pixelSize: 14
-                                    color: Theme.textSecondary
-                                    MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor; onClicked: searchField.clear() }
-                                }
+                                background: null
                             }
+                            Text {                                         // clear
+                                visible: searchField.text !== ""
+                                anchors.right: parent.right
+                                anchors.rightMargin: 20
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "✕"
+                                font.pixelSize: 14
+                                color: Theme.textSecondary
+                                MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor; onClicked: searchField.clear() }
+                            }
+                        }
 
-                            // only when something needs attention
-                            Rectangle {
-                                visible: win.updateCount() > 0
-                                height: 30
-                                width: updatesLabel.implicitWidth + 24
-                                radius: 15
-                                color: Qt.alpha(Theme.info, 0.14)
-                                border.width: 1
-                                border.color: Qt.alpha(Theme.info, 0.5)
-                                Text { id: updatesLabel; anchors.centerIn: parent; text: Tr.s("updatesCount").replace("%1", win.updateCount()); font.pixelSize: 12; font.weight: Font.Medium; color: Theme.info }
-                            }
+                        // only when something needs attention
+                        Rectangle {
+                            visible: win.updateCount() > 0
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.topMargin: 4
+                            height: 30
+                            width: updatesLabel.implicitWidth + 24
+                            radius: 15
+                            color: Qt.alpha(Theme.info, 0.14)
+                            border.width: 1
+                            border.color: Qt.alpha(Theme.info, 0.5)
+                            Text { id: updatesLabel; anchors.centerIn: parent; text: Tr.s("updatesCount").replace("%1", win.updateCount()); font.pixelSize: 12; font.weight: Font.Medium; color: Theme.info }
                         }
                     }
                 }

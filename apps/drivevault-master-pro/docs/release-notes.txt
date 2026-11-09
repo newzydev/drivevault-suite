@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.4.0 (2026-11-09)
+  New
+  - The search area on the home screen is centred and redesigned: one rounded bar with a category drop-down (All, Multimedia, Office, Other - new sections appear in the list
+    by themselves), the magnifier, the text and a clear button.
+  - Choosing a category shows only the programs of that category; it works together with the search text.
+
 v1.3.3 (2026-11-08)
   New
   - When an update still cannot be downloaded after the retries, Master Pro opens the release page on GitHub in your browser, so you can download the setup
