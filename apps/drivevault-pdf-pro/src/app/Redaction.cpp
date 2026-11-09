@@ -1,6 +1,7 @@
 #include "Redaction.h"
 #include "pdfengine/PdfDocument.h"
 #include "pdftools/RedactionAudit.h"
+#include "pdftools/SelectiveRedaction.h"
 
 #include <QCryptographicHash>
 #include <QFile>
@@ -110,7 +111,7 @@ QRect pixelRect(const QRectF& rect, const QSize& size, const QSizeF& points)
 } // namespace
 
 QString redactPdf(const pdf::PdfDocument& source, const QString& path, const QList<RedactionMark>& marks,
-                  const QColor& color, const QString& label, const tools::Progress& progress)
+                  const QColor& color, const QString& label, const tools::Progress& progress, bool selective)
 {
     if (source.isEncrypted())
         return QStringLiteral("redactProtected");
@@ -132,7 +133,19 @@ QString redactPdf(const pdf::PdfDocument& source, const QString& path, const QLi
     const QTemporaryDir staging(QFileInfo(path).absolutePath() + QStringLiteral("/.dv-redact-XXXXXX"));
     if (!staging.isValid())
         return QStringLiteral("write");
-    QFile file(staging.filePath(QStringLiteral("verified.pdf")));
+    const QString staged = staging.filePath(QStringLiteral("verified.pdf"));
+    const auto publish = [&] {
+        if (!QFile::rename(staged, QFileInfo(path).absoluteFilePath()))
+            return QFileInfo::exists(path) ? QStringLiteral("exists") : QStringLiteral("write");
+        return QString();
+    };
+    if (selective) {
+        if (!label.isEmpty())
+            return QStringLiteral("redactSelectiveLabel");
+        const QString error = tools::writeSelectiveRedaction(source, staged, byPage, color, progress);
+        return error.isEmpty() ? publish() : error;
+    }
+    QFile file(staged);
     if (!file.open(QIODevice::WriteOnly | QIODevice::NewOnly))
         return QStringLiteral("write");
     RasterPdf writer(file);
@@ -212,9 +225,7 @@ QString redactPdf(const pdf::PdfDocument& source, const QString& path, const QLi
         return QStringLiteral("cancelled");
     // Close PDFium's file handle before the atomic rename on Windows.
     result.reset();
-    if (!file.rename(QFileInfo(path).absoluteFilePath()))
-        return QFileInfo::exists(path) ? QStringLiteral("exists") : QStringLiteral("write");
-    return {};
+    return publish();
 }
 
 } // namespace dp

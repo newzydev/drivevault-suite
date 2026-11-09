@@ -929,7 +929,8 @@ QString DocumentController::startRedactionScan(const QString& query, bool regex)
     return {};
 }
 
-QString DocumentController::startRedaction(const QVariantList& marks, const QString& color, const QString& label, const QString& path)
+QString DocumentController::startRedaction(const QVariantList& marks, const QString& color, const QString& label, const QString& path,
+                                           bool selective)
 {
     if (m_outputBusy)
         return QStringLiteral("busy");
@@ -954,7 +955,7 @@ QString DocumentController::startRedaction(const QVariantList& marks, const QStr
     m_outputBusy = true;
     m_outputProgress = 0;
     emit outputChanged();
-    m_outputPool.start(QRunnable::create([this, doc, areas, color, label, destination, cancel] {
+    m_outputPool.start(QRunnable::create([this, doc, areas, color, label, destination, cancel, selective] {
         const QString error = redactPdf(*doc, destination, areas, QColor(color), label, [this, cancel](int done, int total) {
             if (cancel->load())
                 return false;
@@ -963,7 +964,7 @@ QString DocumentController::startRedaction(const QVariantList& marks, const QStr
                 emit outputChanged();
             }, Qt::QueuedConnection);
             return true;
-        });
+        }, selective);
         QMetaObject::invokeMethod(this, [this, error, destination] { finishOutput(error, destination); }, Qt::QueuedConnection);
     }));
     return {};

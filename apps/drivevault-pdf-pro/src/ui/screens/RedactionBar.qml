@@ -13,6 +13,7 @@ ColumnLayout {
     property string error: ""
     property string result: ""
     property bool saving: false
+    readonly property bool selective: saveMode.currentIndex === 0
     signal goTo(int page, real y)
     signal openResult(string path)
 
@@ -36,6 +37,7 @@ ColumnLayout {
         query.clear()
         label.clear()
         mode.currentIndex = 0
+        saveMode.currentIndex = 0
         boxColor.currentIndex = 0
         error = ""
         result = ""
@@ -77,7 +79,8 @@ ColumnLayout {
         if (sourceId === 0 || sourceId !== Doc.docId)
             return
         result = ""
-        error = Doc.startRedaction(marks, ["#000000", "#ffffff", "#b91c1c"][boxColor.currentIndex], label.text, path)
+        error = Doc.startRedaction(marks, ["#000000", "#ffffff", "#b91c1c"][boxColor.currentIndex],
+                                   selective ? "" : label.text, path, selective)
         saving = error === ""
     }
 
@@ -173,6 +176,12 @@ ColumnLayout {
         Layout.leftMargin: 10
         Layout.rightMargin: 10
         ComboBox {
+            id: saveMode
+            objectName: "redactSaveMode"
+            enabled: !Doc.outputBusy
+            model: [Tr.s("redactSelective"), Tr.s("redactRaster")]
+        }
+        ComboBox {
             id: boxColor
             enabled: !Doc.outputBusy
             model: [Tr.s("redactBlack"), Tr.s("redactWhite"), Tr.s("redactRed")]
@@ -180,7 +189,7 @@ ColumnLayout {
         TextField {
             id: label
             Layout.fillWidth: true
-            enabled: !Doc.outputBusy
+            enabled: !Doc.outputBusy && !bar.selective
             maximumLength: 80
             placeholderText: Tr.s("redactLabel")
         }
@@ -218,7 +227,7 @@ ColumnLayout {
     ConfirmDialog {
         id: confirm
         title: Tr.s("redactApply")
-        text: Tr.s("redactConfirm")
+        text: Tr.s(bar.selective ? "redactSelectiveConfirm" : "redactConfirm")
         confirmText: Tr.s("redactApply")
         cancelText: Tr.s("cancel")
         onConfirmed: if (bar.visible) destination.open()

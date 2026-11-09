@@ -14,7 +14,7 @@
 
 namespace {
 
-QByteArray sensitivePdf()
+QByteArray sensitivePdf(bool simple = false, bool hidden = false, bool duplicate = false, bool image = false)
 {
     const auto stream = [](const QByteArray& bytes, const QByteArray& dictionary = {}) {
         return "<< /Length " + QByteArray::number(bytes.size()) + " " + dictionary + " >>\nstream\n" + bytes + "\nendstream";
@@ -22,19 +22,26 @@ QByteArray sensitivePdf()
     const QList<QByteArray> objects = {
         "<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles << /Names [(secret.txt) 8 0 R] >> >> /Metadata 10 0 R >>",
         "<< /Type /Pages /Kids [3 0 R 11 0 R] /Count 2 >>",
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Rotate 90 /Resources << /Font << /F 4 0 R >> /XObject << /Im 13 0 R >> >> "
-            "/Contents 5 0 R /Annots [6 0 R] >>",
+        simple ? QByteArray("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << /Font << /F 4 0 R >> ")
+                     + (image ? "/XObject << /Im 13 0 R >> " : "")
+                     + ">> /Contents 5 0 R /Annots [6 0 R] >>"
+               : QByteArray("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Rotate 90 /Resources << /Font << /F 4 0 R >> "
+                            "/XObject << /Im 13 0 R >> >> /Contents 5 0 R /Annots [6 0 R] >>"),
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        stream("BT /F 16 Tf 50 325 Td (SECRET-7342) Tj 0 -40 Td (Keep this visible) Tj 3 Tr 0 -40 Td (HIDDEN-7592) Tj ET "
-               "q 115 0 0 55 45 65 cm /Im Do Q"),
+        simple ? stream(QByteArray("BT /F 16 Tf 40 325 Td (Before SECRET-7342 After) Tj 3 Tr 0 -40 Td (HIDDEN-7592) Tj ET ")
+                        + (image ? "q 115 0 0 55 45 65 cm /Im Do Q\n" : "0 0 1 rg 45 65 115 55 re f\n")
+                        + (image && duplicate ? "q 115 0 0 55 170 65 cm /Im Do Q\n" : "")
+                        + (hidden ? "1 g BT /F 16 Tf 0 Tr 40 245 Td (WHITE-HIDDEN) Tj ET\n" : ""))
+               : stream("BT /F 16 Tf 50 325 Td (SECRET-7342) Tj 0 -40 Td (Keep this visible) Tj 3 Tr 0 -40 Td (HIDDEN-7592) Tj ET "
+                        "q 115 0 0 55 45 65 cm /Im Do Q"),
         "<< /Type /Annot /Subtype /Text /Rect [200 250 215 265] /Contents (ANNOTATION-SECRET) >>",
         "<< /Title (TITLE-SECRET) /Author (AUTHOR-SECRET) >>",
         "<< /Type /Filespec /F (secret.txt) /EF << /F 9 0 R >> >>",
         stream("ATTACHMENT-SECRET", "/Type /EmbeddedFile"),
         stream("<xmp>METADATA-SECRET</xmp>", "/Type /Metadata /Subtype /XML"),
         "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 300] /Resources << /Font << /F 4 0 R >> >> /Contents 12 0 R >>",
-        stream("BT /F 14 Tf 35 245 Td (Unmarked page) Tj ET"),
-        stream(QByteArray::fromHex("0000ff0000ff0000ff0000ff"),
+        stream(duplicate ? "BT /F 14 Tf 35 245 Td (SECRET-7342) Tj ET" : "BT /F 14 Tf 35 245 Td (Unmarked page) Tj ET"),
+        stream(QByteArray::fromHex(image ? "ff00000000ff0000ff0000ff" : "0000ff0000ff0000ff0000ff"),
                "/Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceRGB /BitsPerComponent 8")
     };
     QByteArray bytes = "%PDF-1.4\n";
@@ -152,6 +159,98 @@ private slots:
             for (int x = 45; x < 115; ++x)
                 lightPixels += image.pixelColor(x, y).green() > 200;
         QVERIFY(lightPixels > 20);
+    }
+
+    void selectiveKeepsTextInTheSameRunAndCutsVectorRectangle()
+    {
+        QTemporaryDir dir;
+        const auto input = writeFile(dir.filePath("source.pdf"), sensitivePdf(true));
+        const auto source = dp::pdf::PdfDocument::open(input, {}, nullptr);
+        QVERIFY(source);
+        const auto hits = source->searchPage(0, "SECRET-7342", true, false);
+        QCOMPARE(hits.size(), 1);
+        auto text = hits.first().rects.first().adjusted(-1, -2, 1, 2);
+        const QList<dp::RedactionMark> marks{{0, text}, {0, QRectF(65, 292, 40, 28)}};
+        const auto output = dir.filePath("selective.pdf");
+        QCOMPARE(dp::redactPdf(*source, output, marks, Qt::black, {}, {}, true), QString());
+        const auto result = dp::pdf::PdfDocument::open(output, {}, nullptr);
+        QVERIFY(result);
+        QVERIFY(result->pageText(0).contains("Before"));
+        QVERIFY(result->pageText(0).contains("After"));
+        QVERIFY(!result->pageText(0).contains("SECRET-7342"));
+        QVERIFY(!result->pageText(0).contains("HIDDEN-7592"));
+        QCOMPARE(result->pageText(1), source->pageText(1));
+        QVERIFY(result->annotations().isEmpty());
+        const auto image = result->render(0, 2);
+        QCOMPARE(image.pixelColor(155, 600), QColor(Qt::black));
+        QCOMPARE(image.pixelColor(235, 600), QColor(Qt::blue));
+        const auto decoded = dir.filePath("decoded.pdf");
+        QProcess qpdf;
+        qpdf.start(DP_TEST_QPDF, {"--qdf", "--stream-data=uncompress", output, decoded});
+        QVERIFY(qpdf.waitForFinished());
+        QCOMPARE(qpdf.exitCode(), 0);
+        QFile file(decoded);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const auto bytes = file.readAll();
+        for (const QByteArray token : {"SECRET-7342", "HIDDEN-7592", "/EmbeddedFiles", "/Metadata", "/Annots", "/Image"})
+            QVERIFY2(!bytes.contains(token) && !bytes.contains(token.toHex()), token.constData());
+        QVERIFY(bytes.contains(" re "));
+    }
+
+    void selectiveRejectsUnsupportedHiddenAndDuplicateContent()
+    {
+        QTemporaryDir dir;
+        const auto output = dir.filePath("selective.pdf");
+        const auto complex = dp::pdf::PdfDocument::open(writeFile(dir.filePath("complex.pdf"), sensitivePdf()), {}, nullptr);
+        QVERIFY(complex);
+        QCOMPARE(dp::redactPdf(*complex, output, {{0, QRectF(40, 50, 60, 90)}}, Qt::black, {}, {}, true),
+                 QStringLiteral("redactUnsupported"));
+        for (const bool duplicate : {false, true}) {
+            const auto path = writeFile(dir.filePath(duplicate ? "duplicate.pdf" : "hidden.pdf"), sensitivePdf(true, !duplicate, duplicate));
+            const auto doc = dp::pdf::PdfDocument::open(path, {}, nullptr);
+            QVERIFY(doc);
+            const auto hits = doc->searchPage(0, "SECRET-7342", true, false);
+            QVERIFY(!hits.isEmpty());
+            const auto rect = hits.first().rects.first().adjusted(-1, -2, 1, 2);
+            QCOMPARE(dp::redactPdf(*doc, output, {{0, rect}}, Qt::black, {}, {}, true),
+                     duplicate ? QStringLiteral("redactDuplicate") : QStringLiteral("redactHidden"));
+            QVERIFY(!QFileInfo::exists(output));
+        }
+    }
+
+    void selectiveRewritesOverlappingImagePixels()
+    {
+        QTemporaryDir dir;
+        const auto input = writeFile(dir.filePath("image.pdf"), sensitivePdf(true, false, false, true));
+        const auto source = dp::pdf::PdfDocument::open(input, {}, nullptr);
+        QVERIFY(source);
+        QCOMPARE(source->render(0, 2).pixelColor(110, 580), QColor(Qt::red));
+        const auto output = dir.filePath("clean.pdf");
+        const QList<dp::RedactionMark> marks{{0, QRectF(45, 280, 57.5, 27.5)}};
+        QCOMPARE(dp::redactPdf(*source, output, marks, Qt::black, {}, {}, true), QString());
+        const auto result = dp::pdf::PdfDocument::open(output, {}, nullptr);
+        QVERIFY(result);
+        QCOMPARE(result->render(0, 2).pixelColor(110, 580), QColor(Qt::black));
+        QCOMPARE(result->render(0, 2).pixelColor(235, 580), QColor(Qt::blue));
+        QVERIFY(result->pageText(0).contains("Before SECRET-7342 After"));
+
+        const auto decoded = dir.filePath("decoded.pdf");
+        QProcess qpdf;
+        qpdf.start(DP_TEST_QPDF, {"--qdf", "--stream-data=uncompress", output, decoded});
+        QVERIFY(qpdf.waitForFinished());
+        QCOMPARE(qpdf.exitCode(), 0);
+        QFile file(decoded);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const auto bytes = file.readAll();
+        QVERIFY(!bytes.contains(QByteArray::fromHex("ff00000000ff0000ff0000ff")));
+        QVERIFY(bytes.contains(QByteArray::fromHex("0000000000ff0000ff0000ff")));
+
+        const auto repeated = writeFile(dir.filePath("repeated.pdf"), sensitivePdf(true, false, true, true));
+        const auto repeatedDoc = dp::pdf::PdfDocument::open(repeated, {}, nullptr);
+        QVERIFY(repeatedDoc);
+        const auto refused = dir.filePath("refused.pdf");
+        QCOMPARE(dp::redactPdf(*repeatedDoc, refused, marks, Qt::black, {}, {}, true), QStringLiteral("redactDuplicateImage"));
+        QVERIFY(!QFileInfo::exists(refused));
     }
 };
 

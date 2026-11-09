@@ -357,7 +357,16 @@ QtObject {
         "output_redactMarks": ["Choose valid areas and an opaque box color.", "เลือกพื้นที่ที่ถูกต้องและสีกรอบทึบ"],
         "output_redactRotation": ["Reset the view rotation before marking areas.", "คืนค่าการหมุนมุมมองก่อนทำเครื่องหมาย"],
         "output_redactProtected": ["Unlock an authorized copy first, then open it to redact.", "ปลดล็อกสำเนาที่คุณมีสิทธิ์ก่อน แล้วเปิดสำเนาเพื่อปิดบังข้อมูล"],
-        "output_redactVerify": ["Verification failed. No output file was kept.", "ตรวจสอบผลไม่ผ่าน จึงไม่ได้เก็บไฟล์ผลลัพธ์"]
+        "output_redactVerify": ["Verification failed. No output file was kept.", "ตรวจสอบผลไม่ผ่าน จึงไม่ได้เก็บไฟล์ผลลัพธ์"],
+        "redactSelective": ["Keep text and vectors", "คงข้อความและเวกเตอร์"],
+        "redactRaster": ["Image-only copy", "สำเนาแบบภาพ"],
+        "redactSelectiveConfirm": ["The marked content will be removed from a new PDF. This mode supports simple text and vector pages. If the program cannot verify the copy, it will save no file. Review the copy before sharing.", "ข้อมูลในกรอบจะถูกลบจากสำเนา PDF ใหม่ โหมดนี้รองรับหน้าที่มีข้อความและเวกเตอร์แบบเรียบง่าย หากตรวจสอบไม่ผ่าน โปรแกรมจะไม่บันทึกไฟล์ โปรดตรวจสำเนาก่อนส่งต่อ"],
+        "output_redactUnsupported": ["This PDF uses content that cannot be safely rebuilt in this mode. You can explicitly select Image-only copy.", "PDF นี้มีเนื้อหาที่สร้างใหม่อย่างปลอดภัยในโหมดนี้ไม่ได้ คุณสามารถเลือกสำเนาแบบภาพได้"],
+        "output_redactAppearance": ["The comparison found a change outside the marks. Widen the marks or select Image-only copy.", "การเปรียบเทียบพบว่าภาพเปลี่ยนนอกกรอบ โปรดขยายกรอบหรือเลือกสำเนาแบบภาพ"],
+        "output_redactDuplicate": ["Some removed text still occurs elsewhere in the PDF. Find and mark the remaining occurrences.", "ยังพบข้อความที่ลบในตำแหน่งอื่นของ PDF โปรดค้นหาและทำเครื่องหมายตำแหน่งที่เหลือ"],
+        "output_redactDuplicateImage": ["The same image appears with different marks elsewhere. Review every copy of the image.", "มีรูปเดียวกันที่ทำเครื่องหมายต่างกันในตำแหน่งอื่น โปรดตรวจทุกรูปที่ซ้ำกัน"],
+        "output_redactHidden": ["The program could not verify that all remaining text is visible. You can explicitly select Image-only copy.", "โปรแกรมยืนยันไม่ได้ว่าข้อความที่เหลือทั้งหมดมองเห็นได้ คุณสามารถเลือกสำเนาแบบภาพได้"],
+        "output_redactSelectiveLabel": ["Box labels are available for image-only copies.", "ข้อความกำกับในกรอบใช้ได้กับสำเนาแบบภาพ"]
     })
     function warning(code) {
         if (code === "bookmarks") return s("warnBookmarks")

@@ -4,11 +4,13 @@
 
 #include <fpdf_annot.h>
 #include <fpdf_doc.h>
+#include <fpdf_edit.h>
 #include <fpdf_formfill.h>
 #include <fpdf_text.h>
 #include <fpdfview.h>
 
 #include <QFile>
+#include <QHash>
 #include <QMutexLocker>
 
 #include <algorithm>
@@ -245,7 +247,8 @@ QSizeF PdfDocument::pageSizePt(int page, int rotation) const
     return rotated(base, normRotation(rotation));
 }
 
-QImage PdfDocument::render(int page, double pxPerPt, const std::atomic_bool* cancel, int rotation, bool transparent) const
+QImage PdfDocument::render(int page, double pxPerPt, const std::atomic_bool* cancel, int rotation, bool transparent,
+                           bool includeAnnotations) const
 {
     if (page < 0 || page >= m_pageSizes.size() || pxPerPt <= 0.0)
         return {};
@@ -279,8 +282,8 @@ QImage PdfDocument::render(int page, double pxPerPt, const std::atomic_bool* can
     FPDF_BITMAP bitmap = FPDFBitmap_CreateEx(w, h, transparent ? FPDFBitmap_BGRA : FPDFBitmap_BGRx,
                                               image.bits(), int(image.bytesPerLine()));
     if (bitmap) {
-        FPDF_RenderPageBitmap(bitmap, fpdfPage, 0, 0, w, h, rotation, FPDF_ANNOT);
-        if (m_impl->form)
+        FPDF_RenderPageBitmap(bitmap, fpdfPage, 0, 0, w, h, rotation, includeAnnotations ? FPDF_ANNOT : 0);
+        if (m_impl->form && includeAnnotations)
             FPDF_FFLDraw(m_impl->form, bitmap, fpdfPage, 0, 0, w, h, rotation, FPDF_ANNOT);
         FPDFBitmap_Destroy(bitmap);
     }
@@ -447,6 +450,45 @@ bool PdfDocument::isEncrypted() const
 {
     QMutexLocker lock(&pdfiumMutex());
     return FPDF_GetSecurityHandlerRevision(m_impl->doc) >= 0;
+}
+
+RedactionGeometry PdfDocument::redactionGeometry(int page, const QList<QRectF>& shownMasks) const
+{
+    RedactionGeometry out;
+    if (page < 0 || page >= m_pageSizes.size())
+        return out;
+    QMutexLocker lock(&pdfiumMutex());
+    PageHandle h(m_impl->doc, page, true);
+    if (!h.text || FPDFPage_GetRotation(h.page) != 0)
+        return out;
+    for (const auto& rect : shownMasks) {
+        const auto size = m_pageSizes.at(page);
+        out.masks.append(QRectF(toPage(h.page, size, 0, rect.topLeft()),
+                                toPage(h.page, size, 0, rect.bottomRight())).normalized());
+    }
+    QHash<FPDF_PAGEOBJECT, qsizetype> indices;
+    for (int i = 0; i < FPDFPage_CountObjects(h.page); ++i) {
+        auto object = FPDFPage_GetObject(h.page, i);
+        if (FPDFPageObj_GetType(object) == FPDF_PAGEOBJ_TEXT) {
+            indices.insert(object, out.text.size());
+            out.text.append(QList<RedactionGlyph>());
+        }
+    }
+    for (int i = 0; i < FPDFText_CountChars(h.text); ++i) {
+        if (FPDFText_IsGenerated(h.text, i) == 1)
+            continue;
+        const auto it = indices.constFind(FPDFText_GetTextObject(h.text, i));
+        if (it == indices.cend())
+            return {};
+        double l, r, b, t, x, y;
+        if (!FPDFText_GetCharBox(h.text, i, &l, &r, &b, &t) || !FPDFText_GetCharOrigin(h.text, i, &x, &y))
+            return {};
+        out.text[*it].append({FPDFText_GetUnicode(h.text, i), QPointF(x, y),
+                              QRectF(QPointF(l, b), QPointF(r, t)).normalized(),
+                              shownRect(h.page, m_pageSizes.at(page), 0, l, b, r, t)});
+    }
+    out.valid = true;
+    return out;
 }
 
 QList<OutlineItem> PdfDocument::outline() const

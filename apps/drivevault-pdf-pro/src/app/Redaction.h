@@ -14,8 +14,8 @@ struct RedactionMark {
     QRectF rect;
 };
 
-// Creates an image-only, sanitized copy. Empty on success. Never replaces an existing file.
+// Creates a verified sanitized copy. Empty on success. Never replaces an existing file.
 QString redactPdf(const pdf::PdfDocument& source, const QString& path, const QList<RedactionMark>& marks,
-                  const QColor& color, const QString& label, const tools::Progress& progress);
+                  const QColor& color, const QString& label, const tools::Progress& progress, bool selective = false);
 
 } // namespace dp

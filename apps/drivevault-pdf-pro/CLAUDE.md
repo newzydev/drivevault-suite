@@ -1,6 +1,6 @@
 # DriveVault PDF Pro - rules (adds to the repository root file)
 
-Native Windows PDF program: C++20, Qt 6.8 / Qt Quick (QML), PDFium (reading / rendering), qpdf (file structure and encryption), CMake. Version 0.8.0 - **in development, not released, no installer yet** (Phases 1–5 plus Phase 6 image-only redaction).
+Native Windows PDF program: C++20, Qt 6.8 / Qt Quick (QML), PDFium (reading / rendering), qpdf (file structure and encryption), CMake. Version 0.9.0 - **in development, not released, no installer yet** (Phases 1–5 plus Phase 6 verified selective and image-only redaction).
 The plan with all phases and the owner's decisions is `docs/PDF-Pro-Plan.md` - read it first; do not build features that are not in the plan and do not label a planned feature as available.
 
 ## Layout

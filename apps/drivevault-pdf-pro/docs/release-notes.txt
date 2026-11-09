@@ -2,6 +2,10 @@ DriveVault PDF Pro - release notes
 ==================================
 (In development: no version has been released yet. These notes are for the developers.)
 
+v0.9.0 (2026-11-09): Keep searchable text and vectors in verified redaction
+  - Selective mode rebuilds supported content from scratch. It omits marked characters, cuts intersecting rectangles, and replaces marked pixels in supported images.
+  - It verifies searchable text, hidden text and rendered pixels before saving. Unsupported PDFs can be processed by explicitly choosing Image-only copy.
+
 v0.8.0 (2026-11-09): Add verified redaction to an image-only PDF
   - Draw areas or mark text with literal search, regular expressions and presets. Review each mark and choose a color or optional label.
   - Replace marked pixels and build a new PDF from sanitized page images. The copy drops searchable text and interactive structures on every page.

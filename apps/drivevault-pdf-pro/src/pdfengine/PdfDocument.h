@@ -43,6 +43,20 @@ struct SearchHit {
     QList<QRectF> rects;
 };
 
+// Raw PDF coordinates for rebuilding simple text objects in a sanitized document.
+struct RedactionGlyph {
+    char32_t character;
+    QPointF origin;
+    QRectF bounds;
+    QRectF shownBounds;
+};
+
+struct RedactionGeometry {
+    QList<QRectF> masks;
+    QList<QList<RedactionGlyph>> text;
+    bool valid = false;
+};
+
 // One opened PDF file. All methods are thread safe (they serialise on the PDFium mutex); pages are 0-based.
 // `rotation` (0..3 = 0, 90, 180, 270 degrees clockwise) is a view rotation: the file is not changed.
 class PdfDocument {
@@ -60,7 +74,7 @@ public:
     // Renders the page at `pxPerPt` pixels per point (96/72 = 100 % on screen) onto white. The result is clamped to a safe size.
     // `cancel` (optional) is checked before the work starts. A null image means failure or cancel.
     QImage render(int page, double pxPerPt, const std::atomic_bool* cancel = nullptr, int rotation = 0,
-                  bool transparent = false) const;
+                  bool transparent = false, bool includeAnnotations = true) const;
 
     // ---- text ----------------------------------------------------------------------------------------------------------------
     // All text of a page in reading order, lines separated by \n.
@@ -76,6 +90,7 @@ public:
     QList<SearchHit> searchPage(int page, const QString& text, bool matchCase, bool wholeWord, int rotation = 0) const;
     QList<SearchHit> matchPage(int page, const QRegularExpression& pattern, int limit) const;
     bool isEncrypted() const;
+    RedactionGeometry redactionGeometry(int page, const QList<QRectF>& shownMasks) const;
 
     // ---- structure ------------------------------------------------------------------------------------------------------------
     QList<OutlineItem> outline() const;

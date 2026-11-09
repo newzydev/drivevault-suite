@@ -909,6 +909,7 @@ private slots:
         QVERIFY(result);
         QCOMPARE(result->pageCount(), 6);
         QCOMPARE(result->charCount(1), 0);
+        QVERIFY(result->pageText(2).contains("name@example.org"));
         QVERIFY(click("redactClose"));
         QVERIFY(!bar->isVisible());
     }
