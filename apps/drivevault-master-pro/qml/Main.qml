@@ -101,7 +101,6 @@ ApplicationWindow {
     }
     function totalMatches() { return countIn("multimedia") + countIn("office") + countIn("other") }
     function installedCount() { let n = 0; for (const p of Hub.products) if (p.installed === true) ++n; return n }
-    function updateCount() { let n = 0; for (const p of Hub.products) if (p.updateAvailable === true || p.onlineUpdate === true) ++n; if (Hub.selfUpdateVersion !== "") ++n; return n }
 
     property string notice: ""
     function showNotice(text) { notice = text; noticeTimer.restart() }
@@ -529,20 +528,6 @@ ApplicationWindow {
                                 color: Theme.textSecondary
                                 MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor; onClicked: searchField.clear() }
                             }
-                        }
-
-                        // only when something needs attention
-                        Rectangle {
-                            visible: win.updateCount() > 0
-                            Layout.alignment: Qt.AlignHCenter
-                            Layout.topMargin: 4
-                            height: 30
-                            width: updatesLabel.implicitWidth + 24
-                            radius: 15
-                            color: Qt.alpha(Theme.info, 0.14)
-                            border.width: 1
-                            border.color: Qt.alpha(Theme.info, 0.5)
-                            Text { id: updatesLabel; anchors.centerIn: parent; text: Tr.s("updatesCount").replace("%1", win.updateCount()); font.pixelSize: 12; font.weight: Font.Medium; color: Theme.info }
                         }
                     }
                 }

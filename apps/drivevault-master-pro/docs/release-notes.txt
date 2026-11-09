@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.5.4 (2026-11-09)
+  Changed
+  - The "N updates" badge under the search bar is gone. Each program card still says when a newer version is available, and a newer Master Pro is offered in the banner at the top.
+
 v1.5.3 (2026-11-09)
   Fixed
   - "Open install folder" (menu) and the programs folder shown in About now point to the Common folder where the programs are installed

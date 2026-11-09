@@ -18,7 +18,6 @@ QtObject {
         "categoryLabel": ["Category", "หมวดหมู่"],
         "noResults": ["No program matches your search.", "ไม่พบโปรแกรมที่ตรงกับคำค้นหา"],
         "installedCount": ["%1 installed", "ติดตั้งแล้ว %1"],
-        "updatesCount": ["%1 updates", "อัปเดต %1"],
         "sec_multimedia": ["Multimedia programs", "โปรแกรมมัลติมีเดีย"],
         "sec_office": ["Office programs", "โปรแกรมออฟฟิศ"],
         "sec_other": ["Other programs", "โปรแกรมอื่นๆ"],
