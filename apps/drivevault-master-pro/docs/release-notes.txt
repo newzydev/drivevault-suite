@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.4.6 (2026-11-09)
+  Fixed
+  - Clicking the category button while its list is open now closes the list (before, it closed and opened again at once).
+
 v1.4.5 (2026-11-09)
   Fixed
   - The mouse pointer is a hand over buttons, the language switch and menu entries (it stays an arrow over a button that is disabled).
