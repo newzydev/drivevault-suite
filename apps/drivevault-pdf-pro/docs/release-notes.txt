@@ -1,0 +1,20 @@
+DriveVault PDF Pro - release notes
+==================================
+(In development: no version has been released yet. These notes are for the developers.)
+
+v0.2.0 (2026-11-09) - Phase 1: the reader is complete
+  New
+  - Several files at once in tabs; the same file is not opened twice.
+  - Find in the whole file: match case, whole word, highlights, next / previous (Ctrl+F, F3, Shift+F3).
+  - Select text with the mouse (also across pages), copy with Ctrl+C or the right click menu, select all.
+  - Bookmarks (outline) panel, comments / markup list, links inside the file (to a page, or to a web address after a question; only http, https and mailto).
+  - Two pages per row, rotate the view, dark pages (view only), full screen (F11).
+  - Printing: printer, page range, copies, colour, fit to paper.
+  - The page, zoom and view mode of each file are remembered.
+  Changed
+  - A page image is limited to 64 million pixels (was 150 million) to keep the memory use of an extreme zoom down.
+  Not done yet
+  - See README.md: merge / split, compress, edit, export, protect, redaction, installer.
+
+v0.1.0 (2026-11-09) - first version
+  - Open a PDF, continuous pages, thumbnails, page field, zoom and fit, files with a password, recent files, drag and drop, Thai / English.

@@ -6,7 +6,7 @@ namespace dp {
 
 class DocumentController;
 
-// image://pdf/<docId>/<page>/<scale * 1000>  - the page rendered at <scale> pixels per point. Rendering runs on the global thread pool
+// image://pdf/<docId>/<page>/<scale * 1000>[/<rotation 0..3>[/<dark 0|1>]]  - the page rendered at <scale> pixels per point. Rendering runs on the global thread pool
 // (PDFium calls are serialised inside PdfDocument); a request that is no longer needed is cancelled before it starts.
 class PageImageProvider : public QQuickAsyncImageProvider {
 public:

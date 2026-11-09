@@ -1,7 +1,8 @@
 function(dp_add_test name)
     add_executable(${name} ${name}.cpp)
     target_link_libraries(${name} PRIVATE dp_pdfengine dp_appcore Qt6::Test ${ARGN})
-    target_compile_definitions(${name} PRIVATE DP_TEST_QPDF="${CMAKE_SOURCE_DIR}/../../.tools/qpdf/bin/qpdf.exe")
+    target_compile_definitions(${name} PRIVATE DP_TEST_QPDF="${CMAKE_SOURCE_DIR}/../../.tools/qpdf/bin/qpdf.exe"
+        DP_TEST_FONT_THAI="${CMAKE_SOURCE_DIR}/resources/fonts/NotoSansThai-Variable.ttf")
     add_test(NAME ${name} COMMAND ${name})
     # offscreen + the software scene graph: no window shows up and no GPU is needed; DV_NO_AUDIO: tests are always silent
     set_tests_properties(${name} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;DV_NO_AUDIO=1")
@@ -10,3 +11,4 @@ endfunction()
 dp_add_test(tst_pdfengine)
 dp_add_test(tst_controller)
 dp_add_test(tst_ui_flow dp_ui dp_uiplugin dp_resources Qt6::Quick Qt6::QuickControls2)
+dp_add_test(tst_perf psapi)

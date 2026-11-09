@@ -8,6 +8,7 @@ Button {
     property string variant: "secondary"
     property bool compact: false
     property string tip: ""
+    property string glyph: ""                     // a drawn icon (see LineIcon.qml) instead of the text; not "icon": Button has that property
 
     implicitHeight: compact ? 32 : 40
     implicitWidth: Math.max(compact ? 32 : 40, contentItem.implicitWidth + leftPadding + rightPadding)
@@ -22,14 +23,26 @@ Button {
     ToolTip.delay: 500
     ToolTip.text: tip
 
-    contentItem: AppText {
-        text: control.text
-        font.pixelSize: control.compact ? Theme.fontMd : Theme.fontMd
-        font.weight: control.variant === "primary" ? Font.DemiBold : Font.Medium
-        color: !control.enabled ? Theme.textDisabled : control.variant === "primary" ? Theme.textOnAccent : Theme.text
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-        elide: Text.ElideRight
+    contentItem: Item {
+        implicitWidth: control.glyph !== "" ? 18 : label.implicitWidth
+        implicitHeight: label.implicitHeight
+        AppText {
+            id: label
+            anchors.fill: parent
+            visible: control.glyph === ""
+            text: control.text
+            font.weight: control.variant === "primary" ? Font.DemiBold : Font.Medium
+            color: !control.enabled ? Theme.textDisabled : control.variant === "primary" ? Theme.textOnAccent : Theme.text
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+        }
+        LineIcon {
+            anchors.centerIn: parent
+            visible: control.glyph !== ""
+            name: control.glyph
+            color: !control.enabled ? Theme.textDisabled : Theme.text
+        }
     }
     background: Rectangle {
         radius: control.compact ? 8 : 10

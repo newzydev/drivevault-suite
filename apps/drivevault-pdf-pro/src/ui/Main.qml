@@ -15,6 +15,30 @@ ApplicationWindow {
     color: Theme.background
 
     property string notice: ""
+    property bool noticeIsError: true
+    property int windowedVisibility: Window.Windowed
+
+    function showNotice(text, isError) { noticeIsError = isError; notice = text }
+    function toggleFullScreen() {
+        if (visibility === Window.FullScreen) {
+            visibility = windowedVisibility
+        } else {
+            windowedVisibility = visibility === Window.Maximized ? Window.Maximized : Window.Windowed
+            visibility = Window.FullScreen
+        }
+    }
+
+    Connections {
+        target: Doc
+        function onPrintFinished(ok, message) {
+            if (ok)
+                win.showNotice(Tr.s("printDone"), false)
+            else if (message === "cancelled")
+                win.showNotice(Tr.s("printCancelled"), false)
+            else
+                win.showNotice(Tr.s("printFailed") + (message !== "" ? " (" + message + ")" : ""), true)
+        }
+    }
 
     function openPath(path, password) {
         const code = Doc.open(path, password === undefined ? "" : password)
@@ -28,15 +52,17 @@ ApplicationWindow {
                 passwordDialog.open()
         } else {
             passwordDialog.close()
-            notice = Tr.error(code)
+            showNotice(Tr.error(code), true)
             Doc.removeRecent(Doc.localPath(path))
         }
     }
 
     Loader {
+        id: screenLoader
         anchors.fill: parent
         sourceComponent: Doc.isOpen ? viewerComponent : homeComponent
     }
+    onClosing: { if (screenLoader.item && screenLoader.item.flushSave) screenLoader.item.flushSave() }      // keep the view of the open file
     Component {
         id: viewerComponent
         ViewerScreen { onOpenRequested: fileDialog.open() }
@@ -59,8 +85,8 @@ ApplicationWindow {
         width: Math.min(560, parent.width - 32)
         height: noticeRow.implicitHeight + 20
         radius: 10
-        color: Qt.alpha(Theme.error, 0.16)
-        border.color: Qt.alpha(Theme.error, 0.6)
+        color: Qt.alpha(win.noticeIsError ? Theme.error : Theme.success, 0.16)
+        border.color: Qt.alpha(win.noticeIsError ? Theme.error : Theme.success, 0.6)
         z: 10
         RowLayout {
             id: noticeRow
@@ -99,4 +125,6 @@ ApplicationWindow {
     }
 
     Shortcut { sequences: [StandardKey.Open]; onActivated: fileDialog.open() }
+    Shortcut { sequences: ["F11"]; onActivated: win.toggleFullScreen() }
+    Shortcut { sequences: ["Escape"]; enabled: win.visibility === Window.FullScreen; onActivated: win.toggleFullScreen() }
 }

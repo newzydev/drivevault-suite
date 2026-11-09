@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultPdfPro
-    VERSION 0.1.0
+    VERSION 0.2.0
     DESCRIPTION "DriveVault PDF Pro - read, merge, split, compress, edit, protect and redact PDF files"
     LANGUAGES CXX)
 
@@ -16,7 +16,7 @@ option(DP_BUILD_TESTS "Build tests" ON)
 # Build number: yyyymmddHHMM (UTC) of the configure step.
 string(TIMESTAMP DP_BUILD_NUMBER "%Y%m%d%H%M" UTC)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 QuickDialogs2 Test)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 QuickDialogs2 PrintSupport Test)
 qt_standard_project_setup(REQUIRES 6.8)
 
 if(MSVC)

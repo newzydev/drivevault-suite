@@ -15,9 +15,18 @@ qt_add_qml_module(dp_ui
         components/Tr.qml
         components/ThaiMetrics.qml
         components/AppText.qml
+        components/PageView.qml
+        components/PMenu.qml
+        components/PMenuItem.qml
+        components/LineIcon.qml
         components/PButton.qml
         components/LanguageSwitch.qml
         screens/HomeScreen.qml
         screens/ViewerScreen.qml
-        screens/PasswordDialog.qml)
+        screens/PasswordDialog.qml
+        screens/FileTabs.qml
+        screens/SearchBar.qml
+        screens/SidePanel.qml
+        screens/LinkDialog.qml
+        screens/PrintDialog.qml)
 target_link_libraries(dp_ui PRIVATE Qt6::Quick Qt6::QuickControls2)

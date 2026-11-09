@@ -1,6 +1,6 @@
 # DriveVault PDF Pro - rules (adds to the repository root file)
 
-Native Windows PDF program: C++20, Qt 6.8 / Qt Quick (QML), PDFium (reading / rendering), qpdf (file structure, planned from Phase 2), CMake. Version 0.1.0 - **in development, not released, no installer yet**.
+Native Windows PDF program: C++20, Qt 6.8 / Qt Quick (QML), PDFium (reading / rendering), qpdf (file structure, planned from Phase 2), CMake. Version 0.2.0 - **in development, not released, no installer yet** (Phase 1, the reader, is done).
 The plan with all phases and the owner's decisions is `docs/PDF-Pro-Plan.md` - read it first; do not build features that are not in the plan and do not label a planned feature as available.
 
 ## Layout
@@ -19,12 +19,12 @@ Output: `build/release/bin/DriveVaultPdfPro.exe` (+ `pdfium.dll` copied next to 
 
 ## Commands (from this folder)
 ```powershell
-.\scripts\build.ps1 -Test        # configure + build Release + 3 ctest suites (about 5 s of tests)
+.\scripts\build.ps1 -Test        # configure + build Release + 4 ctest suites (about 15 s of tests)
 ..\..\scripts\run-pdf-pro.bat    # smoke start / look at the program (no install)
 ```
 
 ## Gotchas
 - `fpdfview.h` includes `windows.h`: `NOMINMAX` is defined on `dp_pdfengine` (PUBLIC), keep it.
 - PDFium is not thread safe: every call holds `pdfiumMutex()` (inside `PdfDocument`). Never call `FPDF_*` from anywhere else.
-- Do not name a QML singleton like a QtQuick type (`TextMetrics` is taken): the Thai line height singleton is `ThaiMetrics`.
+- Do not name a QML type or singleton like a Qt Quick / Controls type (`TextMetrics`, `TabBar` are taken: the compiler then uses the Qt one); a Button already has `icon`, `text`, `font` ... as properties: the Thai line height singleton is `ThaiMetrics`.
 - `ListView` / `Repeater` delegates are not QObject children of the window: tests find them by walking `QQuickItem::childItems()`.
