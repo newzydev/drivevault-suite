@@ -3,8 +3,8 @@
 IDI_ICON1 ICON "../../resources/icons/app.ico"
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,9,0,0
- PRODUCTVERSION 0,9,0,0
+ FILEVERSION 0,10,0,0
+ PRODUCTVERSION 0,10,0,0
  FILEFLAGSMASK 0x3fL
  FILEFLAGS 0x0L
  FILEOS VOS_NT_WINDOWS32
@@ -16,11 +16,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "DriveVault"
             VALUE "FileDescription", "DriveVault PDF Pro"
-            VALUE "FileVersion", "0.9.0.0"
+            VALUE "FileVersion", "0.10.0.0"
             VALUE "InternalName", "DriveVaultPdfPro"
             VALUE "OriginalFilename", "DriveVaultPdfPro.exe"
             VALUE "ProductName", "DriveVault PDF Pro"
-            VALUE "ProductVersion", "0.9.0"
+            VALUE "ProductVersion", "0.10.0"
         END
     END
     BLOCK "VarFileInfo"

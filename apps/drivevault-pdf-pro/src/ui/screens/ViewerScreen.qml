@@ -16,6 +16,8 @@ Item {
     signal formRequested()
     signal imageExportRequested(int page)
     signal securityRequested(bool unlock)
+    signal maintenanceRequested(bool repair)
+    signal batchRequested()
 
     // ---- view state ---------------------------------------------------------------------------------------------------
     property real zoom: 1.0                       // 1.0 = 100 % = 96 dpi on screen
@@ -438,6 +440,9 @@ Item {
                         PMenuItem { objectName: "exportImagesAction"; text: Tr.s("exportImages"); onTriggered: viewer.imageExportRequested(viewer.currentPage) }
                         PMenuItem { objectName: "protectPdfAction"; text: Tr.s("protectPdf"); onTriggered: viewer.securityRequested(false) }
                         PMenuItem { objectName: "unlockPdfAction"; text: Tr.s("unlockPdf"); onTriggered: viewer.securityRequested(true) }
+                        PMenuItem { objectName: "maintenanceAction"; text: Tr.s("maintenance"); onTriggered: viewer.maintenanceRequested(false) }
+                        PMenuItem { text: Tr.s("batchPdf"); onTriggered: viewer.batchRequested() }
+                        PMenuItem { text: Tr.s("repairPdf"); onTriggered: viewer.maintenanceRequested(true) }
                         PMenuItem {
                             objectName: "redactAction"
                             text: Tr.s("redactTitle")

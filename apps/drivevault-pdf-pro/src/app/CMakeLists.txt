@@ -16,6 +16,7 @@ add_library(dp_appcore STATIC
     PrintTask.cpp PrintTask.h
     ImageExport.cpp ImageExport.h
     Redaction.cpp Redaction.h
+    BatchPdf.cpp BatchPdf.h
     PageListModel.cpp PageListModel.h Compressor.cpp Compressor.h FormFiller.cpp FormFiller.h EditorModel.cpp EditorModel.h OverlayImageProvider.cpp OverlayImageProvider.h)
 target_include_directories(dp_appcore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dp_appcore PUBLIC dp_pdfengine dp_pdftools Qt6::Gui Qt6::Qml Qt6::Quick Qt6::PrintSupport)

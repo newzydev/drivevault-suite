@@ -9,6 +9,7 @@
 #include "OverlayImageProvider.h"
 #include "PageListModel.h"
 #include "TestPdf.h"
+#include "pdftools/DocumentMaintenance.h"
 #include "pdfengine/PdfiumRuntime.h"
 
 #include <QClipboard>
@@ -912,6 +913,46 @@ private slots:
         QVERIFY(result->pageText(2).contains("name@example.org"));
         QVERIFY(click("redactClose"));
         QVERIFY(!bar->isVisible());
+    }
+
+    void maintenanceAndBatchAreAvailableFromTheReaderAndHome()
+    {
+        fresh(m_featurePath, "feature.pdf");
+        QVERIFY(click("outputButton"));
+        QTRY_VERIFY(visible("maintenanceAction"));
+        QVERIFY(click("maintenanceAction"));
+        auto* maintenance = m_window->findChild<QObject*>("maintenanceDialog");
+        QVERIFY(maintenance);
+        QTRY_VERIFY(maintenance->property("loaded").toBool());
+        QVERIFY(typeInto("metadataTitle", "Draft", false));
+        QVERIFY(find("maintenanceSave")->isEnabled());
+        const auto edited = m_dir.filePath("metadata-ui.pdf");
+        QVERIFY(QMetaObject::invokeMethod(maintenance, "save", Q_ARG(QVariant, edited)));
+        QTRY_COMPARE(maintenance->property("result").toString(), edited);
+        QCOMPARE(dp::tools::inspectDocument(edited, {}).value("Title").toString(), QStringLiteral("Draft"));
+        QVERIFY(click("maintenanceClose"));
+        QTRY_VERIFY(!maintenance->property("opened").toBool());
+        closeAllTabs();
+        QVERIFY(click("homeRepair"));
+        QTRY_VERIFY(maintenance->property("opened").toBool());
+        QVERIFY(maintenance->property("repair").toBool());
+        QVERIFY(click("maintenanceClose"));
+        QTRY_VERIFY(!maintenance->property("opened").toBool());
+        QVERIFY(click("homeBatch"));
+        auto* batch = m_window->findChild<QObject*>("batchDialog");
+        QVERIFY(batch);
+        QTRY_VERIFY(batch->property("opened").toBool());
+        const auto in = m_dir.filePath("batch-ui-in");
+        const auto out = m_dir.filePath("batch-ui-out");
+        QVERIFY(QDir().mkdir(in));
+        QVERIFY(QDir().mkdir(out));
+        QVERIFY(QFile::copy(m_sixPath, QDir(in).filePath("source.pdf")));
+        batch->setProperty("input", in);
+        batch->setProperty("output", out);
+        QVERIFY(click("batchStart"));
+        QTRY_VERIFY(find("batchReport") && find("batchReport")->property("count").toInt() == 1);
+        QVERIFY(click("batchClose"));
+        QTRY_VERIFY(!batch->property("opened").toBool());
     }
 
     void noQmlWarningsWereEmitted()

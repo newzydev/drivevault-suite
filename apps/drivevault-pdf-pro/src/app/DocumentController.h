@@ -139,6 +139,9 @@ public:
     Q_INVOKABLE QString startImageExport(const QVariantMap& options, const QString& path);
     Q_INVOKABLE void cancelImageExport();
     Q_INVOKABLE QString startSecuritySave(const QVariantMap& options, const QString& path);
+    Q_INVOKABLE QString inspectMaintenance();
+    Q_INVOKABLE QString startMaintenance(const QVariantMap& options, const QString& path);
+    Q_INVOKABLE QString startBatch(const QString& input, const QString& output, const QVariantMap& options);
     Q_INVOKABLE QString startRedactionScan(const QString& query, bool regex);
     Q_INVOKABLE QString startRedaction(const QVariantList& marks, const QString& color, const QString& label, const QString& path,
                                        bool selective);
@@ -183,6 +186,8 @@ signals:
     void printFinished(bool ok, const QString& message);
     void outputChanged();
     void outputFinished(const QString& error, const QString& path);
+    void maintenanceInspected(const QVariantMap& result);
+    void batchFinished(const QString& error, const QVariantList& rows);
     void redactionScanFinished(int sourceId, const QString& error, const QVariantList& marks);
     void splitChanged();
     void splitFinished(bool ok, const QString& error, const QStringList& files, const QStringList& warnings, const QString& errorFile);

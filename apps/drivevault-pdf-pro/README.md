@@ -3,7 +3,7 @@
 Native Windows PDF program of the DriveVault suite (C++20, Qt 6.8 / Qt Quick, PDFium, qpdf). Works on this computer only - nothing is uploaded.
 Accent colour red `#EF4444`. The full plan and the phases are in [`docs/PDF-Pro-Plan.md`](docs/PDF-Pro-Plan.md).
 
-## Status: version 0.9.0 - in development, NOT released
+## Status: version 0.10.0 - in development, NOT released
 
 | Works now (tested) | Not built yet (planned, see the plan) |
 |---|---|
@@ -17,6 +17,8 @@ Accent colour red `#EF4444`. The full plan and the phases are in [`docs/PDF-Pro-
 | **Export images** (Output menu): all pages, the current page or a range, PNG with optional transparency or JPEG with adjustable quality, 72–600 DPI. Save one image, a ZIP (default for multiple pages) or a new image folder. Progress and cancellation are available. | |
 | **Protect / unlock PDF** (Output menu): AES-256 with an owner password, an optional open password and four permission settings. Unlock requires a valid password and confirmation of permission. If the PDF opens without a password, unlock requires the owner password. Both operations save a new copy. | |
 | **Redact PDF** (Output menu): draw areas or find and mark text. Review marks, choose a color, then save a verified copy. Selective mode keeps searchable text and vectors on supported PDFs. Image-only mode also offers a box label. | |
+| **Metadata and attachments** (Output menu): edit title, author and keywords, list or remove embedded files, or remove private document data in a new copy. | |
+| **Batch PDF** and **Repair PDF** (Home or Output menu): compress, add a text watermark or protect a folder of PDFs with per-file results, or rebuild the structure of a damaged PDF into a verified copy. | |
 | Open a PDF (button, Ctrl+O, drag and drop, recent files, command line), several files in **tabs** | |
 | Continuous page view or **two pages per row**, thumbnails, page field, prev / next, Page Up / Down, Home / End | |
 | Zoom (steps, Ctrl+wheel, 100 %, fit width, fit page), **rotate the view**, **dark pages** (view only), full screen (F11) | |
@@ -47,7 +49,7 @@ Prerequisites: the suite's `.tools` folder with Qt 6.8.3, CMake, Ninja, **PDFium
 and, for the password tests, **qpdf** (`.tools\qpdf`, Apache-2.0, 12.4.2 msvc64). See `docs/DEVELOPMENT.md` in the repository root.
 
 ```powershell
-.\scripts\build.ps1 -Test              # configure + build Release + ctest (11 suites)
+.\scripts\build.ps1 -Test              # configure + build Release + ctest (12 suites)
 ..\..\scripts\run-pdf-pro.bat          # open the built program without installing it
 ```
 
@@ -60,7 +62,7 @@ src/pdfengine/   the only code that calls PDFium: PdfDocument (open, render, tex
 src/pdftools/    the only code that calls qpdf: Overlay (paint the things the user adds and burn them into pages), Forms (read and fill AcroForm fields), Compress (smaller copy of a file), PdfTools (write a new file from a list of pages: merge, reorder, rotate, crop, blank pages, split by size), SplitPlan (split plans, file names)
 src/app/         DocumentController (tabs, split), PageListModel (the organizer list with undo), Compressor (compress dialog backend), EditorModel + OverlayImageProvider (the edit bar), FormFiller (form dialog backend), PageImageProvider (image://pdf/...), PrintTask, PageRange, main.cpp
 src/ui/          QML module DriveVault.PdfPro.UI (Main, screens/, components/)
-tests/           tst_pdfengine, tst_pdftools, tst_compress, tst_editor, tst_forms, tst_organizer, tst_controller, tst_ui_flow (real clicks and keys, fails on QML warnings), tst_perf, tst_output, tst_redaction
+tests/           tst_pdfengine, tst_pdftools, tst_compress, tst_editor, tst_forms, tst_organizer, tst_controller, tst_ui_flow (real clicks and keys, fails on QML warnings), tst_perf, tst_output, tst_redaction, tst_maintenance
 resources/       fonts (OFL), icons (made by scripts\make-icon.ps1)
 ```
 
@@ -72,6 +74,9 @@ resources/       fonts (OFL), icons (made by scripts\make-icon.ps1)
 - Protect starts from an unencrypted PDF. To change existing protection, unlock a copy first. PDF readers can choose whether to enforce permissions such as printing or copying.
 - Selective redaction builds a fresh PDF and preserves unmarked visible text and vectors on supported pages. It supports printable ASCII with standard PDF fonts, simple paths and fills, and some axis-aligned RGB or grayscale images. Marked glyphs are omitted, rectangular fills are cut around marks, and overlapping image pixels are replaced before embedding. Complex transforms, embedded fonts, clipping, transparency, rotated pages and layouts that fail visual verification are refused. It discards annotations, links, bookmarks, forms, metadata and attachments. Verification checks for remaining copies of removed text, visible retained glyphs, and pixel differences outside the marks. Searchable Thai documents with embedded fonts require image-only mode.
 - Image-only redaction rebuilds all pages as lossless images at up to 200 DPI. Visible annotation and form appearances can remain as pixels outside marks. The copy loses searchable text and interactive features. Searches in both modes use the PDF text layer and do not find text in scanned images. Numeric presets find patterns, so review the results and the saved copy before sharing. For encrypted files, open an authorized unlocked copy first.
+- Metadata edits use the PDF Info dictionary and clear the document-level XMP when an edited field changes. The attachment list shows named embedded files. Private-data cleanup also removes metadata streams, attachments, comments, links, interactive forms, bookmarks, tags, thumbnails and document scripts. Page content, image pixels and hidden layers can still contain private information. A full rewrite may invalidate existing signatures. A protected PDF requires its owner password for maintenance and keeps its encryption.
+- Batch runs on the top level of two different folders, skips protected inputs and existing output files, and cancels between files. Compression uses 150 DPI and JPEG quality 70 for eligible images, and skips files that do not get smaller. Batch protection applies the same passwords to the new copies in that run.
+- Repair rebuilds the structure qpdf can recover and checks that the output opens with the recovered page count. It cannot reconstruct missing or corrupted page content. Review the recovered copy before using it.
 - Forms: only classic AcroForm fields; an XFA (dynamic) form is detected but not filled. Text fields take Latin-1 characters (the standard form fonts have no Thai); a value that cannot be shown is refused and listed, not written as garbage. Fields are filled in a list, not by clicking on the page. Signature fields and buttons are not supported. Checked on a generated form only: forms from Word, Acrobat or other tools were not available.
 - Compress touches only embedded images: 8 bit RGB / grey (also ICC based) pictures stored as JPEG or Flate, at least 32 x 32 pixels and 20 KB. Not touched: black/white scans (CCITT / JBIG2), JPEG 2000, CMYK, indexed colours, pictures with a stencil mask or a Decode array, and anything in a file that cannot be parsed. Pictures that look like drawings (few colours) are never turned into JPEG; they are only made smaller when shown at a lower resolution than they have. Fonts are not touched. The resolution is measured from how the picture is placed on the page (including inside form XObjects); a picture whose use cannot be found is not reduced.
 - Compress was measured on generated files only (a synthetic photo: 1.2 MB -> 20 KB at 150 dpi, JPEG 70; a real photo or scan will shrink much less). Real scans, big catalogues and files from Office were not available to test. The JPEG writer is the one in Qt (`imageformatsqjpeg.dll` must be shipped with the installer in Phase 8).

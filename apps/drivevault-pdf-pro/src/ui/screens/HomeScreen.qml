@@ -9,6 +9,8 @@ Item {
 
     signal openRequested()
     signal mergeRequested()
+    signal batchRequested()
+    signal repairRequested()
     signal openPathRequested(string path)
 
     Rectangle {
@@ -81,6 +83,8 @@ Item {
             Layout.alignment: Qt.AlignHCenter
             spacing: 10
             PButton { objectName: "homeMerge"; text: Tr.s("toolMerge"); onClicked: home.mergeRequested() }
+            PButton { objectName: "homeBatch"; text: Tr.s("batchPdf"); enabled: !Doc.outputBusy; onClicked: home.batchRequested() }
+            PButton { objectName: "homeRepair"; text: Tr.s("repairPdf"); enabled: !Doc.outputBusy; onClicked: home.repairRequested() }
         }
 
         Item { Layout.preferredHeight: 18 }

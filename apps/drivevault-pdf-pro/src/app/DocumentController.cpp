@@ -3,6 +3,8 @@
 #include "PageRange.h"
 #include "PrintTask.h"
 #include "ImageExport.h"
+#include "BatchPdf.h"
+#include "pdftools/DocumentMaintenance.h"
 #include "Redaction.h"
 #include "pdftools/Security.h"
 #include "pdftools/SplitPlan.h"
@@ -872,6 +874,82 @@ void DocumentController::finishOutput(const QString& error, const QString& path)
     m_outputBusy = false;
     emit outputChanged();
     emit outputFinished(error, error.isEmpty() ? path : QString());
+}
+
+QString DocumentController::inspectMaintenance()
+{
+    if (m_outputBusy)
+        return QStringLiteral("busy");
+    const auto src = currentSource();
+    if (!src.doc)
+        return QStringLiteral("noDocument");
+    m_outputBusy = true;
+    emit outputChanged();
+    m_outputPool.start(QRunnable::create([this, path = src.path, password = src.password] {
+        const auto result = tools::inspectDocument(path, password);
+        QMetaObject::invokeMethod(this, [this, result] {
+            m_outputBusy = false;
+            emit outputChanged();
+            emit maintenanceInspected(result);
+        }, Qt::QueuedConnection);
+    }));
+    return {};
+}
+
+QString DocumentController::startMaintenance(const QVariantMap& options, const QString& path)
+{
+    if (m_outputBusy)
+        return QStringLiteral("busy");
+    const auto mode = options.value("mode").toString();
+    const auto src = currentSource();
+    if (mode != QLatin1String("repair") && options.value("sourceId").toInt() != src.id)
+        return QStringLiteral("maintenanceSourceChanged");
+    const QString source = mode == QLatin1String("repair") ? localPath(options.value("source").toString()) : src.path;
+    const QString password = mode == QLatin1String("repair") ? options.value("password").toString() : src.password;
+    if (source.isEmpty())
+        return QStringLiteral("file");
+    const auto destination = QFileInfo(localPath(path)).absoluteFilePath();
+    if (QFileInfo(destination).suffix().compare(QLatin1String("pdf"), Qt::CaseInsensitive) != 0)
+        return QStringLiteral("pdfSuffix");
+    const auto fields = options.value("fields").toMap();
+    const auto removed = options.value("attachments").toStringList();
+    m_outputBusy = true;
+    emit outputChanged();
+    m_outputPool.start(QRunnable::create([this, source, password, destination, mode, fields, removed] {
+        const auto error = tools::maintainDocument(source, password, destination, mode, fields, removed);
+        QMetaObject::invokeMethod(this, [this, error, destination] { finishOutput(error, destination); }, Qt::QueuedConnection);
+    }));
+    return {};
+}
+
+QString DocumentController::startBatch(const QString& input, const QString& output, const QVariantMap& options)
+{
+    if (m_outputBusy)
+        return QStringLiteral("busy");
+    const auto source = localPath(input);
+    const auto destination = localPath(output);
+    const auto cancel = std::make_shared<std::atomic_bool>(false);
+    m_imageCancel = cancel;
+    m_outputBusy = true;
+    m_outputProgress = 0;
+    emit outputChanged();
+    m_outputPool.start(QRunnable::create([this, source, destination, options, cancel] {
+        QString error;
+        const auto rows = batchPdf(source, destination, options, [this, cancel](int done, int total) {
+            QMetaObject::invokeMethod(this, [this, done, total] {
+                m_outputProgress = double(done) / total;
+                emit outputChanged();
+            }, Qt::QueuedConnection);
+            return !cancel->load();
+        }, error);
+        QMetaObject::invokeMethod(this, [this, error, rows] {
+            m_imageCancel.reset();
+            m_outputBusy = false;
+            emit outputChanged();
+            emit batchFinished(error, rows);
+        }, Qt::QueuedConnection);
+    }));
+    return {};
 }
 
 QString DocumentController::startRedactionScan(const QString& query, bool regex)

@@ -7,6 +7,7 @@ add_library(dp_pdftools STATIC
     Forms.cpp Forms.h
     Security.cpp Security.h
     RedactionAudit.cpp RedactionAudit.h
-    SelectiveRedaction.cpp SelectiveRedaction.h)
+    SelectiveRedaction.cpp SelectiveRedaction.h
+    DocumentMaintenance.cpp DocumentMaintenance.h)
 target_include_directories(dp_pdftools PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(dp_pdftools PUBLIC Qt6::Core Qt6::Gui qpdf dp_pdfengine)

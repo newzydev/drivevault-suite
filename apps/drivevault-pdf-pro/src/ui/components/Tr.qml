@@ -366,7 +366,36 @@ QtObject {
         "output_redactDuplicate": ["Some removed text still occurs elsewhere in the PDF. Find and mark the remaining occurrences.", "ยังพบข้อความที่ลบในตำแหน่งอื่นของ PDF โปรดค้นหาและทำเครื่องหมายตำแหน่งที่เหลือ"],
         "output_redactDuplicateImage": ["The same image appears with different marks elsewhere. Review every copy of the image.", "มีรูปเดียวกันที่ทำเครื่องหมายต่างกันในตำแหน่งอื่น โปรดตรวจทุกรูปที่ซ้ำกัน"],
         "output_redactHidden": ["The program could not verify that all remaining text is visible. You can explicitly select Image-only copy.", "โปรแกรมยืนยันไม่ได้ว่าข้อความที่เหลือทั้งหมดมองเห็นได้ คุณสามารถเลือกสำเนาแบบภาพได้"],
-        "output_redactSelectiveLabel": ["Box labels are available for image-only copies.", "ข้อความกำกับในกรอบใช้ได้กับสำเนาแบบภาพ"]
+        "output_redactSelectiveLabel": ["Box labels are available for image-only copies.", "ข้อความกำกับในกรอบใช้ได้กับสำเนาแบบภาพ"],
+        "maintenance": ["Metadata and attachments", "เมทาดาทาและไฟล์แนบ"],
+        "metadataTitle": ["Title", "ชื่อเรื่อง"],
+        "metadataAuthor": ["Author", "ผู้เขียน"],
+        "metadataKeywords": ["Keywords", "คีย์เวิร์ด"],
+        "attachments": ["Embedded files", "ไฟล์แนบในเอกสาร"],
+        "noAttachments": ["No embedded files listed", "ไม่มีไฟล์แนบในรายการ"],
+        "removeAttachment": ["Remove %1", "ลบ %1"],
+        "cleanupPdf": ["Remove private document data", "ล้างข้อมูลส่วนตัวในเอกสาร"],
+        "maintenanceHint": ["Edit the saved PDF's properties or mark embedded files for removal. A new copy is written. Existing signatures may become invalid.", "แก้คุณสมบัติของ PDF ที่บันทึกแล้วหรือเลือกไฟล์แนบที่จะลบ ระบบจะสร้างสำเนาใหม่ ลายเซ็นเดิมอาจใช้ตรวจสอบไม่ได้"],
+        "cleanupHint": ["Removes metadata, attachments, comments, links, forms, bookmarks, tags and document scripts from the copy. Page content and hidden layers can still contain private data.", "นำเมทาดาทา ไฟล์แนบ ความเห็น ลิงก์ ฟอร์ม บุ๊กมาร์ก แท็ก และสคริปต์ออกจากสำเนา เนื้อหาหน้าและเลเยอร์ที่ซ่อนยังอาจมีข้อมูลส่วนตัว"],
+        "maintenanceSave": ["Save new copy", "บันทึกสำเนาใหม่"],
+        "repairPdf": ["Repair PDF", "ซ่อม PDF"],
+        "repairSource": ["Choose the PDF to repair", "เลือก PDF ที่จะซ่อม"],
+        "repairHint": ["Rebuilds a readable document structure into a new copy. Review the recovered pages and content before using it.", "สร้างโครงสร้างเอกสารที่อ่านได้ลงในสำเนาใหม่ โปรดตรวจหน้าและเนื้อหาที่กู้ได้ก่อนใช้งาน"],
+        "batchPdf": ["Batch PDF", "ทำ PDF เป็นชุด"],
+        "batchInput": ["Input folder", "โฟลเดอร์ต้นทาง"],
+        "batchOutput": ["Output folder", "โฟลเดอร์ปลายทาง"],
+        "batchWatermark": ["Text watermark", "ลายน้ำข้อความ"],
+        "batchStart": ["Run batch", "เริ่มทำเป็นชุด"],
+        "batchSaved": ["Saved", "บันทึกแล้ว"],
+        "batchHint": ["Processes PDFs in the selected folder. Each output keeps its filename. Existing files and protected inputs are skipped. Cancellation takes effect after the current file.", "ประมวลผล PDF ในโฟลเดอร์ที่เลือกและใช้ชื่อไฟล์เดิม ระบบข้ามไฟล์ปลายทางที่มีอยู่แล้วและต้นทางที่มีการป้องกัน การยกเลิกจะมีผลหลังจบไฟล์ปัจจุบัน"],
+        "output_batchFolders": ["Choose two different existing folders.", "เลือกโฟลเดอร์ต้นทางและปลายทางที่มีอยู่และต่างกัน"],
+        "output_batchEmpty": ["No PDF files in the input folder.", "ไม่พบไฟล์ PDF ในโฟลเดอร์ต้นทาง"],
+        "output_batchCancelled": ["Batch cancelled. Completed files are listed below.", "ยกเลิกงานชุดแล้ว ไฟล์ที่ทำเสร็จแสดงด้านล่าง"],
+        "output_noGain": ["No size reduction", "ขนาดไม่ลดลง"],
+        "output_fontRestricted": ["The watermark font could not be used.", "ใช้ฟอนต์ลายน้ำไม่ได้"],
+        "output_maintenanceOptions": ["Check the chosen options and try again.", "ตรวจตัวเลือกแล้วลองอีกครั้ง"],
+        "output_maintenanceVerify": ["The new copy could not be verified.", "ตรวจสอบสำเนาใหม่ไม่ผ่าน"],
+        "output_maintenanceSourceChanged": ["The open PDF changed. Reopen the metadata dialog.", "PDF ที่เปิดอยู่เปลี่ยนแล้ว โปรดเปิดหน้าต่างเมทาดาทาอีกครั้ง"]
     })
     function warning(code) {
         if (code === "bookmarks") return s("warnBookmarks")
@@ -389,7 +418,8 @@ QtObject {
         if (code === "file" || code === "format") return error(code)
         if (code === "busy") return s("busyNow")
         if (code === "cancelled") return s("saveCancelled")
-        return s("output_" + code)
+        const key = "output_" + code
+        return s(table[key] ? key : "errSaveUnknown")
     }
     function error(code) {
         return s(code === "format" ? "errFormat" : code === "file" ? "errFile" : code === "tooLarge" ? "errTooLarge" : "errUnknown")

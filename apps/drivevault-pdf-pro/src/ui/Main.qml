@@ -83,6 +83,8 @@ ApplicationWindow {
             onFormRequested: formDialog.open()
             onImageExportRequested: page => { imageExportDialog.currentPage = page; imageExportDialog.open() }
             onSecurityRequested: unlock => { securityDialog.unlock = unlock; securityDialog.open() }
+            onMaintenanceRequested: repair => maintenanceDialog.begin(repair)
+            onBatchRequested: batchDialog.open()
         }
     }
     Component {
@@ -90,6 +92,8 @@ ApplicationWindow {
         HomeScreen {
             onOpenRequested: fileDialog.open()
             onMergeRequested: organizer.begin("merge")
+            onBatchRequested: batchDialog.open()
+            onRepairRequested: maintenanceDialog.begin(true)
             onOpenPathRequested: path => win.openPath(path)
         }
     }
@@ -129,6 +133,11 @@ ApplicationWindow {
     }
     SplitDialog { id: splitDialog }
     ImageExportDialog { id: imageExportDialog }
+    MaintenanceDialog {
+        id: maintenanceDialog
+        onOpenResult: path => win.openPath(path)
+    }
+    BatchDialog { id: batchDialog }
     SecurityDialog {
         id: securityDialog
         onOpenResultRequested: path => win.openPath(path)
