@@ -1,6 +1,11 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.4.1 (2026-11-09)
+  Fixed
+  - The search field now lets go of the keyboard focus (orange frame and blinking caret) when you click anywhere outside it, or press Esc.
+  - The arrow of the category drop-down is drawn as a clean line and flips while the menu is open.
+
 v1.4.0 (2026-11-09)
   New
   - The search area on the home screen is centred and redesigned: one rounded bar with a category drop-down (All, Multimedia, Office, Other - new sections appear in the list

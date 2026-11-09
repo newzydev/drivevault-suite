@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
+import QtQuick.Shapes
 import DriveVault.Master.Backend
 
 ApplicationWindow {
@@ -100,6 +101,16 @@ ApplicationWindow {
     function totalMatches() { return countIn("multimedia") + countIn("office") + countIn("other") }
     function installedCount() { let n = 0; for (const p of Hub.products) if (p.installed === true) ++n; return n }
     function updateCount() { let n = 0; for (const p of Hub.products) if (p.updateAvailable === true || p.onlineUpdate === true) ++n; if (Hub.selfUpdateVersion !== "") ++n; return n }
+
+    // A click anywhere outside the search bar (or Esc in the field) takes the keyboard focus away, so the orange frame and the caret go.
+    // The handler only watches (passive grab): buttons and cards still get their clicks.
+    TapHandler {
+        onTapped: eventPoint => {
+            const p = searchBar.mapFromItem(null, eventPoint.scenePosition.x, eventPoint.scenePosition.y)
+            if (p.x < 0 || p.y < 0 || p.x > searchBar.width || p.y > searchBar.height)
+                searchField.focus = false
+        }
+    }
 
     property string notice: ""
     function showNotice(text) { notice = text; noticeTimer.restart() }
@@ -370,17 +381,25 @@ ApplicationWindow {
                                     color: Theme.text
                                     elide: Text.ElideRight
                                 }
-                                Text {                                     // chevron, rotates while the menu is open
+                                Shape {                                    // chevron, drawn as a line (a font glyph sits off-centre); flips while the menu is open
                                     id: chevron
                                     anchors.right: parent.right
                                     anchors.rightMargin: 18
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: "⌄"
-                                    font.pixelSize: 16
-                                    font.weight: Font.Bold
-                                    color: categoryButton.menuOpen ? Theme.accent : Theme.textSecondary
+                                    width: 12; height: 12
+                                    preferredRendererType: Shape.CurveRenderer
                                     rotation: categoryButton.menuOpen ? 180 : 0
                                     Behavior on rotation { NumberAnimation { duration: 120 } }
+                                    ShapePath {
+                                        strokeColor: categoryButton.menuOpen ? Theme.accent : Theme.textSecondary
+                                        strokeWidth: 2
+                                        fillColor: "transparent"
+                                        capStyle: ShapePath.RoundCap
+                                        joinStyle: ShapePath.RoundJoin
+                                        startX: 2; startY: 4
+                                        PathLine { x: 6; y: 8 }
+                                        PathLine { x: 10; y: 4 }
+                                    }
                                 }
                                 MouseArea {
                                     id: catMouse
@@ -442,6 +461,7 @@ ApplicationWindow {
                                 rightPadding: 0
                                 verticalAlignment: TextInput.AlignVCenter
                                 background: null
+                                Keys.onEscapePressed: { if (text !== "") clear(); else focus = false }
                             }
                             Text {                                         // clear
                                 visible: searchField.text !== ""
