@@ -1,6 +1,10 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.11.2 (2026-11-09)
+--------------
+  - Fixed: the About window described an old development build ("Phase 2 ... effects arrive in Phase 3, AI in Phase 4"). It now says what the program does today (Thai and English).
+
 Version 1.11.1 (2026-11-09)
 --------------
   - Fixed: the window did not open the way it was closed (maximized or normal, size and place) and the panel layouts were not remembered. The saved state was written

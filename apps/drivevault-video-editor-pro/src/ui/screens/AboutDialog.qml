@@ -37,8 +37,9 @@ AppDialog {
 
     Text {
         Layout.fillWidth: true
-        text: qsTr("Phase 2 build: media import, preview with audio, multitrack timeline editing with undo / redo, project save / load and MP4 export. "
-                   + "Effects, titles, color and audio mixing arrive in Phase 3, AI in Phase 4.")
+        text: qsTr("Professional video editing for Windows: media import, a multitrack timeline with undo / redo, effects, titles, colour and audio mixing, "
+                   + "offline AI tools (silence and scene detection, captions, noise reduction, tracking), project save / load and MP4 export. "
+                   + "Everything runs on this computer.")
         font.pixelSize: Theme.fontSm
         color: Theme.textSecondary
         wrapMode: Text.Wrap

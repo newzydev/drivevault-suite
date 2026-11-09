@@ -20,8 +20,8 @@
     </message>
     <message>
         <location filename="../../src/ui/screens/AboutDialog.qml" line="40"/>
-        <source>Phase 2 build: media import, preview with audio, multitrack timeline editing with undo / redo, project save / load and MP4 export. Effects, titles, color and audio mixing arrive in Phase 3, AI in Phase 4.</source>
-        <translation>บิลด์ Phase 2: นำเข้าสื่อ พรีวิวพร้อมเสียง ตัดต่อหลายแทร็กพร้อมเลิกทำ/ทำซ้ำ บันทึก/เปิดโปรเจกต์ และส่งออก MP4 ส่วนเอฟเฟกต์ ไตเติล สี และมิกซ์เสียงจะมาใน Phase 3 และ AI ใน Phase 4</translation>
+        <source>Professional video editing for Windows: media import, a multitrack timeline with undo / redo, effects, titles, colour and audio mixing, offline AI tools (silence and scene detection, captions, noise reduction, tracking), project save / load and MP4 export. Everything runs on this computer.</source>
+        <translation>โปรแกรมตัดต่อวิดีโอระดับมืออาชีพสำหรับ Windows: นำเข้าสื่อ ไทม์ไลน์หลายแทร็กพร้อมเลิกทำ/ทำซ้ำ เอฟเฟกต์ ชื่อเรื่อง สี และมิกซ์เสียง เครื่องมือ AI แบบออฟไลน์ (ตรวจหาช่วงเงียบและฉาก คำบรรยาย ลดเสียงรบกวน การติดตามวัตถุ) บันทึก/เปิดโปรเจกต์ และส่งออก MP4 ทุกอย่างทำงานในเครื่องนี้</translation>
     </message>
     <message>
         <source>Phase 1 foundation build: application shell, design system, settings and localization. Media import, playback, timeline editing and export arrive in the next phases.</source>
