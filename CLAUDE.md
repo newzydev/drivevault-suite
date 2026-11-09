@@ -138,6 +138,7 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 | Video Editor Pro | 1.10.0 | `drivevault-video-editor-pro-v1.10.0` | `4863b0e` | 2026-11-08 |
 | Video Editor Pro | 1.11.0 | `drivevault-video-editor-pro-v1.11.0` | `09e8f47` | 2026-11-08 |
 | Video Editor Pro | 1.11.2 | `drivevault-video-editor-pro-v1.11.2` | `6aad2b0` | 2026-11-09 |
+| Video Editor Pro | 1.11.3 | `drivevault-video-editor-pro-v1.11.3` | `7240cb1` | 2026-11-09 |
 
 ## Open items the owner knows about
 
