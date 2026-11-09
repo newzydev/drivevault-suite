@@ -20,6 +20,7 @@ qt_add_qml_module(dp_ui
         components/PMenuItem.qml
         components/LineIcon.qml
         components/PButton.qml
+        components/ConfirmDialog.qml
         components/LanguageSwitch.qml
         screens/HomeScreen.qml
         screens/ViewerScreen.qml
@@ -31,5 +32,7 @@ qt_add_qml_module(dp_ui
         screens/PrintDialog.qml
         screens/OrganizerDialog.qml
         screens/SplitDialog.qml
-        screens/CompressDialog.qml)
+        screens/CompressDialog.qml
+        screens/EditBar.qml
+        screens/MarkDialog.qml)
 target_link_libraries(dp_ui PRIVATE Qt6::Quick Qt6::QuickControls2)

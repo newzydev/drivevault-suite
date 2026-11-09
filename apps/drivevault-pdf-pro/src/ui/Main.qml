@@ -62,11 +62,21 @@ ApplicationWindow {
         anchors.fill: parent
         sourceComponent: Doc.isOpen ? viewerComponent : homeComponent
     }
-    onClosing: { if (screenLoader.item && screenLoader.item.flushSave) screenLoader.item.flushSave() }      // keep the view of the open file
+    property bool closeConfirmed: false
+    onClosing: close => {
+        if (Editor.anyModified && !closeConfirmed) {
+            close.accepted = false
+            windowAsk.open()
+            return
+        }
+        if (screenLoader.item && screenLoader.item.flushSave)
+            screenLoader.item.flushSave()      // keep the view of the open file
+    }
     Component {
         id: viewerComponent
         ViewerScreen {
             onOpenRequested: fileDialog.open()
+            onOpenPathRequested: path => win.openPath(path)
             onOrganizeRequested: organizer.begin("organize")
             onSplitRequested: splitDialog.open()
             onCompressRequested: compressDialog.open()
@@ -115,6 +125,14 @@ ApplicationWindow {
         onOpenResultRequested: path => win.openPath(path)
     }
     SplitDialog { id: splitDialog }
+    ConfirmDialog {
+        id: windowAsk
+        title: Tr.s("closeUnsavedTitle")
+        text: Tr.s("closeUnsavedAll")
+        confirmText: Tr.s("closeAnyway")
+        cancelText: Tr.s("keepEditing")
+        onConfirmed: { win.closeConfirmed = true; win.close() }
+    }
     CompressDialog {
         id: compressDialog
         onOpenResultRequested: path => win.openPath(path)

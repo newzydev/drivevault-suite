@@ -12,6 +12,7 @@ Item {
     signal organizeRequested()
     signal splitRequested()
     signal compressRequested()
+    signal openPathRequested(string path)
 
     // ---- view state ---------------------------------------------------------------------------------------------------
     property real zoom: 1.0                       // 1.0 = 100 % = 96 dpi on screen
@@ -132,8 +133,117 @@ Item {
         }
     }
     function closeTabAt(index) {
+        const tab = Doc.tabs[index]
+        if (tab && Editor.modifiedFor(tab.id)) {
+            closeAsk.tabIndex = index
+            closeAsk.open()
+            return
+        }
+        reallyCloseTab(index)
+    }
+    function reallyCloseTab(index) {
         flushSave()                                // the view of the file is saved while its tab still exists
         Doc.closeTab(index)
+    }
+
+    // ---- editing: the pointer puts things on the pages ----------------------------------------------------------------------
+    readonly property bool editOn: Editor.active && Doc.rotation === 0
+    property string editMode: ""                  // "" | "move" | "resize" | "draw"
+    property int editHandle: -1
+    property int editPage: 0
+    property real editLastX: 0
+    property real editLastY: 0
+
+    // where a place on a page is in the pointer's coordinates (reads the scroll position so that a binding follows it)
+    function pageToView(page, x, y) {
+        const dummy = pagesView.contentX + pagesView.contentY + viewer.pxPerPt
+        const sp = pagesView.itemAtIndex(Math.floor(page / perSpread))
+        const pv = sp ? sp.pageView(page) : null
+        if (!pv)
+            return Qt.point(-10000 + dummy * 0, -10000)
+        return pv.mapToItem(viewer, x * viewer.pxPerPt, y * viewer.pxPerPt)
+    }
+    function startEditing(id) {
+        Editor.beginEdit(id)
+        if (Editor.editingId !== id)
+            return
+        Editor.beginGesture()
+        editField.text = Editor.itemInfo(id).text
+        editField.forceActiveFocus()
+        editField.selectAll()
+    }
+    function finishEditing() {
+        if (Editor.editingId === 0)
+            return
+        Editor.endGesture()
+        Editor.endEdit()
+        pagesView.forceActiveFocus()
+    }
+    function editPress(vx, vy) {
+        finishEditing()
+        const h = hit(vx, vy)
+        if (!h) {
+            if (Editor.tool === "select")
+                Editor.select(0)
+            return
+        }
+        editPage = h.page
+        editLastX = h.x
+        editLastY = h.y
+        const tool = Editor.tool
+        if (tool === "select") {
+            const hd = Editor.handleAt(h.page, h.x, h.y, 7 / pxPerPt)
+            if (hd >= 0) {
+                editMode = "resize"
+                editHandle = hd
+                Editor.beginGesture()
+                return
+            }
+            const id = Editor.hitTest(h.page, h.x, h.y)
+            Editor.select(id)
+            if (id > 0) {
+                editMode = "move"
+                Editor.beginGesture()
+            }
+        } else if (tool === "image") {
+            if (Editor.pendingImage !== "") {
+                Editor.addImage(h.page, Editor.pendingImage, h.x, h.y)
+                Editor.pendingImage = ""
+                Editor.tool = "select"
+            }
+        } else if (tool === "stamp") {
+            Editor.addStamp(h.page, h.x, h.y, editBar.stampText)
+            Editor.tool = "select"
+        } else if (Editor.beginDraft(h.page, tool, h.x, h.y) > 0) {
+            editMode = "draw"
+        }
+    }
+    function editMove(vx, vy) {
+        if (editMode === "")
+            return
+        const h = hit(vx, vy)
+        if (!h || h.page !== editPage)
+            return
+        if (editMode === "move")
+            Editor.moveSelected(h.x - editLastX, h.y - editLastY)
+        else if (editMode === "resize")
+            Editor.dragHandle(editHandle, h.x, h.y)
+        else if (editMode === "draw")
+            Editor.updateDraft(h.x, h.y)
+        editLastX = h.x
+        editLastY = h.y
+    }
+    function editRelease() {
+        if (editMode === "move" || editMode === "resize") {
+            Editor.endGesture()
+        } else if (editMode === "draw") {
+            const kept = Editor.endDraft()
+            if (kept && Editor.tool === "text") {
+                Editor.tool = "select"
+                startEditing(Editor.selectedId)
+            }
+        }
+        editMode = ""
     }
     function openSearch() {
         searchOpen = true
@@ -284,9 +394,17 @@ Item {
                 PButton { objectName: "organizeButton"; compact: true; text: Tr.s("toolOrganizeShort"); variant: "ghost"; tip: Tr.s("toolOrganize"); onClicked: viewer.organizeRequested() }
                 PButton { objectName: "splitButton"; compact: true; text: Tr.s("toolSplitShort"); variant: "ghost"; tip: Tr.s("toolSplit"); onClicked: viewer.splitRequested() }
                 PButton { objectName: "compressButton"; compact: true; text: Tr.s("toolCompressShort"); variant: "ghost"; tip: Tr.s("toolCompress"); onClicked: viewer.compressRequested() }
+                PButton { objectName: "editButton"; compact: true; text: Tr.s("toolEdit"); variant: Editor.active ? "secondary" : "ghost"; tip: Doc.rotation === 0 ? Tr.s("toolEditTip") : Tr.s("editNeedsNoRotation"); enabled: Doc.rotation === 0 || Editor.active; onClicked: Editor.active = !Editor.active }
 
                 LanguageSwitch {}
             }
+        }
+
+        EditBar {
+            id: editBar
+            Layout.fillWidth: true
+            visible: Editor.active
+            onOpenResultRequested: path => viewer.openPathRequested(path)
         }
 
         SearchBar {
@@ -345,6 +463,14 @@ Item {
                         readonly property int pageTotal: Math.max(0, Math.min(viewer.perSpread, Doc.pageCount - firstPage))
                         width: pagesView.contentWidth
                         height: row.height
+                        function pageView(page) {
+                            for (let i = 0; i < rep.count; ++i) {
+                                const p = rep.itemAt(i)
+                                if (p && p.pageIndex === page)
+                                    return p
+                            }
+                            return null
+                        }
                         function hitPage(lx, ly) {
                             for (let i = 0; i < rep.count; ++i) {
                                 const p = rep.itemAt(i)
@@ -378,6 +504,12 @@ Item {
                         onWheel: event => { if (event.angleDelta.y > 0) viewer.zoomIn(); else if (event.angleDelta.y < 0) viewer.zoomOut() }
                     }
                     Keys.onPressed: event => {
+                        if (viewer.editOn && Editor.editingId === 0) {
+                            const ctrl = (event.modifiers & Qt.ControlModifier) !== 0
+                            if (event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace) { Editor.deleteSelected(); event.accepted = true; return }
+                            if (ctrl && event.key === Qt.Key_Z && !(event.modifiers & Qt.ShiftModifier)) { Editor.undo(); event.accepted = true; return }
+                            if (ctrl && (event.key === Qt.Key_Y || (event.key === Qt.Key_Z && (event.modifiers & Qt.ShiftModifier)))) { Editor.redo(); event.accepted = true; return }
+                        }
                         const page = pagesView.height * 0.9
                         const maxY = pagesView.contentHeight - pagesView.height
                         if (event.key === Qt.Key_PageDown || (event.key === Qt.Key_Space && !(event.modifiers & Qt.ShiftModifier)))
@@ -407,7 +539,7 @@ Item {
                     anchors.bottomMargin: 14
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     hoverEnabled: true
-                    cursorShape: viewer.linkCursor !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    cursorShape: viewer.editOn && Editor.tool !== "select" ? Qt.CrossCursor : (viewer.linkCursor !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor)
                     property real pressX: 0
                     property real pressY: 0
                     property real lastX: 0
@@ -427,6 +559,10 @@ Item {
                             pageMenu.popup()
                             return
                         }
+                        if (viewer.editOn) {
+                            viewer.editPress(mouse.x, mouse.y)
+                            return
+                        }
                         pressX = lastX = mouse.x
                         pressY = lastY = mouse.y
                         dragged = false
@@ -439,6 +575,11 @@ Item {
                     onPositionChanged: mouse => {
                         lastX = mouse.x
                         lastY = mouse.y
+                        if (viewer.editOn) {
+                            if (pressed && viewer.editMode !== "")
+                                viewer.editMove(mouse.x, mouse.y)
+                            return
+                        }
                         if (pressed && (mouse.buttons & Qt.LeftButton)) {
                             if (!dragged && Math.abs(mouse.x - pressX) + Math.abs(mouse.y - pressY) > 4)
                                 dragged = true
@@ -450,7 +591,21 @@ Item {
                             hoverTimer.restart()
                         }
                     }
+                    onDoubleClicked: mouse => {
+                        if (viewer.editOn && Editor.tool === "select") {
+                            const h = viewer.hit(mouse.x, mouse.y)
+                            const id = h ? Editor.hitTest(h.page, h.x, h.y) : 0
+                            if (id > 0) {
+                                Editor.select(id)
+                                viewer.startEditing(id)
+                            }
+                        }
+                    }
                     onReleased: mouse => {
+                        if (viewer.editOn) {
+                            viewer.editRelease()
+                            return
+                        }
                         autoScroll.running = false
                         if (mouse.button !== Qt.LeftButton || dragged)
                             return
@@ -488,6 +643,47 @@ Item {
         }
     }
 
+    // the field in which the text of an item is typed (the item itself is not drawn while it is edited)
+    Item {
+        id: editHost
+        z: 50
+        visible: Editor.editingId > 0 && viewer.editOn
+        readonly property var info: { Editor.rev; Editor.editingId; return Editor.editingId > 0 ? Editor.itemInfo(Editor.editingId) : ({}) }
+        readonly property point pos: viewer.pageToView(info.page || 0, info.x || 0, info.y || 0)
+        x: pos.x
+        y: pos.y
+        width: (info.w || 0) * viewer.pxPerPt
+        height: (info.h || 0) * viewer.pxPerPt
+        rotation: info.angle || 0
+        TextArea {
+            id: editField
+            objectName: "editField"
+            anchors.fill: parent
+            wrapMode: TextEdit.Wrap
+            selectByMouse: true
+            padding: 2 * viewer.pxPerPt
+            color: Editor.color
+            font.family: Editor.fontFamily
+            font.pixelSize: Math.max(6, Editor.fontSize * viewer.pxPerPt)
+            font.bold: Editor.bold
+            font.italic: Editor.italic
+            horizontalAlignment: Editor.align === 1 ? Text.AlignHCenter : Editor.align === 2 ? Text.AlignRight : Text.AlignLeft
+            background: Rectangle { color: "#E6FFFFFF"; border.width: 1; border.color: Theme.accent }
+            onTextChanged: { if (Editor.editingId > 0) Editor.setText(Editor.editingId, text) }
+            onActiveFocusChanged: { if (!activeFocus) viewer.finishEditing() }
+            Keys.onEscapePressed: viewer.finishEditing()
+        }
+    }
+    ConfirmDialog {
+        id: closeAsk
+        property int tabIndex: -1
+        title: Tr.s("closeUnsavedTitle")
+        text: Tr.s("closeUnsavedText")
+        confirmText: Tr.s("closeAnyway")
+        cancelText: Tr.s("keepEditing")
+        onConfirmed: viewer.reallyCloseTab(tabIndex)
+    }
+
     PMenu {
         id: pageMenu
         PMenuItem { objectName: "menuCopy"; text: Tr.s("copy"); enabled: Doc.hasSelection; onTriggered: Doc.copySelection() }
@@ -516,6 +712,6 @@ Item {
     Shortcut {
         sequences: ["Escape"]
         enabled: !printDialog.opened && !linkDialog.opened && !(Window.window && Window.window.visibility === Window.FullScreen)
-        onActivated: { if (viewer.searchOpen) viewer.closeSearch(); else Doc.clearSelection() }
+        onActivated: { if (Editor.editingId > 0) viewer.finishEditing(); else if (viewer.searchOpen) viewer.closeSearch(); else Doc.clearSelection() }
     }
 }

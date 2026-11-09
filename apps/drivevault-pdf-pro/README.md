@@ -3,11 +3,12 @@
 Native Windows PDF program of the DriveVault suite (C++20, Qt 6.8 / Qt Quick, PDFium, qpdf). Works on this computer only - nothing is uploaded.
 Accent colour red `#EF4444`. The full plan and the phases are in [`docs/PDF-Pro-Plan.md`](docs/PDF-Pro-Plan.md).
 
-## Status: version 0.4.0 - in development, NOT released (Phase 1 the reader, Phase 2 merge / split / organize and Phase 3 compress are done)
+## Status: version 0.5.0 - in development, NOT released (Phases 1-3 done; Phase 4 add text / pictures / shapes is done in part, see below)
 
 | Works now (tested) | Not built yet (planned, see the plan) |
 |---|---|
 | **Organize pages** (button "Pages"): thumbnails, select, **drag to reorder**, delete, duplicate, turn 90 degrees, **crop margins**, insert blank pages, add pages of other files, undo / redo; saves a **new** file (nothing is changed in place, an existing file is replaced only after a question) | Fonts: subsetting / merging (not done, not planned soon) |
+| **Edit** (button "Edit"): put **text** (Thai and English), **pictures**, rectangles, ellipses, lines, arrows, **pen**, highlight / underline / strike-out and **stamps** on any page; select, move, resize, turn, front / back, colour, fill, line width, opacity, font, size, bold / italic, alignment; a watermark, page numbers, header and footer on every page; undo / redo; saved as a **new file** (the things become part of the pages) |
 | **Compress** (button "Compress"): levels Safe / Balanced / Smallest / custom (picture dpi, JPEG quality, remove metadata and thumbnails, fast web view); a real before / after (sizes, pictures changed) and a page side by side **before saving**; a file that would not get smaller is not written |
 | **Merge files** (Home screen or "Add files" in the organizer; protected files ask for their password; delete the pages you do not want after adding) | Add text / images / shapes, comments, forms (Phase 4) |
 | **Split** (button "Split"): by page ranges, every N pages, by top level bookmarks, or by a maximum file size; live list of the files that will be written; a failed or cancelled split leaves no files | Export to images / ZIP, protect / unlock (Phase 5) |
@@ -51,14 +52,17 @@ Executable options: `file.pdf` (open it), `--password text`, `--lang th|en`, `--
 ```
 src/core/        Version.h.in (generated version header)
 src/pdfengine/   the only code that calls PDFium: PdfDocument (open, render, text, search, selection helpers, outline, links, annotations), PdfiumRuntime (the one lock + init)
-src/pdftools/    the only code that calls qpdf: Compress (smaller copy of a file), PdfTools (write a new file from a list of pages: merge, reorder, rotate, crop, blank pages, split by size), SplitPlan (split plans, file names)
-src/app/         DocumentController (tabs, split), PageListModel (the organizer list with undo), Compressor (compress dialog backend), PageImageProvider (image://pdf/...), PrintTask, PageRange, main.cpp
+src/pdftools/    the only code that calls qpdf: Overlay (paint the things the user adds and burn them into pages), Compress (smaller copy of a file), PdfTools (write a new file from a list of pages: merge, reorder, rotate, crop, blank pages, split by size), SplitPlan (split plans, file names)
+src/app/         DocumentController (tabs, split), PageListModel (the organizer list with undo), Compressor (compress dialog backend), EditorModel + OverlayImageProvider (the edit bar), PageImageProvider (image://pdf/...), PrintTask, PageRange, main.cpp
 src/ui/          QML module DriveVault.PdfPro.UI (Main, screens/, components/)
-tests/           tst_pdfengine, tst_pdftools, tst_compress, tst_organizer, tst_controller, tst_ui_flow (real clicks and keys, fails on QML warnings), tst_perf
+tests/           tst_pdfengine, tst_pdftools, tst_compress, tst_editor, tst_organizer, tst_controller, tst_ui_flow (real clicks and keys, fails on QML warnings), tst_perf
 resources/       fonts (OFL), icons (made by scripts\make-icon.ps1)
 ```
 
 ## Known limits (honest list)
+- Edit: the things you add are **burned into the page contents** when you save (the result cannot be edited again as objects; keep the original). Not done: filling in form fields, sticky notes, polygons, keeping them as editable annotations, autosave / recovery of unsaved edits (the program asks before a file with unsaved edits is closed). Editing is off while the view is rotated. Edits belong to the open tab and are lost when it is closed after the question.
+- Added text is drawn as **outlines** of the letters (shaped by Qt, so Thai vowels and tone marks stack correctly and it looks the same everywhere); the text is also written as an invisible text layer, so search and copy give back the exact Unicode text, but the selection boxes of added text are approximate. Fonts whose licence forbids embedding are refused. The Thai line breaking of long text without spaces is by Qt (it may break inside a word).
+- A saved copy of a protected file stays protected with the same password.
 - Compress touches only embedded images: 8 bit RGB / grey (also ICC based) pictures stored as JPEG or Flate, at least 32 x 32 pixels and 20 KB. Not touched: black/white scans (CCITT / JBIG2), JPEG 2000, CMYK, indexed colours, pictures with a stencil mask or a Decode array, and anything in a file that cannot be parsed. Pictures that look like drawings (few colours) are never turned into JPEG; they are only made smaller when shown at a lower resolution than they have. Fonts are not touched. The resolution is measured from how the picture is placed on the page (including inside form XObjects); a picture whose use cannot be found is not reduced.
 - Compress was measured on generated files only (a synthetic photo: 1.2 MB -> 20 KB at 150 dpi, JPEG 70; a real photo or scan will shrink much less). Real scans, big catalogues and files from Office were not available to test. The JPEG writer is the one in Qt (`imageformatsqjpeg.dll` must be shipped with the installer in Phase 8).
 - A protected file stays protected after compress (same password), unlike merge / split which write an unprotected file.

@@ -1,6 +1,6 @@
 # DriveVault PDF Pro - rules (adds to the repository root file)
 
-Native Windows PDF program: C++20, Qt 6.8 / Qt Quick (QML), PDFium (reading / rendering), qpdf (file structure: merge, split, reorder, compress), CMake. Version 0.4.0 - **in development, not released, no installer yet** (Phase 1 reader, Phase 2 merge / split / organize and Phase 3 compress are done).
+Native Windows PDF program: C++20, Qt 6.8 / Qt Quick (QML), PDFium (reading / rendering), qpdf (file structure: merge, split, reorder, compress, burn edits into pages), CMake. Version 0.5.0 - **in development, not released, no installer yet** (Phases 1-4 are done: reader, merge / split / organize, compress, add text / pictures / shapes).
 The plan with all phases and the owner's decisions is `docs/PDF-Pro-Plan.md` - read it first; do not build features that are not in the plan and do not label a planned feature as available.
 
 ## Layout
@@ -20,7 +20,7 @@ Output: `build/release/bin/DriveVaultPdfPro.exe` (+ `pdfium.dll` copied next to 
 
 ## Commands (from this folder)
 ```powershell
-.\scripts\build.ps1 -Test        # configure + build Release + 7 ctest suites
+.\scripts\build.ps1 -Test        # configure + build Release + 8 ctest suites
 ..\..\scripts\run-pdf-pro.bat    # smoke start / look at the program (no install)
 ```
 

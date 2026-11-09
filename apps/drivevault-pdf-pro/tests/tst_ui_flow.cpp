@@ -4,6 +4,8 @@
 #include "DocumentController.h"
 #include "PageImageProvider.h"
 #include "Compressor.h"
+#include "EditorModel.h"
+#include "OverlayImageProvider.h"
 #include "PageListModel.h"
 #include "TestPdf.h"
 #include "pdfengine/PdfiumRuntime.h"
@@ -44,6 +46,7 @@ class TstUiFlow : public QObject {
     dp::DocumentController* m_doc = nullptr;
     dp::PageListModel* m_org = nullptr;
     dp::Compressor* m_cmp = nullptr;
+    dp::EditorModel* m_edit = nullptr;
     QQmlApplicationEngine* m_engine = nullptr;
     QQuickWindow* m_window = nullptr;
     QString m_sixPath;
@@ -184,11 +187,14 @@ private slots:
         m_doc->setLanguage("en");
         m_org = new dp::PageListModel(m_doc);
         m_cmp = new dp::Compressor(m_doc);
+        m_edit = new dp::EditorModel(m_doc);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Doc", m_doc);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Organizer", m_org);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Compressor", m_cmp);
+        qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Editor", m_edit);
         m_engine = new QQmlApplicationEngine;
         m_engine->addImageProvider(QStringLiteral("pdf"), new dp::PageImageProvider(m_doc));
+        m_engine->addImageProvider(QStringLiteral("ovl"), new dp::OverlayImageProvider(m_doc, m_edit));
         m_engine->loadFromModule("DriveVault.PdfPro.UI", "Main");
         QVERIFY(!m_engine->rootObjects().isEmpty());
         m_window = qobject_cast<QQuickWindow*>(m_engine->rootObjects().constFirst());
@@ -203,6 +209,7 @@ private slots:
     {
         m_doc->close();
         delete m_engine;
+        delete m_edit;
         delete m_cmp;
         delete m_org;
         delete m_doc;
@@ -670,6 +677,105 @@ private slots:
         QVERIFY(click("compressClose"));
         QTRY_VERIFY_WITH_TIMEOUT(!dialog->property("opened").toBool(), 5000);
         QVERIFY(!m_cmp->hasResult());
+        m_doc->close();
+    }
+
+    void theEditBarDrawsSelectsMovesTypesAndSavesANewFile()
+    {
+        fresh(m_sixPath, "six.pdf");
+        QVERIFY(!visible("editBar"));
+        QVERIFY(click("editButton"));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("editBar"), 3000);
+        QVERIFY(visible("tool_rect") && visible("editSave"));
+        QVERIFY(!find("editSave")->isEnabled());                                  // nothing to save yet
+
+        // draw a rectangle with the mouse
+        QVERIFY(click("tool_rect"));
+        QCOMPARE(m_edit->tool(), QStringLiteral("rect"));
+        QQuickItem* page = find("pageImage_0");
+        QVERIFY(page);
+        const double scale = page->width() / m_doc->pageWidthPt(0);                // pixels per point
+        auto pt = [&](double x, double y) { return page->mapToScene(QPointF(x * scale, y * scale)).toPoint(); };
+        QTest::mousePress(m_window, Qt::LeftButton, {}, pt(100, 200));
+        for (int i = 1; i <= 8; ++i) {
+            QTest::mouseMove(m_window, pt(100 + 25 * i, 200 + 10 * i));
+            QTest::qWait(20);
+        }
+        QTest::mouseRelease(m_window, Qt::LeftButton, {}, pt(300, 280));
+        QTRY_COMPARE_WITH_TIMEOUT(m_edit->count(), 1, 3000);
+        QVERIFY(m_edit->selectedId() > 0);
+        QVariantMap info = m_edit->selectedInfo();
+        QVERIFY(std::abs(info.value("x").toDouble() - 100) < 4 && std::abs(info.value("w").toDouble() - 200) < 4);
+        QTRY_VERIFY_WITH_TIMEOUT(imageReady("overlay_0"), 8000);
+        QTRY_VERIFY_WITH_TIMEOUT(find("editSave")->isEnabled(), 3000);
+
+        // select it again and move it with the mouse
+        QVERIFY(click("tool_select"));
+        QTest::mousePress(m_window, Qt::LeftButton, {}, pt(200, 240));
+        for (int i = 1; i <= 6; ++i) {
+            QTest::mouseMove(m_window, pt(200 + 10 * i, 240 + 5 * i));
+            QTest::qWait(20);
+        }
+        QTest::mouseRelease(m_window, Qt::LeftButton, {}, pt(260, 270));
+        QTRY_VERIFY_WITH_TIMEOUT(m_edit->selectedInfo().value("x").toDouble() > 140, 3000);
+        const double movedX = m_edit->selectedInfo().value("x").toDouble();
+        QVERIFY(click("editUndo"));                                                // the move was one step
+        QTRY_VERIFY_WITH_TIMEOUT(std::abs(m_edit->itemInfo(info.value("id").toInt()).value("x").toDouble() - 100) < 4, 3000);
+        QVERIFY(click("editRedo"));
+        QTRY_VERIFY_WITH_TIMEOUT(std::abs(m_edit->itemInfo(info.value("id").toInt()).value("x").toDouble() - movedX) < 1, 3000);
+
+        // the Delete key removes the selected item; undo brings it back
+        QTest::keyClick(m_window, Qt::Key_Delete);
+        QTRY_COMPARE_WITH_TIMEOUT(m_edit->count(), 0, 3000);
+        QVERIFY(click("editUndo"));
+        QTRY_COMPARE_WITH_TIMEOUT(m_edit->count(), 1, 3000);
+
+        // type text: a drag makes the box, the field opens, the letters go into it
+        QVERIFY(click("tool_text"));
+        QTest::mousePress(m_window, Qt::LeftButton, {}, pt(100, 40));
+        for (int i = 1; i <= 6; ++i) {
+            QTest::mouseMove(m_window, pt(100 + 40 * i, 40 + 6 * i));
+            QTest::qWait(20);
+        }
+        QTest::mouseRelease(m_window, Qt::LeftButton, {}, pt(340, 76));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("editField"), 3000);
+        QTRY_VERIFY_WITH_TIMEOUT(find("editField")->hasActiveFocus(), 3000);
+        for (const char* c = "Typed text"; *c; ++c)
+            QTest::keyClick(m_window, *c);
+        QTRY_COMPARE_WITH_TIMEOUT(m_edit->selectedInfo().value("text").toString(), QStringLiteral("Typed text"), 3000);
+        QTest::keyClick(m_window, Qt::Key_Escape);                                 // finishes the typing
+        QTRY_COMPARE_WITH_TIMEOUT(m_edit->editingId(), 0, 3000);
+        QCOMPARE(m_edit->count(), 2);
+
+        // save through the same function the file dialog calls
+        const QString out = m_dir.filePath("edited-ui.pdf");
+        QFile::remove(out);
+        QQuickItem* bar = find("editBar");
+        QVERIFY(QMetaObject::invokeMethod(bar, "save", Q_ARG(QVariant, out), Q_ARG(QVariant, false)));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("editOpenResult"), 15000);
+        QVERIFY(QFileInfo::exists(out));
+        auto saved = dp::pdf::PdfDocument::open(out, {}, nullptr);
+        QVERIFY(saved);
+        QVERIFY(saved->pageText(0).contains("Typed text"));
+        const QImage img = saved->render(0, 1.0, nullptr, 0);
+        const QVariantMap now = m_edit->itemInfo(info.value("id").toInt());
+        QVERIFY(QColor(img.pixel(int(now.value("x").toDouble() + now.value("w").toDouble() / 2), int(now.value("y").toDouble()))).lightness() < 100);   // its outline
+        QVERIFY(!m_edit->modified());
+        saved.reset();
+
+        // closing the tab with unsaved edits asks first
+        m_edit->select(info.value("id").toInt());
+        QVERIFY(click("editDelete"));                                              // a change after the save: unsaved again
+        QTRY_VERIFY_WITH_TIMEOUT(m_edit->modified(), 3000);
+        QVERIFY(click("tabClose_0"));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("confirmYes"), 3000);
+        QVERIFY(m_doc->isOpen());
+        QVERIFY(click("confirmCancel"));
+        QTRY_VERIFY_WITH_TIMEOUT(!visible("confirmYes"), 3000);
+        QVERIFY(m_doc->isOpen());
+        QVERIFY(click("editClose"));
+        QVERIFY(!m_edit->active());
+        m_edit->discardEdits();
         m_doc->close();
     }
 

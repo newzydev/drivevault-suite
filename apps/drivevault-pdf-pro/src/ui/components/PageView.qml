@@ -54,6 +54,37 @@ Item {
             border.color: "#E65100"
         }
     }
+    // what the user has put on the page (drawn by the backend; the same painter writes it into the new file)
+    Image {
+        objectName: "overlay_" + pv.pageIndex
+        anchors.fill: parent
+        visible: Editor.count > 0
+        asynchronous: true
+        cache: false
+        smooth: true
+        source: Editor.count > 0 ? "image://ovl/" + Doc.docId + "/" + pv.pageIndex + "/" + Math.round(pv.renderScale * pv.dpr * 1000) + "/" + Doc.rotation + "/" + Editor.rev : ""
+    }
+    // the frame and handles of the selected item
+    readonly property var sel: { Editor.rev; Editor.selectedId; return Editor.active && Doc.rotation === 0 && Editor.selectedId > 0 ? Editor.selectedInfo() : ({}) }
+    Item {
+        visible: pv.sel.page === pv.pageIndex
+        x: (pv.sel.x || 0) * pv.pxPerPt
+        y: (pv.sel.y || 0) * pv.pxPerPt
+        width: (pv.sel.w || 0) * pv.pxPerPt
+        height: (pv.sel.h || 0) * pv.pxPerPt
+        rotation: pv.sel.angle || 0
+        Rectangle { objectName: "selectionFrame"; anchors.fill: parent; anchors.margins: -2; color: "transparent"; border.width: 1; border.color: "#3B82F6" }
+        Repeater {
+            model: pv.sel.page === pv.pageIndex && pv.sel.handles ? pv.sel.handles : []
+            delegate: Rectangle {
+                required property var modelData
+                x: modelData.x * pv.pxPerPt - (pv.sel.x || 0) * pv.pxPerPt - 4
+                y: modelData.y * pv.pxPerPt - (pv.sel.y || 0) * pv.pxPerPt - 4
+                width: 8; height: 8
+                color: "white"; border.width: 1; border.color: "#3B82F6"
+            }
+        }
+    }
     Repeater {
         model: pv.selectionRects
         delegate: Rectangle {
