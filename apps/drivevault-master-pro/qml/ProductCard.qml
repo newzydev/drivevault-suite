@@ -208,7 +208,7 @@ Rectangle {
                 leftPadding: 0; rightPadding: 0
                 text: "⋯"
                 font.pixelSize: 18
-                onClicked: moreMenu.popup(0, height + 4)
+                onClicked: moreMenu.visible ? moreMenu.close() : moreMenu.popup(0, height + 4)
                 MMenu {
                     id: moreMenu
                     implicitWidth: 220

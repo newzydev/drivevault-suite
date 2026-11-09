@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.4.7 (2026-11-09)
+  Fixed
+  - The "..." buttons (top bar and program cards) close their menu when clicked again, like the category button (before, the menu closed and opened again at once).
+
 v1.4.6 (2026-11-09)
   Fixed
   - Clicking the category button while its list is open now closes the list (before, it closed and opened again at once).

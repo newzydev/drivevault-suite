@@ -229,7 +229,7 @@ ApplicationWindow {
                     leftPadding: 0; rightPadding: 0
                     text: "⋯"
                     font.pixelSize: 18
-                    onClicked: topMenu.popup(width - topMenu.implicitWidth, height + 6)
+                    onClicked: topMenu.visible ? topMenu.close() : topMenu.popup(width - topMenu.implicitWidth, height + 6)
                     MMenu {
                         id: topMenu
                         implicitWidth: 280
@@ -422,7 +422,6 @@ ApplicationWindow {
                                 }
                                 MMenu {
                                     id: categoryMenu
-                                    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent      // a press on the button itself must not close it first (the click would reopen it)
                                     implicitWidth: 240
                                     MMenuItem {
                                         objectName: "category_all"

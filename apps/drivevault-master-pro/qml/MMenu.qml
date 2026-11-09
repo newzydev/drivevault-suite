@@ -8,6 +8,7 @@ Menu {
     topPadding: 6
     bottomPadding: 6
     implicitWidth: 240
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent      // a press on the owner button must not close the menu first (its click would reopen it)
 
     background: Rectangle {
         radius: 12
