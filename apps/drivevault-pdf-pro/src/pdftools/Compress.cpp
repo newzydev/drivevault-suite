@@ -349,7 +349,8 @@ CompressResult compressFile(const QString& inFile, const QString& password, cons
             throw CancelledError();
 
         QFile::remove(tmp);
-        QPDFWriter writer(pdf, tmp.toUtf8().constData());
+        const QByteArray outputName = tmp.toUtf8();        // Keep the filename alive for QPDFWriter.
+        QPDFWriter writer(pdf, outputName.constData());
         writer.setObjectStreamMode(qpdf_o_generate);
         writer.setStreamDataMode(qpdf_s_compress);
         writer.setRecompressFlate(true);

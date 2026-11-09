@@ -590,7 +590,8 @@ EditResult saveWithEdits(const QString& inFile, const QString& password, const Q
         result.pages = total;
 
         QFile::remove(tmp);
-        QPDFWriter writer(src, tmp.toUtf8().constData());
+        const QByteArray outputName = tmp.toUtf8();        // Keep the filename alive for QPDFWriter.
+        QPDFWriter writer(src, outputName.constData());
         writer.setObjectStreamMode(qpdf_o_generate);
         writer.setStreamDataMode(qpdf_s_compress);
         writer.write();

@@ -2,6 +2,8 @@
 
 #include "PageRange.h"
 #include "PrintTask.h"
+#include "ImageExport.h"
+#include "pdftools/Security.h"
 #include "pdftools/SplitPlan.h"
 
 #include "dp/Version.h"
@@ -22,6 +24,7 @@
 #include <QThreadPool>
 
 #include <algorithm>
+#include <numeric>
 
 namespace dp {
 
@@ -73,6 +76,8 @@ DocumentController::~DocumentController()
         m_printCancel->store(true);
     if (m_splitCancel)
         m_splitCancel->store(true);
+    cancelImageExport();
+    m_outputPool.waitForDone();
     QThreadPool::globalInstance()->waitForDone(15000);
 }
 
@@ -742,6 +747,130 @@ void DocumentController::cancelPrint()
 {
     if (m_printCancel)
         m_printCancel->store(true);
+}
+
+namespace {
+QList<int> imagePages(const QString& range, int currentPage, int count)
+{
+    if (range == QLatin1String("all")) {
+        QList<int> pages(count);
+        std::iota(pages.begin(), pages.end(), 0);
+        return pages;
+    }
+    if (range == QLatin1String("current"))
+        return currentPage >= 0 && currentPage < count ? QList<int>{currentPage} : QList<int>{};
+    return parsePageRanges(range, count);
+}
+} // namespace
+
+int DocumentController::imagePageCount(const QString& range, int currentPage) const
+{
+    return int(imagePages(range, currentPage, pageCount()).size());
+}
+
+QString DocumentController::startImageExport(const QVariantMap& options, const QString& path)
+{
+    if (m_outputBusy)
+        return QStringLiteral("busy");
+    const auto doc = currentDoc();
+    if (!doc)
+        return QStringLiteral("noDocument");
+    ImageExport job;
+    job.pages = imagePages(options.value(QStringLiteral("pages")).toString(),
+                           options.value(QStringLiteral("currentPage")).toInt(), doc->pageCount());
+    if (job.pages.isEmpty())
+        return QStringLiteral("range");
+    job.jpeg = options.value(QStringLiteral("jpeg")).toBool();
+    job.transparent = options.value(QStringLiteral("transparent")).toBool();
+    job.dpi = options.value(QStringLiteral("dpi"), 144).toInt();
+    job.quality = options.value(QStringLiteral("quality"), 90).toInt();
+    job.rotation = currentRotation();
+
+    if (path.isEmpty())
+        return QStringLiteral("write");
+    QString destination = QFileInfo(localPath(path)).absoluteFilePath();
+    if (job.pages.size() > 1)
+        job.target = options.value(QStringLiteral("folder")).toBool() ? ImageExport::Target::Folder : ImageExport::Target::Zip;
+    if (job.target == ImageExport::Target::Folder) {
+        const QDir parent(destination);
+        if (!parent.exists())
+            return QStringLiteral("write");
+        const QString stem = tools::safeFileName(QFileInfo(doc->path()).completeBaseName()) + QStringLiteral("-images");
+        destination = parent.filePath(stem);
+        for (int n = 2; QFileInfo::exists(destination); ++n)
+            destination = parent.filePath(stem + QStringLiteral("-%1").arg(n));
+    } else {
+        const QString suffix = QFileInfo(destination).suffix().toLower();
+        const bool valid = job.target == ImageExport::Target::Zip ? suffix == QLatin1String("zip")
+            : job.jpeg ? (suffix == QLatin1String("jpg") || suffix == QLatin1String("jpeg")) : suffix == QLatin1String("png");
+        if (!valid)
+            return QStringLiteral("imageSuffix");
+    }
+
+    const auto cancel = std::make_shared<std::atomic_bool>(false);
+    m_imageCancel = cancel;
+    m_outputBusy = true;
+    m_outputProgress = 0;
+    emit outputChanged();
+    m_outputPool.start(QRunnable::create([this, doc, job, destination, cancel] {
+        const QString error = exportImages(*doc, destination, job, *cancel, [this](int done, int total) {
+            QMetaObject::invokeMethod(this, [this, done, total] {
+                m_outputProgress = double(done) / total;
+                emit outputChanged();
+            }, Qt::QueuedConnection);
+        });
+        QMetaObject::invokeMethod(this, [this, error, destination] { finishOutput(error, destination); }, Qt::QueuedConnection);
+    }));
+    return {};
+}
+
+void DocumentController::cancelImageExport()
+{
+    if (m_imageCancel)
+        m_imageCancel->store(true);
+}
+
+QString DocumentController::startSecuritySave(const QVariantMap& options, const QString& path)
+{
+    if (m_outputBusy)
+        return QStringLiteral("busy");
+    const QString source = filePath();
+    if (source.isEmpty())
+        return QStringLiteral("noDocument");
+    const QString destination = QFileInfo(localPath(path)).absoluteFilePath();
+    if (QFileInfo(destination).suffix().compare(QLatin1String("pdf"), Qt::CaseInsensitive) != 0)
+        return QStringLiteral("pdfSuffix");
+
+    const bool unlock = options.value(QStringLiteral("unlock")).toBool();
+    if (unlock && !options.value(QStringLiteral("authorized")).toBool())
+        return QStringLiteral("authorization");
+    tools::Protection protection;
+    protection.ownerPassword = options.value(QStringLiteral("owner")).toString();
+    protection.userPassword = options.value(QStringLiteral("user")).toString();
+    protection.print = options.value(QStringLiteral("print"), true).toBool();
+    protection.copy = options.value(QStringLiteral("copy"), true).toBool();
+    protection.modify = options.value(QStringLiteral("modify"), true).toBool();
+    protection.annotate = options.value(QStringLiteral("annotate"), true).toBool();
+
+    m_outputBusy = true;
+    m_outputProgress = 0;
+    emit outputChanged();
+    m_outputPool.start(QRunnable::create([this, source, destination, unlock, protection = std::move(protection)]() mutable {
+        const QString error = unlock ? tools::unlockPdf(source, destination, protection.ownerPassword)
+                                     : tools::protectPdf(source, destination, protection);
+        protection.ownerPassword.clear();
+        protection.userPassword.clear();
+        QMetaObject::invokeMethod(this, [this, error, destination] { finishOutput(error, destination); }, Qt::QueuedConnection);
+    }));
+    return {};
+}
+
+void DocumentController::finishOutput(const QString& error, const QString& path)
+{
+    m_imageCancel.reset();
+    m_outputBusy = false;
+    emit outputChanged();
+    emit outputFinished(error, error.isEmpty() ? path : QString());
 }
 
 // ---- splitting -------------------------------------------------------------------------------------------------------------

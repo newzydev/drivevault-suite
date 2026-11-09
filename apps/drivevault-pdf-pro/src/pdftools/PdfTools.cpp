@@ -295,7 +295,8 @@ WriteResult writeWith(Context& ctx, const QList<PageSpec>& specs, const QString&
             result.warnings << QStringLiteral("cropTooBig:%1").arg(cropFailed);
 
         QFile::remove(tmp);
-        QPDFWriter writer(out, tmp.toUtf8().constData());
+        const QByteArray outputName = tmp.toUtf8();        // QPDFWriter retains the filename pointer through write().
+        QPDFWriter writer(out, outputName.constData());
         writer.setObjectStreamMode(qpdf_o_generate);
         writer.setStreamDataMode(qpdf_s_compress);
         writer.write();

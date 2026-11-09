@@ -7,6 +7,7 @@
 #include <QMutex>
 #include <QObject>
 #include <QStringList>
+#include <QThreadPool>
 #include <QUrl>
 #include <QVariantList>
 #include <QVariantMap>
@@ -47,6 +48,8 @@ class DocumentController : public QObject {
     // printing
     Q_PROPERTY(bool printing READ printing NOTIFY printingChanged FINAL)
     Q_PROPERTY(double printProgress READ printProgress NOTIFY printingChanged FINAL)
+    Q_PROPERTY(bool outputBusy READ outputBusy NOTIFY outputChanged FINAL)
+    Q_PROPERTY(double outputProgress READ outputProgress NOTIFY outputChanged FINAL)
     // splitting the current file
     Q_PROPERTY(bool splitting READ splitting NOTIFY splitChanged FINAL)
     Q_PROPERTY(double splitProgress READ splitProgress NOTIFY splitChanged FINAL)
@@ -80,6 +83,8 @@ public:
     bool annotationsLoading() const { return m_annotationsLoading; }
     bool printing() const { return m_printing; }
     double printProgress() const { return m_printProgress; }
+    bool outputBusy() const { return m_outputBusy; }
+    double outputProgress() const { return m_outputProgress; }
     bool splitting() const { return m_splitting; }
     double splitProgress() const { return m_splitProgress; }
 
@@ -130,6 +135,11 @@ public:
     Q_INVOKABLE QString startPrint(const QVariantMap& options);
     Q_INVOKABLE void cancelPrint();
 
+    Q_INVOKABLE int imagePageCount(const QString& range, int currentPage) const;
+    Q_INVOKABLE QString startImageExport(const QVariantMap& options, const QString& path);
+    Q_INVOKABLE void cancelImageExport();
+    Q_INVOKABLE QString startSecuritySave(const QVariantMap& options, const QString& path);
+
     // ---- splitting the current file (the file itself is never changed; the parts are new files) -----------------------------
     // mode: "ranges" (param: text such as "1-3,5,8-", one file per part), "every" (param: pages per file), "bookmarks" (one file per top level bookmark).
     // Returns [{name, pages, count}] = the files that would be written; empty when the mode / text is not valid for this file.
@@ -168,6 +178,8 @@ signals:
     void annotationsChanged();
     void printingChanged();
     void printFinished(bool ok, const QString& message);
+    void outputChanged();
+    void outputFinished(const QString& error, const QString& path);
     void splitChanged();
     void splitFinished(bool ok, const QString& error, const QStringList& files, const QStringList& warnings, const QString& errorFile);
 
@@ -196,6 +208,7 @@ private:
     QString viewKey(const QString& path) const;
     QVariantMap loadSavedView(const QString& path) const;
     bool selectionRange(SelPoint& from, SelPoint& to) const;
+    void finishOutput(const QString& error, const QString& path);
 
     mutable QMutex m_mutex;                               // guards m_tabs and m_currentIndex
     std::vector<Tab> m_tabs;
@@ -232,6 +245,10 @@ private:
     bool m_printing = false;
     double m_printProgress = 0.0;
     std::shared_ptr<std::atomic_bool> m_printCancel;
+    bool m_outputBusy = false;
+    double m_outputProgress = 0.0;
+    std::shared_ptr<std::atomic_bool> m_imageCancel;
+    QThreadPool m_outputPool;
 
     bool m_splitting = false;
     double m_splitProgress = 0.0;

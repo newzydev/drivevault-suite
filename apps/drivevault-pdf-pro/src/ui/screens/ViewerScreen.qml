@@ -14,6 +14,8 @@ Item {
     signal compressRequested()
     signal openPathRequested(string path)
     signal formRequested()
+    signal imageExportRequested(int page)
+    signal securityRequested(bool unlock)
 
     // ---- view state ---------------------------------------------------------------------------------------------------
     property real zoom: 1.0                       // 1.0 = 100 % = 96 dpi on screen
@@ -410,6 +412,21 @@ Item {
                 PButton { objectName: "compressButton"; compact: true; text: Tr.s("toolCompressShort"); variant: "ghost"; tip: Tr.s("toolCompress"); onClicked: viewer.compressRequested() }
                 PButton { objectName: "editButton"; compact: true; text: Tr.s("toolEdit"); variant: Editor.active ? "secondary" : "ghost"; tip: Doc.rotation === 0 ? Tr.s("toolEditTip") : Tr.s("editNeedsNoRotation"); enabled: Doc.rotation === 0 || Editor.active; onClicked: Editor.active = !Editor.active }
                 PButton { objectName: "formButton"; compact: true; text: Tr.s("toolFormShort"); variant: "ghost"; tip: Tr.s("toolForm"); onClicked: viewer.formRequested() }
+                PButton {
+                    id: outputButton
+                    objectName: "outputButton"
+                    compact: true
+                    variant: "ghost"
+                    text: Tr.s("outputTools")
+                    enabled: !Doc.outputBusy
+                    onClicked: outputMenu.popup(outputButton, 0, outputButton.height)
+                    PMenu {
+                        id: outputMenu
+                        PMenuItem { objectName: "exportImagesAction"; text: Tr.s("exportImages"); onTriggered: viewer.imageExportRequested(viewer.currentPage) }
+                        PMenuItem { objectName: "protectPdfAction"; text: Tr.s("protectPdf"); onTriggered: viewer.securityRequested(false) }
+                        PMenuItem { objectName: "unlockPdfAction"; text: Tr.s("unlockPdf"); onTriggered: viewer.securityRequested(true) }
+                    }
+                }
 
                 LanguageSwitch {}
             }

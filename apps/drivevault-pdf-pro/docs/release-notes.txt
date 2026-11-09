@@ -2,6 +2,12 @@ DriveVault PDF Pro - release notes
 ==================================
 (In development: no version has been released yet. These notes are for the developers.)
 
+v0.7.0 (2026-11-09): Phase 5 adds image export and PDF protection
+  - Export selected pages as PNG (optional transparency) or JPEG (adjustable quality), at 72–600 DPI.
+  - Save one image, a ZIP, or a new image folder. Multi-page export shows progress and can be cancelled.
+  - Protect a new copy with AES-256, separate open and owner passwords, and permission settings.
+  - Unlock to a new copy with a correct password. PDFs that open without a password require the owner password.
+
 v0.6.0 (2026-11-09) - Phase 4 finished: forms, notes, polygons, autosave
   New
   - Fill in forms (button "Form"): AcroForm text fields, tick boxes, lists and radio groups; saved as a new copy that every viewer shows.

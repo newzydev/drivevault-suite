@@ -818,6 +818,61 @@ private slots:
         m_doc->close();
     }
 
+    void outputMenuExportsSelectedPagesAndRequiresUnlockConsent()
+    {
+        fresh(m_sixPath, "six.pdf");
+        QVERIFY(click("outputButton"));
+        QTRY_VERIFY(visible("exportImagesAction"));
+        QVERIFY(click("exportImagesAction"));
+        auto* images = m_window->findChild<QObject*>("imageExportDialog");
+        QVERIFY(images);
+        QTRY_VERIFY(images->property("opened").toBool());
+        QCOMPARE(images->property("count").toInt(), 6);
+        find("imagePageMode")->setProperty("currentIndex", 2);
+        QVERIFY(click("imageSave"));
+        QCOMPARE(images->property("error").toString(), QStringLiteral("range"));
+        QVERIFY(typeInto("imageRange", "3", false));
+        QCOMPARE(images->property("count").toInt(), 1);
+        const auto png = m_dir.filePath("ui-page.png");
+        QVERIFY(QMetaObject::invokeMethod(images, "save", Q_ARG(QVariant, png)));
+        QTRY_COMPARE(images->property("result").toString(), png);
+        QCOMPARE(QImage(png).size(), QSize(1224, 1584));
+        QVERIFY(click("imageClose"));
+        QTRY_VERIFY(!images->property("opened").toBool());
+
+        QVERIFY(click("outputButton"));
+        QTRY_VERIFY(visible("protectPdfAction"));
+        QVERIFY(click("protectPdfAction"));
+        auto* security = m_window->findChild<QObject*>("securityDialog");
+        QVERIFY(security);
+        QTRY_VERIFY(security->property("opened").toBool());
+        QVERIFY(typeInto("securityPassword", "owner", false));
+        QVERIFY(click("securitySave"));
+        QCOMPARE(security->property("error").toString(), QStringLiteral("passwordMismatch"));
+        const auto protectedFile = m_dir.filePath("ui-protected.pdf");
+        QVERIFY(QMetaObject::invokeMethod(security, "save", Q_ARG(QVariant, protectedFile)));
+        QTRY_COMPARE(security->property("result").toString(), protectedFile);
+        QCOMPARE(text("securityPassword"), QString());
+        QVERIFY(click("securityClose"));
+        QTRY_VERIFY(!security->property("opened").toBool());
+
+        fresh(protectedFile, "ui-protected.pdf");
+        QVERIFY(click("outputButton"));
+        QTRY_VERIFY(visible("unlockPdfAction"));
+        QVERIFY(click("unlockPdfAction"));
+        QTRY_VERIFY(security->property("opened").toBool());
+        QVERIFY(typeInto("securityPassword", "owner", false));
+        QVERIFY(!find("securitySave")->isEnabled());
+        QVERIFY(click("securityConsent"));
+        QVERIFY(find("securitySave")->isEnabled());
+        const auto unlocked = m_dir.filePath("ui-unlocked.pdf");
+        QVERIFY(QMetaObject::invokeMethod(security, "save", Q_ARG(QVariant, unlocked)));
+        QTRY_COMPARE(security->property("result").toString(), unlocked);
+        QCOMPARE(text("securityPassword"), QString());
+        QVERIFY(click("securityClose"));
+        QTRY_VERIFY(!security->property("opened").toBool());
+    }
+
     void noQmlWarningsWereEmitted()
     {
         QVERIFY2(g_qmlProblems.isEmpty(), qPrintable(g_qmlProblems.join("\n")));

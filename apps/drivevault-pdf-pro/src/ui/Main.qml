@@ -81,6 +81,8 @@ ApplicationWindow {
             onSplitRequested: splitDialog.open()
             onCompressRequested: compressDialog.open()
             onFormRequested: formDialog.open()
+            onImageExportRequested: page => { imageExportDialog.currentPage = page; imageExportDialog.open() }
+            onSecurityRequested: unlock => { securityDialog.unlock = unlock; securityDialog.open() }
         }
     }
     Component {
@@ -126,6 +128,11 @@ ApplicationWindow {
         onOpenResultRequested: path => win.openPath(path)
     }
     SplitDialog { id: splitDialog }
+    ImageExportDialog { id: imageExportDialog }
+    SecurityDialog {
+        id: securityDialog
+        onOpenResultRequested: path => win.openPath(path)
+    }
     FormDialog {
         id: formDialog
         onOpenResultRequested: path => win.openPath(path)

@@ -19,6 +19,7 @@
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QScopeGuard>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QtQml/qqml.h>
@@ -40,6 +41,7 @@ void loadFonts()
 int main(int argc, char* argv[])
 {
     QGuiApplication app(argc, argv);
+    const auto pdfiumShutdown = qScopeGuard(dp::pdf::shutdownPdfium);   // After controllers, renderers and their jobs.
     QGuiApplication::setApplicationName(QStringLiteral("PdfPro"));
     QGuiApplication::setApplicationDisplayName(QString::fromLatin1(dp::version::kProductName));
     QGuiApplication::setOrganizationName(QString::fromLatin1(dp::version::kOrganization));
@@ -107,6 +109,5 @@ int main(int argc, char* argv[])
 
     const int code = app.exec();
     controller.close();
-    dp::pdf::shutdownPdfium();
     return code;
 }

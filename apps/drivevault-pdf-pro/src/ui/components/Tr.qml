@@ -292,7 +292,47 @@ QtObject {
         "recoverTitle": ["Unsaved edits found", "พบการแก้ไขที่ยังไม่ได้บันทึก"],
         "recoverText": ["This file had edits that were not saved in a new file when the program was last closed. Put them back?", "ไฟล์นี้มีการแก้ไขที่ยังไม่ได้บันทึกเป็นไฟล์ใหม่ตอนปิดโปรแกรมครั้งก่อน ต้องการเอากลับมาหรือไม่?"],
         "recoverRestore": ["Restore", "เอากลับมา"],
-        "recoverDiscard": ["Delete them", "ลบทิ้ง"]
+        "recoverDiscard": ["Delete them", "ลบทิ้ง"],
+        "outputTools": ["Output", "ส่งออก"],
+        "exportImages": ["Export images", "ส่งออกเป็นรูป"],
+        "outputPages": ["Pages", "หน้า"],
+        "outputFormat": ["Format", "รูปแบบ"],
+        "outputQuality": ["JPEG quality", "คุณภาพ JPEG"],
+        "outputTarget": ["Save as", "บันทึกเป็น"],
+        "outputSavedSource": ["Uses the saved PDF on disk.", "ใช้ PDF ที่บันทึกไว้บนดิสก์"],
+        "transparentPng": ["Transparent PNG background", "พื้นหลัง PNG โปร่งใส"],
+        "imageFolder": ["Image folder", "โฟลเดอร์รูป"],
+        "chooseImageFolder": ["Choose where to create a new image folder", "เลือกตำแหน่งที่จะสร้างโฟลเดอร์รูปใหม่"],
+        "outputSaved": ["Saved to %1", "บันทึกที่ %1"],
+        "protectPdf": ["Protect PDF", "ป้องกัน PDF"],
+        "unlockPdf": ["Unlock PDF", "ปลดล็อก PDF"],
+        "protectHint": ["Save an AES-256 encrypted copy. Leave the open password blank to allow opening without a password. Some PDF readers may ignore permission restrictions.", "บันทึกสำเนาที่เข้ารหัส AES-256 เว้นรหัสเปิดไฟล์ว่างได้หากต้องการให้เปิดอ่านได้ทันที โปรแกรมอ่าน PDF บางตัวอาจไม่ทำตามข้อจำกัดสิทธิ์"],
+        "unlockHint": ["Save a copy without a password or restrictions. If the PDF opens without a password, enter the owner password.", "บันทึกสำเนาที่ไม่มีรหัสผ่านและข้อจำกัด หาก PDF เปิดอ่านได้โดยไม่ถามรหัส ให้ใส่รหัสเจ้าของ"],
+        "userPasswordOptional": ["Open password (optional)", "รหัสเปิดไฟล์ (ไม่บังคับ)"],
+        "repeatUserPassword": ["Repeat open password", "ยืนยันรหัสเปิดไฟล์"],
+        "ownerPassword": ["Owner password", "รหัสเจ้าของ"],
+        "repeatOwnerPassword": ["Repeat owner password", "ยืนยันรหัสเจ้าของ"],
+        "unlockPassword": ["Current PDF password", "รหัสผ่านของ PDF นี้"],
+        "allowPrint": ["Allow printing", "อนุญาตให้พิมพ์"],
+        "allowCopy": ["Allow copying", "อนุญาตให้คัดลอก"],
+        "allowModify": ["Allow editing", "อนุญาตให้แก้ไข"],
+        "allowAnnotate": ["Allow annotation changes", "อนุญาตให้แก้คำอธิบายประกอบ"],
+        "authorization": ["I have permission to unlock this PDF.", "ฉันมีสิทธิ์ปลดล็อก PDF นี้"],
+        "output_range": ["Choose a valid page range.", "เลือกช่วงหน้าที่ถูกต้อง"],
+        "output_exists": ["This destination already exists. Choose a new name.", "ปลายทางนี้มีอยู่แล้ว โปรดเลือกชื่อใหม่"],
+        "output_render": ["A selected page could not be rendered.", "สร้างรูปจากหน้าที่เลือกไม่ได้"],
+        "output_imageSize": ["A selected page is too large at this DPI. Choose a lower DPI.", "หน้าที่เลือกมีขนาดใหญ่เกินไปที่ DPI นี้ โปรดลด DPI"],
+        "output_imageOptions": ["Choose a DPI from 72 to 600 and quality from 1 to 100.", "เลือก DPI ระหว่าง 72 ถึง 600 และคุณภาพระหว่าง 1 ถึง 100"],
+        "output_imageSuffix": ["Use a file extension that matches the selected format.", "ใช้นามสกุลไฟล์ให้ตรงกับรูปแบบที่เลือก"],
+        "output_pdfSuffix": ["Use the .pdf extension.", "ใช้นามสกุล .pdf"],
+        "output_invalidPasswords": ["Use a distinct, non-empty owner password. Each password may use up to 127 UTF-8 bytes.", "รหัสเจ้าของต้องไม่ว่างและต้องต่างจากรหัสเปิดไฟล์ รหัสแต่ละรายการยาวได้สูงสุด 127 ไบต์ใน UTF-8"],
+        "output_passwordMismatch": ["The password confirmation does not match.", "รหัสผ่านที่ยืนยันไม่ตรงกัน"],
+        "output_password": ["The supplied password is incorrect.", "รหัสผ่านที่ใส่ไม่ถูกต้อง"],
+        "output_ownerRequired": ["Enter the correct owner password.", "ใส่รหัสเจ้าของที่ถูกต้อง"],
+        "output_alreadyProtected": ["This PDF already has protection. Unlock it before applying new protection.", "PDF นี้มีการป้องกันอยู่แล้ว โปรดปลดล็อกก่อนตั้งการป้องกันใหม่"],
+        "output_notProtected": ["This PDF has no password or permission restrictions.", "PDF นี้ไม่มีรหัสผ่านหรือข้อจำกัดสิทธิ์"],
+        "output_noDocument": ["Open a PDF first.", "เปิด PDF ก่อน"],
+        "output_authorization": ["Confirm that you have permission to unlock this PDF.", "ยืนยันว่าคุณมีสิทธิ์ปลดล็อก PDF นี้"]
     })
     function warning(code) {
         if (code === "bookmarks") return s("warnBookmarks")
@@ -310,6 +350,13 @@ QtObject {
     }
     function f(key, arg) { return s(key).replace("%1", arg) }
     function f2(key, a, b) { return s(key).replace("%1", a).replace("%2", b) }
+    function outputError(code) {
+        if (code === "write") return s("errWrite")
+        if (code === "file" || code === "format") return error(code)
+        if (code === "busy") return s("busyNow")
+        if (code === "cancelled") return s("saveCancelled")
+        return s("output_" + code)
+    }
     function error(code) {
         return s(code === "format" ? "errFormat" : code === "file" ? "errFile" : code === "tooLarge" ? "errTooLarge" : "errUnknown")
     }

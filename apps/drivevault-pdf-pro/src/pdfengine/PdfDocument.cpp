@@ -245,7 +245,7 @@ QSizeF PdfDocument::pageSizePt(int page, int rotation) const
     return rotated(base, normRotation(rotation));
 }
 
-QImage PdfDocument::render(int page, double pxPerPt, const std::atomic_bool* cancel, int rotation) const
+QImage PdfDocument::render(int page, double pxPerPt, const std::atomic_bool* cancel, int rotation, bool transparent) const
 {
     if (page < 0 || page >= m_pageSizes.size() || pxPerPt <= 0.0)
         return {};
@@ -263,10 +263,10 @@ QImage PdfDocument::render(int page, double pxPerPt, const std::atomic_bool* can
     if (cancel && cancel->load())
         return {};
 
-    QImage image(w, h, QImage::Format_RGB32);
+    QImage image(w, h, transparent ? QImage::Format_ARGB32 : QImage::Format_RGB32);
     if (image.isNull())
         return {};
-    image.fill(Qt::white);
+    image.fill(transparent ? Qt::transparent : Qt::white);
 
     QMutexLocker lock(&pdfiumMutex());
     if (cancel && cancel->load())
@@ -276,8 +276,8 @@ QImage PdfDocument::render(int page, double pxPerPt, const std::atomic_bool* can
         FORM_OnAfterLoadPage(fpdfPage, m_impl->form);
     if (!fpdfPage)
         return {};
-    // BGRx: the byte order of QImage::Format_RGB32 on little endian machines
-    FPDF_BITMAP bitmap = FPDFBitmap_CreateEx(w, h, FPDFBitmap_BGRx, image.bits(), int(image.bytesPerLine()));
+    FPDF_BITMAP bitmap = FPDFBitmap_CreateEx(w, h, transparent ? FPDFBitmap_BGRA : FPDFBitmap_BGRx,
+                                              image.bits(), int(image.bytesPerLine()));
     if (bitmap) {
         FPDF_RenderPageBitmap(bitmap, fpdfPage, 0, 0, w, h, rotation, FPDF_ANNOT);
         if (m_impl->form)
