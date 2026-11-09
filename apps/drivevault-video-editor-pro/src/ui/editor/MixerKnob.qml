@@ -30,7 +30,7 @@ Item {
     onFractionChanged: arc.requestPaint()
     onTintChanged: arc.requestPaint()
 
-    Text {
+    AppText {
         id: caption
         x: 0
         y: knob.compact ? (knob.height - height) / 2 : 0
@@ -110,7 +110,7 @@ Item {
         }
     }
 
-    Text {
+    AppText {
         x: knob.compact ? dial.x + dial.width + 8 : 0
         y: knob.compact ? (knob.height - height) / 2 : dial.y + dial.height + 2
         width: knob.compact ? knob.width - x : knob.width

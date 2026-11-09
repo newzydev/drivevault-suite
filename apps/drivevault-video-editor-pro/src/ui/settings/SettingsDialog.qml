@@ -90,7 +90,7 @@ Popup {
                 anchors.margins: 14
                 spacing: 4
 
-                Text {
+                AppText {
                     Layout.margins: 8
                     Layout.bottomMargin: 14
                     text: qsTr("Settings")
@@ -121,7 +121,7 @@ Popup {
                                 size: 17
                                 color: navItem.current ? Theme.accentText : Theme.textSecondary
                             }
-                            Text {
+                            AppText {
                                 Layout.fillWidth: true
                                 text: navItem.modelData.label
                                 font.pixelSize: Theme.fontMd
@@ -140,7 +140,7 @@ Popup {
 
                 Item { Layout.fillHeight: true }
 
-                Text {
+                AppText {
                     Layout.margins: 8
                     text: "v" + SysInfo.version
                     font.pixelSize: Theme.fontXs
@@ -161,7 +161,7 @@ Popup {
                 Layout.rightMargin: 14
                 Layout.topMargin: 16
                 Layout.bottomMargin: 8
-                Text {
+                AppText {
                     Layout.fillWidth: true
                     text: control.pageTitle()
                     font.pixelSize: Theme.fontXxl
@@ -188,7 +188,7 @@ Popup {
                     anchors.margins: 10
                     spacing: 10
                     Icon { name: "refresh"; color: Theme.warning; size: 17 }
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         text: qsTr("Some changes take effect after restarting the application.")
                         font.pixelSize: Theme.fontSm

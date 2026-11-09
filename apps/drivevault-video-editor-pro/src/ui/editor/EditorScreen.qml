@@ -264,7 +264,7 @@ Rectangle {
                                             anchors.centerIn: parent
                                             spacing: 6
                                             Icon { anchors.verticalCenter: parent.verticalCenter; name: bottomTab.modelData.icon; size: 15; color: bottomTab.current ? Theme.accentText : Theme.textSecondary }
-                                            Text {
+                                            AppText {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: bottomTab.modelData.label
                                                 font.pixelSize: Theme.fontSm

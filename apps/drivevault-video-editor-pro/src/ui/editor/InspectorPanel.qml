@@ -61,8 +61,8 @@ Rectangle {
                 Layout.columnSpan: 2
                 Layout.fillWidth: true
                 implicitHeight: Math.max(k.implicitHeight, v.implicitHeight)
-                Text { id: k; width: 92; text: modelData.k; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
-                Text {
+                AppText { id: k; width: 92; text: modelData.k; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
+                AppText {
                     id: v
                     x: 104
                     width: parent.width - 104
@@ -78,7 +78,7 @@ Rectangle {
             }
         }
     }
-    component Heading: Text {
+    component Heading: AppText {
         font.pixelSize: Theme.fontXs
         font.weight: Font.DemiBold
         font.capitalization: Font.AllUppercase
@@ -142,7 +142,7 @@ Rectangle {
                         { k: qsTr("Status"), v: root.clipData.offline ? qsTr("Media file is missing") : qsTr("OK"), warn: root.clipData.offline }
                     ]
                 }
-                Text {
+                AppText {
                     Layout.fillWidth: true
                     visible: root.clipId !== "" && Projects.timeline.selectedCount > 1
                     text: qsTr("%n clips selected", "", Projects.timeline.selectedCount)
@@ -214,7 +214,7 @@ Rectangle {
                         }
                         Item { Layout.fillWidth: true }
                     }
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         visible: !!root.videoData.lut
                         text: root.videoData.lut ? root.videoData.lut : ""
@@ -239,7 +239,7 @@ Rectangle {
                             required property var modelData
                             Layout.fillWidth: true
                             spacing: 4
-                            Text { text: modelData.n; font.pixelSize: Theme.fontSm; font.weight: Font.DemiBold; color: Theme.text }
+                            AppText { text: modelData.n; font.pixelSize: Theme.fontSm; font.weight: Font.DemiBold; color: Theme.text }
                             VP { label: "R"; paramKey: modelData.k + "R" }
                             VP { label: "G"; paramKey: modelData.k + "G" }
                             VP { label: "B"; paramKey: modelData.k + "B" }
@@ -305,7 +305,7 @@ Rectangle {
                             spacing: 4
                             RowLayout {
                                 Layout.fillWidth: true
-                                Text { Layout.preferredWidth: 78; text: tr.modelData.label; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
+                                AppText { Layout.preferredWidth: 78; text: tr.modelData.label; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
                                 AppComboBox {
                                     objectName: "transition_" + tr.modelData.dir
                                     Layout.fillWidth: true
@@ -319,7 +319,7 @@ Rectangle {
                             RowLayout {
                                 Layout.fillWidth: true
                                 visible: tr.type !== ""
-                                Text { Layout.preferredWidth: 78; text: qsTr("Duration"); font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
+                                AppText { Layout.preferredWidth: 78; text: qsTr("Duration"); font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
                                 AppSlider {
                                     Layout.fillWidth: true
                                     implicitWidth: 60
@@ -327,11 +327,11 @@ Rectangle {
                                     value: tr.frames
                                     onMoved: root.report(Projects.timeline.setTransition(root.videoId, tr.modelData.dir, tr.type, Math.round(value)))
                                 }
-                                Text { Layout.preferredWidth: 46; horizontalAlignment: Text.AlignRight; text: (tr.frames / Math.max(1, Projects.nominalFps)).toFixed(2) + " s"; font.pixelSize: Theme.fontSm; font.features: { "tnum": 1 }; color: Theme.textSecondary }
+                                AppText { Layout.preferredWidth: 46; horizontalAlignment: Text.AlignRight; text: (tr.frames / Math.max(1, Projects.nominalFps)).toFixed(2) + " s"; font.pixelSize: Theme.fontSm; font.features: { "tnum": 1 }; color: Theme.textSecondary }
                             }
                         }
                     }
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         text: qsTr("An \"In\" transition blends from the clip before it when the clips touch, otherwise from black.")
                         font.pixelSize: Theme.fontXs
@@ -360,7 +360,7 @@ Rectangle {
                             required property var modelData
                             readonly property real frames: root.audioData[modelData.key] || 0
                             Layout.fillWidth: true
-                            Text { Layout.preferredWidth: 78; text: fade.modelData.label; font.pixelSize: Theme.fontSm; color: fade.frames > 0 ? Theme.text : Theme.textSecondary }
+                            AppText { Layout.preferredWidth: 78; text: fade.modelData.label; font.pixelSize: Theme.fontSm; color: fade.frames > 0 ? Theme.text : Theme.textSecondary }
                             AppSlider {
                                 objectName: "slider_" + fade.modelData.key
                                 Layout.fillWidth: true
@@ -373,7 +373,7 @@ Rectangle {
                                     root.report(Projects.timeline.setFades(root.audioId, fi, fo))
                                 }
                             }
-                            Text { Layout.preferredWidth: 46; horizontalAlignment: Text.AlignRight; text: (fade.frames / Math.max(1, Projects.nominalFps)).toFixed(2) + " s"; font.pixelSize: Theme.fontSm; font.features: { "tnum": 1 }; color: Theme.textSecondary }
+                            AppText { Layout.preferredWidth: 46; horizontalAlignment: Text.AlignRight; text: (fade.frames / Math.max(1, Projects.nominalFps)).toFixed(2) + " s"; font.pixelSize: Theme.fontSm; font.features: { "tnum": 1 }; color: Theme.textSecondary }
                         }
                     }
                 }

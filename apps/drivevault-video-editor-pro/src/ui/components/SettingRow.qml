@@ -32,7 +32,7 @@ Item {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
             spacing: 3
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 text: root.title
                 font.pixelSize: Theme.fontMd
@@ -40,7 +40,7 @@ Item {
                 color: Theme.text
                 wrapMode: Text.Wrap
             }
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 visible: root.description !== ""
                 text: root.description

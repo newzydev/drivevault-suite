@@ -57,7 +57,7 @@ Button {
                 color: control.labelColor
                 anchors.verticalCenter: parent.verticalCenter
             }
-            Text {
+            AppText {
                 visible: control.text !== ""
                 text: control.text
                 font: control.font

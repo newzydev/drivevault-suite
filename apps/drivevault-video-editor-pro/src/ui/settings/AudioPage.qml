@@ -38,7 +38,7 @@ ColumnLayout {
             value: AppSettings.values.previewVolume
             onMoved: AppSettings.set("previewVolume", Math.round(value))
         }
-        Text {
+        AppText {
             Layout.preferredWidth: 40
             horizontalAlignment: Text.AlignRight
             text: AppSettings.values.previewVolume + "%"
@@ -55,7 +55,7 @@ ColumnLayout {
             value: AppSettings.values.audioLatencyMs
             onMoved: AppSettings.set("audioLatencyMs", Math.round(value))
         }
-        Text {
+        AppText {
             Layout.preferredWidth: 56
             horizontalAlignment: Text.AlignRight
             text: AppSettings.values.audioLatencyMs + " ms"

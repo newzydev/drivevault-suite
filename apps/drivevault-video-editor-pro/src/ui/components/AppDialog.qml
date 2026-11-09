@@ -59,7 +59,7 @@ Popup {
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 2
-                Text {
+                AppText {
                     Layout.fillWidth: true
                     text: control.title
                     font.pixelSize: Theme.fontXl
@@ -67,7 +67,7 @@ Popup {
                     color: Theme.text
                     elide: Text.ElideRight
                 }
-                Text {
+                AppText {
                     Layout.fillWidth: true
                     visible: control.subtitle !== ""
                     text: control.subtitle

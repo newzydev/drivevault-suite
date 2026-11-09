@@ -11,7 +11,7 @@ ToolTip {
     rightPadding: 10
     font.pixelSize: Theme.fontSm
 
-    contentItem: Text {
+    contentItem: Text {          // plain Text: the fixed line height of AppText makes the popup size polish in a loop
         text: control.text
         font: control.font
         color: Theme.text

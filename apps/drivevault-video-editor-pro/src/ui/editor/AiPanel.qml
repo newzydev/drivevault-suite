@@ -21,13 +21,13 @@ Item {
         AppSettings.setState("ai.section", openSection)
     }
 
-    component Note: Text {
+    component Note: AppText {
         Layout.fillWidth: true
         font.pixelSize: Theme.fontXs
         color: Theme.textDisabled
         wrapMode: Text.Wrap
     }
-    component Lbl: Text {
+    component Lbl: AppText {
         Layout.preferredWidth: 92
         font.pixelSize: Theme.fontSm
         color: Theme.textSecondary
@@ -69,7 +69,7 @@ Item {
                 Layout.fillWidth: true
                 spacing: 10
                 Icon { name: "sparkle"; size: 18; color: Theme.accentText }
-                Text { Layout.fillWidth: true; text: qsTr("AI features"); font.pixelSize: Theme.fontLg; font.weight: Font.DemiBold; color: Theme.text }
+                AppText { Layout.fillWidth: true; text: qsTr("AI features"); font.pixelSize: Theme.fontLg; font.weight: Font.DemiBold; color: Theme.text }
                 AppSwitch { objectName: "aiEnable"; checked: root.enabled; onToggled: AppSettings.set("aiEnabled", checked) }
             }
             Note { text: qsTr("Optional and fully offline: nothing is sent to the cloud. Editing works the same with AI switched off.") }
@@ -86,7 +86,7 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 12
                     spacing: 8
-                    Text { Layout.fillWidth: true; text: Ai.message; font.pixelSize: Theme.fontSm; color: Theme.text; wrapMode: Text.Wrap }
+                    AppText { Layout.fillWidth: true; text: Ai.message; font.pixelSize: Theme.fontSm; color: Theme.text; wrapMode: Text.Wrap }
                     Rectangle {
                         Layout.fillWidth: true
                         height: 6
@@ -95,12 +95,12 @@ Item {
                         Rectangle { width: parent.width * Ai.progress; height: parent.height; radius: 3; color: Theme.accent }
                     }
                     RowLayout {
-                        Text { Layout.fillWidth: true; text: Math.round(Ai.progress * 100) + "%"; font.pixelSize: Theme.fontXs; color: Theme.textSecondary }
+                        AppText { Layout.fillWidth: true; text: Math.round(Ai.progress * 100) + "%"; font.pixelSize: Theme.fontXs; color: Theme.textSecondary }
                         AppButton { objectName: "aiCancel"; variant: "danger"; text: qsTr("Cancel"); implicitHeight: 28; onClicked: Ai.cancel() }
                     }
                 }
             }
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 visible: !Ai.busy && Ai.message !== ""
                 text: Ai.message
@@ -134,7 +134,7 @@ Item {
                     placeholderText: qsTr("e.g. “create Thai subtitles”")
                     onAccepted: runButton.clicked()
                 }
-                Text {
+                AppText {
                     Layout.fillWidth: true
                     visible: askField.text !== ""
                     text: assistantSection.parsed.summary
@@ -205,8 +205,8 @@ Item {
                         required property var modelData
                         Layout.fillWidth: true
                         spacing: 8
-                        Text { text: modelData.timecode; font.pixelSize: Theme.fontXs; font.features: { "tnum": 1 }; color: Theme.accentText }
-                        Text { Layout.fillWidth: true; text: modelData.text; font.pixelSize: Theme.fontSm; color: Theme.text; elide: Text.ElideRight }
+                        AppText { text: modelData.timecode; font.pixelSize: Theme.fontXs; font.features: { "tnum": 1 }; color: Theme.accentText }
+                        AppText { Layout.fillWidth: true; text: modelData.text; font.pixelSize: Theme.fontSm; color: Theme.text; elide: Text.ElideRight }
                     }
                 }
                 Note { visible: Ai.captions.length > 8; text: qsTr("… and %n more phrase(s).", "", Ai.captions.length - 8) }
@@ -231,13 +231,13 @@ Item {
                     Layout.fillWidth: true
                     Lbl { text: qsTr("Threshold") }
                     AppSlider { id: silDb; objectName: "silDb"; Layout.fillWidth: true; implicitWidth: 60; from: -60; to: -20; stepSize: 1; value: -35 }
-                    Text { Layout.preferredWidth: 52; horizontalAlignment: Text.AlignRight; text: silDb.value.toFixed(0) + " dB"; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
+                    AppText { Layout.preferredWidth: 52; horizontalAlignment: Text.AlignRight; text: silDb.value.toFixed(0) + " dB"; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
                 }
                 RowLayout {
                     Layout.fillWidth: true
                     Lbl { text: qsTr("Min. length") }
                     AppSlider { id: silLen; Layout.fillWidth: true; implicitWidth: 60; from: 0.2; to: 3; stepSize: 0.1; value: 0.5 }
-                    Text { Layout.preferredWidth: 52; horizontalAlignment: Text.AlignRight; text: silLen.value.toFixed(1) + " s"; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
+                    AppText { Layout.preferredWidth: 52; horizontalAlignment: Text.AlignRight; text: silLen.value.toFixed(1) + " s"; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
                 }
                 RowLayout {
                     Layout.fillWidth: true
@@ -256,8 +256,8 @@ Item {
                         required property var modelData
                         Layout.fillWidth: true
                         spacing: 8
-                        Text { Layout.fillWidth: true; text: modelData.startTimecode + "  →  " + modelData.endTimecode; font.pixelSize: Theme.fontSm; font.features: { "tnum": 1 }; color: Theme.text }
-                        Text { text: modelData.seconds.toFixed(1) + " s"; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
+                        AppText { Layout.fillWidth: true; text: modelData.startTimecode + "  →  " + modelData.endTimecode; font.pixelSize: Theme.fontSm; font.features: { "tnum": 1 }; color: Theme.text }
+                        AppText { text: modelData.seconds.toFixed(1) + " s"; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
                         IconButton { iconName: "play"; iconSize: 14; implicitWidth: 24; implicitHeight: 24; tip: qsTr("Go to this passage"); onClicked: Projects.playheadFrame = modelData.start }
                     }
                 }
@@ -302,8 +302,8 @@ Item {
                         required property int index
                         Layout.fillWidth: true
                         spacing: 6
-                        Text { text: modelData.timecode; font.pixelSize: Theme.fontSm; font.features: { "tnum": 1 }; color: Theme.accentText }
-                        Text { Layout.fillWidth: true; text: modelData.label; font.pixelSize: Theme.fontSm; color: Theme.text; elide: Text.ElideRight }
+                        AppText { text: modelData.timecode; font.pixelSize: Theme.fontSm; font.features: { "tnum": 1 }; color: Theme.accentText }
+                        AppText { Layout.fillWidth: true; text: modelData.label; font.pixelSize: Theme.fontSm; color: Theme.text; elide: Text.ElideRight }
                         IconButton { iconName: "play"; iconSize: 14; implicitWidth: 24; implicitHeight: 24; tip: qsTr("Go to this point"); onClicked: Projects.playheadFrame = modelData.frame }
                         IconButton { iconName: "scissors"; iconSize: 14; implicitWidth: 24; implicitHeight: 24; tip: qsTr("Split here"); onClicked: root.report(Ai.applySuggestion(index)) }
                     }
@@ -329,7 +329,7 @@ Item {
                     Layout.fillWidth: true
                     Lbl { text: qsTr("Noise reduction") }
                     AppSlider { id: enhStrength; objectName: "enhStrength"; Layout.fillWidth: true; implicitWidth: 60; from: 0; to: 1; value: 0.7 }
-                    Text { Layout.preferredWidth: 40; horizontalAlignment: Text.AlignRight; text: Math.round(enhStrength.value * 100) + "%"; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
+                    AppText { Layout.preferredWidth: 40; horizontalAlignment: Text.AlignRight; text: Math.round(enhStrength.value * 100) + "%"; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
                 }
                 RowLayout {
                     Layout.fillWidth: true
@@ -412,7 +412,7 @@ Item {
                     }
                     Item { Layout.fillWidth: true }
                 }
-                Text {
+                AppText {
                     Layout.fillWidth: true
                     visible: Ai.tracking.frames !== undefined
                     text: Ai.tracking.frames !== undefined ? qsTr("%n frame(s) tracked, average match %1 %", "", Ai.tracking.frames).arg(Math.round(Ai.tracking.confidence * 100)) : ""

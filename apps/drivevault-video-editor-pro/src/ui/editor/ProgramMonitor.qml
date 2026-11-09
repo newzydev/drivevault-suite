@@ -77,7 +77,7 @@ Rectangle {
                     spacing: 8
                     width: parent.width - 24
                     Icon { Layout.alignment: Qt.AlignHCenter; name: "film"; size: 30; color: "#5A5E6B" }
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         horizontalAlignment: Text.AlignHCenter
                         text: qsTr("No media on the timeline")
@@ -85,7 +85,7 @@ Rectangle {
                         color: "#9A9EAB"
                         wrapMode: Text.Wrap
                     }
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         horizontalAlignment: Text.AlignHCenter
                         text: qsTr("Double-click a media item or drag it onto the timeline.")
@@ -175,7 +175,7 @@ Rectangle {
                     border.color: Qt.alpha(Theme.info, 0.8)
                 }
 
-                Text {
+                AppText {
                     anchors.left: parent.left
                     anchors.bottom: parent.bottom
                     anchors.margins: 8
@@ -207,7 +207,7 @@ Rectangle {
                 anchors.rightMargin: 12
                 spacing: 6
 
-                Text {
+                AppText {
                     Layout.preferredWidth: 130
                     text: Projects.timecode
                     font.pixelSize: Theme.fontXl

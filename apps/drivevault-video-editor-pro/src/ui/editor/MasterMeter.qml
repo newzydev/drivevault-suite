@@ -71,7 +71,7 @@ Rectangle {
         anchors.margins: 8
         spacing: 8
 
-        Text {
+        AppText {
             Layout.alignment: Qt.AlignHCenter
             text: qsTr("Master")
             font.pixelSize: Theme.fontXs
@@ -94,7 +94,7 @@ Rectangle {
                     height: parent.height
                     Repeater {
                         model: root.marks
-                        delegate: Text {
+                        delegate: AppText {
                             required property var modelData
                             width: scaleBox.width
                             y: Math.max(0, Math.min(scaleBox.height - height, modelData.y * scaleBox.height - height / 2))
@@ -115,7 +115,7 @@ Rectangle {
             }
         }
 
-        Text {
+        AppText {
             Layout.alignment: Qt.AlignHCenter
             Layout.leftMargin: 36
             text: qsTr("L   R")

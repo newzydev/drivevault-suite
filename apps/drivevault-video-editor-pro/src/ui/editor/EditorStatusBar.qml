@@ -25,13 +25,13 @@ Rectangle {
                 size: 13
                 color: Projects.dirty ? Theme.warning : Theme.success
             }
-            Text {
+            AppText {
                 text: Projects.dirty ? qsTr("Unsaved changes") : qsTr("All changes saved")
                 font.pixelSize: Theme.fontXs
                 color: Theme.textSecondary
             }
         }
-        Text {
+        AppText {
             Layout.fillWidth: true
             text: Projects.filePath
             font.pixelSize: Theme.fontXs
@@ -39,7 +39,7 @@ Rectangle {
             elide: Text.ElideMiddle
         }
         // Live playback metrics
-        Text {
+        AppText {
             visible: Playback.playing
             text: qsTr("Preview") + " " + Playback.playbackFps.toFixed(1) + " fps  ·  " + qsTr("dropped") + " " + Playback.droppedFrames
                   + "  ·  " + qsTr("render") + " " + Playback.renderMs.toFixed(0) + " ms  ·  " + Playback.audioBackend
@@ -51,12 +51,12 @@ Rectangle {
             kind: "available"
             label: "FFmpeg " + Playback.engineDescription.split(" ")[1].replace("n", "").split(".").slice(0, 2).join(".")
         }
-        Text {
+        AppText {
             text: Projects.width + " × " + Projects.height + "  ·  " + Projects.frameRateLabel + " fps  ·  " + (Projects.sampleRate / 1000) + " kHz"
             font.pixelSize: Theme.fontXs
             color: Theme.textSecondary
         }
-        Text {
+        AppText {
             text: qsTr("Zoom") + " " + Math.round(root.pxPerFrame / 4 * 100) + "%"
             font.pixelSize: Theme.fontXs
             color: Theme.textSecondary

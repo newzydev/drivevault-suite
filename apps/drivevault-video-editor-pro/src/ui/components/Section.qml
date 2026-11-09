@@ -12,7 +12,7 @@ ColumnLayout {
     Layout.topMargin: 6
     spacing: 4
 
-    Text {
+    AppText {
         text: root.title
         font.pixelSize: Theme.fontXs
         font.weight: Font.DemiBold
@@ -20,7 +20,7 @@ ColumnLayout {
         font.letterSpacing: 0.8
         color: Theme.accentText
     }
-    Text {
+    AppText {
         Layout.fillWidth: true
         visible: root.note !== ""
         text: root.note

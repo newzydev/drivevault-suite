@@ -94,7 +94,7 @@ Item {
                 height: 16
                 radius: 3
                 color: "#B3000000"
-                Text {
+                AppText {
                     id: durationLabel
                     anchors.centerIn: parent
                     text: cell.durationText
@@ -119,7 +119,7 @@ Item {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignTop
             spacing: 1
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 text: cell.name
                 font.pixelSize: Theme.fontSm
@@ -127,7 +127,7 @@ Item {
                 color: cell.status === "missing" ? Theme.error : Theme.text
                 elide: Text.ElideMiddle
             }
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 visible: cell.listMode
                 text: cell.status === "missing" ? qsTr("File not found") : cell.status === "importing" ? qsTr("Importing…") : cell.infoText
@@ -196,7 +196,7 @@ Item {
                 anchors.margins: 6
                 spacing: 6
                 Icon { name: cell.kind === "audio" ? "audio" : cell.kind === "image" ? "image" : "film"; size: 14; color: Theme.accentText }
-                Text { Layout.fillWidth: true; text: cell.name; elide: Text.ElideMiddle; font.pixelSize: Theme.fontSm; color: Theme.text }
+                AppText { Layout.fillWidth: true; text: cell.name; elide: Text.ElideMiddle; font.pixelSize: Theme.fontSm; color: Theme.text }
             }
         }
     }

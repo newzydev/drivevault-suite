@@ -67,7 +67,7 @@ Item {
         color: Theme.surfaceElevated
         border.width: 1
         border.color: Theme.border
-        Text {
+        AppText {
             id: levelText
             anchors.centerIn: parent
             text: root.label(root.value)

@@ -27,7 +27,7 @@ ColumnLayout {
             App.toast(err, "warning")
     }
 
-    component FieldLabel: Text {
+    component FieldLabel: AppText {
         Layout.preferredWidth: 78
         font.pixelSize: Theme.fontSm
         color: Theme.textSecondary
@@ -104,7 +104,7 @@ ColumnLayout {
             value: root.info.size !== undefined ? root.info.size : 72
             onMoved: root.change({ size: Math.round(value) })
         }
-        Text { Layout.preferredWidth: 36; horizontalAlignment: Text.AlignRight; text: root.info.size; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
+        AppText { Layout.preferredWidth: 36; horizontalAlignment: Text.AlignRight; text: root.info.size; font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
     }
     RowLayout {
         Layout.fillWidth: true
@@ -161,7 +161,7 @@ ColumnLayout {
             value: root.info.x !== undefined ? root.info.x : 0.5
             onMoved: root.change({ x: value })
         }
-        Text { Layout.preferredWidth: 36; horizontalAlignment: Text.AlignRight; text: Number(root.info.x).toFixed(2); font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
+        AppText { Layout.preferredWidth: 36; horizontalAlignment: Text.AlignRight; text: Number(root.info.x).toFixed(2); font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
     }
     RowLayout {
         Layout.fillWidth: true
@@ -173,6 +173,6 @@ ColumnLayout {
             value: root.info.y !== undefined ? root.info.y : 0.5
             onMoved: root.change({ y: value })
         }
-        Text { Layout.preferredWidth: 36; horizontalAlignment: Text.AlignRight; text: Number(root.info.y).toFixed(2); font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
+        AppText { Layout.preferredWidth: 36; horizontalAlignment: Text.AlignRight; text: Number(root.info.y).toFixed(2); font.pixelSize: Theme.fontSm; color: Theme.textSecondary }
     }
 }

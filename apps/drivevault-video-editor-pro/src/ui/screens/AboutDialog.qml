@@ -16,18 +16,18 @@ AppDialog {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 3
-            Text {
+            AppText {
                 text: "DriveVault Video Editor Pro"
                 font.pixelSize: Theme.fontXl
                 font.weight: Font.Bold
                 color: Theme.text
             }
-            Text {
+            AppText {
                 text: qsTr("Version") + " " + SysInfo.version + "  ·  Build " + SysInfo.buildNumber
                 font.pixelSize: Theme.fontMd
                 color: Theme.textSecondary
             }
-            Text {
+            AppText {
                 text: qsTr("Professional Power. Beautiful Simplicity.")
                 font.pixelSize: Theme.fontSm
                 color: Theme.accentText
@@ -35,7 +35,7 @@ AppDialog {
         }
     }
 
-    Text {
+    AppText {
         Layout.fillWidth: true
         text: qsTr("Professional video editing for Windows: media import, a multitrack timeline with undo / redo, effects, titles, colour and audio mixing, "
                    + "offline AI tools (silence and scene detection, captions, noise reduction, tracking), project save / load and MP4 export. "

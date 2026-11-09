@@ -83,7 +83,7 @@ ColumnLayout {
             value: AppSettings.values.fontSizeOffset
             onMoved: AppSettings.set("fontSizeOffset", Math.round(value))
         }
-        Text {
+        AppText {
             Layout.preferredWidth: 36
             horizontalAlignment: Text.AlignRight
             text: (AppSettings.values.fontSizeOffset > 0 ? "+" : "") + AppSettings.values.fontSizeOffset

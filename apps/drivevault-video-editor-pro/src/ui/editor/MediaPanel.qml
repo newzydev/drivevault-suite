@@ -173,7 +173,7 @@ Rectangle {
                 anchors.margins: 7
                 spacing: 6
                 Icon { name: "warning"; size: 15; color: Theme.error }
-                Text {
+                AppText {
                     Layout.fillWidth: true
                     text: qsTr("%n media file(s) are missing.", "", root.library.missingCount)
                     font.pixelSize: Theme.fontSm
@@ -205,7 +205,7 @@ Rectangle {
                 }
             }
 
-            Text {
+            AppText {
                 anchors.centerIn: parent
                 visible: root.library.count > 0 && root.view.count === 0
                 text: qsTr("No media matches your search.")
@@ -263,7 +263,7 @@ Rectangle {
                 spacing: 6
                 Icon { id: busyIcon; name: "refresh"; size: 13; color: Theme.accentText
                        RotationAnimator on rotation { running: busyIcon.visible; from: 0; to: 360; duration: 1100; loops: Animation.Infinite } }
-                Text { text: qsTr("Processing media…"); font.pixelSize: Theme.fontXs; color: Theme.textSecondary }
+                AppText { text: qsTr("Processing media…"); font.pixelSize: Theme.fontXs; color: Theme.textSecondary }
             }
         }
     }

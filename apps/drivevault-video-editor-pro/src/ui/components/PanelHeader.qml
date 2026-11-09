@@ -31,7 +31,7 @@ Rectangle {
             size: 16
             color: Theme.textSecondary
         }
-        Text {
+        AppText {
             Layout.fillWidth: true
             text: root.title
             font.pixelSize: Theme.fontSm

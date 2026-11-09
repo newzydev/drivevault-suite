@@ -39,7 +39,7 @@ Rectangle {
         anchors.centerIn: parent
         spacing: 5
         Icon { name: root.iconForKind; size: 12; strokeWidth: 2.2; color: root.tone }
-        Text {
+        AppText {
             text: (root.label !== "" ? root.label : root.defaultLabel) + (root.phase !== "" ? " · " + root.phase : "")
             font.pixelSize: Theme.fontXs
             font.weight: Font.Medium

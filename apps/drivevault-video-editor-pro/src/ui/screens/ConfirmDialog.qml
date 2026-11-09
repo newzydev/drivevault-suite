@@ -24,7 +24,7 @@ AppDialog {
 
     property bool handled: false
 
-    Text {
+    AppText {
         Layout.fillWidth: true
         text: control.message
         font.pixelSize: Theme.fontMd

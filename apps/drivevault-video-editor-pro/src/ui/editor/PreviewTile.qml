@@ -136,7 +136,7 @@ Rectangle {
             }
         }
 
-        Text {
+        AppText {
             Layout.fillWidth: true
             text: tile.label
             horizontalAlignment: Text.AlignHCenter

@@ -60,7 +60,7 @@ AppDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 6
-        Text { text: qsTr("Project name"); font.pixelSize: Theme.fontSm; font.weight: Font.Medium; color: Theme.textSecondary }
+        AppText { text: qsTr("Project name"); font.pixelSize: Theme.fontSm; font.weight: Font.Medium; color: Theme.textSecondary }
         AppTextField {
             id: nameField
             objectName: "npName"
@@ -76,7 +76,7 @@ AppDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 6
-        Text { text: qsTr("Location"); font.pixelSize: Theme.fontSm; font.weight: Font.Medium; color: Theme.textSecondary }
+        AppText { text: qsTr("Location"); font.pixelSize: Theme.fontSm; font.weight: Font.Medium; color: Theme.textSecondary }
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
@@ -91,7 +91,7 @@ AppDialog {
                 onClicked: folderDialog.open()
             }
         }
-        Text {
+        AppText {
             Layout.fillWidth: true
             text: qsTr("A folder with the project name is created inside this location.")
             font.pixelSize: Theme.fontXs
@@ -107,8 +107,8 @@ AppDialog {
         columnSpacing: 16
         rowSpacing: 6
 
-        Text { text: qsTr("Resolution"); font.pixelSize: Theme.fontSm; font.weight: Font.Medium; color: Theme.textSecondary }
-        Text { text: qsTr("Frame rate"); font.pixelSize: Theme.fontSm; font.weight: Font.Medium; color: Theme.textSecondary }
+        AppText { text: qsTr("Resolution"); font.pixelSize: Theme.fontSm; font.weight: Font.Medium; color: Theme.textSecondary }
+        AppText { text: qsTr("Frame rate"); font.pixelSize: Theme.fontSm; font.weight: Font.Medium; color: Theme.textSecondary }
 
         AppComboBox {
             Layout.fillWidth: true
@@ -144,12 +144,12 @@ AppDialog {
             Layout.columnSpan: 2
             spacing: 8
             AppTextField { id: customWidth; implicitWidth: 100; text: "1920"; validator: IntValidator { bottom: 64; top: 16384 } }
-            Text { text: "×"; color: Theme.textSecondary; font.pixelSize: Theme.fontMd }
+            AppText { text: "×"; color: Theme.textSecondary; font.pixelSize: Theme.fontMd }
             AppTextField { id: customHeight; implicitWidth: 100; text: "1080"; validator: IntValidator { bottom: 64; top: 16384 } }
-            Text { text: qsTr("pixels (64 – 16384)"); color: Theme.textDisabled; font.pixelSize: Theme.fontXs }
+            AppText { text: qsTr("pixels (64 – 16384)"); color: Theme.textDisabled; font.pixelSize: Theme.fontXs }
         }
 
-        Text { text: qsTr("Audio sample rate"); font.pixelSize: Theme.fontSm; font.weight: Font.Medium; color: Theme.textSecondary; Layout.columnSpan: 2 }
+        AppText { text: qsTr("Audio sample rate"); font.pixelSize: Theme.fontSm; font.weight: Font.Medium; color: Theme.textSecondary; Layout.columnSpan: 2 }
         AppComboBox {
             Layout.columnSpan: 2
             Layout.preferredWidth: 240
@@ -178,7 +178,7 @@ AppDialog {
             anchors.margins: 10
             spacing: 8
             Icon { name: "warning"; color: Theme.error; size: 16 }
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 text: control.errorText
                 color: Theme.text

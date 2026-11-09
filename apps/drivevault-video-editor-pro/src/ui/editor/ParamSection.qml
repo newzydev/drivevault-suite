@@ -40,7 +40,7 @@ ColumnLayout {
                 anchors.fill: parent
                 spacing: 6
                 Icon { name: section.expanded ? "chevronDown" : "chevronRight"; size: 14; color: Theme.textSecondary }
-                Text {
+                AppText {
                     Layout.fillWidth: true
                     text: section.title
                     font.pixelSize: Theme.fontXs

@@ -36,7 +36,7 @@ ColumnLayout {
             value: AppSettings.values.exportQuality
             onMoved: AppSettings.set("exportQuality", Math.round(value))
         }
-        Text {
+        AppText {
             Layout.preferredWidth: 36
             horizontalAlignment: Text.AlignRight
             text: AppSettings.values.exportQuality

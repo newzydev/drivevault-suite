@@ -59,7 +59,7 @@ Item {
                         color: toast.tone
                         size: 18
                     }
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         text: toast.message
                         wrapMode: Text.Wrap

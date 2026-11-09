@@ -21,7 +21,7 @@ MenuItem {
             size: 14
             color: Theme.accentText
         }
-        Text {
+        AppText {
             id: label
             x: 32
             anchors.verticalCenter: parent.verticalCenter
@@ -29,7 +29,7 @@ MenuItem {
             font.pixelSize: Theme.fontMd
             color: control.enabled ? Theme.text : Theme.textDisabled
         }
-        Text {
+        AppText {
             id: shortcutLabel
             anchors.right: parent.right
             anchors.rightMargin: 12

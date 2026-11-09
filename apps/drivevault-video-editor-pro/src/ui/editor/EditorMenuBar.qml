@@ -53,7 +53,7 @@ Rectangle {
                 implicitHeight: 30
                 leftPadding: 12
                 rightPadding: 12
-                contentItem: Text {
+                contentItem: AppText {
                     text: barItem.text
                     font.pixelSize: Theme.fontMd
                     color: barItem.highlighted ? Theme.text : Theme.textSecondary
@@ -227,7 +227,7 @@ Rectangle {
         RowLayout {
             spacing: 8
             Icon { name: "film"; size: 15; color: Theme.textSecondary }
-            Text {
+            AppText {
                 text: Projects.isOpen ? Projects.name : ""
                 font.pixelSize: Theme.fontMd
                 font.weight: Font.DemiBold
@@ -241,7 +241,7 @@ Rectangle {
                 color: Theme.warning
                 Accessible.name: qsTr("Unsaved changes")
             }
-            Text {
+            AppText {
                 visible: Projects.dirty
                 text: qsTr("Unsaved")
                 font.pixelSize: Theme.fontXs

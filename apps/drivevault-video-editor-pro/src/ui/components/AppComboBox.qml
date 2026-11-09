@@ -28,7 +28,7 @@ ComboBox {
     Component.onCompleted: Qt.callLater(syncIndex)
     onActivated: picked(currentValue)
 
-    contentItem: Text {
+    contentItem: AppText {
         leftPadding: 12
         rightPadding: 32
         text: control.displayText
@@ -64,7 +64,7 @@ ComboBox {
         highlighted: control.highlightedIndex === index
 
         contentItem: Item {
-            Text {
+            AppText {
                 anchors.verticalCenter: parent.verticalCenter
                 x: 12
                 width: parent.width - 44

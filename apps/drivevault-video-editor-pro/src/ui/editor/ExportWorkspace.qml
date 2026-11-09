@@ -183,7 +183,7 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 12
                 Icon { name: "export"; size: 26; color: Theme.accentText }
-                Text {
+                AppText {
                     Layout.fillWidth: true
                     text: qsTr("Export")
                     font.pixelSize: Theme.fontXxl
@@ -193,7 +193,7 @@ Rectangle {
                 StatusBadge { kind: "available"; label: qsTr("H.264 + AAC") }
             }
 
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 text: root.hasClips
                       ? qsTr("Sequence: %1  ·  %2 × %3  ·  %4 fps").arg(Projects.timecodeFor(Projects.timeline.durationFrames))
@@ -210,7 +210,7 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 6
                 enabled: !root.running
-                Text { text: qsTr("Presets"); font.pixelSize: Theme.fontXs; font.weight: Font.DemiBold; font.capitalization: Font.AllUppercase; font.letterSpacing: 0.8; color: Theme.accentText }
+                AppText { text: qsTr("Presets"); font.pixelSize: Theme.fontXs; font.weight: Font.DemiBold; font.capitalization: Font.AllUppercase; font.letterSpacing: 0.8; color: Theme.accentText }
                 Flow {
                     Layout.fillWidth: true
                     spacing: 6
@@ -233,7 +233,7 @@ Rectangle {
                     }
                     AppButton { objectName: "presetSave"; variant: "ghost"; iconName: "plus"; text: qsTr("Save current…"); implicitHeight: 30; onClicked: presetDialog.open() }
                 }
-                Text {
+                AppText {
                     visible: root.userPresets.length > 0
                     text: qsTr("Right-click one of your own presets to delete it.")
                     font.pixelSize: Theme.fontXs
@@ -298,7 +298,7 @@ Rectangle {
                             validator: IntValidator { bottom: 64; top: 8192 }
                             onEditingFinished: AppSettings.set("exportCustomWidth", parseInt(text) || 1920)
                         }
-                        Text { text: "×"; color: Theme.textSecondary; font.pixelSize: Theme.fontMd }
+                        AppText { text: "×"; color: Theme.textSecondary; font.pixelSize: Theme.fontMd }
                         AppTextField {
                             implicitWidth: 80
                             text: AppSettings.values.exportCustomHeight
@@ -328,7 +328,7 @@ Rectangle {
                         value: AppSettings.values.exportQuality
                         onMoved: AppSettings.set("exportQuality", Math.round(value))
                     }
-                    Text {
+                    AppText {
                         Layout.preferredWidth: 36
                         text: AppSettings.values.exportQuality
                         horizontalAlignment: Text.AlignRight
@@ -387,14 +387,14 @@ Rectangle {
                         Layout.fillWidth: true
                         Icon { id: busy; name: "refresh"; size: 18; color: Theme.accentText
                                RotationAnimator on rotation { running: busy.visible; from: 0; to: 360; duration: 1100; loops: Animation.Infinite } }
-                        Text {
+                        AppText {
                             Layout.fillWidth: true
                             text: qsTr("Rendering…")
                             font.pixelSize: Theme.fontLg
                             font.weight: Font.DemiBold
                             color: Theme.text
                         }
-                        Text {
+                        AppText {
                             text: Math.round(ExportJob.progress * 100) + "%"
                             font.pixelSize: Theme.fontLg
                             font.features: { "tnum": 1 }
@@ -415,7 +415,7 @@ Rectangle {
                     }
                     RowLayout {
                         Layout.fillWidth: true
-                        Text {
+                        AppText {
                             Layout.fillWidth: true
                             text: qsTr("%1 of %2 frames  ·  %3 fps  ·  time left %4").arg(ExportJob.framesDone).arg(ExportJob.totalFrames)
                                   .arg(ExportJob.throughputFps.toFixed(1)).arg(ExportJob.etaText === "" ? "–" : ExportJob.etaText)
@@ -446,16 +446,16 @@ Rectangle {
                     RowLayout {
                         spacing: 10
                         Icon { name: "check"; size: 20; color: Theme.success; strokeWidth: 2.4 }
-                        Text { text: qsTr("Export complete"); font.pixelSize: Theme.fontLg; font.weight: Font.DemiBold; color: Theme.text }
+                        AppText { text: qsTr("Export complete"); font.pixelSize: Theme.fontLg; font.weight: Font.DemiBold; color: Theme.text }
                     }
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         text: ExportJob.outputPath
                         font.pixelSize: Theme.fontSm
                         color: Theme.textSecondary
                         wrapMode: Text.WrapAnywhere
                     }
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         readonly property var r: ExportJob.result
                         text: r.width ? (r.width + " × " + r.height + "  ·  " + Number(r.fps).toFixed(2) + " fps  ·  " + Projects.timecodeFor(Math.round(r.durationMs / 1000 * Projects.nominalFps))
@@ -465,14 +465,14 @@ Rectangle {
                         color: Theme.text
                         wrapMode: Text.Wrap
                     }
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         text: qsTr("Checked: resolution, frame rate, duration and audio match the sequence, and the picture decodes.")
                         font.pixelSize: Theme.fontSm
                         color: Theme.success
                         wrapMode: Text.Wrap
                     }
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         text: qsTr("Encoder: %1  ·  speed: %2 frames/s  ·  took %3 s").arg(ExportJob.encoderUsed)
                               .arg(Number(ExportJob.result.throughputFps).toFixed(1)).arg(Number(ExportJob.result.seconds).toFixed(1))
@@ -504,14 +504,14 @@ Rectangle {
                     RowLayout {
                         spacing: 10
                         Icon { name: "warning"; size: 20; color: ExportJob.state === "failed" ? Theme.error : Theme.warning }
-                        Text {
+                        AppText {
                             text: ExportJob.state === "failed" ? qsTr("Export failed") : qsTr("Export cancelled")
                             font.pixelSize: Theme.fontLg
                             font.weight: Font.DemiBold
                             color: Theme.text
                         }
                     }
-                    Text { Layout.fillWidth: true; text: ExportJob.message; font.pixelSize: Theme.fontSm; color: Theme.textSecondary; wrapMode: Text.Wrap }
+                    AppText { Layout.fillWidth: true; text: ExportJob.message; font.pixelSize: Theme.fontSm; color: Theme.textSecondary; wrapMode: Text.Wrap }
                     AppButton { text: qsTr("Back"); onClicked: ExportJob.reset() }
                 }
             }

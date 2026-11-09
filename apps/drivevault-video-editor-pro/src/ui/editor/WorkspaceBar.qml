@@ -52,7 +52,7 @@ Rectangle {
                             size: 16
                             color: tab.current ? Theme.accentText : tab.hovered ? Theme.text : Theme.textSecondary
                         }
-                        Text {
+                        AppText {
                             anchors.verticalCenter: parent.verticalCenter
                             text: tab.modelData.label
                             font.pixelSize: Theme.fontMd

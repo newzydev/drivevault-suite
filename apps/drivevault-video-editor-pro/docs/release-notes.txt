@@ -1,6 +1,11 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.11.3 (2026-11-09)
+--------------
+  - Fixed: Thai and English now use the same text size and the same line height everywhere in the program, so layouts, spacing and panel sizes do not change when you
+    switch the language (English was a pixel smaller and its lines were tighter than Thai).
+
 Version 1.11.2 (2026-11-09)
 --------------
   - Fixed: the About window described an old development build ("Phase 2 ... effects arrive in Phase 3, AI in Phase 4"). It now says what the program does today (Thai and English).

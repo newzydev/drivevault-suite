@@ -1,4 +1,4 @@
-set_source_files_properties(components/Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(components/Theme.qml components/ThaiMetrics.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 # Static QML module with the whole UI. Backend objects (AppSettings, Projects, ...) are registered
 # at runtime under "DriveVault.Backend" by the application.
@@ -11,6 +11,8 @@ qt_add_qml_module(dv_ui
     QML_FILES
         Main.qml
         components/Theme.qml
+        components/ThaiMetrics.qml
+        components/AppText.qml
         components/IconData.js
         components/Icon.qml
         components/Logo.qml

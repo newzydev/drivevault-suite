@@ -28,7 +28,7 @@ ColumnLayout {
             color: root.isError ? Theme.error : Theme.accentText
         }
     }
-    Text {
+    AppText {
         Layout.alignment: Qt.AlignHCenter
         Layout.maximumWidth: root.maxTextWidth
         text: root.title
@@ -38,7 +38,7 @@ ColumnLayout {
         color: Theme.text
         wrapMode: Text.Wrap
     }
-    Text {
+    AppText {
         Layout.alignment: Qt.AlignHCenter
         Layout.maximumWidth: root.maxTextWidth
         Layout.fillWidth: true

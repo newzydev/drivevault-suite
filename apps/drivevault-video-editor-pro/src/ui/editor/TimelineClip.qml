@@ -136,7 +136,7 @@ Item {
                     width: parent.width
                     height: 15
                     color: "#66000000"
-                    Text {
+                    AppText {
                         x: Math.min(Math.max(6, clipRoot.viewLeft - clipRoot.x + 6), Math.max(6, parent.width - 60))
                         width: Math.max(0, parent.width - x - (clipRoot.animated ? 18 : 4))
                         height: parent.height
@@ -158,7 +158,7 @@ Item {
                 }
 
                 // title clips show a T
-                Text {
+                AppText {
                     visible: clipRoot.clipType === "title" && clipRoot.width > 40
                     anchors.fill: parent
                     anchors.topMargin: 15

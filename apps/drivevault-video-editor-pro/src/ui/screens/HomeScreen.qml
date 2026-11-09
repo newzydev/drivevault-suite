@@ -68,7 +68,7 @@ Rectangle {
 
             Logo { size: 76 }
 
-            Text {
+            AppText {
                 Layout.topMargin: 26
                 Layout.fillWidth: true
                 text: "DriveVault"
@@ -76,14 +76,14 @@ Rectangle {
                 font.weight: Font.Bold
                 color: Theme.text
             }
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 text: "Video Editor Pro"
                 font.pixelSize: Theme.fontXxl
                 font.weight: Font.Medium
                 color: Theme.accentText
             }
-            Text {
+            AppText {
                 Layout.topMargin: 10
                 Layout.fillWidth: true
                 text: qsTr("Professional Power. Beautiful Simplicity.")
@@ -136,7 +136,7 @@ Rectangle {
             }
 
             // Quick start
-            Text {
+            AppText {
                 Layout.topMargin: 44
                 text: qsTr("Quick start")
                 font.pixelSize: Theme.fontSm
@@ -164,7 +164,7 @@ Rectangle {
                         height: 26
                         radius: 13
                         color: Theme.accentSubtle
-                        Text {
+                        AppText {
                             anchors.centerIn: parent
                             text: modelData.n
                             font.pixelSize: Theme.fontSm
@@ -177,7 +177,7 @@ Rectangle {
                         spacing: 2
                         RowLayout {
                             spacing: 8
-                            Text {
+                            AppText {
                                 text: modelData.title
                                 font.pixelSize: Theme.fontMd
                                 font.weight: Font.Medium
@@ -189,7 +189,7 @@ Rectangle {
                                 phase: "Phase 2"
                             }
                         }
-                        Text {
+                        AppText {
                             Layout.fillWidth: true
                             text: modelData.desc
                             font.pixelSize: Theme.fontSm
@@ -202,7 +202,7 @@ Rectangle {
 
             Item { Layout.fillHeight: true }
 
-            Text {
+            AppText {
                 text: "v" + SysInfo.version + "  ·  Build " + SysInfo.buildNumber
                 font.pixelSize: Theme.fontXs
                 color: Theme.textDisabled
@@ -226,7 +226,7 @@ Rectangle {
                     Layout.margins: 20
                     Layout.rightMargin: 31
                     Layout.bottomMargin: 12
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         text: qsTr("Recent Projects")
                         font.pixelSize: Theme.fontXl
@@ -320,7 +320,7 @@ Rectangle {
                                 ColumnLayout {
                                     Layout.fillWidth: true
                                     spacing: 3
-                                    Text {
+                                    AppText {
                                         Layout.fillWidth: true
                                         text: card.name
                                         font.pixelSize: Theme.fontMd
@@ -328,7 +328,7 @@ Rectangle {
                                         color: Theme.text
                                         elide: Text.ElideRight
                                     }
-                                    Text {
+                                    AppText {
                                         Layout.fillWidth: true
                                         text: card.path
                                         font.pixelSize: Theme.fontXs
@@ -337,7 +337,7 @@ Rectangle {
                                     }
                                     RowLayout {
                                         spacing: 8
-                                        Text {
+                                        AppText {
                                             text: qsTr("Last opened") + ": " + card.lastOpenedText
                                             font.pixelSize: Theme.fontXs
                                             color: Theme.textDisabled

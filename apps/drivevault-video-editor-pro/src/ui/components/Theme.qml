@@ -61,8 +61,8 @@ QtObject {
     readonly property int panelGap: 1
 
     // ---- Typography --------------------------------------------------------------------------
-    // Thai glyphs have a smaller x-height than Latin ones at the same size, so Thai gets +1 px.
-    readonly property int fontOffset: AppSettings.values.fontSizeOffset + (Localization.currentLanguage === "th-TH" ? 1 : 0)
+    // Thai glyphs have a smaller x-height than Latin ones, so Thai needs +1 px; English uses the same size so both languages look the same.
+    readonly property int fontOffset: AppSettings.values.fontSizeOffset + 1
     readonly property int fontXs: 11 + fontOffset
     readonly property int fontSm: 12 + fontOffset
     readonly property int fontMd: 13 + fontOffset

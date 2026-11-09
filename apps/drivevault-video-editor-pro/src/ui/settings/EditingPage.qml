@@ -68,7 +68,7 @@ ColumnLayout {
             value: AppSettings.values.autoSaveMinutes
             onMoved: AppSettings.set("autoSaveMinutes", Math.round(value))
         }
-        Text {
+        AppText {
             Layout.preferredWidth: 70
             horizontalAlignment: Text.AlignRight
             text: AppSettings.values.autoSaveMinutes + " " + qsTr("min")

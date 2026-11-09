@@ -38,7 +38,7 @@ ColumnLayout {
         }
     }
 
-    Text {
+    AppText {
         Layout.fillWidth: true
         text: qsTr("Folder: %1").arg(root.mm.directory)
         font.pixelSize: Theme.fontXs
@@ -66,8 +66,8 @@ ColumnLayout {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 2
-                    Text { Layout.fillWidth: true; text: row.modelData.name; font.pixelSize: Theme.fontSm; font.weight: Font.DemiBold; color: Theme.text; elide: Text.ElideRight }
-                    Text { Layout.fillWidth: true; text: row.modelData.description + "  ·  " + row.modelData.sizeMb + " MB"; font.pixelSize: Theme.fontXs; color: Theme.textSecondary; wrapMode: Text.Wrap }
+                    AppText { Layout.fillWidth: true; text: row.modelData.name; font.pixelSize: Theme.fontSm; font.weight: Font.DemiBold; color: Theme.text; elide: Text.ElideRight }
+                    AppText { Layout.fillWidth: true; text: row.modelData.description + "  ·  " + row.modelData.sizeMb + " MB"; font.pixelSize: Theme.fontXs; color: Theme.textSecondary; wrapMode: Text.Wrap }
                 }
                 AppButton {
                     objectName: "modelUse_" + row.modelData.id
@@ -107,7 +107,7 @@ ColumnLayout {
             color: Theme.surfaceHover
             Rectangle { width: parent.width * root.mm.downloadProgress; height: parent.height; radius: 3; color: Theme.accent }
         }
-        Text { text: Math.round(root.mm.downloadProgress * 100) + "%"; font.pixelSize: Theme.fontXs; color: Theme.textSecondary }
+        AppText { text: Math.round(root.mm.downloadProgress * 100) + "%"; font.pixelSize: Theme.fontXs; color: Theme.textSecondary }
         AppButton { text: qsTr("Cancel"); variant: "ghost"; implicitHeight: 26; onClicked: root.mm.cancelDownload() }
     }
 
@@ -116,7 +116,7 @@ ColumnLayout {
         AppButton { objectName: "modelImport"; iconName: "folder"; text: qsTr("Import model…"); onClicked: importDialog.open() }
         Item { Layout.fillWidth: true }
     }
-    Text {
+    AppText {
         Layout.fillWidth: true
         text: qsTr("Downloads only start when you press Download. Speech models come from the whisper.cpp project on Hugging Face; your audio and video never leave this computer.")
         font.pixelSize: Theme.fontXs

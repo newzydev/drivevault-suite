@@ -24,7 +24,7 @@ Item {
         x: 0; y: 10; width: 22; height: parent.height - 20
         Repeater {
             model: fader.marks
-            delegate: Text {
+            delegate: AppText {
                 required property int modelData
                 width: ticks.width
                 horizontalAlignment: Text.AlignRight

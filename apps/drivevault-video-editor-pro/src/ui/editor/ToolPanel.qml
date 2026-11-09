@@ -203,7 +203,7 @@ Rectangle {
                 color: Qt.alpha(tile.tint, 0.18)
                 Icon { anchors.centerIn: parent; name: tile.iconName; size: 18; color: tile.tint }
             }
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 text: tile.label
                 horizontalAlignment: Text.AlignHCenter
@@ -295,7 +295,7 @@ Rectangle {
                 radius: 6
                 color: "#14161C"
                 clip: true
-                Text {
+                AppText {
                     anchors.centerIn: parent
                     width: parent.width - 8
                     horizontalAlignment: Text.AlignHCenter
@@ -310,7 +310,7 @@ Rectangle {
                     styleColor: (tt.textStyle.stroke || "") !== "" ? tt.textStyle.stroke : "#000000"
                 }
             }
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 text: tt.textStyle.label
                 horizontalAlignment: Text.AlignHCenter
@@ -329,13 +329,13 @@ Rectangle {
             onClicked: tt.activated()
         }
     }
-    component Hint: Text {
+    component Hint: AppText {
         Layout.fillWidth: true
         font.pixelSize: Theme.fontXs
         color: Theme.textDisabled
         wrapMode: Text.Wrap
     }
-    component Heading: Text {
+    component Heading: AppText {
         Layout.fillWidth: true
         font.pixelSize: Theme.fontXs
         font.weight: Font.DemiBold
@@ -393,7 +393,7 @@ Rectangle {
                                     size: 19
                                     color: tabButton.current ? Theme.accentText : Theme.textSecondary
                                 }
-                                Text {
+                                AppText {
                                     id: tabLabel
                                     visible: tabButton.width >= 54
                                     Layout.alignment: Qt.AlignHCenter

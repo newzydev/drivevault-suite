@@ -54,7 +54,7 @@ ColumnLayout {
             value: AppSettings.values.recentProjectsLimit
             onMoved: AppSettings.set("recentProjectsLimit", Math.round(value))
         }
-        Text {
+        AppText {
             Layout.preferredWidth: 28
             horizontalAlignment: Text.AlignRight
             text: AppSettings.values.recentProjectsLimit

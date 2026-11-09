@@ -13,8 +13,8 @@ ColumnLayout {
         Logo { size: 64 }
         ColumnLayout {
             spacing: 2
-            Text { text: SysInfo.productName; font.pixelSize: Theme.fontXl; font.weight: Font.Bold; color: Theme.text }
-            Text { text: qsTr("Professional Power. Beautiful Simplicity."); font.pixelSize: Theme.fontMd; color: Theme.accentText }
+            AppText { text: SysInfo.productName; font.pixelSize: Theme.fontXl; font.weight: Font.Bold; color: Theme.text }
+            AppText { text: qsTr("Professional Power. Beautiful Simplicity."); font.pixelSize: Theme.fontMd; color: Theme.accentText }
         }
     }
 
@@ -32,7 +32,7 @@ ColumnLayout {
         delegate: SettingRow {
             required property var modelData
             title: modelData.k
-            Text { text: modelData.v; color: Theme.textSecondary; font.pixelSize: Theme.fontMd; elide: Text.ElideRight; Layout.maximumWidth: 380 }
+            AppText { text: modelData.v; color: Theme.textSecondary; font.pixelSize: Theme.fontMd; elide: Text.ElideRight; Layout.maximumWidth: 380 }
         }
     }
 
@@ -51,7 +51,7 @@ ColumnLayout {
 
     Section { title: qsTr("License and third-party notices"); Layout.topMargin: 22 }
 
-    Text {
+    AppText {
         Layout.fillWidth: true
         Layout.topMargin: 8
         text: qsTr("DriveVault Video Editor Pro is proprietary software. All rights reserved.")
@@ -94,7 +94,7 @@ ColumnLayout {
         Item { Layout.fillWidth: true }
     }
 
-    Text {
+    AppText {
         Layout.fillWidth: true
         Layout.topMargin: 12
         text: qsTr("Full texts are installed with the application in the licenses folder.")

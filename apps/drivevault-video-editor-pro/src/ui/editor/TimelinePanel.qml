@@ -343,7 +343,7 @@ Rectangle {
                     width: parent.width
                     height: root.rulerHeight
                     color: Theme.backgroundAlt
-                    Text {
+                    AppText {
                         anchors.verticalCenter: parent.verticalCenter
                         x: 14
                         text: qsTr("Tracks")
@@ -400,7 +400,7 @@ Rectangle {
                                         width: 4; height: 22; radius: 2
                                         color: header.kind === "video" ? Theme.info : header.kind === "subtitle" ? Theme.warning : Theme.success
                                     }
-                                    Text {
+                                    AppText {
                                         Layout.fillWidth: true
                                         Layout.leftMargin: 6
                                         text: header.name
@@ -628,7 +628,7 @@ Rectangle {
                     anchors.verticalCenter: lanes.verticalCenter
                     width: Math.min(parent.width - 40, 440)
                     spacing: 4
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.Wrap
@@ -637,7 +637,7 @@ Rectangle {
                         font.weight: Font.Medium
                         color: Theme.textSecondary
                     }
-                    Text {
+                    AppText {
                         Layout.fillWidth: true
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.Wrap
@@ -840,7 +840,7 @@ Rectangle {
                         color: Theme.surfaceElevated
                         border.width: 1
                         border.color: Theme.border
-                        Text {
+                        AppText {
                             id: guideTime
                             anchors.centerIn: parent
                             text: guide.visible ? Projects.timecodeFor(root.frameAtViewportX(guide.gx)) : ""

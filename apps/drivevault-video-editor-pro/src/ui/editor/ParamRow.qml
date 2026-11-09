@@ -31,7 +31,7 @@ RowLayout {
             App.toast(err, "warning")
     }
 
-    Text {
+    AppText {
         Layout.preferredWidth: 78
         text: row.label
         font.pixelSize: Theme.fontSm

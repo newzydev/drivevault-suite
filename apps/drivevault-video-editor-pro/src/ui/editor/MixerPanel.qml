@@ -78,7 +78,7 @@ Rectangle {
                         visible: kind === "audio"
                         width: visible ? 262 : 0
 
-                        Text {
+                        AppText {
                             Layout.fillWidth: true
                             horizontalAlignment: Text.AlignHCenter
                             text: channel.name
@@ -153,7 +153,7 @@ Rectangle {
                                     tint: Theme.success
                                     onMoved: db => Projects.tracks.setGain(channel.index, db)
                                 }
-                                Text {
+                                AppText {
                                     Layout.fillWidth: true
                                     horizontalAlignment: Text.AlignHCenter
                                     text: root.dbText(channel.gainDb)
@@ -186,7 +186,7 @@ Rectangle {
                     }
                 }
             }
-            Text {
+            AppText {
                 visible: stripRow.width === 0
                 anchors.centerIn: parent
                 text: qsTr("No audio track yet. Add one with the \"+ Audio\" button of the timeline.")
@@ -201,7 +201,7 @@ Rectangle {
             Layout.fillHeight: true
             Layout.preferredWidth: 112
             tint: Theme.accent
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 text: qsTr("Master")
@@ -209,7 +209,7 @@ Rectangle {
                 font.weight: Font.Bold
                 color: Theme.text
             }
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 text: qsTr("Volume")
@@ -225,7 +225,7 @@ Rectangle {
                 value: Projects.masterGainDb
                 onMoved: db => Projects.setMasterGainDb(db)
             }
-            Text {
+            AppText {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 text: root.dbText(Projects.masterGainDb)
