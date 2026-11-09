@@ -732,10 +732,29 @@ QString Hub::removeInstallerFolder(const QString& folder)
     return {};
 }
 
+// The folder that holds the installed programs: <Master Pro folder>\Common (all users: C:\Program Files\DriveVault\Common, per user: %LOCALAPPDATA%\Programs\DriveVault\Common).
+// A run from a build folder has no Common next to it, so then the folder is taken from where the registered programs really are.
+QString Hub::suiteDirectory() const
+{
+    const QString next = QDir::cleanPath(m_appDir + QStringLiteral("/Common"));
+    if (QFileInfo(next).isDir())
+        return next;
+    for (const QVariant& v : m_products) {
+        const QString dir = v.toMap().value(QStringLiteral("installDir")).toString();
+        if (dir.isEmpty())
+            continue;
+        const QDir parent(QDir::cleanPath(dir + QStringLiteral("/..")));
+        if (parent.dirName().compare(QLatin1String("Common"), Qt::CaseInsensitive) == 0 && parent.exists())
+            return QDir::cleanPath(parent.absolutePath());
+    }
+    return {};
+}
+
 QString Hub::openInstallersFolder()
 {
-    const QString dir = QDir::cleanPath(m_dataDir + QStringLiteral("/installers"));
-    QDir().mkpath(dir);
+    const QString dir = suiteDirectory();
+    if (dir.isEmpty())
+        return tr2(QStringLiteral("No DriveVault program is installed yet."), QStringLiteral("ยังไม่มีโปรแกรม DriveVault ที่ติดตั้ง"));
     QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
     return {};
 }

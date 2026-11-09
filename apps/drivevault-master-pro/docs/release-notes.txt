@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.5.3 (2026-11-09)
+  Fixed
+  - "Open install folder" (menu) and the programs folder shown in About now point to the Common folder where the programs are installed
+    (C:\Program Files\DriveVault\Common), not to the folder of Master Pro itself. When no program is installed yet, the menu entry says so.
+  - The About text now explains what Master Pro is and does, in plain words.
+
 v1.5.2 (2026-11-09)
   Fixed
   - The minimize / maximize / close buttons form one group and sit close together.

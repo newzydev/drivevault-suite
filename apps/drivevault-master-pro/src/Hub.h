@@ -27,7 +27,7 @@ class Hub : public QObject {
     Q_PROPERTY(QStringList installerFolders READ installerFolders NOTIFY productsChanged FINAL)
     Q_PROPERTY(QString version READ version CONSTANT FINAL)
     Q_PROPERTY(QString buildNumber READ buildNumber CONSTANT FINAL)
-    Q_PROPERTY(QString suiteDirectory READ suiteDirectory CONSTANT FINAL)
+    Q_PROPERTY(QString suiteDirectory READ suiteDirectory NOTIFY productsChanged FINAL)     // the Common folder that holds the installed programs, "" when there is none
     Q_PROPERTY(bool checking READ checking NOTIFY checkingChanged FINAL)                        // asking GitHub for releases
     Q_PROPERTY(double downloadProgress READ downloadProgress NOTIFY downloadProgressChanged FINAL)   // 0..1 while downloading, -1 otherwise
     Q_PROPERTY(bool onlineChecked READ onlineChecked NOTIFY productsChanged FINAL)
@@ -60,7 +60,7 @@ public:
     QStringList installerFolders() const;
     QString version() const;
     QString buildNumber() const;
-    QString suiteDirectory() const { return m_appDir; }
+    QString suiteDirectory() const;
     bool checking() const { return m_checking; }
     double downloadProgress() const { return m_progress; }
     bool onlineChecked() const { return m_onlineChecked; }

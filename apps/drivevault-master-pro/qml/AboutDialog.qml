@@ -51,7 +51,7 @@ Popup {
         Text {
             Layout.fillWidth: true
             Layout.leftMargin: 24; Layout.rightMargin: 24
-            text: Tr.s("suiteFolder") + ": " + Hub.suiteDirectory
+            text: Tr.s("suiteFolder") + ": " + (Hub.suiteDirectory !== "" ? Hub.suiteDirectory : "-")
             wrapMode: Text.WrapAnywhere
             font.pixelSize: 12
             color: Theme.textSecondary

@@ -141,6 +141,37 @@ private slots:
         QCOMPARE(extra.value("section").toString(), QStringLiteral("other"));       // a program the hub does not know gets its own section
     }
 
+    void theProgramsFolderIsTheCommonFolder()
+    {
+        auto opts = [&](const QString& app) { Hub::Options o = options(); o.appDir = p(app); return o; };
+        {   // nothing installed, no Common next to the hub: no folder, and "open" says so instead of opening something else
+            Hub hub(opts("hubA"));
+            hub.setLanguage("en");
+            QVERIFY(hub.suiteDirectory().isEmpty());
+            QVERIFY(!hub.openInstallersFolder().isEmpty());
+        }
+        {   // a build folder run: the folder is where the registered programs really are (...\Common\<program>)
+            const QString exe = fakeSetup(p("PF/DriveVault/Common/DriveVault Video Editor Pro/DriveVaultVideoEditorPro.exe"));
+            writeProduct("VideoEditorPro", {{"DisplayName", "DriveVault Video Editor Pro"}, {"Version", "1.0.0"}, {"InstallDir", QFileInfo(exe).absolutePath()},
+                                             {"Executable", exe}, {"Publisher", "DriveVault"}});
+            Hub hub(opts("hubB"));
+            QCOMPARE(hub.suiteDirectory(), QDir::cleanPath(p("PF/DriveVault/Common")));
+        }
+        {   // installed layout: Common sits next to Master Pro and wins
+            QDir().mkpath(p("hubC/Common"));
+            Hub hub(opts("hubC"));
+            QCOMPARE(hub.suiteDirectory(), QDir::cleanPath(p("hubC/Common")));
+        }
+        wipeRegistry();
+        {   // a program outside any Common folder does not make its parent "the programs folder"
+            const QString exe = fakeSetup(p("elsewhere/DriveVault Video Editor Pro/DriveVaultVideoEditorPro.exe"));
+            writeProduct("VideoEditorPro", {{"DisplayName", "DriveVault Video Editor Pro"}, {"Version", "1.0.0"}, {"InstallDir", QFileInfo(exe).absolutePath()},
+                                             {"Executable", exe}, {"Publisher", "DriveVault"}});
+            Hub hub(opts("hubD"));
+            QVERIFY(hub.suiteDirectory().isEmpty());
+        }
+    }
+
     void setupFilesInTheFoldersOfferInstallAndUpdateAndRunWithTheRightResult()
     {
         const QString exe = fakeSetup(p("Program Files/DriveVault/DriveVault Video Editor Pro/DriveVaultVideoEditorPro.exe"));
