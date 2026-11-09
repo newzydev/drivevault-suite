@@ -34,7 +34,7 @@ Popup {
             Layout.fillWidth: true
             Layout.leftMargin: 24; Layout.rightMargin: 24
             text: Tr.s("aboutText")
-            wrapMode: Text.Wrap
+            wrapMode: Text.Wrap; lineHeight: Tr.bodyLine
             font.pixelSize: 13
             color: Theme.textSecondary
         }
@@ -42,7 +42,7 @@ Popup {
             Layout.fillWidth: true
             Layout.leftMargin: 24; Layout.rightMargin: 24
             text: Tr.s("honest")
-            wrapMode: Text.Wrap
+            wrapMode: Text.Wrap; lineHeight: Tr.bodyLine
             font.pixelSize: 12
             color: Theme.textDisabled
         }

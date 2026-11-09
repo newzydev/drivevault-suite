@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.4.3 (2026-11-09)
+  Fixed
+  - English paragraphs (program descriptions, About, uninstall confirmation) have more space between the lines; Thai is unchanged.
+
 v1.4.2 (2026-11-09)
   Fixed
   - Clicking an empty place of the window (hero, gaps between programs, the top bar) now really takes the focus out of the search field, so the orange frame and the

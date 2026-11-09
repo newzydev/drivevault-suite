@@ -133,6 +133,7 @@ Rectangle {
             font.pixelSize: 13
             color: Theme.textSecondary
             wrapMode: Text.Wrap
+            lineHeight: Tr.bodyLine
             maximumLineCount: 3
             elide: Text.ElideRight
         }
@@ -144,6 +145,7 @@ Rectangle {
             font.pixelSize: 12
             color: card.product.installerPath !== "" ? Theme.success : Theme.textDisabled
             wrapMode: Text.Wrap
+            lineHeight: Tr.bodyLine
         }
 
         // ---- main actions (full width) -------------------------------------------------------------------------------------------

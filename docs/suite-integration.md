@@ -4,7 +4,7 @@
 the setup file `DriveVault-<Name>-Setup-x64.exe` and its `DriveVault-<Name>-Setup-x64.exe.sha256` (`<hex> *<file name>`, written by `package.ps1`). The release is not a draft or pre-release; the setup's version resource
 (`CompanyName` DriveVault, `ProductName` = the program, `ProductVersion` = the tag's version) must match. Master Pro reads it when the user presses "Check for updates" and once at start-up (setting, on by default). Master Pro's own release (`drivevault-master-pro-v...`) is offered through a banner and updates Master Pro itself.
 
-DriveVault Video Editor Pro is the first product of the suite (image editor, audio editor ... are planned). **DriveVault Master Pro** (repository `DriveVault Master Pro`, VERSION 1.4.2) is the hub:
+DriveVault Video Editor Pro is the first product of the suite (image editor, audio editor ... are planned). **DriveVault Master Pro** (repository `DriveVault Master Pro`, VERSION 1.4.3) is the hub:
 it lists, opens, installs, updates and uninstalls the programs, in the spirit of Creative Cloud. **Every product installer installs Master Pro first** (it carries
 the hub's setup inside and runs it silently when the hub is missing or older). This page is the contract that every product - and the hub - follows.
 

@@ -139,7 +139,7 @@ ApplicationWindow {
         contentItem: ColumnLayout {
             spacing: 14
             Text { Layout.fillWidth: true; text: Tr.s("confirmUninstall").replace("%1", confirm.product.name); font.pixelSize: 17; font.weight: Font.DemiBold; color: Theme.text; wrapMode: Text.Wrap }
-            Text { Layout.fillWidth: true; text: Tr.s("confirmText"); font.pixelSize: 13; color: Theme.textSecondary; wrapMode: Text.Wrap }
+            Text { Layout.fillWidth: true; text: Tr.s("confirmText"); font.pixelSize: 13; color: Theme.textSecondary; wrapMode: Text.Wrap; lineHeight: Tr.bodyLine }
             RowLayout {
                 Item { Layout.fillWidth: true }
                 MButton { objectName: "confirmCancel"; variant: "ghost"; text: Tr.s("cancel"); onClicked: confirm.close() }

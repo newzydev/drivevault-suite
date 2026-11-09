@@ -5,6 +5,7 @@ import DriveVault.Master.Backend
 // Thai / English texts (the hub is small, so a table is enough). Usage: Tr.s("key")
 QtObject {
     readonly property string lang: Hub.language
+    readonly property real bodyLine: lang === "en" ? 1.3 : 1.0      // the Latin text of the font sits tighter than Thai: English paragraphs need more line spacing
     readonly property var table: ({
         "title": ["DriveVault Master Pro", "DriveVault Master Pro"],
         "subtitle": ["All your DriveVault programs in one place", "โปรแกรม DriveVault ทั้งหมดของคุณในที่เดียว"],
