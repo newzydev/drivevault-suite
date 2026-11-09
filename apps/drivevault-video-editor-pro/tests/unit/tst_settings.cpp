@@ -1,6 +1,7 @@
 #include "settings/SettingsManager.h"
 
 #include <QFile>
+#include <QJSEngine>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -52,6 +53,34 @@ private slots:
         QCOMPARE(s2.get("autoSaveMinutes").toInt(), 12);
         QCOMPARE(s2.get("snapping").toBool(), false);
         QCOMPARE(s2.state("window").toMap().value("w").toInt(), 1200);
+    }
+    void stateGivenAsAJavaScriptObjectIsSaved()
+    {
+        // QML passes an object as a QJSValue inside the QVariant: it used to be written as null (window size / maximized never remembered)
+        QTemporaryDir dir;
+        const QString file = dir.filePath("settings.json");
+        {
+            QJSEngine engine;
+            QJSValue o = engine.newObject();
+            o.setProperty("w", 1280);
+            o.setProperty("h", 760);
+            o.setProperty("maximized", true);
+            QJSValue list = engine.newArray(2);
+            list.setProperty(0, 3);
+            list.setProperty(1, 4);
+            SettingsManager s;
+            s.load(file);
+            s.setState("window", QVariant::fromValue(o));
+            s.setState("sizes", QVariant::fromValue(list));
+            QVERIFY(s.save());
+        }
+        SettingsManager s2;
+        QVERIFY(s2.load(file));
+        const QVariantMap w = s2.state("window").toMap();
+        QCOMPARE(w.value("w").toInt(), 1280);
+        QCOMPARE(w.value("h").toInt(), 760);
+        QVERIFY(w.value("maximized").toBool());
+        QCOMPARE(s2.state("sizes").toList().size(), 2);
     }
     void rejectsInvalidValues()
     {

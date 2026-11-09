@@ -9,6 +9,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJSValue>
 #include <QtMath>
 
 namespace dv {
@@ -281,8 +282,13 @@ QVariant SettingsManager::state(const QString& key, const QVariant& fallback) co
     return m_state.value(key, fallback);
 }
 
-void SettingsManager::setState(const QString& key, const QVariant& value)
+void SettingsManager::setState(const QString& key, const QVariant& valueIn)
 {
+    // QML hands a JS object over as a QJSValue wrapped in the QVariant; JSON cannot store that (it was saved as null, so the window state and the
+    // panel layouts were never remembered). Convert it to a plain QVariantMap / QVariantList first.
+    QVariant value = valueIn;
+    if (value.metaType() == QMetaType::fromType<QJSValue>())
+        value = value.value<QJSValue>().toVariant();
     if (m_state.value(key) == value)
         return;
     m_state.insert(key, value);

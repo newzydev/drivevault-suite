@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultVideoEditorPro
-    VERSION 1.11.0
+    VERSION 1.11.1
     DESCRIPTION "DriveVault Video Editor Pro - Professional Desktop Video Editor"
     LANGUAGES CXX)
 

@@ -1,6 +1,11 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.11.1 (2026-11-09)
+--------------
+  - Fixed: the window did not open the way it was closed (maximized or normal, size and place) and the panel layouts were not remembered. The saved state was written
+    as empty. It is stored correctly now, so from the next close on the program opens maximized or normal as you left it.
+
 Version 1.11.0 (2026-11-08)
 --------------
   - Mixer: the channel strips now start at the left edge. The High / Mid / Low EQ knobs belong to the audio TRACK (they used to change only the clip under the playhead):
