@@ -276,15 +276,11 @@ ApplicationWindow {
                         MMenuItem { objectName: "about"; text: Tr.s("about"); onTriggered: aboutDialog.open() }
                     }
                 }
-                // window buttons (flush with the top right corner)
-                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; color: Theme.border }
-                Row {
-                    Layout.fillHeight: true
-                    spacing: 0
-                    WindowButton { objectName: "winMinimize"; kind: "minimize"; text: Tr.s("minimize"); height: parent.height; onClicked: win.showMinimized() }
-                    WindowButton { objectName: "winMaximize"; kind: win.visibility === Window.Maximized ? "restore" : "maximize"; text: win.visibility === Window.Maximized ? Tr.s("restore") : Tr.s("maximize"); height: parent.height; onClicked: win.toggleMaximized() }
-                    WindowButton { objectName: "winClose"; kind: "close"; text: Tr.s("close"); height: parent.height; onClicked: win.close() }
-                }
+                // window buttons: rounded and spaced like the other compact buttons
+                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; Layout.leftMargin: 4; color: Theme.border }
+                WindowButton { objectName: "winMinimize"; kind: "minimize"; text: Tr.s("minimize"); onClicked: win.showMinimized() }
+                WindowButton { objectName: "winMaximize"; kind: win.visibility === Window.Maximized ? "restore" : "maximize"; text: win.visibility === Window.Maximized ? Tr.s("restore") : Tr.s("maximize"); onClicked: win.toggleMaximized() }
+                WindowButton { objectName: "winClose"; kind: "close"; text: Tr.s("close"); Layout.rightMargin: 24; onClicked: win.close() }
             }
         }
 

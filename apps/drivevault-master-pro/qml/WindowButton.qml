@@ -10,7 +10,7 @@ AbstractButton {
     readonly property bool isClose: kind === "close"
     readonly property color symbol: isClose && hovered ? "#FFFFFF" : Theme.text
 
-    implicitWidth: 46
+    implicitWidth: 34
     implicitHeight: 32
     hoverEnabled: true
     focusPolicy: Qt.NoFocus
@@ -19,6 +19,7 @@ AbstractButton {
     HoverHandler { cursorShape: Qt.ArrowCursor }
 
     background: Rectangle {
+        radius: 9                                            // same corner radius as the other (compact) buttons
         color: control.isClose ? (control.down ? Qt.darker(Theme.error, 1.2) : control.hovered ? Theme.error : "transparent")
                                : (control.down ? Theme.border : control.hovered ? Theme.surfaceHover : "transparent")
     }
