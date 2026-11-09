@@ -5,7 +5,7 @@
 | `build.ps1` | configure (Ninja, Release / Debug) + build + optional `-Test` / `-UpdateTranslations` |
 | `package.ps1` | build + tests -> `dist\stage` (windeployqt, app-local VC runtime, FFmpeg libs only avcodec / avformat / avutil / swscale / swresample, whisper-cli + DLLs, the Whisper base model (`ai\models`), licenses, docs, `product.json`) -> **gates** -> Inno Setup -> `.sha256` |
 | `license-audit.ps1` | every staged file must have an owner / license; FFmpeg LGPL-only; no GPL-only Qt module; license files and docs present; writes `dist\dependency-manifest.json` (also shipped in `licenses\`) |
-| `test-installer.ps1` | 68-check install / launch / export / uninstall / reinstall / default-location / hub test (per-user, in a temp folder, minimal PATH) |
+| `test-installer.ps1` | **owner only, agents never run it**; 68-check install / launch / export / uninstall / reinstall / default-location / hub test (per-user, in a temp folder, minimal PATH) |
 | `test-signing.ps1` | signing pipeline test on a copy with a throw-away certificate |
 | `shots.ps1` | screenshots of the main screens in both languages |
 

@@ -21,7 +21,7 @@ Output: `build/release/bin/DriveVaultVideoEditorPro.exe` (+ test exes), installe
 ```powershell
 .\scripts\build.ps1 -Test            # configure + build Release + 14 ctest suites (about 1 min of tests after the build)
 .\scripts\package.ps1                # build + tests + windeployqt + runtime + docs + gates + Inno Setup (needs ..\drivevault-master-pro\dist\...Setup-x64.exe; -NoMaster to skip)
-.\scripts\test-installer.ps1         # 68 checks: installs Video Editor + the Master Pro it carries, launches, exports, uninstalls, reinstalls, default location, suite rules
+.\scripts\test-installer.ps1         # OWNER ONLY - agents do not run it (installs / uninstalls real programs, raises notifications): 68 checks, install, launch, export, uninstall, reinstall
 .\scripts\test-signing.ps1           # signing pipeline on a copy with a TEST certificate
 .\scripts\shots.ps1                  # screenshots of the main screens (also: exe --screenshot ... --select-clip N)
 ```

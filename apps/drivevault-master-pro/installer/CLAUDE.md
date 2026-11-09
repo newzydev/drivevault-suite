@@ -4,4 +4,4 @@
 - `AppId` is permanent. The install folder is fixed (`DisableDirPage=yes`); only the command line `/DIR` changes it. Default dir `{autopf}\DriveVault`, `PrivilegesRequired=admin` with `dialog commandline` overrides (program installers pass `/ALLUSERS` or `/CURRENTUSER` plus `/DIR`).
 - Keep `InitializeUninstall` refusing while any `Software\DriveVault\Products\*` key exists (HKLM and HKCU, 64 and 32 bit views).
 - The delayed `rmdir` after uninstall may only remove **empty** folders (`Common`, then the suite folder).
-- After changing the script: rebuild this installer first, then the Video Editor installer (it embeds this one), then run the Video Editor `test-installer.ps1`.
+- After changing the script: rebuild this installer first, then the Video Editor installer (it embeds this one), and smoke start the program. Do not run the Video Editor `test-installer.ps1` or install / uninstall anything - the owner runs it when wanted.

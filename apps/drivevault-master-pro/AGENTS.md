@@ -29,6 +29,6 @@ installer/  master.iss + wizard pictures      scripts/  build, package, make-ico
 ```
 Diagnostics of the exe: `--list-products <file.json>`, `--screenshot <png> [--size WxH] [--lang th|en]`, `--registry-root <key>`, `--data-dir <dir>`.
 
-## Installer behaviour that must stay true (tested by the Video Editor `test-installer.ps1`)
+## Installer behaviour that must stay true (tested by the Video Editor `test-installer.ps1`, which only the owner runs)
 Installs to `C:\Program Files\DriveVault` (admin) or per-user; creates `installers` and `Common`; registers `Software\DriveVault\MasterPro`; **refuses to uninstall while any program is installed** (also silently);
 after uninstalling it removes the empty suite folder (delayed `rmdir`, only empty folders). Version resource: ProductName `DriveVault Master Pro`, CompanyName `DriveVault`.
