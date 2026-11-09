@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 #include <QByteArray>
 #include <QList>
 #include <QSizeF>
@@ -95,4 +97,49 @@ inline QByteArray makeFeatureDoc()
     return out;
 }
 
+} // namespace testpdf
+
+#include <QImage>
+#include <QRandomGenerator>
+
+namespace testpdf {
+// One page with the text "Compress me" and a photo like picture (2000 x 1500 pixels, Flate) shown 400 x 300 points big (360 dpi).
+inline QByteArray makePhotoDoc()
+{
+    QImage img(2000, 1500, QImage::Format_RGB888);
+    QRandomGenerator rng(11);
+    for (int y = 0; y < img.height(); ++y) {
+        uchar* line = img.scanLine(y);
+        for (int x = 0; x < img.width(); ++x) {
+            line[x * 3 + 0] = uchar(120 + 100 * std::sin(x / 220.0) + int(rng.bounded(24)) - 12);
+            line[x * 3 + 1] = uchar(130 + 90 * std::cos(y / 170.0 + x / 600.0) + int(rng.bounded(24)) - 12);
+            line[x * 3 + 2] = uchar(128 + 80 * std::sin((x + y) / 400.0) + int(rng.bounded(24)) - 12);
+        }
+    }
+    QByteArray raw;
+    for (int y = 0; y < img.height(); ++y)
+        raw.append(reinterpret_cast<const char*>(img.constScanLine(y)), img.width() * 3);
+    const QByteArray data = qCompress(raw, 6).mid(4);
+    const QByteArray content = "BT /F1 24 Tf 72 700 Td (Compress me) Tj ET q 400 0 0 300 50 300 cm /Im0 Do Q";
+    const QList<QByteArray> bodies = {
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        "<< /Type /Pages /Kids [4 0 R] /Count 1 >>",
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> /XObject << /Im0 6 0 R >> >> /Contents 5 0 R >>",
+        "<< /Length " + QByteArray::number(content.size()) + " >>\nstream\n" + content + "\nendstream",
+        "<< /Type /XObject /Subtype /Image /Width 2000 /Height 1500 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length "
+            + QByteArray::number(data.size()) + " >>\nstream\n" + data + "\nendstream"};
+    QByteArray out = "%PDF-1.5\n%\xE2\xE3\xCF\xD3\n";
+    QList<qint64> offsets;
+    for (int i = 0; i < bodies.size(); ++i) {
+        offsets.append(out.size());
+        out += QByteArray::number(i + 1) + " 0 obj\n" + bodies.at(i) + "\nendobj\n";
+    }
+    const qint64 xref = out.size();
+    out += "xref\n0 " + QByteArray::number(bodies.size() + 1) + "\n0000000000 65535 f \n";
+    for (qint64 o : offsets)
+        out += QByteArray::number(o).rightJustified(10, '0') + " 00000 n \n";
+    out += "trailer\n<< /Size " + QByteArray::number(bodies.size() + 1) + " /Root 1 0 R >>\nstartxref\n" + QByteArray::number(xref) + "\n%%EOF\n";
+    return out;
+}
 } // namespace testpdf

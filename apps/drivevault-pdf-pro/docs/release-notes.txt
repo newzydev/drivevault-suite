@@ -2,6 +2,14 @@ DriveVault PDF Pro - release notes
 ==================================
 (In development: no version has been released yet. These notes are for the developers.)
 
+v0.4.0 (2026-11-09) - Phase 3: compress
+  New
+  - Compress (button "Compress"): Safe / Balanced / Smallest / custom; picture resolution (dpi) and JPEG quality, remove metadata and thumbnails, fast web view. Shows sizes and picture counts and one page before / after; the file is saved only when you choose "Save as" (never over the original). A file that would not get smaller is not written.
+  - A protected file stays protected (same password).
+  Limits
+  - Only embedded pictures are touched (see README: black/white scans, JPEG 2000, CMYK, masked pictures are left alone); fonts are not touched.
+  - Measured on generated files only.
+
 v0.3.0 (2026-11-09) - Phase 2: merge, split and organize pages
   New
   - Organize pages: thumbnails, select (Ctrl / Shift), drag to reorder, delete, duplicate, turn, crop margins, blank pages, pages of other files, undo / redo. Saves a new file; the original is never changed and an existing file is replaced only after a question.

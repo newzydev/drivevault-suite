@@ -3,6 +3,7 @@
 // Fails on any QML warning.
 #include "DocumentController.h"
 #include "PageImageProvider.h"
+#include "Compressor.h"
 #include "PageListModel.h"
 #include "TestPdf.h"
 #include "pdfengine/PdfiumRuntime.h"
@@ -42,6 +43,7 @@ class TstUiFlow : public QObject {
     QTemporaryDir m_dir;
     dp::DocumentController* m_doc = nullptr;
     dp::PageListModel* m_org = nullptr;
+    dp::Compressor* m_cmp = nullptr;
     QQmlApplicationEngine* m_engine = nullptr;
     QQuickWindow* m_window = nullptr;
     QString m_sixPath;
@@ -181,8 +183,10 @@ private slots:
         m_doc = new dp::DocumentController(m_dir.filePath("data"));
         m_doc->setLanguage("en");
         m_org = new dp::PageListModel(m_doc);
+        m_cmp = new dp::Compressor(m_doc);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Doc", m_doc);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Organizer", m_org);
+        qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Compressor", m_cmp);
         m_engine = new QQmlApplicationEngine;
         m_engine->addImageProvider(QStringLiteral("pdf"), new dp::PageImageProvider(m_doc));
         m_engine->loadFromModule("DriveVault.PdfPro.UI", "Main");
@@ -199,6 +203,7 @@ private slots:
     {
         m_doc->close();
         delete m_engine;
+        delete m_cmp;
         delete m_org;
         delete m_doc;
         dp::pdf::shutdownPdfium();
@@ -630,6 +635,41 @@ private slots:
         QCOMPARE(QDir(outDir).entryList({"*.pdf"}).size(), 2);
         QVERIFY(click("splitCancel"));                                           // "Close" when idle
         QTRY_VERIFY_WITH_TIMEOUT(!dialog->property("opened").toBool(), 5000);
+        m_doc->close();
+    }
+
+    void theCompressDialogShowsRealNumbersComparesAPageAndSaves()
+    {
+        const QString src = write("photo.pdf", testpdf::makePhotoDoc());
+        fresh(src, "photo.pdf");
+        QVERIFY(click("compressButton"));
+        QObject* dialog = m_window->findChild<QObject*>("compressDialog");
+        QVERIFY(dialog);
+        QTRY_VERIFY_WITH_TIMEOUT(dialog->property("opened").toBool(), 5000);
+        QVERIFY(visible("compressStart"));
+        QVERIFY(!visible("compressSave"));                                       // nothing to save before a run
+        QCOMPARE(find("compressDpi")->property("value").toInt(), 150);           // "Balanced" is the default
+        QVERIFY(click("level_high"));
+        QCOMPARE(find("compressDpi")->property("value").toInt(), 110);
+        QVERIFY(click("level_medium"));
+        QVERIFY(click("compressStart"));
+        QTRY_VERIFY_WITH_TIMEOUT(m_cmp->hasResult(), 30000);
+        QTRY_VERIFY_WITH_TIMEOUT(visible("compressSummary") && visible("compressSave"), 5000);
+        QVERIFY2(text("compressSummary").contains("→") && text("compressSummary").contains("−"), qPrintable(text("compressSummary")));
+        QTRY_VERIFY_WITH_TIMEOUT(imageReady("compare_before") && imageReady("compare_after"), 10000);
+
+        QVERIFY(!QFileInfo::exists(m_dir.filePath("photo-compressed.pdf")));    // nothing is saved until the user says so
+        const QString out = m_dir.filePath("photo-compressed.pdf");
+        QVERIFY(QMetaObject::invokeMethod(dialog, "save", Q_ARG(QVariant, out), Q_ARG(QVariant, false)));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("compressSaved"), 5000);
+        QVERIFY(QFileInfo::exists(out));
+        QVERIFY(QFileInfo(out).size() < QFileInfo(src).size() / 2);
+        QVERIFY(QMetaObject::invokeMethod(dialog, "save", Q_ARG(QVariant, out), Q_ARG(QVariant, false)));
+        QTRY_VERIFY_WITH_TIMEOUT(visible("compressReplaceYes"), 3000);          // asks before replacing
+        QVERIFY(click("compressReplaceNo"));
+        QVERIFY(click("compressClose"));
+        QTRY_VERIFY_WITH_TIMEOUT(!dialog->property("opened").toBool(), 5000);
+        QVERIFY(!m_cmp->hasResult());
         m_doc->close();
     }
 

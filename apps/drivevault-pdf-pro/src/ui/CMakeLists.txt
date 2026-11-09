@@ -30,5 +30,6 @@ qt_add_qml_module(dp_ui
         screens/LinkDialog.qml
         screens/PrintDialog.qml
         screens/OrganizerDialog.qml
-        screens/SplitDialog.qml)
+        screens/SplitDialog.qml
+        screens/CompressDialog.qml)
 target_link_libraries(dp_ui PRIVATE Qt6::Quick Qt6::QuickControls2)

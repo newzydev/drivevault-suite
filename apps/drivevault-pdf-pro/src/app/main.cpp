@@ -1,5 +1,6 @@
 #include "DocumentController.h"
 #include "PageImageProvider.h"
+#include "Compressor.h"
 #include "PageListModel.h"
 #include "pdfengine/PdfiumRuntime.h"
 
@@ -69,8 +70,10 @@ int main(int argc, char* argv[])
         controller.open(parser.positionalArguments().constFirst(), parser.value(passwordOption));
 
     dp::PageListModel organizer(&controller);
+    dp::Compressor compressor(&controller);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Doc", &controller);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Organizer", &organizer);
+    qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Compressor", &compressor);
 
     QQmlApplicationEngine engine;
     engine.addImageProvider(QStringLiteral("pdf"), new dp::PageImageProvider(&controller));

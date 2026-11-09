@@ -11,6 +11,7 @@ Item {
     signal openRequested()
     signal organizeRequested()
     signal splitRequested()
+    signal compressRequested()
 
     // ---- view state ---------------------------------------------------------------------------------------------------
     property real zoom: 1.0                       // 1.0 = 100 % = 96 dpi on screen
@@ -282,6 +283,7 @@ Item {
                 PButton { objectName: "printButton"; compact: true; text: Tr.s("print"); variant: "ghost"; onClicked: printDialog.open() }
                 PButton { objectName: "organizeButton"; compact: true; text: Tr.s("toolOrganizeShort"); variant: "ghost"; tip: Tr.s("toolOrganize"); onClicked: viewer.organizeRequested() }
                 PButton { objectName: "splitButton"; compact: true; text: Tr.s("toolSplitShort"); variant: "ghost"; tip: Tr.s("toolSplit"); onClicked: viewer.splitRequested() }
+                PButton { objectName: "compressButton"; compact: true; text: Tr.s("toolCompressShort"); variant: "ghost"; tip: Tr.s("toolCompress"); onClicked: viewer.compressRequested() }
 
                 LanguageSwitch {}
             }

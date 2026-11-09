@@ -14,3 +14,4 @@ dp_add_test(tst_ui_flow dp_ui dp_uiplugin dp_resources Qt6::Quick Qt6::QuickCont
 dp_add_test(tst_perf psapi)
 dp_add_test(tst_pdftools)
 dp_add_test(tst_organizer)
+dp_add_test(tst_compress)

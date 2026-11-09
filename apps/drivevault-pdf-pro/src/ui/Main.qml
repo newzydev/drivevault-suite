@@ -69,6 +69,7 @@ ApplicationWindow {
             onOpenRequested: fileDialog.open()
             onOrganizeRequested: organizer.begin("organize")
             onSplitRequested: splitDialog.open()
+            onCompressRequested: compressDialog.open()
         }
     }
     Component {
@@ -114,6 +115,10 @@ ApplicationWindow {
         onOpenResultRequested: path => win.openPath(path)
     }
     SplitDialog { id: splitDialog }
+    CompressDialog {
+        id: compressDialog
+        onOpenResultRequested: path => win.openPath(path)
+    }
     PasswordDialog {
         id: passwordDialog
         onSubmitted: (path, password) => win.openPath(path, password)
