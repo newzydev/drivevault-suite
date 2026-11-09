@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.5.2 (2026-11-09)
+  Fixed
+  - The minimize / maximize / close buttons form one group and sit close together.
+
 v1.5.1 (2026-11-09)
   Fixed
   - The minimize / maximize / close buttons are rounded and spaced like the other buttons of the top bar.
