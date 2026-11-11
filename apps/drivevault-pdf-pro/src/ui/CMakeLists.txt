@@ -22,6 +22,7 @@ qt_add_qml_module(dp_ui
         components/PButton.qml
         components/ConfirmDialog.qml
         components/LanguageSwitch.qml
+        components/PdfTitleBar.qml
         components/ToolEntry.qml
         components/ToolSearch.qml
         screens/HomeScreen.qml

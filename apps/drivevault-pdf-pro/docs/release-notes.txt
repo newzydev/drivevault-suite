@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.1.2 (2026-11-11): Match the DriveVault title bar
+  - Use a dark title bar with the PDF Pro icon, language switch and window controls.
+  - Drag the title bar to move, double-click to maximize or restore, and drag the frame edges to resize.
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.1.1 (2026-11-11): Fit tool labels and remember the window
   - Long labels and descriptions on Home tool cards end with an ellipsis, with the full text on hover.
   - Reopening restores the normal window size and position or the maximized state.

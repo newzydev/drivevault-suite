@@ -11,6 +11,7 @@ ApplicationWindow {
     height: 800
     minimumWidth: 960
     minimumHeight: 560
+    flags: Qt.Window | Qt.FramelessWindowHint
     title: (Doc.isOpen ? Doc.fileName + " - " : "") + Tr.s("title")
     color: Theme.background
 
@@ -149,6 +150,13 @@ ApplicationWindow {
         anchors.fill: parent
         spacing: 0
 
+        PdfTitleBar {
+            id: titleBar
+            Layout.fillWidth: true
+            visible: win.visibility !== Window.FullScreen
+            hostWindow: win
+        }
+
         FileTabs {
             Layout.fillWidth: true
             homeSelected: win.showHome || !Doc.isOpen
@@ -198,7 +206,6 @@ ApplicationWindow {
                     compact: true
                     onClicked: commandSearch.open()
                 }
-                LanguageSwitch {}
             }
         }
         RowLayout {
@@ -263,6 +270,23 @@ ApplicationWindow {
             }
         }
     }
+
+    // Frameless windows use the platform resize operation from these border hit areas.
+    component ResizeEdge: MouseArea {
+        required property int edges
+        enabled: win.visibility === Window.Windowed
+        hoverEnabled: true
+        z: 2000
+        onPressed: mouse => { mouse.accepted = win.startSystemResize(edges) }
+    }
+    ResizeEdge { edges: Qt.LeftEdge; cursorShape: Qt.SizeHorCursor; x: 0; y: 10; width: 5; height: win.height - 20 }
+    ResizeEdge { edges: Qt.RightEdge; cursorShape: Qt.SizeHorCursor; x: win.width - 5; y: 10; width: 5; height: win.height - 20 }
+    ResizeEdge { edges: Qt.TopEdge; cursorShape: Qt.SizeVerCursor; x: 10; y: 0; width: win.width - 20; height: 5 }
+    ResizeEdge { edges: Qt.BottomEdge; cursorShape: Qt.SizeVerCursor; x: 10; y: win.height - 5; width: win.width - 20; height: 5 }
+    ResizeEdge { edges: Qt.LeftEdge | Qt.TopEdge; cursorShape: Qt.SizeFDiagCursor; x: 0; y: 0; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.RightEdge | Qt.BottomEdge; cursorShape: Qt.SizeFDiagCursor; x: win.width - 10; y: win.height - 10; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.RightEdge | Qt.TopEdge; cursorShape: Qt.SizeBDiagCursor; x: win.width - 10; y: 0; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.LeftEdge | Qt.BottomEdge; cursorShape: Qt.SizeBDiagCursor; x: 0; y: win.height - 10; width: 10; height: 10 }
     property bool closeConfirmed: false
     onClosing: close => {
         if (Editor.anyModified && !closeConfirmed) {
@@ -309,7 +333,7 @@ ApplicationWindow {
         visible: win.notice !== ""
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        anchors.topMargin: 104
+        anchors.topMargin: 104 + (titleBar.visible ? titleBar.height : 0)
         width: Math.min(560, parent.width - 32)
         height: noticeRow.implicitHeight + 20
         radius: 10

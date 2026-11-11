@@ -53,6 +53,16 @@ Canvas {
             strokePath([[6, 6], [18, 18]])
             strokePath([[18, 6], [6, 18]])
             break
+        case "minimize":
+            strokePath([[6, 12], [18, 12]])
+            break
+        case "maximize":
+            ctx.strokeRect(6, 6, 12, 12)
+            break
+        case "restore":
+            ctx.strokeRect(5, 9, 10, 10)
+            strokePath([[9, 9], [9, 5], [19, 5], [19, 15], [15, 15]])
+            break
         case "folder":
             strokePath([[3, 19], [3, 6], [9, 6], [11, 8], [20, 8], [20, 11]])
             strokePath([[3, 19], [7, 11], [22, 11], [19, 19], [3, 19]])

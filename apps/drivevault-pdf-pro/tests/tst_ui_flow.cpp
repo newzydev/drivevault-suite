@@ -1003,6 +1003,14 @@ private slots:
         QVERIFY2(component.isReady(), qPrintable(component.errorString()));
         const QSize normalSize(960, 650);
         const auto settingsPath = m_dir.filePath("data/settings.ini");
+        const auto clickCaption = [](QQuickWindow* window, const QString& name) {
+            auto* button = search(window->contentItem(), name);
+            if (!button || !button->isVisible())
+                return false;
+            const QPointF center(button->width() / 2, button->height() / 2);
+            QTest::mouseClick(window, Qt::LeftButton, {}, button->mapToScene(center).toPoint());
+            return true;
+        };
 
         {
             const std::unique_ptr<QObject> instance(component.create());
@@ -1010,9 +1018,10 @@ private slots:
             QVERIFY(window);
             window->resize(normalSize);
             QTRY_COMPARE(window->property("normalGeometry").toRect().size(), normalSize);
-            window->showMaximized();
+            QVERIFY(clickCaption(window, "winMaximize"));
             QTRY_COMPARE(window->visibility(), QWindow::Maximized);
-            QVERIFY(window->close());
+            QVERIFY(clickCaption(window, "winClose"));
+            QTRY_VERIFY(!window->isVisible());
         }
         {
             QSettings settings(settingsPath, QSettings::IniFormat);
@@ -1024,9 +1033,11 @@ private slots:
             auto* window = qobject_cast<QQuickWindow*>(instance.get());
             QVERIFY(window);
             QTRY_COMPARE(window->visibility(), QWindow::Maximized);
-            window->showNormal();
+            QVERIFY(clickCaption(window, "winMaximize"));
             QTRY_COMPARE(window->visibility(), QWindow::Windowed);
             QCOMPARE(window->size(), normalSize);
+            QVERIFY(clickCaption(window, "winMinimize"));
+            QTRY_COMPARE(window->visibility(), QWindow::Minimized);
             QVERIFY(window->close());
         }
         {

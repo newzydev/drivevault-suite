@@ -124,6 +124,9 @@ QtObject {
         "printCancelled": ["Printing was cancelled.", "ยกเลิกการพิมพ์แล้ว"],
 
         "close": ["Close", "ปิด"],
+        "minimizeWindow": ["Minimize window", "ย่อหน้าต่าง"],
+        "maximizeWindow": ["Maximize window", "ขยายหน้าต่าง"],
+        "restoreWindow": ["Restore window", "คืนขนาดหน้าต่าง"],
         "apply": ["Apply", "ใช้"],
         "browse": ["Browse…", "เลือก…"],
         "replace": ["Replace", "แทนที่"],
