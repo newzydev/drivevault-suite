@@ -9,9 +9,12 @@ Rectangle {
 
     signal openRequested()
     signal closeTabRequested(int index)
+    signal homeRequested()
+    signal tabRequested()
+    property bool homeSelected: false
 
-    implicitHeight: 40
-    color: "#0A0B0D"
+    implicitHeight: 44
+    color: Theme.background
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
 
     RowLayout {
@@ -20,16 +23,26 @@ Rectangle {
         anchors.rightMargin: 10
         spacing: 4
 
+        PButton {
+            objectName: "homeTab"
+            compact: true
+            variant: bar.homeSelected ? "secondary" : "ghost"
+            glyph: "home"
+            tip: Tr.s("home")
+            onClicked: bar.homeRequested()
+        }
+
         Repeater {
             model: Doc.tabs
             delegate: Rectangle {
                 id: tab
                 required property var modelData
                 required property int index
-                readonly property bool active: Doc.currentTab === index
+                readonly property bool active: !bar.homeSelected && Doc.currentTab === index
                 objectName: "tab_" + index
                 Layout.alignment: Qt.AlignBottom
                 Layout.preferredHeight: 32
+                Layout.fillWidth: true
                 Layout.preferredWidth: Math.min(220, Math.max(110, label.implicitWidth + 58))
                 Layout.maximumWidth: 220
                 radius: 8
@@ -37,7 +50,7 @@ Rectangle {
                 border.width: active ? 1 : 0
                 border.color: Theme.border
                 HoverHandler { id: tabHover; cursorShape: Qt.PointingHandCursor }
-                TapHandler { onTapped: Doc.switchTab(tab.index) }
+                TapHandler { onTapped: { Doc.switchTab(tab.index); bar.tabRequested() } }
                 ToolTip.visible: tabHover.hovered && tab.modelData.path !== ""
                 ToolTip.delay: 600
                 ToolTip.text: tab.modelData.path
@@ -73,7 +86,7 @@ Rectangle {
                         implicitHeight: 24
                         leftPadding: 0
                         rightPadding: 0
-                        text: "✕"
+                        glyph: "close"
                         tip: Tr.s("closeFile")
                         onClicked: bar.closeTabRequested(tab.index)
                     }
@@ -85,7 +98,7 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             compact: true
             variant: "ghost"
-            text: "+"
+            text: "+  " + Tr.s("open")
             tip: Tr.s("openFile")
             onClicked: bar.openRequested()
         }

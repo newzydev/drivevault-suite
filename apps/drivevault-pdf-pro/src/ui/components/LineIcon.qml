@@ -37,7 +37,58 @@ Canvas {
             ctx.arcTo(x, y, x + w, y, r)
             ctx.closePath()
         }
+        function strokePath(points) {
+            ctx.beginPath()
+            ctx.moveTo(points[0][0], points[0][1])
+            for (let i = 1; i < points.length; ++i)
+                ctx.lineTo(points[i][0], points[i][1])
+            ctx.stroke()
+        }
         switch (name) {
+        case "home":
+            strokePath([[3, 11], [12, 4], [21, 11]])
+            strokePath([[5, 10], [5, 21], [10, 21], [10, 15], [14, 15], [14, 21], [19, 21], [19, 10]])
+            break
+        case "close":
+            strokePath([[6, 6], [18, 18]])
+            strokePath([[18, 6], [6, 18]])
+            break
+        case "folder":
+            strokePath([[3, 19], [3, 6], [9, 6], [11, 8], [20, 8], [20, 11]])
+            strokePath([[3, 19], [7, 11], [22, 11], [19, 19], [3, 19]])
+            break
+        case "scan":
+            strokePath([[3, 8], [3, 4], [8, 4]])
+            strokePath([[16, 4], [21, 4], [21, 8]])
+            strokePath([[21, 16], [21, 20], [16, 20]])
+            strokePath([[8, 20], [3, 20], [3, 16]])
+            strokePath([[3, 12], [21, 12]])
+            break
+        case "download":
+            roundRect(5, 3, 14, 18, 2); ctx.stroke()
+            strokePath([[12, 7], [12, 16]])
+            strokePath([[8.5, 12.5], [12, 16], [15.5, 12.5]])
+            break
+        case "edit":
+            strokePath([[12, 4], [4, 4], [4, 20], [20, 20], [20, 13]])
+            strokePath([[9, 15], [10, 11], [18, 3], [21, 6], [13, 14], [9, 15]])
+            break
+        case "form":
+            roundRect(3, 6, 18, 12, 2); ctx.stroke()
+            strokePath([[9, 3], [15, 3]])
+            strokePath([[12, 3], [12, 21]])
+            strokePath([[9, 21], [15, 21]])
+            break
+        case "shield":
+            strokePath([[12, 3], [20, 6], [20, 12], [18, 17], [12, 21],
+                        [6, 17], [4, 12], [4, 6], [12, 3]])
+            strokePath([[8.5, 12], [11, 14.5], [15.5, 9.5]])
+            break
+        case "redact":
+            roundRect(3, 7, 18, 10, 2); ctx.stroke()
+            strokePath([[6, 10], [18, 10]])
+            strokePath([[6, 14], [18, 14]])
+            break
         case "sidebar":
             roundRect(3, 4, 18, 16, 2.5); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(9.5, 4); ctx.lineTo(9.5, 20); ctx.stroke()

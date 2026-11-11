@@ -22,6 +22,8 @@ qt_add_qml_module(dp_ui
         components/PButton.qml
         components/ConfirmDialog.qml
         components/LanguageSwitch.qml
+        components/ToolEntry.qml
+        components/ToolSearch.qml
         screens/HomeScreen.qml
         screens/ViewerScreen.qml
         screens/PasswordDialog.qml
@@ -37,6 +39,8 @@ qt_add_qml_module(dp_ui
         screens/MarkDialog.qml
         screens/FormDialog.qml
         screens/ImageExportDialog.qml
+        screens/OcrDialog.qml
+        screens/ReplaceTextDialog.qml
         screens/SecurityDialog.qml
         screens/RedactionBar.qml
         screens/MaintenanceDialog.qml

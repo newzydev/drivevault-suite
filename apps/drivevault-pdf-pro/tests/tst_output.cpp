@@ -1,4 +1,6 @@
 #include "ImageExport.h"
+#include "ThaiOcr.h"
+#include "ReplaceText.h"
 #include "TestPdf.h"
 #include "pdfengine/PdfDocument.h"
 #include "pdfengine/PdfiumRuntime.h"
@@ -8,6 +10,9 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QProcess>
+#include <QFontDatabase>
+#include <QPainter>
+#include <QPdfWriter>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -23,6 +28,92 @@ class TstOutput : public QObject {
 
 private slots:
     void cleanupTestCase() { dp::pdf::shutdownPdfium(); }
+
+    void thaiOcrMakesAnImagePageSearchableWithoutChangingItsPixels()
+    {
+        if (!dp::thaiOcrAvailable())
+            QSKIP("Local ONNX Runtime and PaddleOCR models are absent");
+        QTemporaryDir dir;
+        const int fontId = QFontDatabase::addApplicationFont(DP_TEST_FONT_THAI);
+        QVERIFY(fontId >= 0);
+        const QString phrase = QStringLiteral("ภาษาไทย");
+        const QString source = dir.filePath(QStringLiteral("สแกน.pdf"));
+        {
+            QImage image(1200, 700, QImage::Format_RGB32);
+            image.fill(Qt::white);
+            QPainter ink(&image);
+            QFont font(QFontDatabase::applicationFontFamilies(fontId).first());
+            font.setPixelSize(64);
+            ink.setFont(font);
+            ink.drawText(110, 180, phrase);
+            ink.drawText(110, 340, QStringLiteral("เอกสารทดสอบ"));
+            ink.end();
+            QPdfWriter writer(source);
+            writer.setPageSize(QPageSize(QSizeF(600, 350), QPageSize::Point));
+            writer.setPageMargins({}, QPageLayout::Point);
+            writer.setResolution(144);
+            QPainter page(&writer);
+            page.drawImage(0, 0, image);
+            QVERIFY(page.end());
+        }
+        const auto input = dp::pdf::PdfDocument::open(source, {}, nullptr);
+        QVERIFY(input);
+        QVERIFY(input->pageText(0).isEmpty());
+        const QString output = dir.filePath(QStringLiteral("ค้นหาได้.pdf"));
+        std::atomic_bool cancel = false;
+        QCOMPARE(dp::saveSearchableCopy(*input, {0}, output, cancel, {}), QString());
+        const auto copy = dp::pdf::PdfDocument::open(output, {}, nullptr);
+        QVERIFY(copy);
+        const QString recognized = copy->pageText(0);
+        QVERIFY2(recognized.contains(phrase), qPrintable(recognized));
+        QVERIFY(!copy->searchPage(0, phrase, false, false).isEmpty());
+        QCOMPARE(copy->render(0, 2), input->render(0, 2));
+        QCOMPARE(dp::saveSearchableCopy(*input, {0}, output, cancel, {}), QStringLiteral("exists"));
+        cancel = true;
+        const QString abandoned = dir.filePath(QStringLiteral("cancelled.pdf"));
+        QCOMPARE(dp::saveSearchableCopy(*input, {0}, abandoned, cancel, {}), QStringLiteral("cancelled"));
+        QVERIFY(!QFileInfo::exists(abandoned));
+    }
+
+    void replacesExistingThaiTextWithShapedSearchableText()
+    {
+        QTemporaryDir dir;
+        const int fontId = QFontDatabase::addApplicationFont(DP_TEST_FONT_THAI);
+        QVERIFY(fontId >= 0);
+        const QString original = QStringLiteral("ภาษาไทยทดสอบ");
+        const QString replacement = QStringLiteral("น้ำใจ");
+        const QString source = dir.filePath("original.pdf");
+        {
+            QPdfWriter writer(source);
+            writer.setPageSize(QPageSize(QSizeF(600, 350), QPageSize::Point));
+            writer.setPageMargins({}, QPageLayout::Point);
+            writer.setResolution(72);
+            QPainter page(&writer);
+            QFont font(QFontDatabase::applicationFontFamilies(fontId).first());
+            font.setPixelSize(28);
+            page.setFont(font);
+            page.drawText(100, 100, original);
+            page.drawText(100, 230, QStringLiteral("Unchanged"));
+            page.fillRect(QRect(320, 85, 80, 80), Qt::blue);
+            QVERIFY(page.end());
+        }
+        const auto input = dp::pdf::PdfDocument::open(source, {}, nullptr);
+        QVERIFY(input);
+        const auto hits = input->searchPage(0, original, true, false);
+        QVERIFY(!hits.isEmpty());
+        const QPointF point = hits.front().rects.front().center();
+        QCOMPARE(input->editableTextAt(0, point).text, original);
+        const QString output = dir.filePath("edited.pdf");
+        QCOMPARE(dp::replaceTextRun(*input, 0, point, original, replacement, output), QString());
+        const auto copy = dp::pdf::PdfDocument::open(output, {}, nullptr);
+        QVERIFY(copy);
+        QVERIFY(!copy->pageText(0).contains(original));
+        QVERIFY(copy->pageText(0).contains(replacement));
+        QVERIFY(copy->pageText(0).contains(QStringLiteral("Unchanged")));
+        QCOMPARE(copy->render(0, 1).pixelColor(350, 100), QColor(Qt::blue));
+        QVERIFY(input->pageText(0).contains(original));
+        QCOMPARE(dp::replaceTextRun(*input, 0, point, original, replacement, source), QStringLiteral("exists"));
+    }
 
     void imageDimensionsTransparencyAndPixels()
     {

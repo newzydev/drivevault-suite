@@ -31,9 +31,14 @@ if (-not $SkipBuild) {
 }
 $ErrorActionPreference = 'Stop'
 if ((Get-Item -LiteralPath $exe).VersionInfo.ProductVersion -ne $version) { throw "Build PDF Pro $version before packaging." }
+if (-not (Select-String -LiteralPath (Join-Path $buildBin '..\CMakeCache.txt') -Pattern '^DP_ONNX_AVAILABLE:INTERNAL=ON$')) {
+    throw 'Build PDF Pro with the Thai OCR engine before packaging.'
+}
 $toolsRoot = if ($env:DV_TOOLS_DIR) { $env:DV_TOOLS_DIR } else { Join-Path $SuiteRoot '.tools' }
 $pdfium = if ($env:DV_PDFIUM_DIR) { $env:DV_PDFIUM_DIR } else { Join-Path $toolsRoot 'pdfium' }
 $qpdfDir = if ($env:DV_QPDF_DIR) { $env:DV_QPDF_DIR } else { Join-Path $toolsRoot 'qpdf' }
+$onnxDir = Join-Path $toolsRoot 'onnxruntime-win-x64-1.24.4'
+$ocrModels = Join-Path $toolsRoot 'paddleocr-thai'
 if (-not (Select-String -LiteralPath (Join-Path $pdfium 'VERSION') -Pattern '^BUILD=8138$') -or
     (Get-Content -LiteralPath (Join-Path $pdfium 'args.gn') -Raw) -notmatch 'pdf_enable_v8 = false' -or
     (Get-Content -LiteralPath (Join-Path $pdfium 'args.gn') -Raw) -notmatch 'pdf_enable_xfa = false') {
@@ -66,6 +71,20 @@ foreach ($engine in @(@{ Root = $pdfium; Name = 'pdfium.dll' }, @{ Root = $qpdfD
     $audited = & (Join-Path $sharedScripts 'file-sha256.ps1') -Path (Join-Path $engine.Root "bin\$($engine.Name)")
     if ($deployed -cne $audited) { throw "The build's $($engine.Name) does not match the audited toolchain." }
 }
+$ocrFiles = [ordered]@{
+    'onnxruntime.dll' = 'b95efb2113b603bbbf3f191061c5516a871ed546893c820e4f3b7b6c358dbf2a'
+    'models\paddle-text-detection.onnx' = 'ee40e80071ba3a320d4efda75f3e22047a7d049e9bf7bcaaf9daea23fc21b935'
+    'models\paddle-thai-recognition.onnx' = '2b6e56b1872200349e227574c25aeb0e0f9af9b8356e9ff5f75ac543a535669a'
+    'models\paddle-thai-dict.txt' = '57f5406f94bb6688fb7077f7be65f08bbd71cecf48c01ea26c522cb5c4836b7a'
+}
+New-Item -ItemType Directory -Path (Join-Path $stage 'models') | Out-Null
+foreach ($relative in $ocrFiles.Keys) {
+    $payload = Join-Path $buildBin $relative
+    if (-not (Test-Path -LiteralPath $payload -PathType Leaf)) { throw "Build with the Thai OCR prerequisites first: $relative" }
+    $digest = & (Join-Path $sharedScripts 'file-sha256.ps1') -Path $payload
+    if ($digest -cne $ocrFiles[$relative]) { throw "Thai OCR payload does not match the audited version: $relative" }
+    Copy-Item -LiteralPath $payload -Destination (Join-Path $stage $relative)
+}
 
 $deploy = @('--release', '--no-translations', '--no-system-d3d-compiler', '--no-system-dxc-compiler', '--no-opengl-sw',
     '--no-compiler-runtime', '--skip-plugin-types', 'generic,networkinformation,tls', '--include-plugins', 'qjpeg,qoffscreen',
@@ -95,8 +114,9 @@ foreach ($dll in 'msvcp140.dll', 'msvcp140_1.dll', 'msvcp140_2.dll', 'vcruntime1
 $lic = Join-Path $stage 'licenses'
 $pdfiumLic = Join-Path $lic 'PDFium'
 $qtLic = Join-Path $lic 'Qt'
+$ocrLic = Join-Path $lic 'OCR'
 $docs = Join-Path $stage 'docs'
-New-Item -ItemType Directory -Path $lic, $pdfiumLic, $qtLic, $docs -Force | Out-Null
+New-Item -ItemType Directory -Path $lic, $pdfiumLic, $qtLic, $ocrLic, $docs -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $DvRoot 'LICENSE.txt') -Destination $lic
 Copy-Item -LiteralPath (Join-Path $DvRoot 'docs\THIRD-PARTY-NOTICES.txt') -Destination $lic
 Copy-Item -Path (Join-Path $DvRoot 'resources\fonts\OFL-*.txt') -Destination $lic
@@ -108,6 +128,11 @@ foreach ($module in 'qtbase', 'qtdeclarative', 'qtsvg') {
 Copy-Item -LiteralPath (Join-Path $pdfium 'LICENSE') -Destination (Join-Path $pdfiumLic 'distribution-LICENSE.txt')
 Copy-Item -Path (Join-Path $pdfium 'licenses\*') -Destination $pdfiumLic
 Copy-Item -LiteralPath (Join-Path $toolsRoot 'InnoSetup\license.txt') -Destination (Join-Path $lic 'Inno-Setup-LICENSE.txt')
+Copy-Item -LiteralPath (Join-Path $onnxDir 'LICENSE') -Destination (Join-Path $ocrLic 'ONNX-Runtime-LICENSE.txt')
+Copy-Item -LiteralPath (Join-Path $onnxDir 'ThirdPartyNotices.txt') -Destination (Join-Path $ocrLic 'ONNX-Runtime-ThirdPartyNotices.txt')
+foreach ($model in 'paddle-text-detection.onnx', 'paddle-thai-recognition.onnx', 'paddle-thai-dict.txt') {
+    Copy-Item -LiteralPath (Join-Path $ocrModels "$model.LICENCE.txt") -Destination $ocrLic
+}
 foreach ($doc in 'user-guide.en.html', 'user-guide.th.html', 'release-notes.txt') {
     Copy-Item -LiteralPath (Join-Path $DvRoot "docs\$doc") -Destination $docs
 }

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultPdfPro
-    VERSION 1.0.0
+    VERSION 1.1.0
     DESCRIPTION "DriveVault PDF Pro - read, merge, split, compress, edit, protect and redact PDF files"
     LANGUAGES CXX)
 
@@ -61,6 +61,23 @@ file(COPY ${DP_QPDF_DLLS} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 add_subdirectory(src/pdfengine)
 add_subdirectory(src/pdftools)
 add_subdirectory(src/ui)
+
+set(DP_OCR_TOOLS "${CMAKE_SOURCE_DIR}/../../.tools")
+if(DEFINED ENV{DV_TOOLS_DIR})
+    set(DP_OCR_TOOLS "$ENV{DV_TOOLS_DIR}")
+endif()
+set(DP_ONNX_DIR "${DP_OCR_TOOLS}/onnxruntime-win-x64-1.24.4" CACHE PATH "ONNX Runtime CPU SDK")
+set(DP_OCR_MODELS_DIR "${DP_OCR_TOOLS}/paddleocr-thai" CACHE PATH "PaddleOCR Thai models")
+set(DP_ONNX_AVAILABLE OFF CACHE INTERNAL "Build includes the Thai OCR engine")
+if(EXISTS "${DP_ONNX_DIR}/include/onnxruntime_cxx_api.h" AND EXISTS "${DP_ONNX_DIR}/lib/onnxruntime.dll")
+    file(COPY "${DP_ONNX_DIR}/lib/onnxruntime.dll" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+    foreach(model paddle-text-detection.onnx paddle-thai-recognition.onnx paddle-thai-dict.txt)
+        if(EXISTS "${DP_OCR_MODELS_DIR}/${model}")
+            file(COPY "${DP_OCR_MODELS_DIR}/${model}" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/models")
+        endif()
+    endforeach()
+    set(DP_ONNX_AVAILABLE ON CACHE INTERNAL "Build includes the Thai OCR engine")
+endif()
 add_subdirectory(src/app)
 
 if(DP_BUILD_TESTS)

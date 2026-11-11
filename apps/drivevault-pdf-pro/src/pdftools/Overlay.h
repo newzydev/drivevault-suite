@@ -68,6 +68,7 @@ struct TextRun {
     double angle = 0;
     double size = 12;
     double width = 0;
+    bool fitWidth = false;
 };
 using TextRuns = QList<TextRun>;
 
@@ -85,6 +86,7 @@ struct PageEdits {
     int page = 0;
     QSizeF size;                  // the page as shown (view rotation 0)
     QList<EditItem> items;        // marks already expanded
+    TextRuns textLayer;           // optional searchable text with no visible ink
 };
 
 struct EditResult {

@@ -34,6 +34,17 @@ This software is based in part on the work of the Independent JPEG Group.
 Inter and Noto Sans Thai: SIL Open Font License 1.1. See OFL-Inter.txt and
 OFL-NotoSansThai.txt.
 
+ONNX Runtime 1.24.4 CPU: Copyright Microsoft Corporation, MIT. See
+licenses\OCR\ONNX-Runtime-LICENSE.txt and ONNX-Runtime-ThirdPartyNotices.txt.
+Build: https://github.com/microsoft/onnxruntime/releases/tag/v1.24.4
+
+PaddleOCR: Copyright the PaddlePaddle Authors, Apache License 2.0.
+The unmodified PP-OCRv3 mobile detector, PP-OCRv5 Thai mobile recognizer and
+Thai alphabet use the ONNX conversion published by monkt/paddleocr-onnx.
+See the individual model and alphabet licences in licenses\OCR.
+Source: https://github.com/PaddlePaddle/PaddleOCR
+ONNX distribution: https://huggingface.co/monkt/paddleocr-onnx
+
 Microsoft Visual C++ runtime: redistributed under the Visual Studio
 redistributable terms. The runtime DLLs are installed app-local.
 

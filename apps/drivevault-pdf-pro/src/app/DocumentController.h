@@ -137,6 +137,12 @@ public:
 
     Q_INVOKABLE int imagePageCount(const QString& range, int currentPage) const;
     Q_INVOKABLE QString startImageExport(const QVariantMap& options, const QString& path);
+    Q_INVOKABLE bool ocrAvailable() const;
+    Q_INVOKABLE QString startThaiOcr(const QString& range, int currentPage, const QString& path);
+    Q_INVOKABLE QString existingTextAt(int page, double x, double y) const;
+    Q_INVOKABLE QString startTextReplacement(int page, double x, double y, const QString& original,
+                                             const QString& replacement, const QString& path);
+    Q_INVOKABLE void cancelOutput();
     Q_INVOKABLE void cancelImageExport();
     Q_INVOKABLE QString startSecuritySave(const QVariantMap& options, const QString& path);
     Q_INVOKABLE QString inspectMaintenance();
@@ -256,7 +262,7 @@ private:
     std::shared_ptr<std::atomic_bool> m_printCancel;
     bool m_outputBusy = false;
     double m_outputProgress = 0.0;
-    std::shared_ptr<std::atomic_bool> m_imageCancel;
+    std::shared_ptr<std::atomic_bool> m_outputCancel;
     QThreadPool m_outputPool;
 
     bool m_splitting = false;

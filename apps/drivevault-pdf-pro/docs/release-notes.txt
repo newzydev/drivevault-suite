@@ -2,6 +2,12 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.1.0 (2026-11-11): Add PDF workspace, Thai OCR and text replacement
+  - Home, document tabs, All tools and Ctrl+K command search.
+  - Recognize Thai and English on image-only pages locally and save a searchable copy.
+  - Replace supported horizontal text runs with shaped, searchable Thai or English.
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.0.0 (2026-11-09): First Windows installer candidate
   - English and Thai setup and user guides, optional desktop shortcut and Windows Open with registration.
   - Includes DriveVault Master Pro 1.5.5 and registers PDF Pro in the suite.

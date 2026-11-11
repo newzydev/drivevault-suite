@@ -17,6 +17,51 @@ ApplicationWindow {
     property string notice: ""
     property bool noticeIsError: true
     property int windowedVisibility: Window.Windowed
+    property bool showHome: !Doc.isOpen
+    property bool showTools: true
+    property string category: "all"
+    property string pendingTool: ""
+    readonly property var tools: [
+        { key: "exportImages", icon: "download", tint: "#6094ff", group: "convert" },
+        { key: "toolForm", icon: "form", tint: "#b282ff", group: "sign" },
+        { key: "editExisting", icon: "edit", tint: "#f472b6", group: "edit" },
+        { key: "addContent", icon: "edit", tint: "#f472b6", group: "edit" },
+        { key: "toolMerge", icon: "pages2", tint: "#6094ff", group: "edit" },
+        { key: "toolOrganize", icon: "thumbs", tint: "#4dc987", group: "edit" },
+        { key: "addComments", icon: "comment", tint: "#fbb04c", group: "edit" },
+        { key: "thaiOcr", icon: "scan", tint: "#4dc987", group: "convert" },
+        { key: "protectPdf", icon: "shield", tint: "#6094ff", group: "sign" },
+        { key: "redactTitle", icon: "redact", tint: "#f87171", group: "edit" },
+        { key: "toolCompress", icon: "download", tint: "#f87171", group: "convert" },
+        { key: "toolSplit", icon: "pages2", tint: "#4dc987", group: "edit" },
+        { key: "unlockPdf", icon: "shield", tint: "#5fc7de", group: "sign" },
+        { key: "maintenance", icon: "outline", tint: "#5fc7de", group: "edit" },
+        { key: "batchPdf", icon: "thumbs", tint: "#fbb04c", group: "convert" },
+        { key: "repairPdf", icon: "rotate", tint: "#fbb04c", group: "edit" }
+    ]
+
+    function runTool(tool) {
+        if (Doc.outputBusy)
+            return
+        if (tool === "openFile") {
+            fileDialog.open()
+        } else if (tool === "toolMerge") {
+            organizer.begin("merge")
+        } else if (tool === "batchPdf") {
+            batchDialog.open()
+        } else if (tool === "repairPdf") {
+            maintenanceDialog.begin(true)
+        } else if (!Doc.isOpen) {
+            pendingTool = tool
+            fileDialog.open()
+        } else {
+            showHome = false
+            Qt.callLater(function () {
+                if (viewerLoader.item)
+                    viewerLoader.item.runTool(tool)
+            })
+        }
+    }
 
     function showNotice(text, isError) { noticeIsError = isError; notice = text }
     function toggleFullScreen() {
@@ -30,6 +75,7 @@ ApplicationWindow {
 
     Connections {
         target: Doc
+        function onDocumentChanged() { win.showHome = !Doc.isOpen }
         function onPrintFinished(ok, message) {
             if (ok)
                 win.showNotice(Tr.s("printDone"), false)
@@ -43,24 +89,143 @@ ApplicationWindow {
     function openPath(path, password) {
         const code = Doc.open(path, password === undefined ? "" : password)
         if (code === "") {
+            const tool = pendingTool
+            pendingTool = ""
             passwordDialog.close()
             notice = ""
+            showHome = false
+            if (tool !== "")
+                runTool(tool)
         } else if (code === "password") {
             passwordDialog.path = Doc.localPath(path)
             passwordDialog.wrong = password !== undefined && password !== ""
             if (!passwordDialog.opened)
                 passwordDialog.open()
         } else {
+            pendingTool = ""
             passwordDialog.close()
             showNotice(Tr.error(code), true)
             Doc.removeRecent(Doc.localPath(path))
         }
     }
 
-    Loader {
-        id: screenLoader
+    ColumnLayout {
         anchors.fill: parent
-        sourceComponent: Doc.isOpen ? viewerComponent : homeComponent
+        spacing: 0
+
+        FileTabs {
+            Layout.fillWidth: true
+            homeSelected: win.showHome || !Doc.isOpen
+            onHomeRequested: win.showHome = true
+            onTabRequested: win.showHome = false
+            onOpenRequested: win.runTool("openFile")
+            onCloseTabRequested: index => viewerLoader.item.closeTabAt(index)
+        }
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 52
+            color: Theme.backgroundAlt
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                spacing: 5
+                Repeater {
+                    model: [
+                        { key: "all", label: "allTools" }, { key: "edit", label: "editCategory" },
+                        { key: "convert", label: "convertCategory" }, { key: "sign", label: "protectCategory" }
+                    ]
+                    delegate: PButton {
+                        required property var modelData
+                        text: Tr.s(modelData.label)
+                        variant: "ghost"
+                        compact: true
+                        onClicked: {
+                            win.showTools = win.category !== modelData.key || !win.showTools
+                            win.category = modelData.key
+                        }
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: parent.width - 12
+                            height: 2
+                            color: Theme.accent
+                            visible: win.showTools && win.category === parent.modelData.key
+                        }
+                    }
+                }
+                Item { Layout.fillWidth: true }
+                PButton {
+                    objectName: "findTools"
+                    text: Tr.s("findTools") + "    Ctrl+K"
+                    compact: true
+                    onClicked: commandSearch.open()
+                }
+                LanguageSwitch {}
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 0
+            Rectangle {
+                visible: win.showTools
+                Layout.preferredWidth: win.width < 1100 ? 218 : 254
+                Layout.fillHeight: true
+                color: Theme.backgroundAlt
+                Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.border }
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+                    RowLayout {
+                        Layout.fillWidth: true
+                        AppText {
+                            Layout.fillWidth: true
+                            leftPadding: 10
+                            font.weight: Font.DemiBold
+                            font.pixelSize: Theme.fontLg
+                            text: Tr.s(({ all: "allTools", edit: "editCategory", convert: "convertCategory",
+                                        sign: "protectCategory" })[win.category])
+                        }
+                        PButton { compact: true; variant: "ghost"; glyph: "close"; tip: Tr.s("dismiss"); onClicked: win.showTools = false }
+                    }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+                    ListView {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+                        model: win.tools.filter(tool => win.category === "all" || tool.group === win.category)
+                        ScrollBar.vertical: ScrollBar {}
+                        delegate: ToolEntry {
+                            required property var modelData
+                            width: ListView.view.width
+                            tool: modelData
+                            enabled: !Doc.outputBusy
+                            onClicked: win.runTool(tool.key)
+                        }
+                    }
+                }
+            }
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Loader {
+                    id: viewerLoader
+                    anchors.fill: parent
+                    active: Doc.isOpen
+                    visible: active && !win.showHome
+                    sourceComponent: viewerComponent
+                }
+                Loader {
+                    anchors.fill: parent
+                    active: win.showHome || !Doc.isOpen
+                    visible: active
+                    sourceComponent: homeComponent
+                }
+            }
+        }
     }
     property bool closeConfirmed: false
     onClosing: close => {
@@ -69,8 +234,8 @@ ApplicationWindow {
             windowAsk.open()
             return
         }
-        if (screenLoader.item && screenLoader.item.flushSave)
-            screenLoader.item.flushSave()      // keep the view of the open file
+        if (viewerLoader.item)
+            viewerLoader.item.flushSave()
     }
     Component {
         id: viewerComponent
@@ -85,15 +250,15 @@ ApplicationWindow {
             onSecurityRequested: unlock => { securityDialog.unlock = unlock; securityDialog.open() }
             onMaintenanceRequested: repair => maintenanceDialog.begin(repair)
             onBatchRequested: batchDialog.open()
+            onOcrRequested: page => { ocrDialog.currentPage = page; ocrDialog.open() }
         }
     }
     Component {
         id: homeComponent
         HomeScreen {
-            onOpenRequested: fileDialog.open()
-            onMergeRequested: organizer.begin("merge")
-            onBatchRequested: batchDialog.open()
-            onRepairRequested: maintenanceDialog.begin(true)
+            tools: ["toolOrganize", "thaiOcr", "toolForm", "editExisting", "protectPdf"]
+                .map(key => win.tools.find(tool => tool.key === key))
+            onToolRequested: key => win.runTool(key)
             onOpenPathRequested: path => win.openPath(path)
         }
     }
@@ -104,7 +269,7 @@ ApplicationWindow {
         visible: win.notice !== ""
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        anchors.topMargin: 14
+        anchors.topMargin: 104
         width: Math.min(560, parent.width - 32)
         height: noticeRow.implicitHeight + 20
         radius: 10
@@ -117,7 +282,7 @@ ApplicationWindow {
             anchors.margins: 10
             spacing: 10
             AppText { Layout.fillWidth: true; text: win.notice; wrapMode: Text.Wrap }
-            PButton { compact: true; variant: "ghost"; text: "✕"; tip: Tr.s("dismiss"); onClicked: win.notice = "" }
+            PButton { compact: true; variant: "ghost"; glyph: "close"; tip: Tr.s("dismiss"); onClicked: win.notice = "" }
         }
     }
 
@@ -126,6 +291,7 @@ ApplicationWindow {
         title: Tr.s("openDialogTitle")
         nameFilters: [Tr.s("pdfFiles")]
         onAccepted: win.openPath(selectedFile.toString())
+        onRejected: win.pendingTool = ""
     }
     OrganizerDialog {
         id: organizer
@@ -133,6 +299,10 @@ ApplicationWindow {
     }
     SplitDialog { id: splitDialog }
     ImageExportDialog { id: imageExportDialog }
+    OcrDialog {
+        id: ocrDialog
+        onOpenResult: path => win.openPath(path)
+    }
     MaintenanceDialog {
         id: maintenanceDialog
         onOpenResult: path => win.openPath(path)
@@ -161,6 +331,13 @@ ApplicationWindow {
     PasswordDialog {
         id: passwordDialog
         onSubmitted: (path, password) => win.openPath(path, password)
+        onClosed: win.pendingTool = ""
+    }
+
+    ToolSearch {
+        id: commandSearch
+        tools: [{ key: "openFile", icon: "folder", tint: Theme.text }].concat(win.tools)
+        onToolRequested: key => win.runTool(key)
     }
 
     // drop a PDF file on the window
@@ -178,7 +355,8 @@ ApplicationWindow {
         }
     }
 
-    Shortcut { sequences: [StandardKey.Open]; onActivated: fileDialog.open() }
+    Shortcut { sequences: [StandardKey.Open]; onActivated: win.runTool("openFile") }
+    Shortcut { sequences: ["Ctrl+K"]; onActivated: commandSearch.open() }
     Shortcut { sequences: ["F11"]; onActivated: win.toggleFullScreen() }
     Shortcut { sequences: ["Escape"]; enabled: win.visibility === Window.FullScreen; onActivated: win.toggleFullScreen() }
 }

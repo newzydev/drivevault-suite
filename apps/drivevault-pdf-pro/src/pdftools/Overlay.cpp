@@ -165,6 +165,9 @@ void addTextLayer(QPDF& pdf, QPDFObjectHandle form, const TextRuns& runs, const 
     constexpr double advance = 0.5;                  // em per character (a rough width: the real letters are drawn as outlines)
     std::string content = "\n";
     for (const TextRun& run : runs) {
+        const QList<uint> ucs = run.text.toUcs4();
+        if (ucs.isEmpty())
+            continue;
         const double a = run.angle * M_PI / 180.0;
         const QPointF d = run.origin - run.center;
         const QPointF rp(run.center.x() + d.x() * std::cos(a) - d.y() * std::sin(a), run.center.y() + d.x() * std::sin(a) + d.y() * std::cos(a));
@@ -173,6 +176,11 @@ void addTextLayer(QPDF& pdf, QPDFObjectHandle form, const TextRuns& runs, const 
         char buf[160];
         std::snprintf(buf, sizeof buf, "BT 3 Tr %.4f %.4f %.4f %.4f %.3f %.3f Tm\n", std::cos(a), -std::sin(a), std::sin(a), std::cos(a), x, y);
         content += buf;
+        if (run.fitWidth) {
+            const double scale = run.width / (advance * run.size * ucs.size());
+            std::snprintf(buf, sizeof buf, "%.3f Tz\n", std::clamp(scale, 0.1, 10.0) * 100);
+            content += buf;
+        }
         int currentFont = -1;
         std::string hex;
         auto flush = [&] {
@@ -181,7 +189,6 @@ void addTextLayer(QPDF& pdf, QPDFObjectHandle form, const TextRuns& runs, const 
                 hex.clear();
             }
         };
-        const QList<uint> ucs = run.text.toUcs4();
         for (const uint ch : ucs) {
             const auto [font, code] = encode(char32_t(ch));
             if (font != currentFont) {
@@ -484,7 +491,7 @@ EditResult saveWithEdits(const QString& inFile, const QString& password, const Q
     EditResult result;
     QList<PageEdits> work;
     for (const PageEdits& pe : pages)
-        if (!pe.items.isEmpty())
+        if (!pe.items.isEmpty() || !pe.textLayer.isEmpty())
             work.append(pe);
     if (work.isEmpty()) {
         result.error = QStringLiteral("noEdits");
@@ -534,6 +541,7 @@ EditResult saveWithEdits(const QString& inFile, const QString& password, const Q
                 painter.resetTransform();
                 painter.scale(1200.0 / 72.0, 1200.0 / 72.0);
                 painter.setOpacity(1.0);
+                runsPerPage[size_t(i)] = work[i].textLayer;
                 for (const EditItem& it : work[i].items)
                     paintItem(painter, it, &runsPerPage[size_t(i)]);
             }

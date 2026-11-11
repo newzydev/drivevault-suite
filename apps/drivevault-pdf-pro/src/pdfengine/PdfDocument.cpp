@@ -7,6 +7,8 @@
 #include <fpdf_edit.h>
 #include <fpdf_formfill.h>
 #include <fpdf_text.h>
+#include <fpdf_save.h>
+#include <fpdf_signature.h>
 #include <fpdfview.h>
 
 #include <QFile>
@@ -15,6 +17,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <unordered_set>
 #include <vector>
 
 namespace dp::pdf {
@@ -107,6 +110,111 @@ QList<QRectF> textRectsOf(FPDF_PAGE page, FPDF_TEXTPAGE text, QSizeF shown, int 
     }
     return out;
 }
+
+bool describeTextObject(FPDF_PAGE page, QSizeF size, FPDF_PAGEOBJECT object, EditableTextRun& run)
+{
+    if (!object || FPDFTextObj_GetTextRenderMode(object) != FPDF_TEXTRENDERMODE_FILL)
+        return false;
+    FS_MATRIX matrix{};
+    float left, bottom, right, top, fontSize;
+    unsigned int r, g, b, a;
+    if (!FPDFPageObj_GetMatrix(object, &matrix) || std::abs(matrix.b) > 0.001 || std::abs(matrix.c) > 0.001
+        || matrix.a <= 0 || matrix.d <= 0 || std::abs(matrix.a - matrix.d) > 0.001
+        || !FPDFPageObj_GetBounds(object, &left, &bottom, &right, &top)
+        || !FPDFTextObj_GetFontSize(object, &fontSize) || !FPDFPageObj_GetFillColor(object, &r, &g, &b, &a) || a != 255)
+        return false;
+    const double shownFontSize = fontSize * matrix.d;
+    if (shownFontSize < 5 || shownFontSize > 144)
+        return false;
+    run = {{}, shownRect(page, size, 0, left, bottom, right, top),
+           toShown(page, size, 0, matrix.e, matrix.f), QColor(int(r), int(g), int(b)), shownFontSize};
+    return true;
+}
+
+QList<FPDF_PAGEOBJECT> findEditableRun(const PageHandle& page, QSizeF size, QPointF point, EditableTextRun& run)
+{
+    if (!page.text || FPDFPage_GetRotation(page.page) != 0)
+        return {};
+    const QPointF pos = toPage(page.page, size, 0, point);
+    const int index = FPDFText_GetCharIndexAtPos(page.text, pos.x(), pos.y(), 2, 2);
+    if (index < 0)
+        return {};
+    const auto selected = FPDFText_GetTextObject(page.text, index);
+    const int count = FPDFPage_CountObjects(page.page);
+    if (count <= 0 || count > 100000)
+        return {};
+    std::unordered_set<FPDF_PAGEOBJECT> topLevel;
+    for (int i = 0; i < count; ++i)
+        topLevel.insert(FPDFPage_GetObject(page.page, i));
+    EditableTextRun origin;
+    if (!topLevel.contains(selected) || !describeTextObject(page.page, size, selected, origin))
+        return {};
+
+    run = origin;
+    QList<FPDF_PAGEOBJECT> objects{selected};
+    int first = index, last = index;
+    const int charCount = FPDFText_CountChars(page.text);
+    const auto font = FPDFTextObj_GetFont(selected);
+    // Some writers position every Thai glyph as a separate text object. Collect neighbours on the
+    // same baseline with the same style, stopping at a line break or a substantial visual gap.
+    for (const int direction : {-1, 1}) {
+        auto previous = selected;
+        auto edge = origin;
+        bool generatedSpace = false;
+        for (int i = index + direction; i >= 0 && i < charCount; i += direction) {
+            const auto ch = FPDFText_GetUnicode(page.text, i);
+            if (ch == '\r' || ch == '\n' || ch == 0)
+                break;
+            if (ch == ' ' && FPDFText_IsGenerated(page.text, i) == 1) {
+                generatedSpace = true;
+                continue;
+            }
+            if (std::abs(i - index) > 512 || last - first >= 511)
+                return {};
+            const auto object = FPDFText_GetTextObject(page.text, i);
+            if (object != previous) {
+                EditableTextRun adjacent;
+                if (!topLevel.contains(object) || !describeTextObject(page.page, size, object, adjacent)
+                    || FPDFTextObj_GetFont(object) != font || adjacent.color != origin.color
+                    || std::abs(adjacent.fontSize - origin.fontSize) > 0.1
+                    || std::abs(adjacent.baseline.y() - origin.baseline.y()) > origin.fontSize * 0.27)
+                    break;
+                const double gap = direction < 0 ? edge.bounds.left() - adjacent.bounds.right()
+                                                 : adjacent.bounds.left() - edge.bounds.right();
+                if (gap > origin.fontSize * (generatedSpace ? 0.52 : 0.35) || objects.contains(object))
+                    break;
+                objects.append(object);
+                run.bounds |= adjacent.bounds;
+                if (direction < 0)
+                    run.baseline = adjacent.baseline;
+                edge = adjacent;
+                previous = object;
+            }
+            generatedSpace = false;
+            if (direction < 0)
+                first = i;
+            else
+                last = i;
+        }
+    }
+    std::vector<unsigned short> text(size_t(last - first) + 2);
+    const int length = FPDFText_GetText(page.text, first, last - first + 1, text.data());
+    if (length <= 1)
+        return {};
+    run.text = QString::fromUtf16(reinterpret_cast<const char16_t*>(text.data()), length - 1);
+    if (run.text.trimmed().isEmpty() || run.text.contains(QChar::ReplacementCharacter))
+        return {};
+    return objects;
+}
+
+struct PdfFileWriter : FPDF_FILEWRITE {
+    explicit PdfFileWriter(const QString& path) : FPDF_FILEWRITE{1, writeBlock}, file(path) {}
+    static int writeBlock(FPDF_FILEWRITE* writer, const void* data, unsigned long size)
+    {
+        return static_cast<PdfFileWriter*>(writer)->file.write(static_cast<const char*>(data), size) == size;
+    }
+    QFile file;
+};
 
 QString destTitle(FPDF_BOOKMARK bookmark)
 {
@@ -245,6 +353,44 @@ QSizeF PdfDocument::pageSizePt(int page, int rotation) const
 {
     const QSizeF base = (page >= 0 && page < m_pageSizes.size()) ? m_pageSizes.at(page) : QSizeF(595, 842);
     return rotated(base, normRotation(rotation));
+}
+
+EditableTextRun PdfDocument::editableTextAt(int page, QPointF point) const
+{
+    if (page < 0 || page >= pageCount() || !std::isfinite(point.x()) || !std::isfinite(point.y()))
+        return {};
+    QMutexLocker lock(&pdfiumMutex());
+    if (FPDF_GetSecurityHandlerRevision(m_impl->doc) >= 0 || FPDF_GetSignatureCount(m_impl->doc) != 0)
+        return {};
+    PageHandle handle(m_impl->doc, page, true);
+    EditableTextRun run;
+    return findEditableRun(handle, m_pageSizes.at(page), point, run).isEmpty() ? EditableTextRun{} : run;
+}
+
+bool PdfDocument::writeWithoutTextRun(int page, QPointF point, const EditableTextRun& expected, const QString& destination)
+{
+    if (page < 0 || page >= pageCount())
+        return false;
+    QMutexLocker lock(&pdfiumMutex());
+    if (FPDF_GetSecurityHandlerRevision(m_impl->doc) >= 0 || FPDF_GetSignatureCount(m_impl->doc) != 0)
+        return false;
+    PageHandle handle(m_impl->doc, page, true);
+    EditableTextRun actual;
+    const auto objects = findEditableRun(handle, m_pageSizes.at(page), point, actual);
+    if (objects.isEmpty() || actual.text != expected.text || actual.bounds != expected.bounds || actual.baseline != expected.baseline)
+        return false;
+    FPDFText_ClosePage(handle.text);
+    handle.text = nullptr;
+    for (const auto object : objects) {
+        if (!FPDFPage_RemoveObject(handle.page, object))
+            return false;
+        FPDFPageObj_Destroy(object);
+    }
+    if (!FPDFPage_GenerateContent(handle.page))
+        return false;
+    PdfFileWriter output(destination);
+    return output.file.open(QIODevice::WriteOnly | QIODevice::NewOnly)
+        && FPDF_SaveAsCopy(m_impl->doc, &output, FPDF_NO_INCREMENTAL) && output.file.flush();
 }
 
 QImage PdfDocument::render(int page, double pxPerPt, const std::atomic_bool* cancel, int rotation, bool transparent,

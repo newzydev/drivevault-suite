@@ -73,6 +73,7 @@ Popup {
                 id: range
                 objectName: "imageRange"
                 visible: pageMode.currentIndex === 2
+                Layout.row: 1
                 Layout.column: 1
                 Layout.fillWidth: true
                 placeholderText: Tr.s("rangeHint")

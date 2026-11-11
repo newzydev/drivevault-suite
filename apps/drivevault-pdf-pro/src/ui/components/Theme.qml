@@ -10,17 +10,17 @@ QtObject {
     readonly property color accentText: Qt.lighter(accent, 1.3)
     readonly property color textOnAccent: "#FFFFFF"
 
-    readonly property color background: "#101114"
-    readonly property color backgroundAlt: "#181A20"
-    readonly property color surface: "#20232B"
-    readonly property color surfaceHover: "#2F333E"
-    readonly property color border: "#343844"
-    readonly property color borderSubtle: "#272A33"
-    readonly property color viewerBackground: "#2A2D35"
+    readonly property color background: "#19191c"
+    readonly property color backgroundAlt: "#252529"
+    readonly property color surface: "#2c2c31"
+    readonly property color surfaceHover: "#38383e"
+    readonly property color border: "#414148"
+    readonly property color borderSubtle: "#34343a"
+    readonly property color viewerBackground: "#303035"
 
-    readonly property color text: "#F8FAFC"
-    readonly property color textSecondary: "#A1A1AA"
-    readonly property color textDisabled: "#6B6F7B"
+    readonly property color text: "#efeff2"
+    readonly property color textSecondary: "#b5b5bf"
+    readonly property color textDisabled: "#90909a"
 
     readonly property color success: "#22C55E"
     readonly property color warning: "#F59E0B"

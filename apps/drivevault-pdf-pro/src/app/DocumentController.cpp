@@ -3,6 +3,8 @@
 #include "PageRange.h"
 #include "PrintTask.h"
 #include "ImageExport.h"
+#include "ThaiOcr.h"
+#include "ReplaceText.h"
 #include "BatchPdf.h"
 #include "pdftools/DocumentMaintenance.h"
 #include "Redaction.h"
@@ -79,7 +81,7 @@ DocumentController::~DocumentController()
         m_printCancel->store(true);
     if (m_splitCancel)
         m_splitCancel->store(true);
-    cancelImageExport();
+    cancelOutput();
     m_outputPool.waitForDone();
     QThreadPool::globalInstance()->waitForDone(15000);
 }
@@ -811,7 +813,7 @@ QString DocumentController::startImageExport(const QVariantMap& options, const Q
     }
 
     const auto cancel = std::make_shared<std::atomic_bool>(false);
-    m_imageCancel = cancel;
+    m_outputCancel = cancel;
     m_outputBusy = true;
     m_outputProgress = 0;
     emit outputChanged();
@@ -829,8 +831,79 @@ QString DocumentController::startImageExport(const QVariantMap& options, const Q
 
 void DocumentController::cancelImageExport()
 {
-    if (m_imageCancel)
-        m_imageCancel->store(true);
+    cancelOutput();
+}
+
+void DocumentController::cancelOutput()
+{
+    if (m_outputCancel)
+        m_outputCancel->store(true);
+}
+
+bool DocumentController::ocrAvailable() const
+{
+    return thaiOcrAvailable();
+}
+
+QString DocumentController::startThaiOcr(const QString& range, int currentPage, const QString& path)
+{
+    if (m_outputBusy)
+        return QStringLiteral("busy");
+    const auto doc = currentDoc();
+    if (!doc)
+        return QStringLiteral("noDocument");
+    if (!thaiOcrAvailable())
+        return QStringLiteral("ocrModelRequired");
+    const QList<int> pages = imagePages(range, currentPage, doc->pageCount());
+    if (pages.isEmpty())
+        return QStringLiteral("range");
+    const QString destination = QFileInfo(localPath(path)).absoluteFilePath();
+    if (QFileInfo(destination).suffix().compare(QLatin1String("pdf"), Qt::CaseInsensitive) != 0)
+        return QStringLiteral("pdfSuffix");
+
+    const auto cancel = std::make_shared<std::atomic_bool>(false);
+    m_outputCancel = cancel;
+    m_outputBusy = true;
+    m_outputProgress = 0;
+    emit outputChanged();
+    m_outputPool.start(QRunnable::create([this, doc, pages, destination, cancel] {
+        const QString error = saveSearchableCopy(*doc, pages, destination, *cancel, [this, cancel](int done, int total) {
+            QMetaObject::invokeMethod(this, [this, done, total] {
+                m_outputProgress = double(done) / total;
+                emit outputChanged();
+            }, Qt::QueuedConnection);
+            return !cancel->load();
+        });
+        QMetaObject::invokeMethod(this, [this, error, destination] { finishOutput(error, destination); }, Qt::QueuedConnection);
+    }));
+    return {};
+}
+
+QString DocumentController::existingTextAt(int page, double x, double y) const
+{
+    const auto doc = currentDoc();
+    return doc && currentRotation() == 0 ? doc->editableTextAt(page, {x, y}).text : QString();
+}
+
+QString DocumentController::startTextReplacement(int page, double x, double y, const QString& original,
+                                                  const QString& replacement, const QString& path)
+{
+    if (m_outputBusy)
+        return QStringLiteral("busy");
+    const auto doc = currentDoc();
+    if (!doc)
+        return QStringLiteral("noDocument");
+    const QString destination = QFileInfo(localPath(path)).absoluteFilePath();
+    if (QFileInfo(destination).suffix().compare(QLatin1String("pdf"), Qt::CaseInsensitive) != 0)
+        return QStringLiteral("pdfSuffix");
+    m_outputBusy = true;
+    m_outputProgress = 0;
+    emit outputChanged();
+    m_outputPool.start(QRunnable::create([this, doc, page, x, y, original, replacement, destination] {
+        const QString error = replaceTextRun(*doc, page, {x, y}, original, replacement, destination);
+        QMetaObject::invokeMethod(this, [this, error, destination] { finishOutput(error, destination); }, Qt::QueuedConnection);
+    }));
+    return {};
 }
 
 QString DocumentController::startSecuritySave(const QVariantMap& options, const QString& path)
@@ -870,7 +943,7 @@ QString DocumentController::startSecuritySave(const QVariantMap& options, const 
 
 void DocumentController::finishOutput(const QString& error, const QString& path)
 {
-    m_imageCancel.reset();
+    m_outputCancel.reset();
     m_outputBusy = false;
     emit outputChanged();
     emit outputFinished(error, error.isEmpty() ? path : QString());
@@ -929,7 +1002,7 @@ QString DocumentController::startBatch(const QString& input, const QString& outp
     const auto source = localPath(input);
     const auto destination = localPath(output);
     const auto cancel = std::make_shared<std::atomic_bool>(false);
-    m_imageCancel = cancel;
+    m_outputCancel = cancel;
     m_outputBusy = true;
     m_outputProgress = 0;
     emit outputChanged();
@@ -943,7 +1016,7 @@ QString DocumentController::startBatch(const QString& input, const QString& outp
             return !cancel->load();
         }, error);
         QMetaObject::invokeMethod(this, [this, error, rows] {
-            m_imageCancel.reset();
+            m_outputCancel.reset();
             m_outputBusy = false;
             emit outputChanged();
             emit batchFinished(error, rows);
@@ -968,7 +1041,7 @@ QString DocumentController::startRedactionScan(const QString& query, bool regex)
 
     const int sourceId = docId();
     const auto cancel = std::make_shared<std::atomic_bool>(false);
-    m_imageCancel = cancel;
+    m_outputCancel = cancel;
     m_outputBusy = true;
     m_outputProgress = 0;
     emit outputChanged();
@@ -998,7 +1071,7 @@ QString DocumentController::startRedactionScan(const QString& query, bool regex)
         if (!error.isEmpty())
             marks.clear();
         QMetaObject::invokeMethod(this, [this, sourceId, error, marks] {
-            m_imageCancel.reset();
+            m_outputCancel.reset();
             m_outputBusy = false;
             emit outputChanged();
             emit redactionScanFinished(sourceId, error, marks);
@@ -1029,7 +1102,7 @@ QString DocumentController::startRedaction(const QVariantList& marks, const QStr
                       mark.value("w").toDouble(), mark.value("h").toDouble())});
     }
     const auto cancel = std::make_shared<std::atomic_bool>(false);
-    m_imageCancel = cancel;
+    m_outputCancel = cancel;
     m_outputBusy = true;
     m_outputProgress = 0;
     emit outputChanged();

@@ -239,6 +239,24 @@ private slots:
         QVERIFY(visible("tab_0"));
     }
 
+    void homeKeepsTabsAndCommandSearchOpensARealTool()
+    {
+        m_doc->setLanguage(QStringLiteral("en"));
+        QVERIFY(m_doc->isOpen());
+        const int openTab = m_doc->currentTab();
+        QVERIFY(click("homeTab"));
+        QVERIFY(visible("homeOpen"));
+        QVERIFY(!visible("pages"));
+        QCOMPARE(m_doc->currentTab(), openTab);
+        QTest::keyClick(m_window, Qt::Key_K, Qt::ControlModifier);
+        QTRY_VERIFY(visible("toolSearchField"));
+        QVERIFY(typeInto("toolSearchField", "OCR"));
+        QTRY_VERIFY(visible("pages"));
+        QTRY_VERIFY(visible("ocrSave"));
+        QTest::keyClick(m_window, Qt::Key_Escape);
+        QTRY_VERIFY(!visible("ocrSave"));
+    }
+
     void thePageButtonsAndTheFieldMoveThroughThePages()
     {
         QVERIFY(click("nextPage"));

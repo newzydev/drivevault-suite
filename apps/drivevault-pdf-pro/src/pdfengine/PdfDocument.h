@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QImage>
+#include <QColor>
 #include <QList>
 #include <QPointF>
 #include <QRectF>
@@ -57,6 +58,14 @@ struct RedactionGeometry {
     bool valid = false;
 };
 
+struct EditableTextRun {
+    QString text;
+    QRectF bounds;
+    QPointF baseline;
+    QColor color;
+    double fontSize = 0;
+};
+
 // One opened PDF file. All methods are thread safe (they serialise on the PDFium mutex); pages are 0-based.
 // `rotation` (0..3 = 0, 90, 180, 270 degrees clockwise) is a view rotation: the file is not changed.
 class PdfDocument {
@@ -91,6 +100,9 @@ public:
     QList<SearchHit> matchPage(int page, const QRegularExpression& pattern, int limit) const;
     bool isEncrypted() const;
     RedactionGeometry redactionGeometry(int page, const QList<QRectF>& shownMasks) const;
+    EditableTextRun editableTextAt(int page, QPointF point) const;
+    // On a private document instance, remove the selected object and write a full copy to a new path.
+    bool writeWithoutTextRun(int page, QPointF point, const EditableTextRun& expected, const QString& destination);
 
     // ---- structure ------------------------------------------------------------------------------------------------------------
     QList<OutlineItem> outline() const;

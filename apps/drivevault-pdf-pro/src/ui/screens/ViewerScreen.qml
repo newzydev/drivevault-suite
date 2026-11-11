@@ -18,6 +18,56 @@ Item {
     signal securityRequested(bool unlock)
     signal maintenanceRequested(bool repair)
     signal batchRequested()
+    signal ocrRequested(int page)
+    property bool replacingText: false
+    property string replaceHint: ""
+
+    function beginRedaction() {
+        replacingText = false
+        if (Doc.rotation !== 0)
+            Doc.rotateView(-Doc.rotation)
+        Editor.active = false
+        closeSearch()
+        Doc.clearSelection()
+        redactions.begin()
+    }
+
+    function runTool(tool) {
+        if (redactions.visible && tool !== "redactTitle")
+            return
+        switch (tool) {
+        case "toolOrganize": organizeRequested(); break
+        case "toolSplit": splitRequested(); break
+        case "toolCompress": compressRequested(); break
+        case "toolForm": formRequested(); break
+        case "exportImages": imageExportRequested(currentPage); break
+        case "thaiOcr": ocrRequested(currentPage); break
+        case "protectPdf": securityRequested(false); break
+        case "unlockPdf": securityRequested(true); break
+        case "maintenance": maintenanceRequested(false); break
+        case "redactTitle":
+            if (!redactions.visible)
+                beginRedaction()
+            break
+        case "addContent":
+        case "addComments":
+            replacingText = false
+            if (Doc.rotation !== 0)
+                Doc.rotateView(-Doc.rotation)
+            Editor.active = true
+            Editor.tool = tool === "addComments" ? "note" : "select"
+            break
+        case "editExisting":
+            Editor.active = false
+            if (Doc.rotation !== 0)
+                Doc.rotateView(-Doc.rotation)
+            closeSearch()
+            Doc.clearSelection()
+            replaceHint = ""
+            replacingText = true
+            break
+        }
+    }
 
     // ---- view state ---------------------------------------------------------------------------------------------------
     property real zoom: 1.0                       // 1.0 = 100 % = 96 dpi on screen
@@ -325,6 +375,7 @@ Item {
     Connections {
         target: Doc
         function onDocumentChanged() {
+            viewer.replacingText = false
             viewer.flushSave()
             if (Doc.isOpen)
                 viewer.restoreView()
@@ -345,13 +396,11 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        FileTabs { Layout.fillWidth: true; onOpenRequested: viewer.openRequested(); onCloseTabRequested: index => viewer.closeTabAt(index) }      // not "TabBar": that name is a Qt Quick Controls type
-
         // tool bar
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: Math.max(52, toolFlow.implicitHeight + 16)
-            color: "#0D0E11"
+            color: Theme.background
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
             Flow {
                 id: toolFlow
@@ -425,7 +474,7 @@ Item {
                 PButton { objectName: "organizeButton"; compact: true; text: Tr.s("toolOrganizeShort"); variant: "ghost"; tip: Tr.s("toolOrganize"); onClicked: viewer.organizeRequested() }
                 PButton { objectName: "splitButton"; compact: true; text: Tr.s("toolSplitShort"); variant: "ghost"; tip: Tr.s("toolSplit"); onClicked: viewer.splitRequested() }
                 PButton { objectName: "compressButton"; compact: true; text: Tr.s("toolCompressShort"); variant: "ghost"; tip: Tr.s("toolCompress"); onClicked: viewer.compressRequested() }
-                PButton { objectName: "editButton"; compact: true; text: Tr.s("toolEdit"); variant: Editor.active ? "secondary" : "ghost"; tip: Doc.rotation === 0 ? Tr.s("toolEditTip") : Tr.s("editNeedsNoRotation"); enabled: !redactions.visible && (Doc.rotation === 0 || Editor.active); onClicked: Editor.active = !Editor.active }
+                PButton { objectName: "editButton"; compact: true; text: Tr.s("toolEdit"); variant: Editor.active ? "secondary" : "ghost"; tip: Doc.rotation === 0 ? Tr.s("toolEditTip") : Tr.s("editNeedsNoRotation"); enabled: !redactions.visible && (Doc.rotation === 0 || Editor.active); onClicked: { viewer.replacingText = false; Editor.active = !Editor.active } }
                 PButton { objectName: "formButton"; compact: true; text: Tr.s("toolFormShort"); variant: "ghost"; tip: Tr.s("toolForm"); onClicked: viewer.formRequested() }
                 PButton {
                     id: outputButton
@@ -446,19 +495,11 @@ Item {
                         PMenuItem {
                             objectName: "redactAction"
                             text: Tr.s("redactTitle")
-                            onTriggered: {
-                                if (Doc.rotation !== 0)
-                                    Doc.rotateView(-Doc.rotation)
-                                Editor.active = false
-                                viewer.closeSearch()
-                                Doc.clearSelection()
-                                redactions.begin()
-                            }
+                            onTriggered: viewer.beginRedaction()
                         }
                     }
                 }
 
-                LanguageSwitch {}
             }
         }
 
@@ -483,6 +524,25 @@ Item {
             visible: viewer.searchOpen
             startPage: viewer.currentPage
             onCloseRequested: viewer.closeSearch()
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 42
+            visible: viewer.replacingText
+            color: Theme.backgroundAlt
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                AppText {
+                    Layout.fillWidth: true
+                    text: viewer.replaceHint !== "" ? Tr.outputError(viewer.replaceHint) : Tr.s("editRunPick")
+                    color: viewer.replaceHint !== "" ? Theme.errorSoft : Theme.text
+                    elide: Text.ElideRight
+                }
+                PButton { compact: true; text: Tr.s("close"); onClicked: viewer.replacingText = false }
+            }
         }
 
         RowLayout {
@@ -638,6 +698,14 @@ Item {
                             pageMenu.popup()
                             return
                         }
+                        if (viewer.replacingText) {
+                            const point = viewer.hit(mouse.x, mouse.y)
+                            const original = point ? Doc.existingTextAt(point.page, point.x, point.y) : ""
+                            viewer.replaceHint = original === "" ? "editRunUnsupported" : ""
+                            if (original !== "")
+                                replaceDialog.begin(point, original)
+                            return
+                        }
                         if (viewer.editOn) {
                             viewer.editPress(mouse.x, mouse.y)
                             return
@@ -652,6 +720,8 @@ Item {
                             Doc.clearSelection()
                     }
                     onPositionChanged: mouse => {
+                        if (viewer.replacingText)
+                            return
                         lastX = mouse.x
                         lastY = mouse.y
                         if (redactions.visible) {
@@ -687,6 +757,8 @@ Item {
                         }
                     }
                     onReleased: mouse => {
+                        if (viewer.replacingText)
+                            return
                         if (redactions.visible) {
                             viewer.updateRedactDrag(mouse.x, mouse.y)
                             const mark = redactions.preview
@@ -805,6 +877,11 @@ Item {
         id: pageMenu
         PMenuItem { objectName: "menuCopy"; text: Tr.s("copy"); enabled: Doc.hasSelection; onTriggered: Doc.copySelection() }
         PMenuItem { objectName: "menuSelectAll"; text: Tr.s("selectAll"); onTriggered: Doc.selectAll() }
+    }
+
+    ReplaceTextDialog {
+        id: replaceDialog
+        onOpenResult: path => viewer.openPathRequested(path)
     }
     LinkDialog { id: linkDialog; objectName: "linkDialog" }
     PrintDialog { id: printDialog; objectName: "printDialog"; currentPage: viewer.currentPage }

@@ -9,7 +9,11 @@ $required = @(
     'licenses\PDFium\distribution-LICENSE.txt', 'licenses\PDFium\pdfium.txt',
     'licenses\PDFium\harfbuzz.txt', 'licenses\PDFium\libjpeg_turbo.ijg',
     'licenses\PDFium\libjpeg_turbo.md', 'licenses\PDFium\zlib.txt',
-    'licenses\Qt\qtbase-6.8.3.spdx', 'licenses\Qt\qtdeclarative-6.8.3.spdx', 'licenses\Qt\qtsvg-6.8.3.spdx'
+    'licenses\Qt\qtbase-6.8.3.spdx', 'licenses\Qt\qtdeclarative-6.8.3.spdx', 'licenses\Qt\qtsvg-6.8.3.spdx',
+    'licenses\OCR\ONNX-Runtime-LICENSE.txt', 'licenses\OCR\ONNX-Runtime-ThirdPartyNotices.txt',
+    'licenses\OCR\paddle-text-detection.onnx.LICENCE.txt', 'licenses\OCR\paddle-thai-recognition.onnx.LICENCE.txt',
+    'licenses\OCR\paddle-thai-dict.txt.LICENCE.txt', 'onnxruntime.dll', 'models\paddle-text-detection.onnx',
+    'models\paddle-thai-recognition.onnx', 'models\paddle-thai-dict.txt'
 )
 foreach ($relative in $required) {
     $file = Get-Item -LiteralPath (Join-Path $root $relative)
@@ -37,6 +41,8 @@ foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {
         $path -notmatch 'Quick3D|VirtualKeyboard|QuickTimeline|\\tooling\\|\\debugger\\|plugind\.dll$') { 'Qt' }
     elseif ($path -eq 'pdfium.dll' -or $path -match '^licenses\\PDFium\\[^\\]+\.(txt|md|ijg)$') { 'PDFium' }
     elseif ($path -eq 'qpdf30.dll') { 'qpdf' }
+    elseif ($path -eq 'onnxruntime.dll' -or ($path -like 'licenses\OCR\ONNX-Runtime-*' -and $path -in $required)) { 'Microsoft ONNX Runtime' }
+    elseif ($path -in $required -and ($path -like 'models\paddle-*' -or $path -like 'licenses\OCR\paddle-*')) { 'PaddleOCR' }
     elseif ($path -in $known -or $path -in $required) { 'DriveVault / third-party notices and runtime' }
     else { throw "No approved licence owner for $path" }
     $counts[$owner] = 1 + [int]$counts[$owner]

@@ -3,10 +3,13 @@
 Native Windows PDF program of the DriveVault suite (C++20, Qt 6.8 / Qt Quick, PDFium, qpdf). Works on this computer only - nothing is uploaded.
 Accent colour red `#EF4444`. The full plan and the phases are in [`docs/PDF-Pro-Plan.md`](docs/PDF-Pro-Plan.md).
 
-## Status: version 1.0.0 - prepared for clean-machine acceptance
+## Status: version 1.1.0 - pending clean-machine acceptance
 
 | Works now (tested) | Not built yet (planned, see the plan) |
 |---|---|
+| **Home and All tools** with document tabs, tool categories, recommended tools and command search (Ctrl+K) | |
+| **Scan & OCR (Thai)** reads Thai and English on image-only PDF pages locally. Select all pages, the current page or a range, then save a searchable copy. It skips pages with existing text and requires an unlocked PDF. Recognition quality varies with the scan. | OCR on pages that already have text, perspective correction and complex reading order |
+| **Edit existing text** replaces a supported horizontal text run in a new PDF. Thai and English are shaped with Noto Sans Thai. The replacement must fit the existing width. Signed, encrypted and unsupported text objects are refused. | Paragraph reflow, matching the source font, and editing text inside forms or vector outlines |
 | **Organize pages** (button "Pages"): thumbnails, select, **drag to reorder**, delete, duplicate, turn 90 degrees, **crop margins**, insert blank pages, add pages of other files, undo / redo; saves a **new** file (nothing is changed in place, an existing file is replaced only after a question) | Fonts: subsetting / merging (not done, not planned soon) |
 | **Edit** (button "Edit"): put **text** (Thai and English), **pictures**, rectangles, ellipses, lines, arrows, **pen**, highlight / underline / strike-out, **stamps**, **sticky notes** and **polygons** on any page; select, move, resize, turn, front / back, colour, fill, line width, opacity, font, size, bold / italic, alignment; a watermark, page numbers, header and footer on every page; undo / redo; saved as a **new file** (the things become part of the pages) |
 | **Fill in forms** (button "Form"): lists the fields of an AcroForm (text, tick boxes, lists, radio groups), fill them in and save a **new copy** that every viewer shows; the reader now also draws form fields and their values |
@@ -24,9 +27,9 @@ Accent colour red `#EF4444`. The full plan and the phases are in [`docs/PDF-Pro-
 | Zoom (steps, Ctrl+wheel, 100 %, fit width, fit page), **rotate the view**, **dark pages** (view only), full screen (F11) | |
 | **Find** in the whole file (match case, whole word, highlights, next / previous, Ctrl+F, F3) | |
 | **Select text with the mouse, copy** (Ctrl+C, right click menu, select all) - across pages | |
-| **Bookmarks** (outline) and a **comments / markup list**; links in the file (to a page, or to a web address after a question) | Installer, Master Pro integration, release |
+| **Bookmarks** (outline) and a **comments / markup list**; links in the file (to a page, or to a web address after a question) | Release publication |
 | **Printing** (printer, page range, copies, colour, fit to paper) | Reading order / accessibility tools, text-to-speech |
-| Files with an open password (asks for it, a wrong password is refused) | OCR, digital signatures (not in the plan) |
+| Files with an open password (asks for it, a wrong password is refused) | Digital signatures |
 | The page, zoom and view mode of each file are remembered | |
 | Thai / English UI with the same sizes and spacing | |
 
@@ -47,6 +50,12 @@ These files contain only a line of text per page. Real files with big scans or m
 
 Prerequisites: the suite's `.tools` folder with Qt 6.8.3, CMake, Ninja, **PDFium** (`.tools\pdfium`, BSD-3, build chromium/8138 from bblanchon/pdfium-binaries)
 and, for the password tests, **qpdf** (`.tools\qpdf`, Apache-2.0, 12.4.2 msvc64). See `docs/DEVELOPMENT.md` in the repository root.
+
+For Thai OCR, put the [ONNX Runtime 1.24.4 Windows x64 CPU SDK](https://github.com/microsoft/onnxruntime/releases/tag/v1.24.4) in
+`.tools\onnxruntime-win-x64-1.24.4`. Put `paddle-text-detection.onnx` (PP-OCRv3 mobile),
+`paddle-thai-recognition.onnx` and `paddle-thai-dict.txt` (PP-OCRv5 Thai) with their `.LICENCE.txt` files in
+`.tools\paddleocr-thai`. The model distribution is [monkt/paddleocr-onnx](https://huggingface.co/monkt/paddleocr-onnx).
+The local reader build can run without these files. Packaging requires the audited versions and checks their hashes.
 
 ```powershell
 .\scripts\build.ps1 -Test              # configure + build Release + ctest (12 suites)
