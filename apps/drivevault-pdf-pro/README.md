@@ -3,7 +3,7 @@
 Native Windows PDF program of the DriveVault suite (C++20, Qt 6.8 / Qt Quick, PDFium, qpdf). Works on this computer only - nothing is uploaded.
 Accent colour red `#EF4444`. The full plan and the phases are in [`docs/PDF-Pro-Plan.md`](docs/PDF-Pro-Plan.md).
 
-## Status: version 1.2.0 - pending clean-machine acceptance
+## [Version 1.2.0](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.2.0)
 
 | Works now (tested) | Not built yet (planned, see the plan) |
 |---|---|
@@ -27,7 +27,7 @@ Accent colour red `#EF4444`. The full plan and the phases are in [`docs/PDF-Pro-
 | Zoom (steps, Ctrl+wheel, 100 %, fit width, fit page), **rotate the view**, **dark pages** (view only), full screen (F11) | |
 | **Find** in the whole file (match case, whole word, highlights, next / previous, Ctrl+F, F3) | |
 | **Select text with the mouse, copy** (Ctrl+C, right click menu, select all) - across pages | |
-| **Bookmarks** (outline) and a **comments / markup list**; links in the file (to a page, or to a web address after a question) | Release publication |
+| **Bookmarks** (outline) and a **comments / markup list**; links in the file (to a page, or to a web address after a question) | |
 | **Printing** (printer, page range, copies, colour, fit to paper) | Reading order / accessibility tools, text-to-speech |
 | Files with an open password (asks for it, a wrong password is refused) | Digital signatures |
 | The page, zoom and view mode of each file are remembered | |

@@ -12,7 +12,7 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 |---|---|
 | `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.11.3 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
 | `apps/drivevault-master-pro` | DriveVault Master Pro 1.5.5 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
-| `apps/drivevault-pdf-pro` | DriveVault PDF Pro 1.2.0 - awaiting owner acceptance and publication (plan in `apps/drivevault-pdf-pro/docs/PDF-Pro-Plan.md`). PDFium + qpdf, Thai OCR with ONNX Runtime. Accent colour red `#EF4444`. |
+| `apps/drivevault-pdf-pro` | DriveVault PDF Pro 1.2.0 (plan in `apps/drivevault-pdf-pro/docs/PDF-Pro-Plan.md`). PDFium + qpdf, Thai OCR with ONNX Runtime. Accent colour red `#EF4444`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
 | `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md), `run-master-pro.bat` / `run-video-editor.bat` / `run-pdf-pro.bat` (open the Release build without installing: Qt on PATH, then start the exe; extra arguments are passed on - use these for the smoke start). |
 | `docs` | `suite-integration.md` (contract between programs and hub). |
@@ -140,6 +140,7 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 | Video Editor Pro | 1.11.0 | `drivevault-video-editor-pro-v1.11.0` | `09e8f47` | 2026-11-08 |
 | Video Editor Pro | 1.11.2 | `drivevault-video-editor-pro-v1.11.2` | `6aad2b0` | 2026-11-09 |
 | Video Editor Pro | 1.11.3 | `drivevault-video-editor-pro-v1.11.3` | `7240cb1` | 2026-11-09 |
+| PDF Pro | 1.2.0 | `drivevault-pdf-pro-v1.2.0` | `187c061` | 2026-11-11 |
 
 ## Open items the owner knows about
 
