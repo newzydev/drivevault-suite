@@ -301,14 +301,43 @@ private slots:
         QVERIFY(visible("sidePanel"));
     }
 
-    void theLanguageSwitchChangesTheTexts()
+    void titleBarTogglesAndDialogs()
     {
         QCOMPARE(text("toolbarOpen"), QStringLiteral("Open PDF…"));
-        QVERIFY(click("langTh"));
+        QCOMPARE(text("languageToggle"), QStringLiteral("EN"));
+        QVERIFY(click("languageToggle"));
         QCOMPARE(m_doc->language(), QStringLiteral("th"));
         QCOMPARE(text("toolbarOpen"), QString::fromUtf8("เปิดไฟล์ PDF…"));
-        QVERIFY(click("langEn"));
+        QCOMPARE(text("languageToggle"), QStringLiteral("ไทย"));
+        QVERIFY(click("languageToggle"));
         QCOMPARE(text("toolbarOpen"), QStringLiteral("Open PDF…"));
+
+        const QColor darkBackground = m_window->color();
+        QVERIFY(click("themeToggle"));
+        QVERIFY(m_doc->lightTheme());
+        QVERIFY(!m_doc->darkPages());
+        QVERIFY(m_window->color().lightness() > darkBackground.lightness());
+
+        QVERIFY(click("settingsButton"));
+        QTRY_VERIFY(visible("settingsTheme"));
+        QVERIFY(find("settingsTheme")->property("checked").toBool());
+        QVERIFY(click("settingsDarkPages"));
+        QVERIFY(m_doc->darkPages());
+        QVERIFY(click("settingsTheme"));
+        QVERIFY(!m_doc->lightTheme());
+        QVERIFY(m_doc->darkPages());
+        QCOMPARE(m_window->color(), darkBackground);
+        QVERIFY(click("settingsDarkPages"));
+        QVERIFY(!m_doc->darkPages());
+        QVERIFY(click("settingsClose"));
+        QTRY_VERIFY(!visible("settingsTheme"));
+
+        QVERIFY(click("aboutButton"));
+        QTRY_VERIFY(visible("aboutVersion"));
+        QVERIFY(text("aboutVersion").contains(m_doc->version()));
+        QVERIFY(text("aboutVersion").contains(m_doc->buildNumber()));
+        QVERIFY(click("aboutClose"));
+        QTRY_VERIFY(!visible("aboutVersion"));
     }
 
     void tabsShowTheOpenFilesAndSwitchAndClose()

@@ -45,6 +45,39 @@ Canvas {
             ctx.stroke()
         }
         switch (name) {
+        case "sun":
+            ctx.beginPath(); ctx.arc(12, 12, 4, 0, Math.PI * 2); ctx.stroke()
+            for (let i = 0; i < 8; ++i) {
+                const angle = i * Math.PI / 4
+                strokePath([[12 + 7 * Math.cos(angle), 12 + 7 * Math.sin(angle)],
+                            [12 + 9 * Math.cos(angle), 12 + 9 * Math.sin(angle)]])
+            }
+            break
+        case "moon":
+            ctx.beginPath()
+            ctx.moveTo(19.5, 15)
+            ctx.bezierCurveTo(13, 17, 7, 11, 9, 4.5)
+            ctx.bezierCurveTo(2, 7, 3, 18, 10, 20)
+            ctx.bezierCurveTo(14, 21, 18, 19, 19.5, 15)
+            ctx.stroke()
+            break
+        case "settings":
+            ctx.beginPath()
+            for (let i = 0; i < 32; ++i) {
+                const angle = i * Math.PI / 16
+                const radius = i % 4 === 0 || i % 4 === 3 ? 7.5 : 9.5
+                const x = 12 + radius * Math.cos(angle), y = 12 + radius * Math.sin(angle)
+                if (i === 0) ctx.moveTo(x, y)
+                else ctx.lineTo(x, y)
+            }
+            ctx.closePath(); ctx.stroke()
+            ctx.beginPath(); ctx.arc(12, 12, 3, 0, Math.PI * 2); ctx.stroke()
+            break
+        case "info":
+            ctx.beginPath(); ctx.arc(12, 12, 9, 0, Math.PI * 2); ctx.stroke()
+            ctx.beginPath(); ctx.arc(12, 8, 0.9, 0, Math.PI * 2); ctx.fill()
+            strokePath([[12, 11], [12, 16]])
+            break
         case "home":
             strokePath([[3, 11], [12, 4], [21, 11]])
             strokePath([[5, 10], [5, 21], [10, 21], [10, 15], [14, 15], [14, 21], [19, 21], [19, 10]])

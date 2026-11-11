@@ -14,6 +14,18 @@ ApplicationWindow {
     flags: Qt.Window | Qt.FramelessWindowHint
     title: (Doc.isOpen ? Doc.fileName + " - " : "") + Tr.s("title")
     color: Theme.background
+    palette.window: Theme.background
+    palette.windowText: Theme.text
+    palette.base: Theme.backgroundAlt
+    palette.alternateBase: Theme.surface
+    palette.text: Theme.text
+    palette.placeholderText: Theme.textSecondary
+    palette.button: Theme.surface
+    palette.buttonText: Theme.text
+    palette.highlight: Theme.accent
+    palette.highlightedText: Theme.textOnAccent
+    palette.toolTipBase: Theme.surface
+    palette.toolTipText: Theme.text
 
     property string notice: ""
     property bool noticeIsError: true
@@ -155,6 +167,8 @@ ApplicationWindow {
             Layout.fillWidth: true
             visible: win.visibility !== Window.FullScreen
             hostWindow: win
+            onSettingsRequested: preferencesDialog.open()
+            onAboutRequested: aboutDialog.open()
         }
 
         FileTabs {
@@ -418,6 +432,9 @@ ApplicationWindow {
             }
         }
     }
+
+    PreferencesDialog { id: preferencesDialog }
+    AboutPdfDialog { id: aboutDialog }
 
     Shortcut { sequences: [StandardKey.Open]; onActivated: win.runTool("openFile") }
     Shortcut { sequences: ["Ctrl+K"]; onActivated: commandSearch.open() }

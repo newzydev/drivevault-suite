@@ -6,6 +6,7 @@ ItemDelegate {
     id: entry
     required property var tool
     property bool card: false
+    readonly property color toolColor: Theme.light ? Qt.darker(tool.tint, 1.75) : tool.tint
 
     text: Tr.s(tool.key)
     readonly property string description: card ? Tr.s(tool.key + "Desc") : ""
@@ -29,11 +30,11 @@ ItemDelegate {
             Layout.preferredWidth: entry.card ? 36 : 20
             Layout.preferredHeight: entry.card ? 36 : 20
             radius: 10
-            color: entry.card ? Qt.alpha(entry.tool.tint, 0.15) : "transparent"
+            color: entry.card ? Qt.alpha(entry.toolColor, 0.15) : "transparent"
             LineIcon {
                 anchors.centerIn: parent
                 name: entry.tool.icon
-                color: entry.enabled ? entry.tool.tint : Theme.textDisabled
+                color: entry.enabled ? entry.toolColor : Theme.textDisabled
                 size: 20
             }
         }
@@ -43,7 +44,7 @@ ItemDelegate {
             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
             visible: entry.card
             name: "forward"
-            color: entry.hovered ? entry.tool.tint : Theme.textDisabled
+            color: entry.hovered ? entry.toolColor : Theme.textDisabled
             size: 16
         }
         AppText {
@@ -76,9 +77,9 @@ ItemDelegate {
     }
     background: Rectangle {
         radius: entry.card ? 14 : Theme.radiusSmall
-        color: entry.highlighted || entry.hovered ? Theme.surfaceHover : entry.card ? "#232328" : "transparent"
+        color: entry.highlighted || entry.hovered ? Theme.surfaceHover : entry.card ? Theme.toolCard : "transparent"
         border.width: entry.visualFocus || entry.card ? 1 : 0
-        border.color: entry.visualFocus ? entry.tool.tint
-                      : entry.card && entry.hovered ? Qt.alpha(entry.tool.tint, 0.7) : Theme.border
+        border.color: entry.visualFocus ? entry.toolColor
+                      : entry.card && entry.hovered ? Qt.alpha(entry.toolColor, 0.7) : Theme.border
     }
 }

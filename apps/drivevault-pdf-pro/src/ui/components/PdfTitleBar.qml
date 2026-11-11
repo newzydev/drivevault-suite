@@ -1,13 +1,16 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import DriveVault.PdfPro.Backend
 
 Rectangle {
     id: bar
     required property Window hostWindow
     readonly property bool maximized: hostWindow.visibility === Window.Maximized
     implicitHeight: 64
-    color: "#0d0e11"
+    color: Theme.titleBar
+    signal settingsRequested()
+    signal aboutRequested()
 
     function toggleMaximized() {
         if (maximized)
@@ -56,7 +59,31 @@ Rectangle {
             }
         }
 
-        LanguageSwitch {}
+        Row {
+            spacing: 6
+            LanguageSwitch {}
+            PButton {
+                objectName: "themeToggle"
+                compact: true
+                glyph: Theme.light ? "moon" : "sun"
+                tip: Tr.s(Theme.light ? "switchToDark" : "switchToLight")
+                onClicked: Doc.lightTheme = !Doc.lightTheme
+            }
+            PButton {
+                objectName: "settingsButton"
+                compact: true
+                glyph: "settings"
+                tip: Tr.s("preferences")
+                onClicked: bar.settingsRequested()
+            }
+            PButton {
+                objectName: "aboutButton"
+                compact: true
+                glyph: "info"
+                tip: Tr.s("about")
+                onClicked: bar.aboutRequested()
+            }
+        }
         Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; color: Theme.border }
         Row {
             spacing: 2
@@ -104,6 +131,7 @@ Rectangle {
             LineIcon {
                 anchors.centerIn: parent
                 name: button.symbol
+                color: button.symbol === "close" && (button.hovered || button.down) ? Theme.textOnAccent : Theme.text
                 size: 18
             }
         }

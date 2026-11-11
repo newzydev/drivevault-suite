@@ -32,6 +32,7 @@ class DocumentController : public QObject {
     Q_PROPERTY(int currentTab READ currentTab NOTIFY documentChanged FINAL)
     Q_PROPERTY(int rotation READ rotation NOTIFY rotationChanged FINAL)                 // view rotation of the current tab, 0..3
     Q_PROPERTY(bool darkPages READ darkPages WRITE setDarkPages NOTIFY darkPagesChanged FINAL)   // view only: invert the page colours
+    Q_PROPERTY(bool lightTheme READ lightTheme WRITE setLightTheme NOTIFY lightThemeChanged FINAL)
     Q_PROPERTY(QStringList recentFiles READ recentFiles NOTIFY recentFilesChanged FINAL)
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged FINAL)   // "th" | "en"
     Q_PROPERTY(QString version READ version CONSTANT FINAL)
@@ -70,6 +71,8 @@ public:
     int rotation() const;
     bool darkPages() const { return m_dark; }
     void setDarkPages(bool dark);
+    bool lightTheme() const { return m_lightTheme; }
+    void setLightTheme(bool light);
     QStringList recentFiles() const { return m_recent; }
     QString language() const { return m_language; }
     void setLanguage(const QString& lang);
@@ -185,6 +188,7 @@ signals:
     void tabsChanged();
     void rotationChanged();
     void darkPagesChanged();
+    void lightThemeChanged();
     void recentFilesChanged();
     void languageChanged();
     void searchChanged();
@@ -236,6 +240,7 @@ private:
     QStringList m_recent;
     QString m_language;
     bool m_dark = false;
+    bool m_lightTheme = false;
 
     // search state: only touched on the UI thread (the worker hands its results over with queued calls)
     struct Query {

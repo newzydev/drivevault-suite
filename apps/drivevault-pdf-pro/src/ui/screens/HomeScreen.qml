@@ -25,12 +25,12 @@ ScrollView {
             Layout.fillWidth: true
             implicitHeight: openRow.implicitHeight + 36
             radius: 20
-            border.color: "#63404b"
+            border.color: Theme.light ? "#e5bfcd" : "#63404b"
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0; color: "#48262f" }
-                GradientStop { position: 0.58; color: "#34232e" }
-                GradientStop { position: 1; color: "#26232d" }
+                GradientStop { position: 0; color: Theme.light ? "#fbe2e7" : "#48262f" }
+                GradientStop { position: 0.58; color: Theme.light ? "#f7e7ef" : "#34232e" }
+                GradientStop { position: 1; color: Theme.light ? "#f0e9f4" : "#26232d" }
             }
 
             RowLayout {
@@ -76,18 +76,18 @@ ScrollView {
                         x: 70; y: 6; width: 68; height: 88
                         radius: 12
                         rotation: 13
-                        color: "#463645"
-                        border.color: "#6a4e60"
+                        color: Theme.light ? "#ecd3e4" : "#463645"
+                        border.color: Theme.light ? "#d3a6c1" : "#6a4e60"
                     }
                     Rectangle {
                         x: 38; y: 9; width: 71; height: 90
                         radius: 12
                         rotation: -9
-                        color: "#402e39"
-                        border.color: "#9a6371"
+                        color: Theme.light ? "#fff5f7" : "#402e39"
+                        border.color: Theme.light ? "#c37a8c" : "#9a6371"
                         Column {
                             x: 13; y: 15; spacing: 9
-                            LineIcon { name: "page"; size: 24; color: "#ffc0c9" }
+                            LineIcon { name: "page"; size: 24; color: Theme.light ? "#a83a55" : "#ffc0c9" }
                             Rectangle { width: 43; height: 3; radius: 2; color: "#c48090" }
                             Rectangle { width: 29; height: 3; radius: 2; color: "#936273" }
                         }

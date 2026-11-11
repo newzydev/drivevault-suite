@@ -21,7 +21,7 @@ Rectangle {
     readonly property var toolNames: ["select", "text", "image", "rect", "ellipse", "line", "arrow", "pen", "highlight", "underline", "strike", "stamp", "polygon", "note"]
 
     implicitHeight: flow.implicitHeight + 16 + msgRow.height
-    color: "#14161B"
+    color: Theme.editBar
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
 
     function save(path, overwrite) {

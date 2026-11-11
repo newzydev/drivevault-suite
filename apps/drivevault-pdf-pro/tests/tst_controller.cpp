@@ -142,6 +142,7 @@ private slots:
             DocumentController c(data);
             QVERIFY(c.language() == "th" || c.language() == "en");
             QVERIFY(!c.darkPages());
+            QVERIFY(!c.lightTheme());
             QSignalSpy spy(&c, &DocumentController::languageChanged);
             c.setLanguage("th");
             c.setLanguage("fr");                              // rejected
@@ -150,10 +151,12 @@ private slots:
             QCOMPARE(c.language(), QStringLiteral("en"));
             QVERIFY(spy.count() >= 1);
             c.setDarkPages(true);
+            c.setLightTheme(true);
         }
         DocumentController again(data);
         QCOMPARE(again.language(), QStringLiteral("en"));
         QVERIFY(again.darkPages());
+        QVERIFY(again.lightTheme());
     }
 
     // ---- view: rotation and the remembered position ----------------------------------------------------------------------

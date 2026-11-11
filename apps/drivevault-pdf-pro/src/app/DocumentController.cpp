@@ -68,6 +68,7 @@ DocumentController::DocumentController(const QString& dataDir, QObject* parent)
     QSettings s = iniFile(m_dataDir);
     m_recent = s.value(QStringLiteral("recentFiles")).toStringList();
     m_dark = s.value(QStringLiteral("darkPages"), false).toBool();
+    m_lightTheme = s.value(QStringLiteral("lightTheme"), false).toBool();
     m_language = s.value(QStringLiteral("language")).toString();
     if (m_language != QLatin1String("th") && m_language != QLatin1String("en"))
         m_language = QLocale::system().language() == QLocale::Thai ? QStringLiteral("th") : QStringLiteral("en");
@@ -168,6 +169,15 @@ void DocumentController::setDarkPages(bool dark)
     m_dark = dark;
     iniFile(m_dataDir).setValue(QStringLiteral("darkPages"), dark);
     emit darkPagesChanged();
+}
+
+void DocumentController::setLightTheme(bool light)
+{
+    if (light == m_lightTheme)
+        return;
+    m_lightTheme = light;
+    iniFile(m_dataDir).setValue(QStringLiteral("lightTheme"), light);
+    emit lightThemeChanged();
 }
 
 QString DocumentController::localPath(const QString& pathOrUrl) const

@@ -26,6 +26,8 @@ qt_add_qml_module(dp_ui
         components/ToolEntry.qml
         components/ToolSearch.qml
         screens/HomeScreen.qml
+        screens/PreferencesDialog.qml
+        screens/AboutPdfDialog.qml
         screens/ViewerScreen.qml
         screens/PasswordDialog.qml
         screens/FileTabs.qml
