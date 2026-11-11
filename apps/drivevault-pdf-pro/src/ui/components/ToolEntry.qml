@@ -8,35 +8,63 @@ ItemDelegate {
     property bool card: false
 
     text: Tr.s(tool.key)
-    readonly property string description: card && tool.key !== "openFile" ? Tr.s(tool.key + "Desc") : ""
-    implicitHeight: card ? 94 : 40
-    leftPadding: 10
-    rightPadding: 10
+    readonly property string description: card ? Tr.s(tool.key + "Desc") : ""
+    implicitHeight: card ? 114 : 40
+    leftPadding: card ? 15 : 10
+    rightPadding: leftPadding
+    topPadding: card ? 12 : 0
+    bottomPadding: topPadding
     hoverEnabled: true
     HoverHandler { cursorShape: entry.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor }
     ToolTip.visible: hovered && (titleLabel.truncated || descriptionLabel.truncated)
     ToolTip.delay: 500
     ToolTip.text: description === "" ? text : text + "\n" + description
-    contentItem: ColumnLayout {
-        spacing: 5
-        RowLayout {
-            spacing: 8
-            Layout.fillWidth: true
-            LineIcon { name: entry.tool.icon; color: entry.enabled ? entry.tool.tint : Theme.textDisabled; size: 20 }
-            AppText {
-                id: titleLabel
-                objectName: "toolTitle"
-                Layout.fillWidth: true
-                text: entry.text
-                font.weight: entry.card ? Font.DemiBold : Font.Medium
-                color: entry.enabled ? Theme.text : Theme.textDisabled
-                wrapMode: Text.NoWrap
-                elide: Text.ElideRight
+    contentItem: GridLayout {
+        columns: 2
+        columnSpacing: 8
+        rowSpacing: 4
+        Rectangle {
+            Layout.row: 0
+            Layout.column: 0
+            Layout.preferredWidth: entry.card ? 36 : 20
+            Layout.preferredHeight: entry.card ? 36 : 20
+            radius: 10
+            color: entry.card ? Qt.alpha(entry.tool.tint, 0.15) : "transparent"
+            LineIcon {
+                anchors.centerIn: parent
+                name: entry.tool.icon
+                color: entry.enabled ? entry.tool.tint : Theme.textDisabled
+                size: 20
             }
+        }
+        LineIcon {
+            Layout.row: 0
+            Layout.column: 1
+            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+            visible: entry.card
+            name: "forward"
+            color: entry.hovered ? entry.tool.tint : Theme.textDisabled
+            size: 16
+        }
+        AppText {
+            id: titleLabel
+            objectName: "toolTitle"
+            Layout.row: entry.card ? 1 : 0
+            Layout.column: entry.card ? 0 : 1
+            Layout.columnSpan: entry.card ? 2 : 1
+            Layout.fillWidth: true
+            text: entry.text
+            font.weight: entry.card ? Font.DemiBold : Font.Medium
+            color: entry.enabled ? Theme.text : Theme.textDisabled
+            wrapMode: Text.NoWrap
+            elide: Text.ElideRight
         }
         AppText {
             id: descriptionLabel
             objectName: "toolDescription"
+            Layout.row: 2
+            Layout.column: 0
+            Layout.columnSpan: 2
             Layout.fillWidth: true
             visible: text !== ""
             text: entry.description
@@ -47,9 +75,10 @@ ItemDelegate {
         }
     }
     background: Rectangle {
-        radius: Theme.radiusSmall
-        color: entry.highlighted || entry.hovered ? Theme.surfaceHover : entry.card ? Theme.backgroundAlt : "transparent"
+        radius: entry.card ? 14 : Theme.radiusSmall
+        color: entry.highlighted || entry.hovered ? Theme.surfaceHover : entry.card ? "#232328" : "transparent"
         border.width: entry.visualFocus || entry.card ? 1 : 0
-        border.color: entry.visualFocus ? Theme.accentText : Theme.border
+        border.color: entry.visualFocus ? entry.tool.tint
+                      : entry.card && entry.hovered ? Qt.alpha(entry.tool.tint, 0.7) : Theme.border
     }
 }

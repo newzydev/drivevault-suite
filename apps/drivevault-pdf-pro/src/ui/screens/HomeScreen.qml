@@ -21,78 +21,111 @@ ScrollView {
         y: 28
         spacing: 16
 
-        AppText {
-            Layout.fillWidth: true
-            text: Tr.s("welcome")
-            wrapMode: Text.Wrap
-            font.pixelSize: 30
-            font.weight: Font.Bold
-        }
-        AppText {
-            Layout.fillWidth: true
-            Layout.topMargin: -10
-            text: Tr.s("tagline")
-            color: Theme.textSecondary
-            font.pixelSize: Theme.fontLg
-        }
-
         Rectangle {
             Layout.fillWidth: true
-            Layout.topMargin: 6
-            implicitHeight: shortcuts.implicitHeight + 36
-            radius: Theme.radiusLarge
-            color: Theme.surface
-            border.color: Theme.border
+            implicitHeight: openRow.implicitHeight + 36
+            radius: 20
+            border.color: "#63404b"
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0; color: "#48262f" }
+                GradientStop { position: 0.58; color: "#34232e" }
+                GradientStop { position: 1; color: "#26232d" }
+            }
 
-            ColumnLayout {
-                id: shortcuts
+            RowLayout {
+                id: openRow
                 anchors.fill: parent
-                anchors.margins: 18
-                spacing: 12
-                AppText { text: Tr.s("recommendedTools"); font.pixelSize: Theme.fontXl; font.weight: Font.DemiBold }
-                GridLayout {
+                anchors.leftMargin: 24
+                anchors.rightMargin: 28
+                anchors.topMargin: 18
+                anchors.bottomMargin: 18
+                spacing: 20
+                ColumnLayout {
                     Layout.fillWidth: true
-                    columns: Math.max(2, Math.min(home.tools.length, Math.floor(width / 158)))
-                    columnSpacing: 10
-                    rowSpacing: 10
-                    Repeater {
-                        model: home.tools
-                        delegate: ToolEntry {
-                            required property var modelData
-                            objectName: "recommended_" + tool.key
-                            Layout.fillWidth: true
-                            Layout.preferredWidth: 1
-                            tool: modelData
-                            card: true
+                    spacing: 10
+                    AppText {
+                        Layout.fillWidth: true
+                        text: Tr.s("welcome")
+                        font.pixelSize: 29
+                        font.weight: Font.Bold
+                        wrapMode: Text.Wrap
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 14
+                        PButton {
+                            objectName: "homeOpen"
+                            text: Tr.s("openFile")
+                            variant: "primary"
                             enabled: !Doc.outputBusy
-                            onClicked: home.toolRequested(tool.key)
+                            onClicked: home.toolRequested("openFile")
+                        }
+                        AppText {
+                            Layout.fillWidth: true
+                            wrapMode: Text.Wrap
+                            text: Tr.s("dropHint")
+                            color: Theme.textSecondary
                         }
                     }
                 }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 12
-                    ToolEntry {
-                        objectName: "homeOpen"
-                        Layout.preferredWidth: 152
-                        tool: ({ key: "openFile", icon: "folder", tint: Theme.text })
-                        card: true
-                        enabled: !Doc.outputBusy
-                        onClicked: home.toolRequested(tool.key)
+                Item {
+                    Layout.preferredWidth: 154
+                    Layout.preferredHeight: 104
+                    Rectangle {
+                        x: 70; y: 6; width: 68; height: 88
+                        radius: 12
+                        rotation: 13
+                        color: "#463645"
+                        border.color: "#6a4e60"
                     }
-                    AppText {
-                        Layout.fillWidth: true
-                        wrapMode: Text.Wrap
-                        text: Tr.s("dropHint")
-                        color: Theme.textSecondary
+                    Rectangle {
+                        x: 38; y: 9; width: 71; height: 90
+                        radius: 12
+                        rotation: -9
+                        color: "#402e39"
+                        border.color: "#9a6371"
+                        Column {
+                            x: 13; y: 15; spacing: 9
+                            LineIcon { name: "page"; size: 24; color: "#ffc0c9" }
+                            Rectangle { width: 43; height: 3; radius: 2; color: "#c48090" }
+                            Rectangle { width: 29; height: 3; radius: 2; color: "#936273" }
+                        }
                     }
                 }
-                Flow {
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: 8
+            spacing: 8
+            AppText {
+                Layout.fillWidth: true
+                text: Tr.s("recommendedTools")
+                font.pixelSize: Theme.fontXl
+                font.weight: Font.DemiBold
+            }
+            PButton { objectName: "homeBatch"; compact: true; text: Tr.s("batchPdf"); enabled: !Doc.outputBusy; onClicked: home.toolRequested("batchPdf") }
+            PButton { objectName: "homeRepair"; compact: true; text: Tr.s("repairPdf"); enabled: !Doc.outputBusy; onClicked: home.toolRequested("repairPdf") }
+        }
+        GridLayout {
+            Layout.fillWidth: true
+            columns: dashboard.width >= 1030 ? 6 : 3
+            uniformCellWidths: true
+            columnSpacing: 10
+            rowSpacing: 10
+            Repeater {
+                model: home.tools
+                delegate: ToolEntry {
+                    required property var modelData
+                    objectName: tool.key === "toolMerge" ? "homeMerge" : "recommended_" + tool.key
                     Layout.fillWidth: true
-                    spacing: 8
-                    PButton { objectName: "homeMerge"; compact: true; text: Tr.s("toolMerge"); enabled: !Doc.outputBusy; onClicked: home.toolRequested("toolMerge") }
-                    PButton { objectName: "homeBatch"; compact: true; text: Tr.s("batchPdf"); enabled: !Doc.outputBusy; onClicked: home.toolRequested("batchPdf") }
-                    PButton { objectName: "homeRepair"; compact: true; text: Tr.s("repairPdf"); enabled: !Doc.outputBusy; onClicked: home.toolRequested("repairPdf") }
+                    Layout.preferredWidth: 1
+                    tool: modelData
+                    card: true
+                    enabled: !Doc.outputBusy
+                    onClicked: home.toolRequested(tool.key)
                 }
             }
         }

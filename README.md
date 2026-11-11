@@ -14,7 +14,7 @@
 | DriveVault Document Pro<br>เอกสาร / documents | - | เร็วๆ นี้ / coming soon |
 | DriveVault Presentation Pro<br>งานนำเสนอ / presentations | - | เร็วๆ นี้ / coming soon |
 | DriveVault Spreadsheet Pro<br>ตาราง / spreadsheets | - | เร็วๆ นี้ / coming soon |
-| DriveVault PDF Pro<br>จัดการ PDF / PDF tools | 1.1.2 | เตรียมเผยแพร่ / pending release |
+| DriveVault PDF Pro<br>จัดการ PDF / PDF tools | 1.1.3 | เตรียมเผยแพร่ / pending release |
 
 ต้องใช้ Windows 10 หรือ 11 (64 บิต) · *Windows 10 or 11, 64-bit.*
 ทุกรุ่นก่อนหน้าอยู่ที่ [Releases](https://github.com/newzydev/drivevault-suite/releases) · *All earlier versions are on the Releases page.*

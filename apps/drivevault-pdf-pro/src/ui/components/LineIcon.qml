@@ -49,6 +49,10 @@ Canvas {
             strokePath([[3, 11], [12, 4], [21, 11]])
             strokePath([[5, 10], [5, 21], [10, 21], [10, 15], [14, 15], [14, 21], [19, 21], [19, 10]])
             break
+        case "forward":
+            strokePath([[5, 12], [19, 12]])
+            strokePath([[13, 6], [19, 12], [13, 18]])
+            break
         case "close":
             strokePath([[6, 6], [18, 18]])
             strokePath([[18, 6], [6, 18]])

@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.1.3 (2026-11-11): Refresh the Home tools
+  - Give opening a PDF its own panel and arrange recommended tools in a responsive grid.
+  - Bring Merge files into the grid and keep batch and repair actions beside the section heading.
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.1.2 (2026-11-11): Match the DriveVault title bar
   - Use a dark title bar with the PDF Pro icon, language switch and window controls.
   - Drag the title bar to move, double-click to maximize or restore, and drag the frame edges to resize.

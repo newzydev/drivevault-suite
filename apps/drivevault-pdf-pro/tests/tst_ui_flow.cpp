@@ -975,7 +975,7 @@ private slots:
         QTRY_VERIFY(!batch->property("opened").toBool());
     }
 
-    void narrowThaiToolCardElidesItsText()
+    void homeToolsReflowAndElideLongThaiText()
     {
         closeAllTabs();
         const QSize originalSize = m_window->size();
@@ -985,7 +985,13 @@ private slots:
         auto* card = find("recommended_thaiOcr");
         auto* title = search(card, "toolTitle");
         auto* description = search(card, "toolDescription");
-        QVERIFY(title && description);
+        auto* merge = find("homeMerge");
+        QVERIFY(title && description && merge);
+        const auto top = [](QQuickItem* item) { return item->mapToScene(QPointF()).y(); };
+        QTRY_VERIFY(top(find("homeOpen")) < top(card));
+        QTRY_VERIFY(top(merge) > top(card));
+        m_window->resize(1480, 780);
+        QTRY_COMPARE(top(merge), top(card));
         QTRY_VERIFY(title->property("truncated").toBool() || description->property("truncated").toBool());
         for (auto* label : {title, description}) {
             QCOMPARE(label->property("lineCount").toInt(), 1);

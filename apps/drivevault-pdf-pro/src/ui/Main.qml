@@ -320,7 +320,7 @@ ApplicationWindow {
     Component {
         id: homeComponent
         HomeScreen {
-            tools: ["toolOrganize", "thaiOcr", "toolForm", "editExisting", "protectPdf"]
+            tools: ["toolOrganize", "thaiOcr", "toolForm", "editExisting", "protectPdf", "toolMerge"]
                 .map(key => win.tools.find(tool => tool.key === key))
             onToolRequested: key => win.runTool(key)
             onOpenPathRequested: path => win.openPath(path)

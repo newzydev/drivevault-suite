@@ -7,7 +7,6 @@ QtObject {
     readonly property string lang: Doc.language
     readonly property var table: ({
         "title": ["DriveVault PDF Pro", "DriveVault PDF Pro"],
-        "tagline": ["Your PDF tools, on this computer", "เครื่องมือ PDF ในเครื่องของคุณ"],
         "home": ["Home", "หน้าหลัก"],
         "welcome": ["Welcome to DriveVault PDF Pro", "ยินดีต้อนรับสู่ DriveVault PDF Pro"],
         "allTools": ["All tools", "เครื่องมือทั้งหมด"],
@@ -19,6 +18,7 @@ QtObject {
         "addContent": ["Add text and images", "เพิ่มข้อความและรูปภาพ"],
         "addComments": ["Add comments", "เพิ่มความเห็น"],
         "toolOrganizeDesc": ["Reorder, rotate or delete pages", "เรียง หมุน หรือลบหน้า"],
+        "toolMergeDesc": ["Combine pages from several PDFs", "รวมหน้าจาก PDF หลายไฟล์"],
         "addCommentsDesc": ["Place a note on a page", "วางโน้ตบนหน้าเอกสาร"],
         "toolFormDesc": ["Fill existing PDF fields", "กรอกช่องฟอร์มที่มีอยู่"],
         "addContentDesc": ["Add text, pictures and shapes", "เพิ่มข้อความ รูปภาพ และรูปทรง"],
