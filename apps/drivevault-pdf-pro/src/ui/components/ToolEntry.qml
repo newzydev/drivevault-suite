@@ -8,11 +8,15 @@ ItemDelegate {
     property bool card: false
 
     text: Tr.s(tool.key)
+    readonly property string description: card && tool.key !== "openFile" ? Tr.s(tool.key + "Desc") : ""
     implicitHeight: card ? 94 : 40
     leftPadding: 10
     rightPadding: 10
     hoverEnabled: true
     HoverHandler { cursorShape: entry.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor }
+    ToolTip.visible: hovered && (titleLabel.truncated || descriptionLabel.truncated)
+    ToolTip.delay: 500
+    ToolTip.text: description === "" ? text : text + "\n" + description
     contentItem: ColumnLayout {
         spacing: 5
         RowLayout {
@@ -20,21 +24,26 @@ ItemDelegate {
             Layout.fillWidth: true
             LineIcon { name: entry.tool.icon; color: entry.enabled ? entry.tool.tint : Theme.textDisabled; size: 20 }
             AppText {
+                id: titleLabel
+                objectName: "toolTitle"
                 Layout.fillWidth: true
                 text: entry.text
                 font.weight: entry.card ? Font.DemiBold : Font.Medium
                 color: entry.enabled ? Theme.text : Theme.textDisabled
-                wrapMode: entry.card ? Text.Wrap : Text.NoWrap
+                wrapMode: Text.NoWrap
                 elide: Text.ElideRight
             }
         }
         AppText {
+            id: descriptionLabel
+            objectName: "toolDescription"
             Layout.fillWidth: true
-            visible: entry.card && entry.tool.key !== "openFile"
-            text: visible ? Tr.s(entry.tool.key + "Desc") : ""
+            visible: text !== ""
+            text: entry.description
             color: Theme.textSecondary
             font.pixelSize: Theme.fontSm
-            wrapMode: Text.Wrap
+            wrapMode: Text.NoWrap
+            elide: Text.ElideRight
         }
     }
     background: Rectangle {

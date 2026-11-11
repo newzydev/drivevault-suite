@@ -59,6 +59,7 @@ ScrollView {
                         model: home.tools
                         delegate: ToolEntry {
                             required property var modelData
+                            objectName: "recommended_" + tool.key
                             Layout.fillWidth: true
                             Layout.preferredWidth: 1
                             tool: modelData

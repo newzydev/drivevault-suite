@@ -25,6 +25,7 @@
 #include <QMutexLocker>
 #include <QPrinterInfo>
 #include <QRunnable>
+#include <QScreen>
 #include <QSettings>
 #include <QThreadPool>
 
@@ -330,6 +331,35 @@ QVariantMap DocumentController::viewState() const
     QMutexLocker lock(&m_mutex);
     const Tab* t = current();
     return t ? t->view : QVariantMap();
+}
+
+QVariantMap DocumentController::windowState() const
+{
+    QSettings settings = iniFile(m_dataDir);
+    QRect normal = settings.value(QStringLiteral("window/normalGeometry")).toRect();
+    if (normal.isValid()) {
+        // Use the monitor that held the title bar, or the primary monitor if it was disconnected.
+        const QScreen* screen = QGuiApplication::screenAt(normal.topLeft() + QPoint(80, 20));
+        const QScreen* target = screen ? screen : QGuiApplication::primaryScreen();
+        if (target) {
+            const QRect area = target->availableGeometry();
+            normal.setSize(normal.size().boundedTo(area.size()));
+            if (!screen)
+                normal.moveCenter(area.center());
+            normal.moveTopLeft({std::clamp(normal.x(), area.left(), area.right() - normal.width() + 1),
+                                std::clamp(normal.y(), area.top(), area.bottom() - normal.height() + 1)});
+        }
+    }
+    return {{QStringLiteral("normalGeometry"), normal},
+            {QStringLiteral("maximized"), settings.value(QStringLiteral("window/maximized"), false).toBool()}};
+}
+
+void DocumentController::saveWindowState(bool maximized, const QRect& normalGeometry)
+{
+    QSettings settings = iniFile(m_dataDir);
+    settings.setValue(QStringLiteral("window/maximized"), maximized);
+    if (normalGeometry.isValid())
+        settings.setValue(QStringLiteral("window/normalGeometry"), normalGeometry);
 }
 
 void DocumentController::saveViewState(const QVariantMap& state) { saveViewStateFor(docId(), state); }

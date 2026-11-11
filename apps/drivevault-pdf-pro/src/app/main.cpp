@@ -85,6 +85,8 @@ int main(int argc, char* argv[])
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Forms", &forms);
 
     QQmlApplicationEngine engine;
+    if (parser.isSet(screenshotOption))
+        engine.setInitialProperties({{QStringLiteral("rememberWindow"), false}});
     engine.addImageProvider(QStringLiteral("pdf"), new dp::PageImageProvider(&controller));
     engine.addImageProvider(QStringLiteral("ovl"), new dp::OverlayImageProvider(&controller, &editor));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(-1); }, Qt::QueuedConnection);

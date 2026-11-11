@@ -16,7 +16,9 @@ ApplicationWindow {
 
     property string notice: ""
     property bool noticeIsError: true
+    property bool rememberWindow: true
     property int windowedVisibility: Window.Windowed
+    property rect normalGeometry
     property bool showHome: !Doc.isOpen
     property bool showTools: true
     property string category: "all"
@@ -71,6 +73,40 @@ ApplicationWindow {
             windowedVisibility = visibility === Window.Maximized ? Window.Maximized : Window.Windowed
             visibility = Window.FullScreen
         }
+    }
+
+    function captureNormalGeometry() {
+        if (visibility === Window.Windowed)
+            normalGeometry = Qt.rect(x, y, width, height)
+    }
+
+    function restoreWindowState() {
+        const state = Doc.windowState()
+        const geometry = state.normalGeometry
+        if (geometry.width > 0 && geometry.height > 0) {
+            width = Math.max(minimumWidth, geometry.width)
+            height = Math.max(minimumHeight, geometry.height)
+            x = geometry.x
+            y = geometry.y
+        }
+        captureNormalGeometry()
+        if (state.maximized)
+            showMaximized()
+    }
+
+    // Coalesce geometry signals so maximizing cannot overwrite the normal rectangle.
+    onXChanged: Qt.callLater(captureNormalGeometry)
+    onYChanged: Qt.callLater(captureNormalGeometry)
+    onWidthChanged: Qt.callLater(captureNormalGeometry)
+    onHeightChanged: Qt.callLater(captureNormalGeometry)
+    onVisibilityChanged: {
+        if (win.visibility === Window.Windowed || win.visibility === Window.Maximized)
+            windowedVisibility = win.visibility
+        Qt.callLater(captureNormalGeometry)
+    }
+    Component.onCompleted: {
+        if (rememberWindow)
+            restoreWindowState()
     }
 
     Connections {
@@ -236,6 +272,10 @@ ApplicationWindow {
         }
         if (viewerLoader.item)
             viewerLoader.item.flushSave()
+        if (rememberWindow) {
+            captureNormalGeometry()
+            Doc.saveWindowState(windowedVisibility === Window.Maximized, normalGeometry)
+        }
     }
     Component {
         id: viewerComponent

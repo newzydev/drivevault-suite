@@ -20,9 +20,11 @@
 #include <QGuiApplication>
 #include <QProcess>
 #include <QQmlApplicationEngine>
+#include <QQmlComponent>
 #include <QQuickItem>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QSettings>
 #include <QTemporaryDir>
 #include <QtQml/qqml.h>
 #include <QtTest>
@@ -971,6 +973,70 @@ private slots:
         QTRY_VERIFY(find("batchReport") && find("batchReport")->property("count").toInt() == 1);
         QVERIFY(click("batchClose"));
         QTRY_VERIFY(!batch->property("opened").toBool());
+    }
+
+    void narrowThaiToolCardElidesItsText()
+    {
+        closeAllTabs();
+        const QSize originalSize = m_window->size();
+        m_doc->setLanguage(QStringLiteral("th"));
+        m_window->resize(960, 600);
+        QTRY_VERIFY(find("recommended_thaiOcr"));
+        auto* card = find("recommended_thaiOcr");
+        auto* title = search(card, "toolTitle");
+        auto* description = search(card, "toolDescription");
+        QVERIFY(title && description);
+        QTRY_VERIFY(title->property("truncated").toBool() || description->property("truncated").toBool());
+        for (auto* label : {title, description}) {
+            QCOMPARE(label->property("lineCount").toInt(), 1);
+            QVERIFY(label->mapToItem(card, QPointF(0, label->height())).y() <= card->height());
+        }
+        m_window->resize(originalSize);
+        m_doc->setLanguage(QStringLiteral("en"));
+    }
+
+    void windowRestoresMaximizedThenNormalSizeOnReopen()
+    {
+        closeAllTabs();
+        QQmlComponent component(m_engine);
+        component.loadFromModule("DriveVault.PdfPro.UI", "Main");
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        const QSize normalSize(960, 650);
+        const auto settingsPath = m_dir.filePath("data/settings.ini");
+
+        {
+            const std::unique_ptr<QObject> instance(component.create());
+            auto* window = qobject_cast<QQuickWindow*>(instance.get());
+            QVERIFY(window);
+            window->resize(normalSize);
+            QTRY_COMPARE(window->property("normalGeometry").toRect().size(), normalSize);
+            window->showMaximized();
+            QTRY_COMPARE(window->visibility(), QWindow::Maximized);
+            QVERIFY(window->close());
+        }
+        {
+            QSettings settings(settingsPath, QSettings::IniFormat);
+            QVERIFY(settings.value("window/maximized").toBool());
+            QCOMPARE(settings.value("window/normalGeometry").toRect().size(), normalSize);
+        }
+        {
+            const std::unique_ptr<QObject> instance(component.create());
+            auto* window = qobject_cast<QQuickWindow*>(instance.get());
+            QVERIFY(window);
+            QTRY_COMPARE(window->visibility(), QWindow::Maximized);
+            window->showNormal();
+            QTRY_COMPARE(window->visibility(), QWindow::Windowed);
+            QCOMPARE(window->size(), normalSize);
+            QVERIFY(window->close());
+        }
+        {
+            const std::unique_ptr<QObject> instance(component.create());
+            auto* window = qobject_cast<QQuickWindow*>(instance.get());
+            QVERIFY(window);
+            QTRY_COMPARE(window->visibility(), QWindow::Windowed);
+            QCOMPARE(window->size(), normalSize);
+            QVERIFY(window->close());
+        }
     }
 
     void noQmlWarningsWereEmitted()

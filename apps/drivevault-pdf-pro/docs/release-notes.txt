@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.1.1 (2026-11-11): Fit tool labels and remember the window
+  - Long labels and descriptions on Home tool cards end with an ellipsis, with the full text on hover.
+  - Reopening restores the normal window size and position or the maximized state.
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.1.0 (2026-11-11): Add PDF workspace, Thai OCR and text replacement
   - Home, document tabs, All tools and Ctrl+K command search.
   - Recognize Thai and English on image-only pages locally and save a searchable copy.

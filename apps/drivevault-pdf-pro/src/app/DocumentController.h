@@ -6,6 +6,7 @@
 #include <QHash>
 #include <QMutex>
 #include <QObject>
+#include <QRect>
 #include <QStringList>
 #include <QThreadPool>
 #include <QUrl>
@@ -103,6 +104,8 @@ public:
     Q_INVOKABLE void rotateView(int turns);              // +1 = 90 degrees clockwise, -1 = counter clockwise
     // The remembered view of the current file: {page, zoom, zoomMode, viewMode, rotation} (empty map for a file never seen).
     Q_INVOKABLE QVariantMap viewState() const;
+    Q_INVOKABLE QVariantMap windowState() const;
+    Q_INVOKABLE void saveWindowState(bool maximized, const QRect& normalGeometry);
     Q_INVOKABLE void saveViewState(const QVariantMap& state);                        // the current tab
     Q_INVOKABLE void saveViewStateFor(int docId, const QVariantMap& state);           // a tab by id (the view may have changed tab since)
 
