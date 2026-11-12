@@ -338,6 +338,7 @@ ApplicationWindow {
                 .map(key => win.tools.find(tool => tool.key === key))
             onToolRequested: key => win.runTool(key)
             onOpenPathRequested: path => win.openPath(path)
+            onFolderOpenFailed: win.showNotice(Tr.s("recentFolderFailed"), true)
         }
     }
 

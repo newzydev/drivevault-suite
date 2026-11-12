@@ -8,29 +8,32 @@ ScrollView {
     required property var tools
     signal toolRequested(string key)
     signal openPathRequested(string path)
+    signal folderOpenFailed()
+    readonly property string recentQuery: recentSearch.text.trim().toLowerCase()
+    readonly property var matchingFiles: Doc.recentFiles.filter(path => path.toLowerCase().includes(recentQuery))
 
     contentWidth: availableWidth
-    contentHeight: dashboard.y + dashboard.implicitHeight
+    contentHeight: dashboard.y + dashboard.implicitHeight + dashboard.inset
     clip: true
     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
     ColumnLayout {
         id: dashboard
-        width: home.availableWidth - 72
-        x: 36
-        y: 28
-        spacing: 16
+        width: Math.min(1280, home.availableWidth - 2 * inset)
+        readonly property int inset: home.availableWidth < 800 ? 20 : 32
+        x: Math.round((home.availableWidth - width) / 2)
+        y: inset
+        spacing: 14
 
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: openRow.implicitHeight + 36
+            implicitHeight: openRow.implicitHeight + 48
             radius: 20
-            border.color: Theme.light ? "#e5bfcd" : "#63404b"
+            border.color: Theme.light ? "#e6ccd0" : "#58363d"
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0; color: Theme.light ? "#fbe2e7" : "#48262f" }
-                GradientStop { position: 0.58; color: Theme.light ? "#f7e7ef" : "#34232e" }
-                GradientStop { position: 1; color: Theme.light ? "#f0e9f4" : "#26232d" }
+                GradientStop { position: 0; color: Theme.light ? "#fbe7e9" : "#3c232a" }
+                GradientStop { position: 1; color: Theme.light ? "#fff8f8" : "#222128" }
             }
 
             RowLayout {
@@ -38,16 +41,16 @@ ScrollView {
                 anchors.fill: parent
                 anchors.leftMargin: 24
                 anchors.rightMargin: 28
-                anchors.topMargin: 18
-                anchors.bottomMargin: 18
+                anchors.topMargin: 24
+                anchors.bottomMargin: 24
                 spacing: 20
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 10
                     AppText {
                         Layout.fillWidth: true
-                        text: Tr.s("welcome")
-                        font.pixelSize: 29
+                        text: "DriveVault PDF Pro"
+                        font.pixelSize: Theme.fontHero
                         font.weight: Font.Bold
                         wrapMode: Text.Wrap
                     }
@@ -70,6 +73,7 @@ ScrollView {
                     }
                 }
                 Item {
+                    visible: dashboard.width >= 640
                     Layout.preferredWidth: 154
                     Layout.preferredHeight: 104
                     Rectangle {
@@ -111,7 +115,7 @@ ScrollView {
         }
         GridLayout {
             Layout.fillWidth: true
-            columns: dashboard.width >= 1030 ? 6 : 3
+            columns: dashboard.width >= 1030 ? 6 : dashboard.width >= 635 ? 3 : 2
             uniformCellWidths: true
             columnSpacing: 10
             rowSpacing: 10
@@ -130,53 +134,119 @@ ScrollView {
             }
         }
 
-        AppText {
+        RowLayout {
+            Layout.fillWidth: true
             Layout.topMargin: 10
-            text: Tr.s("recent")
-            font.pixelSize: Theme.fontXl
-            font.weight: Font.DemiBold
+            AppText {
+                Layout.fillWidth: true
+                text: Tr.s("recent")
+                font.pixelSize: Theme.fontXl
+                font.weight: Font.DemiBold
+            }
+            TextField {
+                id: recentSearch
+                objectName: "recentSearch"
+                visible: Doc.recentFiles.length > 0
+                Layout.preferredWidth: Math.min(320, dashboard.width / 2)
+                implicitHeight: 38
+                leftPadding: 12
+                rightPadding: 12
+                selectByMouse: true
+                placeholderText: Tr.s("searchRecent")
+                Accessible.name: placeholderText
+                color: Theme.text
+                placeholderTextColor: Theme.textSecondary
+                background: Rectangle {
+                    radius: Theme.radius
+                    color: Theme.toolCard
+                    border.color: recentSearch.activeFocus ? Theme.accentText : Theme.border
+                }
+                Keys.onEscapePressed: clear()
+            }
         }
-        Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
         AppText {
-            visible: Doc.recentFiles.length === 0
-            text: Tr.s("noRecent")
+            visible: home.matchingFiles.length === 0
+            Layout.bottomMargin: 12
+            text: Doc.recentFiles.length === 0 ? Tr.s("noRecent") : Tr.s("noMatchingRecent")
             color: Theme.textSecondary
         }
         Repeater {
-            model: Doc.recentFiles.slice(0, 6)
+            model: home.matchingFiles
             delegate: Rectangle {
                 id: recentRow
                 required property string modelData
                 required property int index
                 objectName: "recent_" + index
                 Layout.fillWidth: true
-                implicitHeight: 48
-                radius: Theme.radiusSmall
-                color: recentHover.hovered ? Theme.surfaceHover : "transparent"
-                HoverHandler { id: recentHover; cursorShape: Qt.PointingHandCursor }
-                TapHandler { onTapped: home.openPathRequested(recentRow.modelData) }
+                implicitHeight: 58
+                radius: Theme.radius
+                color: openRecent.hovered ? Theme.surfaceHover : Theme.toolCard
+                border.color: openRecent.visualFocus ? Theme.accentText : Theme.borderSubtle
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: 10
                     anchors.rightMargin: 8
                     spacing: 12
-                    LineIcon { name: "page"; color: Theme.accentText }
-                    ColumnLayout {
+                    ItemDelegate {
+                        id: openRecent
                         Layout.fillWidth: true
-                        spacing: 0
-                        AppText { Layout.fillWidth: true; text: recentRow.modelData.split(/[\\/]/).pop(); elide: Text.ElideRight; font.weight: Font.Medium }
-                        AppText { Layout.fillWidth: true; text: recentRow.modelData; elide: Text.ElideMiddle; color: Theme.textSecondary; font.pixelSize: Theme.fontSm }
+                        Layout.fillHeight: true
+                        text: recentRow.modelData.split(/[\\/]/).pop()
+                        enabled: !Doc.outputBusy
+                        hoverEnabled: true
+                        background: null
+                        onClicked: home.openPathRequested(recentRow.modelData)
+                        HoverHandler { cursorShape: openRecent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                        ToolTip.visible: hovered && recentPath.truncated
+                        ToolTip.delay: 500
+                        ToolTip.text: recentRow.modelData
+                        contentItem: RowLayout {
+                            spacing: 12
+                            Rectangle {
+                                Layout.preferredWidth: 34
+                                Layout.preferredHeight: 34
+                                radius: 9
+                                color: Theme.accentSubtle
+                                LineIcon { anchors.centerIn: parent; name: "page"; color: Theme.accentText }
+                            }
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 0
+                                AppText { Layout.fillWidth: true; text: openRecent.text; elide: Text.ElideRight; font.weight: Font.Medium }
+                                AppText {
+                                    id: recentPath
+                                    Layout.fillWidth: true
+                                    text: recentRow.modelData
+                                    elide: Text.ElideMiddle
+                                    color: Theme.textSecondary
+                                    font.pixelSize: Theme.fontSm
+                                }
+                            }
+                        }
+                    }
+                    PButton {
+                        compact: true
+                        variant: "ghost"
+                        glyph: "folder"
+                        tip: Tr.s("openRecentFolder")
+                        onClicked: {
+                            if (!Doc.openRecentFolder(recentRow.modelData))
+                                home.folderOpenFailed()
+                        }
                     }
                     PButton {
                         compact: true
                         variant: "ghost"
                         glyph: "close"
                         tip: Tr.s("removeRecent")
-                        onClicked: Doc.removeRecent(recentRow.modelData)
+                        onClicked: {
+                            Doc.removeRecent(recentRow.modelData)
+                            if (Doc.recentFiles.length === 0)
+                                recentSearch.clear()
+                        }
                     }
                 }
             }
         }
-        Item { Layout.preferredHeight: 32 }
     }
 }

@@ -417,6 +417,14 @@ void DocumentController::removeRecent(const QString& path)
         saveRecent();
 }
 
+bool DocumentController::openRecentFolder(const QString& path) const
+{
+    if (!m_recent.contains(path) || !QDir::isAbsolutePath(path))
+        return false;
+    const QDir folder = QFileInfo(path).absoluteDir();
+    return folder.exists() && QDesktopServices::openUrl(QUrl::fromLocalFile(folder.absolutePath()));
+}
+
 void DocumentController::saveRecent()
 {
     iniFile(m_dataDir).setValue(QStringLiteral("recentFiles"), m_recent);

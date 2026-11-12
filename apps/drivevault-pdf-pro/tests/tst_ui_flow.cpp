@@ -543,6 +543,9 @@ private slots:
         QTest::qWait(150);
         QVERIFY(click("tabClose_0"));
         QTRY_VERIFY_WITH_TIMEOUT(visible("homeOpen"), 5000);
+        QVERIFY(typeInto("recentSearch", "no-such-recent-file"));
+        QTRY_VERIFY(!find("recent_0"));
+        QVERIFY(typeInto("recentSearch", "SIX.PDF"));
         QVERIFY(find("recent_0"));
         QVERIFY(click("recent_0"));
         QTRY_VERIFY_WITH_TIMEOUT(m_doc->isOpen() && find("pages") != nullptr, 8000);
@@ -1004,7 +1007,7 @@ private slots:
         QTRY_VERIFY(!batch->property("opened").toBool());
     }
 
-    void homeToolsReflowAndElideLongThaiText()
+    void homeToolsReflowAndFitThaiOcrTitle()
     {
         closeAllTabs();
         const QSize originalSize = m_window->size();
@@ -1021,7 +1024,7 @@ private slots:
         QTRY_VERIFY(top(merge) > top(card));
         m_window->resize(1480, 780);
         QTRY_COMPARE(top(merge), top(card));
-        QTRY_VERIFY(title->property("truncated").toBool() || description->property("truncated").toBool());
+        QTRY_VERIFY(!title->property("truncated").toBool());
         for (auto* label : {title, description}) {
             QCOMPARE(label->property("lineCount").toInt(), 1);
             QVERIFY(label->mapToItem(card, QPointF(0, label->height())).y() <= card->height());
