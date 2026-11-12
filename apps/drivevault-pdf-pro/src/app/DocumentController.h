@@ -44,6 +44,7 @@ class DocumentController : public QObject {
     Q_PROPERTY(double searchProgress READ searchProgress NOTIFY searchChanged FINAL)    // 0..1
     // selection
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY selectionChanged FINAL)
+    Q_PROPERTY(QVariantMap textCaret READ textCaret NOTIFY selectionChanged FINAL)
     // annotations list (loaded in the background by requestAnnotations)
     Q_PROPERTY(QVariantList annotationItems READ annotationItems NOTIFY annotationsChanged FINAL)
     Q_PROPERTY(bool annotationsLoading READ annotationsLoading NOTIFY annotationsChanged FINAL)
@@ -123,9 +124,11 @@ public:
     Q_INVOKABLE void selectStart(int page, double x, double y);
     Q_INVOKABLE void selectMove(int page, double x, double y);
     Q_INVOKABLE void selectAll();
+    Q_INVOKABLE bool isTextAt(int page, double x, double y) const;
     Q_INVOKABLE void clearSelection();
     Q_INVOKABLE QVariantList selectionRects(int page) const;   // [{x, y, w, h}]
     Q_INVOKABLE QString selectedText() const;
+    QVariantMap textCaret() const;
     Q_INVOKABLE bool copySelection() const;               // to the clipboard; false when nothing is selected
 
     // ---- structure ----------------------------------------------------------------------------------------------------------
@@ -261,6 +264,7 @@ private:
 
     SelPoint m_selAnchor;
     SelPoint m_selFocus;
+    QRectF m_caretRect;
 
     QVariantList m_annotations;
     bool m_annotationsLoading = false;

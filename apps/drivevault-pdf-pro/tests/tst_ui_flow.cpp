@@ -421,11 +421,21 @@ private slots:
         const double y = hello.center().y();
         const QPoint from = pagePoint(0, hello.left() + 1, y);
         const QPoint to = pagePoint(0, world.right() - 1, y);
+        auto* toolbar = find("readerToolbar");
+        auto* sidePanel = find("sidePanel");
+        QVERIFY(toolbar && sidePanel);
+        QVERIFY(toolbar->mapToScene(QPointF(0, toolbar->height())).y() <= sidePanel->mapToScene(QPointF()).y());
+        QTest::mouseClick(m_window, Qt::LeftButton, {}, from);
+        QTRY_VERIFY(visible("textCaret_0"));
+        QTRY_COMPARE_WITH_TIMEOUT(find("textCaret_0")->opacity(), 0.0, 1500);
+        QTest::mouseClick(m_window, Qt::LeftButton, Qt::ShiftModifier, to);
+        QCOMPARE(m_doc->selectedText().trimmed(), QStringLiteral("Hello search world"));
         QTest::mousePress(m_window, Qt::LeftButton, {}, from);
         for (int i = 1; i <= 8; ++i)
             QTest::mouseMove(m_window, from + (to - from) * i / 8);
         QTest::mouseRelease(m_window, Qt::LeftButton, {}, to);
         QTRY_VERIFY_WITH_TIMEOUT(m_doc->hasSelection(), 5000);
+        QVERIFY(!visible("textCaret_0"));
         QCOMPARE(m_doc->selectedText().trimmed(), QStringLiteral("Hello search world"));
         QQuickItem* page = find("pageImage_0")->parentItem();
         QTRY_VERIFY_WITH_TIMEOUT(!page->property("selectionRects").toList().isEmpty(), 5000);   // the selection is drawn

@@ -502,6 +502,59 @@ int PdfDocument::charIndexAt(int page, QPointF pt, double tolerance, int rotatio
     return FPDFText_GetCharIndexAtPos(h.text, pp.x(), pp.y(), tolerance, tolerance);
 }
 
+TextPosition PdfDocument::textPositionAt(int page, QPointF pt, double tolerance, int rotation) const
+{
+    if (page < 0 || page >= m_pageSizes.size())
+        return {};
+    rotation = normRotation(rotation);
+    QMutexLocker lock(&pdfiumMutex());
+    PageHandle h(m_impl->doc, page, true);
+    if (!h.text)
+        return {};
+    const QSizeF shown = rotated(m_pageSizes.at(page), rotation);
+    const QPointF point = toPage(h.page, shown, rotation, pt);
+    int index = FPDFText_GetCharIndexAtPos(h.text, point.x(), point.y(), tolerance, tolerance);
+    if (index < 0)
+        return {};
+
+    const auto isMark = [&h](int character) {
+        const auto category = QChar::category(FPDFText_GetUnicode(h.text, character));
+        return category == QChar::Mark_NonSpacing || category == QChar::Mark_SpacingCombining
+            || category == QChar::Mark_Enclosing;
+    };
+    while (index > 0 && isMark(index))
+        --index;
+    int end = index + 1;
+    const int count = FPDFText_CountChars(h.text);
+    while (end < count && isMark(end))
+        ++end;
+
+    double left, right, bottom, top;
+    if (!FPDFText_GetCharBox(h.text, index, &left, &right, &bottom, &top))
+        return {};
+    const QRectF glyph = shownRect(h.page, shown, rotation, left, bottom, right, top);
+    FS_RECTF loose{};
+    const QRectF line = FPDFText_GetLooseCharBox(h.text, index, &loose)
+        ? shownRect(h.page, shown, rotation, loose.left, loose.bottom, loose.right, loose.top).united(glyph)
+        : glyph;
+    FS_MATRIX matrix{};
+    const QPointF baseline = FPDFText_GetMatrix(h.text, index, &matrix)
+        ? QPointF(matrix.a, matrix.b) : QPointF(1, 0);
+    const QPointF advance = toShown(h.page, shown, rotation, left + 16 * baseline.x(), bottom + 16 * baseline.y())
+        - toShown(h.page, shown, rotation, left, bottom);
+    const auto direction = QChar::direction(FPDFText_GetUnicode(h.text, index));
+    const double readingDirection = direction == QChar::DirR || direction == QChar::DirAL ? -1.0 : 1.0;
+    const bool vertical = std::abs(advance.y()) > std::abs(advance.x());
+    const double axis = readingDirection * (vertical ? advance.y() : advance.x());
+    const double offset = vertical ? pt.y() - glyph.center().y() : pt.x() - glyph.center().x();
+    const bool trailing = offset * axis > 0;
+    const bool farEdge = trailing == (axis >= 0);
+    const QRectF caret = vertical
+        ? QRectF(line.left(), farEdge ? glyph.bottom() : glyph.top(), line.width(), 0)
+        : QRectF(farEdge ? glyph.right() : glyph.left(), line.top(), 0, line.height());
+    return {trailing ? end : index, caret};
+}
+
 QList<QRectF> PdfDocument::textRects(int page, int start, int count, int rotation) const
 {
     if (page < 0 || page >= m_pageSizes.size() || start < 0)

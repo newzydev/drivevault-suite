@@ -19,6 +19,9 @@ Item {
     property var redactMarks: []
     property var redactPreview: null
     property bool redactMode: false
+    property bool textSelectionEnabled: false
+    property bool showTextCaret: false
+    readonly property var textCaret: Doc.textCaret
 
     width: pw
     height: ph
@@ -103,14 +106,41 @@ Item {
         }
     }
     Repeater {
-        model: pv.selectionRects
+        model: pv.textSelectionEnabled ? pv.selectionRects : []
         delegate: Rectangle {
             required property var modelData
             x: modelData.x * pv.pxPerPt
             y: modelData.y * pv.pxPerPt
             width: modelData.w * pv.pxPerPt
             height: modelData.h * pv.pxPerPt
-            color: "#664A90E2"
+            color: Doc.darkPages ? "#805E9FFF" : "#553B82F6"
+        }
+    }
+    Rectangle {
+        id: caret
+        objectName: "textCaret_" + pv.pageIndex
+        visible: pv.showTextCaret && pv.textCaret.page === pv.pageIndex
+        x: Math.round((pv.textCaret.x || 0) * pv.pxPerPt)
+        y: Math.round((pv.textCaret.y || 0) * pv.pxPerPt)
+        width: Math.max(1, (pv.textCaret.w || 0) * pv.pxPerPt)
+        height: Math.max(1, (pv.textCaret.h || 0) * pv.pxPerPt)
+        color: Doc.darkPages ? "#A9CCFF" : "#17488C"
+        onVisibleChanged: opacity = 1
+        Connections {
+            target: Doc
+            function onSelectionChanged() {
+                if (caret.visible) {
+                    caret.opacity = 1
+                    blink.restart()
+                }
+            }
+        }
+        Timer {
+            id: blink
+            interval: 500
+            repeat: true
+            running: caret.visible
+            onTriggered: caret.opacity = 1 - caret.opacity
         }
     }
 }

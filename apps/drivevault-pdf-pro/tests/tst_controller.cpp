@@ -285,6 +285,8 @@ private slots:
         QVERIFY(!c.hasSelection());
         c.selectStart(0, hello.value("x").toDouble() + 1, y);
         QVERIFY(!c.hasSelection());                                // a press alone selects nothing
+        QCOMPARE(c.textCaret().value("page").toInt(), 0);
+        QVERIFY(c.textCaret().value("h").toDouble() > 0);
         c.selectMove(0, world.value("x").toDouble() + world.value("w").toDouble() - 1, y);
         QVERIFY(c.hasSelection());
         QCOMPARE(c.selectedText().trimmed(), QStringLiteral("Hello search world"));
@@ -297,6 +299,7 @@ private slots:
         QVERIFY(c.selectedText().size() < 8);
         c.clearSelection();
         QVERIFY(!c.hasSelection());
+        QVERIFY(c.textCaret().isEmpty());
         QVERIFY(c.selectedText().isEmpty());
         QVERIFY(!c.copySelection());
 

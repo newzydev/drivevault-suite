@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.3.1 (2026-11-12): Refine text selection and the reader toolbar
+  - Click selectable text to place a blinking caret. Drag or Shift-click to extend the selection from a character boundary.
+  - Reader controls are grouped in a full-width toolbar above the side panels and document.
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.3.0 (2026-11-12): Refresh Home and improve recent file navigation
   - Search the full recent file history by name or path and open the containing folder from each row.
   - Home adapts its tool grid and document list to the available width in both themes.

@@ -222,6 +222,12 @@ ApplicationWindow {
                 }
             }
         }
+        Item {
+            id: readerToolbarHost
+            visible: viewerLoader.visible
+            Layout.fillWidth: true
+            Layout.preferredHeight: viewerLoader.item ? viewerLoader.item.toolbarHeight : 0
+        }
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -318,6 +324,7 @@ ApplicationWindow {
     Component {
         id: viewerComponent
         ViewerScreen {
+            toolbarHost: readerToolbarHost
             onOpenRequested: fileDialog.open()
             onOpenPathRequested: path => win.openPath(path)
             onOrganizeRequested: organizer.begin("organize")

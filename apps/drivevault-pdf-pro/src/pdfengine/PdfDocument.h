@@ -44,6 +44,11 @@ struct SearchHit {
     QList<QRectF> rects;
 };
 
+struct TextPosition {
+    int boundary = -1;
+    QRectF caret;
+};
+
 // Raw PDF coordinates for rebuilding simple text objects in a sanitized document.
 struct RedactionGlyph {
     char32_t character;
@@ -93,6 +98,7 @@ public:
     QString textRange(int page, int start, int count) const;
     // Index of the character at / near the point (points, top-left origin of the page as shown), or -1. `tolerance` is in points.
     int charIndexAt(int page, QPointF pt, double tolerance, int rotation = 0) const;
+    TextPosition textPositionAt(int page, QPointF pt, double tolerance, int rotation = 0) const;
     // The rectangles (one per line) covered by the characters [start, start + count), in points as shown.
     QList<QRectF> textRects(int page, int start, int count, int rotation = 0) const;
     // All matches of `text` on one page (case insensitive unless `matchCase`).

@@ -581,15 +581,15 @@ bool DocumentController::hasSelection() const
 
 void DocumentController::selectStart(int page, double x, double y)
 {
-    const bool had = hasSelection();
-    m_selAnchor = m_selFocus = {};
-    if (const auto doc = currentDoc()) {
-        const int idx = doc->charIndexAt(page, QPointF(x, y), 4.0, currentRotation());
-        if (idx >= 0)
-            m_selAnchor = m_selFocus = {page, idx};
+    const auto doc = currentDoc();
+    const auto position = doc ? doc->textPositionAt(page, QPointF(x, y), 4.0, currentRotation()) : pdf::TextPosition{};
+    if (position.boundary < 0) {
+        clearSelection();
+        return;
     }
-    if (had)
-        emit selectionChanged();
+    m_selAnchor = m_selFocus = {page, position.boundary};
+    m_caretRect = position.caret;
+    emit selectionChanged();
 }
 
 void DocumentController::selectMove(int page, double x, double y)
@@ -597,15 +597,31 @@ void DocumentController::selectMove(int page, double x, double y)
     const auto doc = currentDoc();
     if (!doc)
         return;
-    const int idx = doc->charIndexAt(page, QPointF(x, y), 30.0, currentRotation());     // snaps to the nearest letter
-    if (idx < 0)
+    const auto position = doc->textPositionAt(page, QPointF(x, y), 30.0, currentRotation());
+    if (position.boundary < 0)
         return;
     if (!m_selAnchor.valid())
-        m_selAnchor = {page, idx};
-    if (m_selFocus.page == page && m_selFocus.ch == idx)
+        m_selAnchor = {page, position.boundary};
+    if (m_selFocus.page == page && m_selFocus.ch == position.boundary && m_caretRect == position.caret)
         return;
-    m_selFocus = {page, idx};
+    m_selFocus = {page, position.boundary};
+    m_caretRect = position.caret;
     emit selectionChanged();
+}
+
+bool DocumentController::isTextAt(int page, double x, double y) const
+{
+    const auto doc = currentDoc();
+    return doc && doc->charIndexAt(page, QPointF(x, y), 3.0, currentRotation()) >= 0;
+}
+
+QVariantMap DocumentController::textCaret() const
+{
+    if (!m_selFocus.valid() || hasSelection() || (m_caretRect.width() <= 0 && m_caretRect.height() <= 0))
+        return {};
+    QVariantMap caret = rectMap(m_caretRect);
+    caret.insert(QStringLiteral("page"), m_selFocus.page);
+    return caret;
 }
 
 void DocumentController::selectAll()
@@ -624,7 +640,7 @@ void DocumentController::selectAll()
     if (first < 0 || last < 0)
         return;
     m_selAnchor = {first, 0};
-    m_selFocus = {last, doc->charCount(last) - 1};
+    m_selFocus = {last, doc->charCount(last)};
     emit selectionChanged();
 }
 
@@ -632,6 +648,7 @@ void DocumentController::clearSelection()
 {
     const bool had = m_selAnchor.valid() || m_selFocus.valid();
     m_selAnchor = m_selFocus = {};
+    m_caretRect = {};
     if (had)
         emit selectionChanged();
 }
@@ -644,10 +661,10 @@ QVariantList DocumentController::selectionRects(int page) const
     if (!doc || !selectionRange(from, to) || (from.page == to.page && from.ch == to.ch) || page < from.page || page > to.page)
         return out;
     const int start = page == from.page ? from.ch : 0;
-    const int end = page == to.page ? to.ch : doc->charCount(page) - 1;
-    if (end < start)
+    const int end = page == to.page ? to.ch : doc->charCount(page);
+    if (end <= start)
         return out;
-    for (const QRectF& r : doc->textRects(page, start, end - start + 1, currentRotation()))
+    for (const QRectF& r : doc->textRects(page, start, end - start, currentRotation()))
         out.append(rectMap(r));
     return out;
 }
@@ -661,9 +678,9 @@ QString DocumentController::selectedText() const
     QStringList parts;
     for (int page = from.page; page <= to.page; ++page) {
         const int start = page == from.page ? from.ch : 0;
-        const int end = page == to.page ? to.ch : doc->charCount(page) - 1;
-        if (end >= start)
-            parts.append(doc->textRange(page, start, end - start + 1));
+        const int end = page == to.page ? to.ch : doc->charCount(page);
+        if (end > start)
+            parts.append(doc->textRange(page, start, end - start));
     }
     return parts.join(QLatin1Char('\n'));
 }

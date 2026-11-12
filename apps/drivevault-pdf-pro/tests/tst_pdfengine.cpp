@@ -209,6 +209,15 @@ private slots:
             QCOMPARE(rects.size(), 1);
             const int found = doc->charIndexAt(0, rects.first().center(), 2.0, rotation);
             QVERIFY2(found >= idx && found < idx + 5, qPrintable(QString("rotation %1: %2 not in %3..%4").arg(rotation).arg(found).arg(idx).arg(idx + 4)));
+            const QRectF glyph = doc->textRects(0, idx, 1, rotation).first();
+            const bool vertical = rotation % 2 != 0;
+            const QPointF offset = vertical ? QPointF(0, glyph.height() / 4) : QPointF(glyph.width() / 4, 0);
+            const QPointF forward = rotation < 2 ? offset : -offset;
+            const auto leading = doc->textPositionAt(0, glyph.center() - forward, 0, rotation);
+            const auto trailing = doc->textPositionAt(0, glyph.center() + forward, 0, rotation);
+            QCOMPARE(leading.boundary, idx);
+            QCOMPARE(trailing.boundary, idx + 1);
+            QVERIFY(vertical ? leading.caret.width() > 0 : leading.caret.height() > 0);
         }
         QCOMPARE(doc->charIndexAt(0, QPointF(500, 700), 1.0), -1);          // empty place
         QVERIFY(doc->textRange(0, 0, 0).isEmpty());

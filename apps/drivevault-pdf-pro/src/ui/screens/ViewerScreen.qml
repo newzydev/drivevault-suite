@@ -8,6 +8,8 @@ import DriveVault.PdfPro.Backend
 Item {
     id: viewer
 
+    required property Item toolbarHost
+    readonly property real toolbarHeight: readerToolbar.implicitHeight
     signal openRequested()
     signal organizeRequested()
     signal splitRequested()
@@ -88,7 +90,7 @@ Item {
         const a = Window.window ? Window.window.activeFocusItem : null
         return !!a && a.hasOwnProperty("selectedText")
     }
-    property string linkCursor: ""
+    property int readerCursor: Qt.ArrowCursor
     property var redactStart: null
 
     function updateRedactDrag(x, y) {
@@ -391,31 +393,33 @@ Item {
     onPxPerPtChanged: renderTimer.restart()
     Timer { id: renderTimer; interval: 140; onTriggered: viewer.renderScale = viewer.pxPerPt }
 
-    // ---- layout ---------------------------------------------------------------------------------------------------------
-    ColumnLayout {
+    Rectangle {
+        id: readerToolbar
+        objectName: "readerToolbar"
+        parent: viewer.toolbarHost
+        visible: viewer.visible
         anchors.fill: parent
-        spacing: 0
+        implicitHeight: toolFlow.implicitHeight + 14
+        color: Theme.backgroundAlt
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
+        Flow {
+            id: toolFlow
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.topMargin: 7
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            spacing: 12
 
-        // tool bar
-        Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: Math.max(52, toolFlow.implicitHeight + 16)
-            color: Theme.background
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
-            Flow {
-                id: toolFlow
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.topMargin: 8
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                spacing: 6
-
+            Row {
+                spacing: 4
                 PButton { objectName: "toggleSidebar"; compact: true; glyph: "sidebar"; tip: Tr.s("thumbnails"); variant: viewer.showSidebar ? "secondary" : "ghost"; onClicked: viewer.showSidebar = !viewer.showSidebar }
-                PButton { objectName: "toolbarOpen"; compact: true; text: Tr.s("openFile"); onClicked: viewer.openRequested() }
-                Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
+                PButton { objectName: "toolbarOpen"; compact: true; glyph: "folder"; text: Tr.s("openFile"); tip: text; variant: "ghost"; onClicked: viewer.openRequested() }
+            }
 
+            Row {
+                spacing: 4
                 PButton { objectName: "prevPage"; compact: true; text: "‹"; tip: Tr.s("prevPage"); enabled: viewer.currentPage > 0; onClicked: viewer.goTo(viewer.currentPage - 1) }
                 TextField {
                     id: pageField
@@ -439,10 +443,12 @@ Item {
                         border.color: pageField.activeFocus ? Theme.accent : Theme.border
                     }
                 }
-                AppText { text: Tr.f("pageOf", Doc.pageCount); color: Theme.textSecondary }
+                AppText { height: 32; verticalAlignment: Text.AlignVCenter; text: Tr.f("pageOf", Doc.pageCount); color: Theme.textSecondary }
                 PButton { objectName: "nextPage"; compact: true; text: "›"; tip: Tr.s("nextPage"); enabled: viewer.currentPage < Doc.pageCount - 1; onClicked: viewer.goTo(viewer.currentPage + 1) }
-                Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
+            }
 
+            Row {
+                spacing: 4
                 PButton { objectName: "zoomOut"; compact: true; text: "−"; tip: Tr.s("zoomOut"); onClicked: viewer.zoomOut() }
                 PButton {
                     objectName: "zoomLabel"
@@ -456,8 +462,10 @@ Item {
                 PButton { objectName: "zoomIn"; compact: true; text: "+"; tip: Tr.s("zoomIn"); onClicked: viewer.zoomIn() }
                 PButton { objectName: "fitWidth"; compact: true; text: Tr.s("fitWidth"); variant: viewer.zoomMode === "fitWidth" ? "secondary" : "ghost"; onClicked: viewer.fit("fitWidth") }
                 PButton { objectName: "fitPage"; compact: true; text: Tr.s("fitPage"); variant: viewer.zoomMode === "fitPage" ? "secondary" : "ghost"; onClicked: viewer.fit("fitPage") }
-                Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
+            }
 
+            Row {
+                spacing: 4
                 PButton {
                     objectName: "viewMode"
                     compact: true
@@ -467,8 +475,10 @@ Item {
                 }
                 PButton { objectName: "rotate"; compact: true; glyph: "rotate"; tip: Tr.s("rotateRight"); enabled: !redactions.visible; onClicked: Doc.rotateView(1) }
                 PButton { objectName: "darkPages"; compact: true; glyph: "dark"; tip: Tr.s("darkPages"); variant: Doc.darkPages ? "secondary" : "ghost"; onClicked: Doc.darkPages = !Doc.darkPages }
-                Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
+            }
 
+            Row {
+                spacing: 2
                 PButton { objectName: "findButton"; compact: true; text: Tr.s("find"); variant: viewer.searchOpen ? "secondary" : "ghost"; onClicked: viewer.searchOpen ? viewer.closeSearch() : viewer.openSearch() }
                 PButton { objectName: "printButton"; compact: true; text: Tr.s("print"); variant: "ghost"; onClicked: printDialog.open() }
                 PButton { objectName: "organizeButton"; compact: true; text: Tr.s("toolOrganizeShort"); variant: "ghost"; tip: Tr.s("toolOrganize"); onClicked: viewer.organizeRequested() }
@@ -499,9 +509,14 @@ Item {
                         }
                     }
                 }
-
             }
         }
+    }
+
+    // ---- layout ---------------------------------------------------------------------------------------------------------
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
 
         EditBar {
             id: editBar
@@ -623,6 +638,8 @@ Item {
                                     pxPerPt: viewer.pxPerPt
                                     renderScale: viewer.renderScale
                                     dpr: viewer.dpr
+                                    textSelectionEnabled: !viewer.editOn && !viewer.replacingText && !redactions.visible
+                                    showTextCaret: textSelectionEnabled && pagesView.activeFocus && viewer.Window.active
                                     redactMode: redactions.visible
                                     redactMarks: redactions.visible ? redactions.marks.filter(m => m.page === pageIndex) : []
                                     redactPreview: redactions.visible && redactions.preview && redactions.preview.page === pageIndex
@@ -673,12 +690,14 @@ Item {
                     anchors.bottomMargin: 14
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     hoverEnabled: true
-                    cursorShape: redactions.visible || (viewer.editOn && Editor.tool !== "select") ? Qt.CrossCursor : (viewer.linkCursor !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor)
+                    cursorShape: redactions.visible || (viewer.editOn && Editor.tool !== "select") ? Qt.CrossCursor
+                        : viewer.editOn || viewer.replacingText ? Qt.ArrowCursor : viewer.readerCursor
                     property real pressX: 0
                     property real pressY: 0
                     property real lastX: 0
                     property real lastY: 0
                     property bool dragged: false
+                    property bool extendingSelection: false
 
                     function extend() {
                         const h = viewer.hit(lastX, lastY)
@@ -687,8 +706,6 @@ Item {
                     }
                     onPressed: mouse => {
                         pagesView.forceActiveFocus()
-                        if (viewer.searchOpen && !searchBar.activeFocus)
-                            pagesView.forceActiveFocus()
                         if (redactions.visible) {
                             if (mouse.button === Qt.LeftButton && !Doc.outputBusy)
                                 viewer.redactStart = viewer.hit(mouse.x, mouse.y)
@@ -713,10 +730,13 @@ Item {
                         pressX = lastX = mouse.x
                         pressY = lastY = mouse.y
                         dragged = false
+                        extendingSelection = (mouse.modifiers & Qt.ShiftModifier) !== 0
                         const h = viewer.hit(mouse.x, mouse.y)
-                        if (h)
+                        if (h && extendingSelection)
+                            Doc.selectMove(h.page, h.x, h.y)
+                        else if (h)
                             Doc.selectStart(h.page, h.x, h.y)
-                        else
+                        else if (!extendingSelection)
                             Doc.clearSelection()
                     }
                     onPositionChanged: mouse => {
@@ -741,7 +761,7 @@ Item {
                                 autoScroll.running = mouse.y < 28 || mouse.y > pointer.height - 28
                             }
                         } else {
-                            hoverTimer.restart()
+                            hoverTimer.start()
                         }
                     }
                     onDoubleClicked: mouse => {
@@ -773,27 +793,42 @@ Item {
                             return
                         }
                         autoScroll.running = false
-                        if (mouse.button !== Qt.LeftButton || dragged)
+                        if (mouse.button !== Qt.LeftButton)
+                            return
+                        if (dragged) {
+                            lastX = mouse.x
+                            lastY = mouse.y
+                            extend()
+                            return
+                        }
+                        if (extendingSelection)
                             return
                         const h = viewer.hit(mouse.x, mouse.y)
                         if (h) {
                             const link = Doc.linkAt(h.page, h.x, h.y)
-                            if (link.kind !== "none")
+                            if (link.kind !== "none") {
+                                Doc.clearSelection()
                                 viewer.followLink(link)
+                            }
                         }
                     }
                     onCanceled: {
+                        autoScroll.stop()
                         viewer.redactStart = null
                         redactions.preview = null
                     }
-                    onExited: viewer.linkCursor = ""
-                    // the hand cursor over a link (looked up a moment after the pointer stops, not on every move)
+                    onExited: {
+                        hoverTimer.stop()
+                        viewer.readerCursor = Qt.ArrowCursor
+                    }
                     Timer {
                         id: hoverTimer
-                        interval: 70
+                        interval: 45
                         onTriggered: {
                             const h = viewer.hit(pointer.lastX, pointer.lastY)
-                            viewer.linkCursor = h && Doc.linkAt(h.page, h.x, h.y).kind !== "none" ? "link" : ""
+                            viewer.readerCursor = !h ? Qt.ArrowCursor
+                                : Doc.linkAt(h.page, h.x, h.y).kind !== "none" ? Qt.PointingHandCursor
+                                : Doc.isTextAt(h.page, h.x, h.y) ? Qt.IBeamCursor : Qt.ArrowCursor
                         }
                     }
                     // dragging above / below the view keeps scrolling and selecting
