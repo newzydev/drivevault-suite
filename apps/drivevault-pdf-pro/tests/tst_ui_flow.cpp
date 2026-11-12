@@ -595,8 +595,8 @@ private slots:
         QCOMPARE(p.exitCode(), 0);
 
         closeAllTabs();
-        // the same path the UI takes: the window function opens the dialog when the engine says "password"
-        QVERIFY(QMetaObject::invokeMethod(m_window, "openPath", Q_ARG(QVariant, locked), Q_ARG(QVariant, QVariant())));
+        // Match the startup bridge: an empty command-line password must open the password prompt.
+        QVERIFY(QMetaObject::invokeMethod(m_window, "openPath", Q_ARG(QVariant, locked), Q_ARG(QVariant, QVariant(QString()))));
         QVERIFY(waitFor([&] { QQuickItem* f = find("passwordField"); return f && f->isVisible(); }));
         QVERIFY(!m_doc->isOpen());
 
@@ -607,6 +607,13 @@ private slots:
         QVERIFY(waitFor([&] { return m_doc->isOpen(); }));
         QCOMPARE(m_doc->pageCount(), 2);
         QVERIFY(waitFor([&] { QQuickItem* f = find("passwordField"); return !f || !f->isVisible(); }));
+        m_doc->close();
+
+        QVERIFY(QMetaObject::invokeMethod(m_window, "openPath", Q_ARG(QVariant, locked),
+                                          Q_ARG(QVariant, QVariant(QStringLiteral("open-secret")))));
+        QVERIFY(m_doc->isOpen());
+        QCOMPARE(m_doc->pageCount(), 2);
+        QVERIFY(!visible("passwordField"));
         m_doc->close();
     }
 

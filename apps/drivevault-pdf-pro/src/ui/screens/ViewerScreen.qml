@@ -371,7 +371,11 @@ Item {
         const page = st.page > 0 ? Math.min(st.page, Doc.pageCount - 1) : 0
         currentPage = page
         pagesView.contentY = -pagesView.headerItem.height
-        Qt.callLater(function () { goTo(page) })
+        const restoringDocId = Doc.docId
+        Qt.callLater(function () {
+            if (viewer && Doc.docId === restoringDocId)
+                viewer.goTo(page)
+        })
     }
 
     Connections {

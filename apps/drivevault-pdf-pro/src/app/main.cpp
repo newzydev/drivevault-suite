@@ -71,9 +71,6 @@ int main(int argc, char* argv[])
     if (parser.isSet(langOption))
         controller.setLanguage(parser.value(langOption));
 
-    if (!parser.positionalArguments().isEmpty())
-        controller.open(parser.positionalArguments().constFirst(), parser.value(passwordOption));
-
     dp::PageListModel organizer(&controller);
     dp::Compressor compressor(&controller);
     dp::EditorModel editor(&controller);
@@ -95,6 +92,14 @@ int main(int argc, char* argv[])
         return -1;
 
     auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst());
+    const QStringList files = parser.positionalArguments();
+    if (!files.isEmpty()) {
+        // Use the same password prompt and error handling as Open PDF and drag-and-drop.
+        if (!window || !QMetaObject::invokeMethod(window, "openPath",
+                Q_ARG(QVariant, QVariant(files.constFirst())),
+                Q_ARG(QVariant, QVariant(parser.value(passwordOption)))))
+            return -1;
+    }
     if (window && parser.isSet(sizeOption)) {
         const QStringList wh = parser.value(sizeOption).split(QLatin1Char('x'));
         if (wh.size() == 2)

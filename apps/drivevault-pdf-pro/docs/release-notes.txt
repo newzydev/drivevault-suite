@@ -2,6 +2,10 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.3.5 (2026-11-12): Handle password prompts and errors on startup
+  - Opening a PDF at launch uses the same password prompt and error message as opening it inside PDF Pro.
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.3.4 (2026-11-12): Match the suite title controls and About dialog
   - Use a Thai/English language switch and a More menu for theme, settings, and About.
   - The installer is unsigned. Clean Windows installation remains an owner-run check.
