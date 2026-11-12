@@ -3,6 +3,7 @@
 
 #include <QFile>
 #include <QFileInfo>
+#include <QSet>
 #include <QTemporaryDir>
 
 #include <qpdf/QPDF.hh>
@@ -12,6 +13,7 @@
 #include <qpdf/QPDFPageDocumentHelper.hh>
 #include <qpdf/QPDFWriter.hh>
 
+#include <algorithm>
 #include <array>
 
 namespace dp::tools {
@@ -20,6 +22,7 @@ namespace {
 constexpr std::array fields{"/Title", "/Author", "/Keywords"};
 constexpr std::array cleanupKeys{"/Metadata", "/PieceInfo", "/Thumb", "/AF", "/EmbeddedFiles", "/EF", "/RF",
                                 "/JavaScript", "/JS", "/AA", "/OpenAction"};
+constexpr std::array externalActions{"/JavaScript", "/Launch", "/SubmitForm", "/ImportData", "/GoToR", "/GoToE", "/URI"};
 
 void open(QPDF& pdf, const QString& source, const QString& password, bool recover)
 {
@@ -33,7 +36,7 @@ QString errorCode(const QPDFExc& e)
     return e.getErrorCode() == qpdf_e_password ? QStringLiteral("password") : QStringLiteral("format");
 }
 
-QVariantMap properties(QPDF& pdf)
+QVariantMap properties(QPDF& pdf, bool inspect = false)
 {
     QVariantMap result;
     const auto info = pdf.getTrailer().getKey("/Info");
@@ -48,6 +51,22 @@ QVariantMap properties(QPDF& pdf)
                                       {"name", QString::fromStdString(spec->getFilename())}});
     }
     result.insert("attachments", attachments);
+    if (inspect) {
+        QSet<QString> fontNames;
+        for (const auto& object : pdf.getAllObjects()) {
+            if (!object.isDictionary() || !object.getKey("/Type").isNameAndEquals("/Font"))
+                continue;
+            const auto name = object.getKey("/BaseFont");
+            if (name.isName())
+                fontNames.insert(QString::fromStdString(name.getName()).mid(1));
+        }
+        QStringList fonts = fontNames.values();
+        fonts.sort(Qt::CaseInsensitive);
+        result.insert("fonts", fonts);
+        result.insert("pdfVersion", QString::fromStdString(pdf.getPDFVersion()));
+        result.insert("pageCount", int(QPDFPageDocumentHelper(pdf).getAllPages().size()));
+        result.insert("encrypted", pdf.isEncrypted());
+    }
     return result;
 }
 
@@ -86,6 +105,16 @@ bool privateEntries(QPDF& pdf, bool remove)
                         if (!entry.isIndirect() && (entry.isArray() || entry.isDictionary()))
                             pending.append(entry);
                 } else {
+                    const auto actionType = current.getKey("/S");
+                    if (actionType.isName() && std::ranges::any_of(externalActions, [&](const char* action) {
+                            return actionType.isNameAndEquals(action);
+                        })) {
+                        found = true;
+                        if (remove)
+                            for (const auto& key : current.getKeys())
+                                current.removeKey(key);
+                        continue;
+                    }
                     if (current.hasKey("/EF") || current.hasKey("/RF"))
                         for (const auto key : {"/F", "/UF", "/DOS", "/Mac", "/Unix", "/Desc"})
                             strip(current, key);
@@ -110,7 +139,7 @@ QVariantMap inspectDocument(const QString& source, const QString& password)
     try {
         QPDF pdf;
         open(pdf, source, password, false);
-        return properties(pdf);
+        return properties(pdf, true);
     } catch (const QPDFExc& e) {
         return {{"error", errorCode(e)}};
     } catch (const std::exception&) {

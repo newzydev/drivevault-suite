@@ -59,13 +59,13 @@ inline QByteArray make(int pages, const QSizeF& size = QSizeF(612, 792))
 
 // A small document with the structures the reader shows: outline (nested), two link annotations (to page 2 and to a web address),
 // a comment and a highlight, and searchable text. Pages: 1 = "Hello search world" / "search again, SEARCH", 2 = "Second page", 3 = "Third page".
-inline QByteArray makeFeatureDoc()
+inline QByteArray makeFeatureDoc(const QByteArray& catalogExtra = {})
 {
     auto stream = [](const QByteArray& content) {
         return "<< /Length " + QByteArray::number(content.size()) + " >>\nstream\n" + content + "\nendstream";
     };
     const QList<QByteArray> bodies = {
-        /* 1 */ "<< /Type /Catalog /Pages 2 0 R /Outlines 9 0 R >>",
+        /* 1 */ "<< /Type /Catalog /Pages 2 0 R /Outlines 9 0 R " + catalogExtra + " >>",
         /* 2 */ "<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R] /Count 3 >>",
         /* 3 */ "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
         /* 4 */ "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R /Annots [14 0 R 15 0 R 16 0 R 17 0 R] >>",

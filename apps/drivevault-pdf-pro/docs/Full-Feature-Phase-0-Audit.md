@@ -312,3 +312,10 @@
 - `tst_output` สร้าง fixture สังเคราะห์ด้วยภาพข้อความไทย 10 หน้า หน้าว่าง 1 หน้า และหน้าที่มีข้อความอยู่แล้ว 1 หน้า ตรวจผลค้นหาและตำแหน่งสลับซ้าย/ขวา ตรวจพิกเซลก่อนและหลังครบ 12 หน้า
 - งานต่อของ Phase 4 ได้แก่ corpus สแกนจริงและความแม่นยำหลายภาษา เครื่องมือตรวจแก้ OCR งานรีวิว/ตราประทับ และการประเมินลายเซ็นดิจิทัล งาน Phase 5 ต้องรอคำยืนยัน
 - `apps/drivevault-pdf-pro/scripts/build.ps1 -Test` รอบแรกได้ 11/12 suites เพราะกรอบค้นหาหน้าแรกเริ่มที่ x=0 เทสต์ซ้ำหลังแก้ glyph และแยก graphic state ผ่าน 12/12 suites รันเทสต์ OCR เจาะจงแล้วผ่านโดยไม่ข้ามโมเดล เปิดบิลด์ Release ด้วย `scripts/run-pdf-pro.bat` และตรวจคู่ไฟล์คำสั่ง agent ครบ 25 โฟลเดอร์
+
+## Phase 5 และ 6 — รอบ 1.8.0
+
+- **Phase 5 (I6/I7)** การล้างข้อมูลใน `DocumentMaintenance.cpp` ลบ payload และ action dictionary ชนิด JavaScript, Launch, SubmitForm, ImportData, GoToR, GoToE และ URI ทั้งแบบอ้างอิงและในโครงสร้างซ้อนที่ตรวจพบ ตรวจซ้ำในสำเนาก่อนส่งมอบ เกณฑ์ผ่านคือ payload ใน fixture ไม่ปรากฏใน QDF ที่แตก stream แล้ว ต้นฉบับคงเดิม และเนื้อหาหน้ายังอ่านได้ ขอบเขตนี้ไม่ใช่การรับรอง sanitizer สำหรับ PDF ทุกรูปแบบ
+- **Phase 6 (J3/A10)** หน้าต่างเมทาดาทาและไฟล์แนบแสดงเวอร์ชัน PDF จำนวนหน้า สถานะการเข้ารหัส และชื่อ BaseFont จาก font dictionaries ที่ตรวจพบ ใช้ worker และ QML เดิม เกณฑ์ผ่านคือค่าตรงกับ fixture และ UI แสดงข้อมูลจริง รายชื่อเป็น inventory ของชื่อทรัพยากรที่พบในไฟล์ การตรวจฟอนต์ติดตั้งหรือยืนยันการฝังฟอนต์เป็นงานถัดไป
+- Phase 5 ยังเหลือ permission/signature guard ในเส้นทางเขียนอื่นและ redaction corpus ส่วน Phase 6 ยังเหลือ Compare PDF, accessibility/preflight และ workflow batch เพิ่มเติม รอคำยืนยันก่อนเริ่ม Phase 7
+- `apps/drivevault-pdf-pro/scripts/build.ps1 -Test` ผ่าน 12/12 suites รวม QDF ที่ตรวจ action และ payload, metadata ของไฟล์เข้ารหัส และข้อมูลที่แสดงใน QML เปิดบิลด์ Release ด้วย `scripts/run-pdf-pro.bat` และตรวจคู่ไฟล์คำสั่ง agent ครบ 25 โฟลเดอร์

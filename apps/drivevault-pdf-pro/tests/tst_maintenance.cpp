@@ -50,6 +50,10 @@ private slots:
         QVERIFY(qpdf({base, "--add-attachment", one, "--", "--add-attachment", two, "--", attached}));
         const auto original = readFile(attached);
         const auto info = dp::tools::inspectDocument(attached, {});
+        QCOMPARE(info.value("pageCount").toInt(), 3);
+        QVERIFY(!info.value("pdfVersion").toString().isEmpty());
+        QVERIFY(!info.value("encrypted").toBool());
+        QCOMPARE(info.value("fonts").toStringList(), QStringList{"Helvetica"});
         const auto attachments = info.value("attachments").toList();
         QCOMPARE(attachments.size(), 2);
         QString id;
@@ -87,6 +91,30 @@ private slots:
         QVERIFY(qpdf({clean, "--qdf", "--stream-data=uncompress", cleanRaw}));
         for (const auto token : {"AUTHOR-SECRET", "/EmbeddedFiles", "/EmbeddedFile", "/Annots", "Remember this"})
             QVERIFY2(!readFile(cleanRaw).contains(token), token);
+    }
+
+    void cleanupRemovesExternalActionPayloadsFromNestedDictionaries()
+    {
+        QTemporaryDir dir;
+        const auto source = dir.filePath("actions.pdf");
+        const QByteArray original = testpdf::makeFeatureDoc(
+            "/DVTestActions [ << /S /Launch /F (PRIVATE_LAUNCH) /Next "
+            "<< /S /SubmitForm /F (PRIVATE_SUBMIT) >> >> "
+            "<< /S /GoToR /F (PRIVATE_REMOTE) /D [0 /Fit] >> "
+            "<< /S /JavaScript /JS (PRIVATE_SCRIPT) >> ]");
+        QCOMPARE(writeFile(source, original), source);
+        const auto cleaned = dir.filePath("clean.pdf");
+        QCOMPARE(dp::tools::maintainDocument(source, {}, cleaned, "clean"), QString());
+        const auto raw = dir.filePath("clean-raw.pdf");
+        QVERIFY(qpdf({cleaned, "--qdf", "--stream-data=uncompress", raw}));
+        const auto sanitized = readFile(raw);
+        for (const auto token : {"PRIVATE_LAUNCH", "PRIVATE_SUBMIT", "PRIVATE_REMOTE", "PRIVATE_SCRIPT",
+                                 "/Launch", "/SubmitForm", "/GoToR", "/JavaScript"})
+            QVERIFY2(!sanitized.contains(token), token);
+        QCOMPARE(readFile(source), original);
+        const auto result = dp::pdf::PdfDocument::open(cleaned, {}, nullptr);
+        QVERIFY(result);
+        QVERIFY(result->pageText(0).contains("Hello search world"));
     }
 
     void repairsBrokenXrefAndRejectsUnrecoverableInput()
@@ -162,6 +190,7 @@ private slots:
         const auto protectedFile = QDir(out).filePath("a.pdf");
         QVERIFY(!dp::pdf::PdfDocument::open(protectedFile, {}, nullptr));
         QVERIFY(dp::pdf::PdfDocument::open(protectedFile, "reader", nullptr));
+        QVERIFY(dp::tools::inspectDocument(protectedFile, "reader").value("encrypted").toBool());
         QCOMPARE(dp::tools::maintainDocument(protectedFile, "reader", dir.filePath("copy.pdf"), "clean"), QStringLiteral("ownerRequired"));
         const auto clean = dir.filePath("clean.pdf");
         QCOMPARE(dp::tools::maintainDocument(protectedFile, "owner", clean, "clean"), QString());

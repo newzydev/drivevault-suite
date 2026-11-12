@@ -105,6 +105,29 @@ Popup {
             echoMode: TextInput.Password
             placeholderText: Tr.s("ownerPassword")
         }
+        AppText {
+            objectName: "maintenanceDocumentSummary"
+            Layout.fillWidth: true
+            visible: !dlg.repair && dlg.loaded && !clean.checked
+            text: dlg.initial.pdfVersion ? Tr.f2("inspectPdfSummary", dlg.initial.pdfVersion, dlg.initial.pageCount)
+                  + " · " + Tr.s(dlg.initial.encrypted ? "inspectEncrypted" : "inspectUnencrypted") : ""
+            color: Theme.textSecondary
+            wrapMode: Text.Wrap
+        }
+        AppText {
+            id: fontSummary
+            objectName: "maintenanceFontSummary"
+            Layout.fillWidth: true
+            visible: !dlg.repair && dlg.loaded && !clean.checked && text !== ""
+            text: dlg.initial.fonts && dlg.initial.fonts.length > 0
+                  ? Tr.f("inspectFonts", dlg.initial.fonts.join(", ")) : ""
+            color: Theme.textSecondary
+            textFormat: Text.PlainText
+            elide: Text.ElideRight
+            HoverHandler { id: fontHover }
+            ToolTip.visible: fontHover.hovered && fontSummary.truncated
+            ToolTip.text: fontSummary.text
+        }
         CheckBox {
             id: clean
             objectName: "maintenanceClean"

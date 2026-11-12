@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.8.0 (2026-11-12): Inspect document properties and remove external actions
+  - See the PDF version, page count, encryption status and named font resources.
+  - Private-data cleanup removes supported external action dictionaries and their payloads.
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.7.0 (2026-11-12): Report page results after Thai OCR
   - See how many pages gained searchable text, already had text, or yielded no recognized text.
   - Correct search highlighting positions for newly generated searchable text layers.

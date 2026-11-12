@@ -1018,6 +1018,9 @@ private slots:
         auto* maintenance = m_window->findChild<QObject*>("maintenanceDialog");
         QVERIFY(maintenance);
         QTRY_VERIFY(maintenance->property("loaded").toBool());
+        QVERIFY(text("maintenanceDocumentSummary").contains(QStringLiteral("3 pages")));
+        QVERIFY(text("maintenanceDocumentSummary").contains(QStringLiteral("Unencrypted")));
+        QVERIFY(text("maintenanceFontSummary").contains(QStringLiteral("Helvetica")));
         QVERIFY(typeInto("metadataTitle", "Draft", false));
         QVERIFY(find("maintenanceSave")->isEnabled());
         const auto edited = m_dir.filePath("metadata-ui.pdf");
