@@ -63,6 +63,12 @@ Rectangle {
         PButton {
             objectName: "titleMenuButton"
             compact: true
+            Layout.preferredWidth: 34
+            Layout.rightMargin: 4
+            leftPadding: 0
+            rightPadding: 0
+            labelPixelSize: 18
+            cornerRadius: 9
             text: "⋯"
             tip: Tr.s("moreOptions")
             onClicked: titleMenu.visible ? titleMenu.close() : titleMenu.popup(width - titleMenu.width, height + 6)
@@ -87,55 +93,26 @@ Rectangle {
                 }
             }
         }
-        Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; color: Theme.border }
+        Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; Layout.leftMargin: 4; color: Theme.border }
         Row {
             spacing: 2
-            CaptionButton {
+            WindowButton {
                 objectName: "winMinimize"
-                symbol: "minimize"
+                kind: "minimize"
                 text: Tr.s("minimizeWindow")
                 onClicked: bar.hostWindow.showMinimized()
             }
-            CaptionButton {
+            WindowButton {
                 objectName: "winMaximize"
-                symbol: bar.maximized ? "restore" : "maximize"
+                kind: bar.maximized ? "restore" : "maximize"
                 text: Tr.s(bar.maximized ? "restoreWindow" : "maximizeWindow")
                 onClicked: bar.toggleMaximized()
             }
-            CaptionButton {
+            WindowButton {
                 objectName: "winClose"
-                symbol: "close"
+                kind: "close"
                 text: Tr.s("close")
                 onClicked: bar.hostWindow.close()
-            }
-        }
-    }
-
-    component CaptionButton: AbstractButton {
-        id: button
-        required property string symbol
-        implicitWidth: 34
-        implicitHeight: 32
-        hoverEnabled: true
-        Accessible.name: text
-        ToolTip.visible: hovered
-        ToolTip.delay: 600
-        ToolTip.text: text
-
-        background: Rectangle {
-            radius: 9
-            color: !button.hovered && !button.down ? "transparent"
-                   : button.symbol === "close" ? Theme.error
-                   : button.down ? Theme.border : Theme.surfaceHover
-            border.width: button.visualFocus ? 1 : 0
-            border.color: Theme.textSecondary
-        }
-        contentItem: Item {
-            LineIcon {
-                anchors.centerIn: parent
-                name: button.symbol
-                color: button.symbol === "close" && (button.hovered || button.down) ? Theme.textOnAccent : Theme.text
-                size: 18
             }
         }
     }

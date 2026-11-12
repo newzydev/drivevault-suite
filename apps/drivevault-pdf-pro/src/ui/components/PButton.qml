@@ -9,6 +9,8 @@ Button {
     property bool compact: false
     property string tip: ""
     property string glyph: ""                     // a drawn icon (see LineIcon.qml) instead of the text; not "icon": Button has that property
+    property int labelPixelSize: 0                 // 0 = the normal text size
+    property int cornerRadius: -1                  // -1 = the normal radius
 
     implicitHeight: compact ? 32 : 40
     implicitWidth: Math.max(compact ? 32 : 40, contentItem.implicitWidth + leftPadding + rightPadding)
@@ -32,6 +34,7 @@ Button {
             visible: control.glyph === ""
             text: control.text
             font.weight: control.variant === "primary" ? Font.DemiBold : Font.Medium
+            font.pixelSize: control.labelPixelSize > 0 ? control.labelPixelSize : Theme.fontMd
             color: !control.enabled ? Theme.textDisabled : control.variant === "primary" ? Theme.textOnAccent : Theme.text
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -45,7 +48,7 @@ Button {
         }
     }
     background: Rectangle {
-        radius: control.compact ? 8 : 10
+        radius: control.cornerRadius >= 0 ? control.cornerRadius : (control.compact ? 8 : 10)
         color: !control.enabled ? "transparent"
                : control.variant === "primary" ? (control.down ? Theme.accentPressed : control.hovered ? Theme.accentHover : Theme.accent)
                : control.variant === "ghost" ? (control.down ? Theme.border : control.hovered ? Theme.surfaceHover : "transparent")

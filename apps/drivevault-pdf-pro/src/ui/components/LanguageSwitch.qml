@@ -37,7 +37,7 @@ Rectangle {
                 contentItem: AppText {
                     text: choice.text
                     color: choice.current ? Theme.textOnAccent : Theme.textSecondary
-                    font.pixelSize: Theme.fontSm
+                    font.pixelSize: 12
                     font.weight: Font.DemiBold
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
