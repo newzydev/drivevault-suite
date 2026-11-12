@@ -807,6 +807,67 @@ private slots:
         QVERIFY(restrictedFonts({t}, {}).isEmpty());
         QVERIFY(restrictedFonts({}, {}).isEmpty());
     }
+    void movingSnapsToThePageEdgeAndSticksOnlyWhileClose()
+    {
+        dp::DocumentController c(m_dir.filePath("dm2"));
+        dp::EditorModel e(&c);
+        QCOMPARE(c.open(write("em2.pdf", testpdf::make(1))), QString());
+        QVERIFY(e.snapEnabled());
+        const int id = e.beginDraft(0, "rect", 100, 100);
+        e.updateDraft(200, 160);
+        QVERIFY(e.endDraft());
+
+        e.beginGesture();
+        e.moveSelected(-98, 0);                                              // the left edge would be at 2: it sticks to the page edge 0
+        QCOMPARE(e.itemInfo(id).value("x").toDouble(), 0.0);
+        QCOMPARE(e.guides().size(), 1);
+        QCOMPARE(e.guides().first().toMap().value("pos").toDouble(), 0.0);
+        e.moveSelected(10, 0);                                               // the pointer is at 12 now: the item follows it (no runaway)
+        QCOMPARE(e.itemInfo(id).value("x").toDouble(), 12.0);
+        QVERIFY(e.guides().isEmpty());
+        e.endGesture();
+
+        e.setSnapEnabled(false);
+        e.beginGesture();
+        e.moveSelected(-10, 0);                                              // the edge would be at 2: no snap when switched off
+        QCOMPARE(e.itemInfo(id).value("x").toDouble(), 2.0);
+        e.endGesture();
+
+        e.setSnapEnabled(true);
+        e.moveSelected(30, 0);                                               // outside a gesture (keys) nothing snaps
+        QCOMPARE(e.itemInfo(id).value("x").toDouble(), 32.0);
+    }
+    void aPictureCanBeReplacedAndKeepsItsCentreAndWidth()
+    {
+        dp::DocumentController c(m_dir.filePath("dm3"));
+        dp::EditorModel e(&c);
+        QCOMPARE(c.open(write("em3.pdf", testpdf::make(1))), QString());
+        QImage wide(40, 20, QImage::Format_RGB32), tall(20, 40, QImage::Format_RGB32);
+        wide.fill(Qt::red);
+        tall.fill(Qt::blue);
+        QVERIFY(wide.save(m_dir.filePath("wide.png")) && tall.save(m_dir.filePath("tall.png")));
+        QCOMPARE(e.addImage(0, m_dir.filePath("wide.png"), 200, 300), QString());
+        const int id = e.selectedId();
+        QCOMPARE(e.itemInfo(id).value("w").toDouble(), 40.0);
+        QCOMPARE(e.itemInfo(id).value("h").toDouble(), 20.0);
+
+        QCOMPARE(e.replaceImage(id, m_dir.filePath("tall.png")), QString());
+        const QVariantMap info = e.itemInfo(id);
+        QCOMPARE(info.value("w").toDouble(), 40.0);
+        QCOMPARE(info.value("h").toDouble(), 80.0);                          // the new proportions
+        QCOMPARE(info.value("x").toDouble() + 20.0, 200.0);                  // the centre stays
+        QCOMPARE(info.value("y").toDouble() + 40.0, 300.0);
+        e.undo();
+        QCOMPARE(e.itemInfo(id).value("h").toDouble(), 20.0);
+
+        QCOMPARE(e.replaceImage(id, m_dir.filePath("missing.png")), QStringLiteral("file"));
+        write("notimage.png", "not a picture");
+        QCOMPARE(e.replaceImage(id, m_dir.filePath("notimage.png")), QStringLiteral("format"));
+        const int rect = e.beginDraft(0, "rect", 10, 10);
+        e.updateDraft(60, 60);
+        QVERIFY(e.endDraft());
+        QCOMPARE(e.replaceImage(rect, m_dir.filePath("tall.png")), QStringLiteral("notImage"));
+    }
 };
 
 QTEST_MAIN(TstEditor)

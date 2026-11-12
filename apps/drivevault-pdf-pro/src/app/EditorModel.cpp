@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace dp {
 
@@ -311,11 +312,64 @@ void EditorModel::beginGesture()
 {
     m_inGesture = true;
     m_gestureSnapshot = false;
+    m_rawValid = false;
 }
 void EditorModel::endGesture()
 {
     m_inGesture = false;
     m_gestureSnapshot = false;
+    m_rawValid = false;
+    if (!m_guides.isEmpty()) {
+        m_guides.clear();
+        emit changed();
+    }
+}
+
+void EditorModel::setSnapEnabled(bool on)
+{
+    if (m_snap == on)
+        return;
+    m_snap = on;
+    if (!on)
+        m_guides.clear();
+    emit snapChanged();
+    emit changed();
+}
+
+QList<double> EditorModel::snapTargets(const EditItem& self, bool xAxis) const
+{
+    const double size = xAxis ? m_controller->pageWidthPt(self.page) : m_controller->pageHeightPt(self.page);
+    QList<double> out;
+    if (size > 0)
+        out << 0.0 << size / 2 << size;
+    if (const State* s = state()) {
+        for (const EditItem& other : s->now.items) {
+            if (other.id == self.id || other.page != self.page)
+                continue;
+            const QRectF r = other.bounds();
+            if (xAxis)
+                out << r.left() << r.center().x() << r.right();
+            else
+                out << r.top() << r.center().y() << r.bottom();
+        }
+    }
+    return out;
+}
+
+double EditorModel::snapValue(const EditItem& self, bool xAxis, double v, double* guide) const
+{
+    constexpr double tolerance = 4.0;                      // points
+    double best = tolerance + 1;
+    double target = std::numeric_limits<double>::quiet_NaN();
+    for (const double t : snapTargets(self, xAxis)) {
+        const double d = std::abs(t - v);
+        if (d < best) {
+            best = d;
+            target = t;
+        }
+    }
+    *guide = best <= tolerance ? target : std::numeric_limits<double>::quiet_NaN();
+    return best <= tolerance ? target : v;
 }
 
 EditItem EditorModel::newItem(int page, Kind kind) const
@@ -620,6 +674,30 @@ QString EditorModel::addImage(int page, const QString& pathOrUrl, double x, doub
     return {};
 }
 
+QString EditorModel::replaceImage(int id, const QString& pathOrUrl)
+{
+    QMutexLocker lock(&m_mutex);
+    EditItem* it = find(id);
+    if (!it || it->kind != Kind::Image)
+        return QStringLiteral("notImage");
+    const QString path = localOf(pathOrUrl);
+    if (!QFileInfo::exists(path))
+        return QStringLiteral("file");
+    QImageReader reader(path);
+    const QSize px = reader.size();
+    if (!reader.canRead() || px.isEmpty())
+        return QStringLiteral("format");
+    pushUndo();
+    it = find(id);
+    const QPointF centre = it->rect.center();
+    const double width = std::max(8.0, it->rect.width());
+    const double height = std::max(8.0, width * px.height() / px.width());
+    it->imagePath = path;
+    it->rect = QRectF(QPointF(centre.x() - width / 2, centre.y() - height / 2), QSizeF(width, height));
+    touch();
+    return {};
+}
+
 int EditorModel::addStamp(int page, double x, double y, const QString& text)
 {
     QMutexLocker lock(&m_mutex);
@@ -650,7 +728,40 @@ void EditorModel::moveSelected(double dx, double dy)
         return;
     pushUndo();
     it = find(m_selected);
-    const QPointF d(dx, dy);
+    QPointF d(dx, dy);
+    if (m_snap && m_inGesture && it->angle == 0) {
+        // the item follows the pointer without snapping (m_rawBounds); its edges stick to targets that are close
+        if (!m_rawValid) {
+            m_rawBounds = it->bounds();
+            m_rawValid = true;
+        }
+        m_rawBounds.translate(d);
+        const QRectF now = it->bounds();
+        QVariantList guides;
+        double offset[2] = {0, 0};
+        for (int axis = 0; axis < 2; ++axis) {
+            const bool xAxis = axis == 0;
+            const double a = xAxis ? m_rawBounds.left() : m_rawBounds.top();
+            const double c = xAxis ? m_rawBounds.center().x() : m_rawBounds.center().y();
+            const double b = xAxis ? m_rawBounds.right() : m_rawBounds.bottom();
+            double bestShift = 0, bestGuide = std::numeric_limits<double>::quiet_NaN(), bestDist = 1e9;
+            for (const double edge : {a, c, b}) {
+                double guide = 0;
+                const double snapped = snapValue(*it, xAxis, edge, &guide);
+                if (!std::isnan(guide) && std::abs(snapped - edge) < bestDist) {
+                    bestDist = std::abs(snapped - edge);
+                    bestShift = snapped - edge;
+                    bestGuide = guide;
+                }
+            }
+            offset[axis] = bestShift;
+            if (!std::isnan(bestGuide))
+                guides.append(QVariantMap{{"page", it->page}, {"vertical", xAxis}, {"pos", bestGuide}});
+        }
+        const QPointF target(m_rawBounds.left() + offset[0], m_rawBounds.top() + offset[1]);
+        d = target - now.topLeft();
+        m_guides = guides;
+    }
     it->rect.translate(d);
     it->a += d;
     it->b += d;
@@ -676,6 +787,27 @@ void EditorModel::dragHandle(int handle, double x, double y)
     const QRectF old = it->bounds();
     double l = old.left(), t = old.top(), r = old.right(), b = old.bottom();
     // 0 TL, 1 T, 2 TR, 3 R, 4 BR, 5 B, 6 BL, 7 L
+    QVariantList guides;
+    if (m_snap && m_inGesture && it->angle == 0) {
+        double g = 0;
+        const bool moveX = handle != 1 && handle != 5;
+        const bool moveY = handle != 3 && handle != 7;
+        if (moveX) {
+            const double sx = snapValue(*it, true, x, &g);
+            if (!std::isnan(g)) {
+                x = sx;
+                guides.append(QVariantMap{{"page", it->page}, {"vertical", true}, {"pos", g}});
+            }
+        }
+        if (moveY) {
+            const double sy = snapValue(*it, false, y, &g);
+            if (!std::isnan(g)) {
+                y = sy;
+                guides.append(QVariantMap{{"page", it->page}, {"vertical", false}, {"pos", g}});
+            }
+        }
+    }
+    m_guides = guides;
     if (handle == 0 || handle == 6 || handle == 7) l = x;
     if (handle == 2 || handle == 3 || handle == 4) r = x;
     if (handle == 0 || handle == 1 || handle == 2) t = y;

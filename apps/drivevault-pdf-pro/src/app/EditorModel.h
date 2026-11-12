@@ -36,6 +36,8 @@ class EditorModel : public QObject {
     Q_PROPERTY(bool busy READ busy NOTIFY savingChanged FINAL)
     Q_PROPERTY(double progress READ progress NOTIFY savingChanged FINAL)
     Q_PROPERTY(QString pendingImage READ pendingImage WRITE setPendingImage NOTIFY toolChanged FINAL)
+    Q_PROPERTY(bool snapEnabled READ snapEnabled WRITE setSnapEnabled NOTIFY snapChanged FINAL)    // moving / resizing sticks to page edges, the page centre and other items
+    Q_PROPERTY(QVariantList guides READ guides NOTIFY changed FINAL)                              // [{page, vertical, pos}] shown while an edge is snapped
     Q_PROPERTY(QStringList fonts READ fonts CONSTANT FINAL)
     // the style of the next item (and of the selected item when it is changed)
     Q_PROPERTY(QColor color READ color NOTIFY styleChanged FINAL)
@@ -82,6 +84,9 @@ public:
     bool bold() const { return m_style.bold; }
     bool italic() const { return m_style.italic; }
     int align() const { return m_style.align; }
+    bool snapEnabled() const { return m_snap; }
+    void setSnapEnabled(bool on);
+    QVariantList guides() const { return m_guides; }
 
     // ---- style: sets the next item's style and, when something is selected, changes the selected item (one undo step)
     // key: color | fill | noFill | width | opacity | font | size | bold | italic | align
@@ -104,6 +109,7 @@ public:
     Q_INVOKABLE void addPolygonPoint(double x, double y);
     Q_INVOKABLE void movePolygon(double x, double y);
     Q_INVOKABLE bool finishPolygon();
+    Q_INVOKABLE QString replaceImage(int id, const QString& pathOrUrl);                   // swaps the picture of an Image item (centre and width stay); "" or "file" | "format" | "notImage"
     Q_INVOKABLE int addStamp(int page, double x, double y, const QString& text);
 
     // ---- editing (all undoable)
@@ -151,6 +157,7 @@ signals:
     void selectionChanged();
     void editingChanged();
     void styleChanged();
+    void snapChanged();
     void changed();
     void savingChanged();
     // error: "" | "password" | "file" | "format" | "range" | "exists" | "write" | "unknown" | "imageMissing" | "fontRestricted" | "cancelled" | "noEdits"
@@ -190,6 +197,13 @@ private:
     int m_editing = 0;
     int m_rev = 0;
     bool m_inGesture = false;
+    bool m_snap = true;
+    QVariantList m_guides;
+    QRectF m_rawBounds;                 // where the dragged item would be without snapping
+    bool m_rawValid = false;
+    QList<double> snapTargets(const tools::EditItem& self, bool xAxis) const;
+    // the value (or edge) closest to a target within the tolerance; `guide` gets the target, NaN when nothing is near
+    double snapValue(const tools::EditItem& self, bool xAxis, double v, double* guide) const;
     bool m_gestureSnapshot = false;
     int m_draft = 0;
     int m_poly = 0;

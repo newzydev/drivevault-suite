@@ -105,6 +105,20 @@ Item {
             }
         }
     }
+    // alignment guides while an item sticks to an edge
+    Repeater {
+        model: Editor.active ? Editor.guides : []
+        delegate: Rectangle {
+            required property var modelData
+            visible: modelData.page === pv.pageIndex
+            objectName: "snapGuide"
+            color: "#F43F5E"
+            x: modelData.vertical ? Math.round(modelData.pos * pv.pxPerPt) : 0
+            y: modelData.vertical ? 0 : Math.round(modelData.pos * pv.pxPerPt)
+            width: modelData.vertical ? 1 : pv.width
+            height: modelData.vertical ? pv.height : 1
+        }
+    }
     Repeater {
         model: pv.textSelectionEnabled ? pv.selectionRects : []
         delegate: Rectangle {

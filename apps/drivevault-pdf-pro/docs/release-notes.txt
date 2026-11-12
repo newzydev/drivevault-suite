@@ -2,6 +2,12 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.13.0 (2026-11-12): Snap guides and replacing a picture
+  - Edit mode, "Snap": while you move or resize an item, its edges and centre stick to the page edges, the page centre and the edges / centres of other items on the page (4 point reach). A red guide line shows what it stuck to. Switch it off with the same button. Arrow-key nudges never snap.
+  - Replace picture: a picture you added can be swapped for another file; its centre and width stay and the height follows the new proportions. One undo step.
+  - Not available: changing or cropping pictures that are already in the PDF, re-flowing an existing paragraph, a full-page background behind the page content.
+  - The installer is not signed (Windows SmartScreen may warn).
+
 v1.12.0 (2026-11-12): Reading and navigation
   - Zoom: the arrow next to the zoom box opens presets (25 % - 800 %) and "Other..." to type any percentage (10 - 800).
   - Hand tool: drag the page to move it. Snapshot tool: drag a region of a page to copy it to the clipboard as a picture (216 dpi).

@@ -196,10 +196,12 @@ Rectangle {
         Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
 
         // the selected item
+        PButton { objectName: "editReplaceImage"; compact: true; visible: bar.sel.kind === "image"; text: Tr.s("replaceImage"); tip: Tr.s("replaceImageTip"); onClicked: replaceImageDialog.open() }
         PButton { objectName: "editTurn"; compact: true; text: "↻ 90°"; tip: Tr.s("turnItem"); enabled: Editor.selectedId > 0; onClicked: Editor.rotateSelected(90) }
         PButton { objectName: "editFront"; compact: true; text: Tr.s("toFront"); enabled: Editor.selectedId > 0; onClicked: Editor.toFront() }
         PButton { objectName: "editBack"; compact: true; text: Tr.s("toBack"); enabled: Editor.selectedId > 0; onClicked: Editor.toBack() }
         PButton { objectName: "editDelete"; compact: true; text: Tr.s("deletePages"); enabled: Editor.selectedId > 0; onClicked: Editor.deleteSelected() }
+        PButton { objectName: "editSnap"; compact: true; variant: Editor.snapEnabled ? "secondary" : "ghost"; text: Tr.s("snapGuides"); tip: Tr.s("snapGuidesTip"); onClicked: Editor.snapEnabled = !Editor.snapEnabled }
         PButton { objectName: "editUndo"; compact: true; variant: "ghost"; text: Tr.s("undo"); enabled: Editor.canUndo; onClicked: Editor.undo() }
         PButton { objectName: "editRedo"; compact: true; variant: "ghost"; text: Tr.s("redo"); enabled: Editor.canRedo; onClicked: Editor.redo() }
         Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
@@ -236,6 +238,16 @@ Rectangle {
         onAccepted: {
             Editor.pendingImage = selectedFile.toString()
             Editor.tool = "image"
+        }
+    }
+    FileDialog {
+        id: replaceImageDialog
+        title: Tr.s("replaceImage")
+        nameFilters: [Tr.s("imageFiles")]
+        onAccepted: {
+            const code = Editor.replaceImage(Editor.selectedId, selectedFile.toString())
+            if (code !== "")
+                bar.fail(Tr.s(code === "format" ? "errFormat" : "errFile"))
         }
     }
     FileDialog {
