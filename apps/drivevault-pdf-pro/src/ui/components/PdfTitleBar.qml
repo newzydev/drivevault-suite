@@ -41,12 +41,13 @@ Rectangle {
                     Layout.preferredWidth: 34
                     Layout.preferredHeight: 34
                 }
-                AppText {
+                Text {                                      // a plain Text like Master Pro: AppText's fixed Thai line height would sit the title too high
                     Layout.fillWidth: true
                     text: Tr.s("title")
                     elide: Text.ElideRight
                     font.pixelSize: 17
                     font.weight: Font.Bold
+                    color: Theme.text
                 }
             }
             DragHandler {

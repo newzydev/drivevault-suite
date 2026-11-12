@@ -15,6 +15,7 @@
 #include "dp/Version.h"
 
 #include <QClipboard>
+#include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDesktopServices>
 #include <QDir>
@@ -857,6 +858,25 @@ bool DocumentController::openUri(const QString& uri) const
     if (!url.isValid() || (scheme != QLatin1String("http") && scheme != QLatin1String("https") && scheme != QLatin1String("mailto")))
         return false;                      // a PDF must not start programs or open files through a link
     return QDesktopServices::openUrl(url);
+}
+
+QString DocumentController::documentPath(const QString& fileName) const
+{
+    if (fileName.isEmpty() || fileName.contains(QLatin1Char('/')) || fileName.contains(QLatin1Char('\\')))
+        return {};
+    const QString app = QCoreApplication::applicationDirPath();
+    for (const QString& dir : {app + QStringLiteral("/licenses"), app + QStringLiteral("/docs"), app + QStringLiteral("/../docs"), app + QStringLiteral("/../../docs"), app + QStringLiteral("/../../../docs")}) {
+        const QString p = QDir(dir).filePath(fileName);
+        if (QFileInfo::exists(p))
+            return QDir::cleanPath(p);
+    }
+    return {};
+}
+
+bool DocumentController::openDocument(const QString& fileName) const
+{
+    const QString p = documentPath(fileName);
+    return !p.isEmpty() && QDesktopServices::openUrl(QUrl::fromLocalFile(p));
 }
 
 // ---- printing --------------------------------------------------------------------------------------------------------------

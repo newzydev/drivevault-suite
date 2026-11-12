@@ -138,6 +138,8 @@ public:
     Q_INVOKABLE void requestAnnotations();                // fills annotationItems in the background: [{page, type, text, x, y, w, h}]
     Q_INVOKABLE QVariantMap linkAt(int page, double x, double y) const;   // {kind: none|page|uri, page, uri}
     Q_INVOKABLE bool openUri(const QString& uri) const;   // only http / https / mailto are opened
+    Q_INVOKABLE QString documentPath(const QString& fileName) const;   // a licence file of the program (licenses next to the exe, or docs in the source tree); "" when not found
+    Q_INVOKABLE bool openDocument(const QString& fileName) const;
 
     // ---- printing -----------------------------------------------------------------------------------------------------------
     Q_INVOKABLE QStringList printerNames() const;

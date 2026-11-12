@@ -34,7 +34,7 @@ Rectangle {
                 Accessible.checked: current
                 onClicked: Doc.language = modelData.code
                 HoverHandler { cursorShape: Qt.PointingHandCursor }
-                contentItem: AppText {
+                contentItem: Text {                          // plain Text like Master Pro, so the letters sit in the middle of the pill
                     text: choice.text
                     color: choice.current ? Theme.textOnAccent : Theme.textSecondary
                     font.pixelSize: 12

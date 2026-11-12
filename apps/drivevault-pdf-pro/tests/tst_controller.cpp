@@ -41,6 +41,17 @@ private slots:
 
     // ---- tabs --------------------------------------------------------------------------------------------------------------
 
+    void licenceFilesAreFoundByNameOnly()
+    {
+        DocumentController c(m_dir.filePath("datadoc"));
+        QVERIFY(c.documentPath("../README.md").isEmpty());                // no paths: only the files of the program
+        QVERIFY(c.documentPath("a/b.txt").isEmpty());
+        QVERIFY(c.documentPath(QString()).isEmpty());
+        QVERIFY(c.documentPath("nothing-like-this.txt").isEmpty());
+        QVERIFY(!c.openDocument("nothing-like-this.txt"));
+        QVERIFY2(!c.documentPath("THIRD-PARTY-NOTICES.txt").isEmpty(), "the notices are found in the source tree or next to the program");
+    }
+
     void openingFilesMakesTabsAndTheSameFileIsNotOpenedTwice()
     {
         DocumentController c(m_dir.filePath("data1"));
