@@ -16,6 +16,8 @@ qt_add_qml_module(dv_ui
         components/IconData.js
         components/Icon.qml
         components/Logo.qml
+        components/WindowButton.qml
+        components/TitleBar.qml
         components/AppButton.qml
         components/IconButton.qml
         components/AppToolTip.qml

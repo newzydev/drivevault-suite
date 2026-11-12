@@ -1,6 +1,6 @@
 # DriveVault Video Editor Pro - rules (adds to the repository root file)
 
-Native Windows non-linear video editor: C++20, Qt 6.8 / Qt Quick (QML), FFmpeg 8.1 (LGPL, shared), CMake, Inno Setup. Version 1.11.3, project file schema 3. Thai + English UI.
+Native Windows non-linear video editor: C++20, Qt 6.8 / Qt Quick (QML), FFmpeg 8.1 (LGPL, shared), CMake, Inno Setup. Version 1.11.4, project file schema 3. Thai + English UI.
 (phases 1-6 are done: foundation, editing, pro editing, AI, performance, packaging).
 
 ## Layout

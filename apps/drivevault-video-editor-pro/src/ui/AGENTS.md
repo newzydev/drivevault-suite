@@ -15,3 +15,4 @@
 - Never block the UI: long actions call backend jobs that report progress and can be cancelled.
 - Status badges tell the truth: `available`, `modelRequired`, `unsupported`, `notImplemented`, `info`.
 - `tst_ui_flow` fails on any QML warning - run it after UI changes and fix every warning.
+- The window is frameless (`flags: Qt.Window | Qt.FramelessWindowHint` in `Main.qml`) with our own `components/TitleBar.qml` (brand, Thai / English switch, "..." menu with Settings and About, `WindowButton`s) - the same bar as Master Pro and PDF Pro; the `ResizeEdge` strips at the end of `Main.qml` start the system resize. Screens sit below `titleBar` (anchor to `titleBar.bottom`, never `fill: parent`). `WinIntegration.applyTitleBarTheme` is no longer called (there is no Windows caption to tint).

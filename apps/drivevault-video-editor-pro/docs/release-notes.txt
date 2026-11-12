@@ -1,6 +1,11 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.11.4 (2026-11-12)
+--------------
+  - Changed: the window has the same title bar as DriveVault Master Pro and PDF Pro: the program name at the left (drag it to move the window, double click to maximize or restore), a Thai / English switch, a "..." menu with Settings and About, and the minimize / maximize / close buttons. The Windows title bar is gone; the window can still be resized from its edges.
+  - The three small buttons in the top right corner of the Home screen (language, About, Settings) moved into the title bar.
+
 Version 1.11.3 (2026-11-09)
 --------------
   - Fixed: Thai and English now use the same text size and the same line height everywhere in the program, so layouts, spacing and panel sizes do not change when you

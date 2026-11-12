@@ -116,6 +116,34 @@ private slots:
         QTRY_COMPARE_WITH_TIMEOUT(item("homeNewProject")->property("text").toString(), QStringLiteral("New Project"), 3000);
     }
 
+    // the title bar is our own (like Master Pro): frameless window, language switch, one menu, window buttons
+    void theTitleBarHasTheLanguageSwitchTheMenuAndTheWindowButtons()
+    {
+        QVERIFY(m_window->flags().testFlag(Qt::FramelessWindowHint));
+        QVERIFY(item("titleBar") != nullptr);
+        for (const char* name : {"titleDragArea", "languageSwitch", "titleMenuButton", "winMinimize", "winMaximize", "winClose"})
+            QVERIFY2(item(QString::fromLatin1(name)) != nullptr, name);
+        QVERIFY(item("homeNewProject")->mapToScene(QPointF(0, 0)).y() >= item("titleBar")->height());   // the content starts below the bar
+
+        click("langTh");
+        QCOMPARE(m_ctx->settings.values().value("language").toString(), QStringLiteral("th-TH"));
+        QTRY_COMPARE_WITH_TIMEOUT(item("homeNewProject")->property("text").toString(), QString::fromUtf8("โปรเจกต์ใหม่"), 3000);
+        click("langEn");
+        QCOMPARE(m_ctx->settings.values().value("language").toString(), QStringLiteral("en-US"));
+        QTRY_COMPARE_WITH_TIMEOUT(item("homeNewProject")->property("text").toString(), QStringLiteral("New Project"), 3000);
+
+        click("titleMenuButton");                                       // the menu holds Settings and About
+        click("menuSettings");
+        QTRY_VERIFY_WITH_TIMEOUT(m_ctx->controller.settingsOpen(), 3000);
+        m_ctx->controller.setSettingsOpen(false);
+        QTest::qWait(300);
+        click("titleMenuButton");
+        click("menuAbout");
+        QTRY_VERIFY_WITH_TIMEOUT(m_ctx->controller.aboutOpen(), 3000);
+        m_ctx->controller.setAboutOpen(false);
+        QTest::qWait(300);
+    }
+
     void newProjectDialogCreatesRealProjectAndOpensEditor()
     {
         click("homeNewProject");
@@ -759,7 +787,7 @@ private slots:
             QVERIFY2(!path.isEmpty() && QFileInfo::exists(path), name);
         }
         QVERIFY(m_ctx->systemInfo.documentPath("../LICENSE.txt").isEmpty());          // only plain file names are looked up
-        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.11.3"));
+        QCOMPARE(m_ctx->systemInfo.version(), QStringLiteral("1.11.4"));
         QVERIFY(m_ctx->systemInfo.productName().contains("Video Editor Pro"));
     }
 

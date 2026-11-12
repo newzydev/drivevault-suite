@@ -8,7 +8,8 @@ ApplicationWindow {
     id: window
 
     // ---- Window ----------------------------------------------------------------------------
-    title: (Projects.isOpen ? Projects.name + (Projects.dirty ? " *" : "") + " — " : "") + "DriveVault Video Editor Pro"
+    title: (Projects.isOpen ? Projects.name + (Projects.dirty ? " *" : "") + " — " : "") + "DriveVault Video Editor Pro"     // shown in the task bar
+    flags: Qt.Window | Qt.FramelessWindowHint        // our own title bar (TitleBar) replaces the Windows one, like Master Pro and PDF Pro
     minimumWidth: 1100
     minimumHeight: 700
     width: 1440
@@ -51,15 +52,8 @@ ApplicationWindow {
             AppSettings.setState("window", { x: x, y: y, w: width, h: height, maximized: false })
     }
 
-    function applyTitleBar() {
-        WinIntegration.applyTitleBarTheme(window, Theme.dark, Theme.backgroundAlt, Theme.text)
-    }
-
-    Connections { target: Theme; function onDarkChanged() { window.applyTitleBar() } }
-
     Component.onCompleted: {
         restoreGeometry()
-        applyTitleBar()
         Qt.callLater(startup)
     }
 
@@ -188,9 +182,23 @@ ApplicationWindow {
         }
     }
 
-    // ---- Content ------------------------------------------------------------------------------
+    // ---- Title bar and content ------------------------------------------------------------------
+    TitleBar {
+        id: titleBar
+        objectName: "titleBar"
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        hostWindow: window
+        onSettingsRequested: App.settingsOpen = true
+        onAboutRequested: App.aboutOpen = true
+    }
+
     HomeScreen {
-        anchors.fill: parent
+        anchors.top: titleBar.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
         visible: App.screen === "home"
         onNewProjectRequested: App.newProjectOpen = true
         onOpenProjectRequested: openDialog.open()
@@ -200,7 +208,10 @@ ApplicationWindow {
 
     Loader {
         id: editorLoader
-        anchors.fill: parent
+        anchors.top: titleBar.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
         active: App.screen === "editor"
         sourceComponent: EditorScreen {
             onNewRequested: window.newProject()
@@ -277,4 +288,21 @@ ApplicationWindow {
         anchors.fill: parent
         z: 1000
     }
+
+    // A window without the Windows frame has no resize edges: thin strips along the sides and corners start the system resize.
+    component ResizeEdge: MouseArea {
+        required property int edges
+        enabled: window.visibility === Window.Windowed
+        hoverEnabled: true
+        z: 2000
+        onPressed: mouse => { mouse.accepted = window.startSystemResize(edges) }
+    }
+    ResizeEdge { edges: Qt.LeftEdge; cursorShape: Qt.SizeHorCursor; x: 0; y: 10; width: 5; height: window.height - 20 }
+    ResizeEdge { edges: Qt.RightEdge; cursorShape: Qt.SizeHorCursor; x: window.width - 5; y: 10; width: 5; height: window.height - 20 }
+    ResizeEdge { edges: Qt.TopEdge; cursorShape: Qt.SizeVerCursor; x: 10; y: 0; width: window.width - 20; height: 5 }
+    ResizeEdge { edges: Qt.BottomEdge; cursorShape: Qt.SizeVerCursor; x: 10; y: window.height - 5; width: window.width - 20; height: 5 }
+    ResizeEdge { edges: Qt.LeftEdge | Qt.TopEdge; cursorShape: Qt.SizeFDiagCursor; x: 0; y: 0; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.RightEdge | Qt.BottomEdge; cursorShape: Qt.SizeFDiagCursor; x: window.width - 10; y: window.height - 10; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.RightEdge | Qt.TopEdge; cursorShape: Qt.SizeBDiagCursor; x: window.width - 10; y: 0; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.LeftEdge | Qt.BottomEdge; cursorShape: Qt.SizeBDiagCursor; x: 0; y: window.height - 10; width: 10; height: 10 }
 }

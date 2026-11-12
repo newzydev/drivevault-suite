@@ -4625,6 +4625,44 @@
     </message>
 </context>
 <context>
+    <name>TitleBar</name>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>More options</source>
+        <translation>ตัวเลือกเพิ่มเติม</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Settings…</source>
+        <translation>ตั้งค่า…</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>About DriveVault Video Editor Pro</source>
+        <translation>เกี่ยวกับ DriveVault Video Editor Pro</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Minimize</source>
+        <translation>ย่อหน้าต่าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Restore</source>
+        <translation>คืนขนาดหน้าต่าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Maximize</source>
+        <translation>ขยายหน้าต่าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Close</source>
+        <translation>ปิด</translation>
+    </message>
+</context>
+<context>
     <name>TitleEditor</name>
     <message>
         <location filename="../../src/ui/editor/TitleEditor.qml" line="71"/>

@@ -28,35 +28,12 @@ Rectangle {
         }
     }
 
-    // Top-right utility buttons
-    RowLayout {
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.margins: 18
-        spacing: 4
-        z: 2
-
-        IconButton {
-            iconName: "globe"
-            tip: qsTr("Switch language")
-            onClicked: AppSettings.set("language", Localization.currentLanguage === "th-TH" ? "en-US" : "th-TH")
-        }
-        IconButton {
-            iconName: "info"
-            tip: qsTr("About")
-            onClicked: App.aboutOpen = true
-        }
-        IconButton {
-            iconName: "sliders"
-            tip: qsTr("Settings") + "  (Ctrl+,)"
-            onClicked: App.settingsOpen = true
-        }
-    }
+    // (language, About and Settings are in the title bar now)
 
     RowLayout {
         anchors.fill: parent
         anchors.margins: 56
-        anchors.topMargin: 64
+        anchors.topMargin: 56
         spacing: 56
 
         // ---- Brand + actions ---------------------------------------------------------------
