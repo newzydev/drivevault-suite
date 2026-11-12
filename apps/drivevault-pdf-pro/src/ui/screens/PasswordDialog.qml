@@ -48,7 +48,7 @@ Popup {
             color: Theme.textSecondary
             wrapMode: Text.Wrap
         }
-        TextField {
+        PTextField {
             id: field
             objectName: "passwordField"
             Layout.fillWidth: true

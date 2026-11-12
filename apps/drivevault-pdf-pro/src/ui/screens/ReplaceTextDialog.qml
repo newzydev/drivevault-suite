@@ -52,7 +52,7 @@ Popup {
         spacing: 12
         AppText { text: Tr.s("editExisting"); font.pixelSize: Theme.fontXl; font.weight: Font.DemiBold }
         AppText { Layout.fillWidth: true; text: Tr.s("editRunHelp"); wrapMode: Text.Wrap; color: Theme.textSecondary }
-        TextField {
+        PTextField {
             id: replacement
             objectName: "replacementText"
             Layout.fillWidth: true
@@ -60,7 +60,7 @@ Popup {
             maximumLength: 512
             selectByMouse: true
         }
-        CheckBox {
+        PCheckBox {
             id: removeText
             objectName: "removeTextRun"
             text: Tr.s("removeTextRun")

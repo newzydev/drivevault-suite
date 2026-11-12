@@ -153,6 +153,25 @@ ApplicationWindow {
         }
     }
 
+    // diagnostics only (--show): opens one window or tool bar so that it can be photographed
+    function diagnosticShow(name) {
+        const viewer = viewerLoader.item
+        if (name === "organizer") organizer.begin("organize")
+        else if (name === "split") splitDialog.open()
+        else if (name === "compress") compressDialog.open()
+        else if (name === "form") formDialog.open()
+        else if (name === "security") securityDialog.open()
+        else if (name === "imageExport") imageExportDialog.open()
+        else if (name === "ocr") ocrDialog.open()
+        else if (name === "maintenance") maintenanceDialog.begin(false)
+        else if (name === "batch") batchDialog.open()
+        else if (name === "create") createPdfDialog.begin(false)
+        else if (name === "prefs") preferencesDialog.open()
+        else if (name === "about") aboutDialog.open()
+        else if (viewer && viewer.diagnosticOpen)
+            viewer.diagnosticOpen(name)
+    }
+
     function openPath(path, password) {
         const code = Doc.open(path, password === undefined ? "" : password)
         if (code === "") {

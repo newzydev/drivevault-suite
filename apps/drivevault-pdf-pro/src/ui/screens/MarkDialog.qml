@@ -50,20 +50,20 @@ Popup {
             spacing: 14
             Repeater {
                 model: ["watermark", "pageNumber", "header", "footer"]
-                delegate: RadioButton {
+                delegate: PRadioButton {
                     id: rb
                     required property string modelData
                     objectName: "mark_" + modelData
                     ButtonGroup.group: types
                     text: Tr.s("mark_" + modelData)
                     checked: dlg.type === modelData
-                    contentItem: AppText { leftPadding: 28; text: rb.text; verticalAlignment: Text.AlignVCenter }
+
                     onClicked: dlg.load(modelData)
                 }
             }
         }
         AppText { Layout.fillWidth: true; text: Tr.s("markHint"); color: Theme.textDisabled; font.pixelSize: Theme.fontSm; wrapMode: Text.Wrap }
-        TextField {
+        PTextField {
             id: textField
             objectName: "markText"
             Layout.fillWidth: true
@@ -88,7 +88,7 @@ Popup {
                 background: Rectangle { radius: 8; color: Theme.surface; border.color: fontBox.activeFocus ? Theme.accent : Theme.border }
             }
             SpinBox { id: sizeBox; objectName: "markSize"; from: 4; to: 400; value: 12; editable: true }
-            CheckBox { id: boldBox; text: "B"; contentItem: AppText { leftPadding: 28; text: parent.text; font.weight: Font.Bold; verticalAlignment: Text.AlignVCenter } }
+            PCheckBox { id: boldBox; text: "B"; labelWeight: Font.Bold }
         }
         RowLayout {
             spacing: 6
@@ -106,7 +106,7 @@ Popup {
             }
             Item { Layout.fillWidth: true }
             AppText { text: Tr.s("opacityLabel"); color: Theme.textSecondary }
-            Slider { id: opacitySlider; objectName: "markOpacity"; implicitWidth: 120; from: 5; to: 100; stepSize: 5; value: 100 }
+            PSlider { id: opacitySlider; objectName: "markOpacity"; implicitWidth: 120; from: 5; to: 100; stepSize: 5; value: 100 }
         }
         RowLayout {
             spacing: 10

@@ -70,7 +70,7 @@ Popup {
         ColumnLayout {
             Layout.fillWidth: true
             enabled: !Doc.outputBusy
-            TextField {
+            PTextField {
                 id: user
                 objectName: "securityUser"
                 visible: !dlg.unlock
@@ -79,7 +79,7 @@ Popup {
                 placeholderText: Tr.s("userPasswordOptional")
                 Accessible.name: placeholderText
             }
-            TextField {
+            PTextField {
                 id: confirmUser
                 visible: !dlg.unlock && user.text !== ""
                 Layout.fillWidth: true
@@ -87,7 +87,7 @@ Popup {
                 placeholderText: Tr.s("repeatUserPassword")
                 Accessible.name: placeholderText
             }
-            TextField {
+            PTextField {
                 id: owner
                 objectName: "securityPassword"
                 Layout.fillWidth: true
@@ -95,7 +95,7 @@ Popup {
                 placeholderText: Tr.s(dlg.unlock ? "unlockPassword" : "ownerPassword")
                 Accessible.name: placeholderText
             }
-            TextField {
+            PTextField {
                 id: confirmOwner
                 visible: !dlg.unlock
                 Layout.fillWidth: true
@@ -106,18 +106,19 @@ Popup {
             GridLayout {
                 columns: 2
                 visible: !dlg.unlock
-                CheckBox { id: allowPrint; text: Tr.s("allowPrint"); contentItem: AppText { leftPadding: 28; text: allowPrint.text; verticalAlignment: Text.AlignVCenter } }
-                CheckBox { id: allowCopy; text: Tr.s("allowCopy"); contentItem: AppText { leftPadding: 28; text: allowCopy.text; verticalAlignment: Text.AlignVCenter } }
-                CheckBox { id: allowModify; text: Tr.s("allowModify"); contentItem: AppText { leftPadding: 28; text: allowModify.text; verticalAlignment: Text.AlignVCenter } }
-                CheckBox { id: allowAnnotate; text: Tr.s("allowAnnotate"); contentItem: AppText { leftPadding: 28; text: allowAnnotate.text; verticalAlignment: Text.AlignVCenter } }
+                PCheckBox { id: allowPrint; text: Tr.s("allowPrint") }
+                PCheckBox { id: allowCopy; text: Tr.s("allowCopy") }
+                PCheckBox { id: allowModify; text: Tr.s("allowModify") }
+                PCheckBox { id: allowAnnotate; text: Tr.s("allowAnnotate") }
             }
-            CheckBox {
+            PCheckBox {
                 id: consent
                 objectName: "securityConsent"
                 visible: dlg.unlock
                 Layout.fillWidth: true
                 text: Tr.s("authorization")
-                contentItem: AppText { leftPadding: 28; text: consent.text; verticalAlignment: Text.AlignVCenter; wrapMode: Text.Wrap }
+                wrapLabel: true
+
             }
         }
         AppText {

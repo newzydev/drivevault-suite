@@ -56,7 +56,7 @@ Popup {
             enabled: dlg.ready && !dlg.running
             model: [Tr.s("allPages"), Tr.f("currentPageN", dlg.currentPage + 1), Tr.s("pageRange")]
         }
-        TextField {
+        PTextField {
             id: range
             Layout.fillWidth: true
             visible: pageMode.currentIndex === 2

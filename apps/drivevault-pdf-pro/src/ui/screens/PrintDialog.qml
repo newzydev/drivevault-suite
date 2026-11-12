@@ -15,7 +15,7 @@ Popup {
     anchors.centerIn: parent
     modal: true
     dim: true
-    width: Math.min(460, (parent ? parent.width : 460) - 48)
+    width: Math.min(540, (parent ? parent.width : 540) - 48)
     padding: 24
     closePolicy: Doc.printing ? Popup.NoAutoClose : Popup.CloseOnEscape
     Overlay.modal: Rectangle { color: "#B3000000" }
@@ -78,11 +78,11 @@ Popup {
         ColumnLayout {
             spacing: 2
             ButtonGroup { id: pageGroup }
-            RadioButton { id: allPages; objectName: "printAll"; ButtonGroup.group: pageGroup; text: Tr.s("allPages"); checked: true; enabled: !Doc.printing; contentItem: AppText { leftPadding: 28; text: parent.text; verticalAlignment: Text.AlignVCenter } }
-            RadioButton { id: currentOnly; objectName: "printCurrent"; ButtonGroup.group: pageGroup; text: Tr.f("currentPageN", dlg.currentPage + 1); enabled: !Doc.printing; contentItem: AppText { leftPadding: 28; text: parent.text; verticalAlignment: Text.AlignVCenter } }
+            PRadioButton { id: allPages; objectName: "printAll"; ButtonGroup.group: pageGroup; text: Tr.s("allPages"); checked: true; enabled: !Doc.printing }
+            PRadioButton { id: currentOnly; objectName: "printCurrent"; ButtonGroup.group: pageGroup; text: Tr.f("currentPageN", dlg.currentPage + 1); enabled: !Doc.printing }
             RowLayout {
-                RadioButton { id: rangeOption; objectName: "printRange"; ButtonGroup.group: pageGroup; text: Tr.s("pageRange"); enabled: !Doc.printing; contentItem: AppText { leftPadding: 28; text: parent.text; verticalAlignment: Text.AlignVCenter } }
-                TextField {
+                PRadioButton { id: rangeOption; objectName: "printRange"; ButtonGroup.group: pageGroup; text: Tr.s("pageRange"); enabled: !Doc.printing }
+                PTextField {
                     id: rangeField
                     objectName: "printRangeField"
                     Layout.fillWidth: true
@@ -102,8 +102,8 @@ Popup {
             spacing: 16
             AppText { text: Tr.s("copies"); color: Theme.textSecondary }
             SpinBox { id: copies; objectName: "printCopies"; from: 1; to: 99; value: 1; editable: true; enabled: !Doc.printing }
-            CheckBox { id: colorBox; objectName: "printColor"; checked: true; text: Tr.s("colour"); enabled: !Doc.printing; contentItem: AppText { leftPadding: 28; text: parent.text; verticalAlignment: Text.AlignVCenter } }
-            CheckBox { id: fitBox; objectName: "printFit"; checked: true; text: Tr.s("fitPaper"); enabled: !Doc.printing; contentItem: AppText { leftPadding: 28; text: parent.text; verticalAlignment: Text.AlignVCenter } }
+            PCheckBox { id: colorBox; objectName: "printColor"; checked: true; text: Tr.s("colour"); enabled: !Doc.printing }
+            PCheckBox { id: fitBox; objectName: "printFit"; checked: true; text: Tr.s("fitPaper"); enabled: !Doc.printing }
         }
         AppText { objectName: "printError"; Layout.fillWidth: true; visible: dlg.error !== ""; text: dlg.error; color: Theme.errorSoft; wrapMode: Text.Wrap; font.pixelSize: Theme.fontSm }
         AppText { Layout.fillWidth: true; visible: dlg.printers.length === 0; text: Tr.s("noPrintersText"); color: Theme.warning; wrapMode: Text.Wrap; font.pixelSize: Theme.fontSm }

@@ -97,7 +97,7 @@ Popup {
             AppText { Layout.fillWidth: true; text: dlg.input || Tr.s("repairSource"); textFormat: Text.PlainText; elide: Text.ElideMiddle }
             PButton { text: Tr.s("openFile"); enabled: !Doc.outputBusy; onClicked: sourceFile.open() }
         }
-        TextField {
+        PTextField {
             id: password
             visible: dlg.repair
             Layout.fillWidth: true
@@ -128,13 +128,13 @@ Popup {
             ToolTip.visible: fontHover.hovered && fontSummary.truncated
             ToolTip.text: fontSummary.text
         }
-        CheckBox {
+        PCheckBox {
             id: clean
             objectName: "maintenanceClean"
             visible: !dlg.repair
             enabled: dlg.loaded && !Doc.outputBusy
             text: Tr.s("cleanupPdf")
-            contentItem: AppText { leftPadding: 28; text: clean.text; verticalAlignment: Text.AlignVCenter }
+
         }
         GridLayout {
             columns: 2
@@ -142,11 +142,11 @@ Popup {
             visible: !dlg.repair && !clean.checked
             enabled: dlg.loaded && !Doc.outputBusy
             AppText { text: Tr.s("metadataTitle") }
-            TextField { id: titleField; objectName: "metadataTitle"; Layout.fillWidth: true; maximumLength: 4096 }
+            PTextField { id: titleField; objectName: "metadataTitle"; Layout.fillWidth: true; maximumLength: 4096 }
             AppText { text: Tr.s("metadataAuthor") }
-            TextField { id: author; Layout.fillWidth: true; maximumLength: 4096 }
+            PTextField { id: author; Layout.fillWidth: true; maximumLength: 4096 }
             AppText { text: Tr.s("metadataKeywords") }
-            TextField { id: keywords; Layout.fillWidth: true; maximumLength: 4096 }
+            PTextField { id: keywords; Layout.fillWidth: true; maximumLength: 4096 }
         }
         AppText {
             visible: !dlg.repair && !clean.checked && dlg.loaded
@@ -160,13 +160,13 @@ Popup {
             clip: true
             model: dlg.attachments
             ScrollBar.vertical: ScrollBar {}
-            delegate: CheckBox {
+            delegate: PCheckBox {
                 required property var modelData
                 width: ListView.view.width
                 height: 34
                 text: Tr.f("removeAttachment", modelData.name)
                 checked: dlg.removed.includes(modelData.id)
-                contentItem: AppText { leftPadding: 28; text: parent.text; textFormat: Text.PlainText; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter }
+
                 onToggled: {
                     const id = modelData.id
                     dlg.removed = checked ? dlg.removed.concat([id]) : dlg.removed.filter(value => value !== id)

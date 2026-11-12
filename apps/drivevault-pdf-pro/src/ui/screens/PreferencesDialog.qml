@@ -24,7 +24,7 @@ Popup {
             AppText { Layout.fillWidth: true; text: Tr.s("displayLanguage") }
             LanguageSwitch { objectName: "settingsLanguage"; Layout.alignment: Qt.AlignRight }
             AppText { Layout.fillWidth: true; text: Tr.s("lightTheme") }
-            Switch {
+            PSwitch {
                 objectName: "settingsTheme"
                 Layout.alignment: Qt.AlignRight
                 Accessible.name: Tr.s("lightTheme")
@@ -32,7 +32,7 @@ Popup {
                 onToggled: Doc.lightTheme = checked
             }
             AppText { Layout.fillWidth: true; text: Tr.s("darkPagePreference") }
-            Switch {
+            PSwitch {
                 objectName: "settingsDarkPages"
                 Layout.alignment: Qt.AlignRight
                 Accessible.name: Tr.s("darkPagePreference")

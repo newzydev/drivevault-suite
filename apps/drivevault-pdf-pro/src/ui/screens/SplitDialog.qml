@@ -84,12 +84,12 @@ Popup {
         AppText { Layout.fillWidth: true; text: Tr.s("splitTitle") + (Doc.isOpen ? " - " + Doc.fileName : ""); font.pixelSize: Theme.fontXl; font.weight: Font.DemiBold; elide: Text.ElideMiddle }
 
         ButtonGroup { id: modes }
-        RadioButton {
+        PRadioButton {
             id: rRanges; objectName: "splitRanges"; ButtonGroup.group: modes; text: Tr.s("splitRanges"); checked: dlg.mode === "ranges"; enabled: !Doc.splitting
-            contentItem: AppText { leftPadding: 28; text: parent.text; verticalAlignment: Text.AlignVCenter }
+
             onClicked: { dlg.mode = "ranges"; dlg.refresh() }
         }
-        TextField {
+        PTextField {
             id: rangeField
             objectName: "splitRangeField"
             Layout.fillWidth: true
@@ -106,27 +106,27 @@ Popup {
         }
         RowLayout {
             Layout.fillWidth: true
-            RadioButton {
+            PRadioButton {
                 id: rEvery; objectName: "splitEvery"; ButtonGroup.group: modes; text: Tr.s("splitEvery"); checked: dlg.mode === "every"; enabled: !Doc.splitting
-                contentItem: AppText { leftPadding: 28; text: parent.text; verticalAlignment: Text.AlignVCenter }
+
                 onClicked: { dlg.mode = "every"; dlg.refresh() }
             }
             SpinBox { id: everyBox; objectName: "splitEveryN"; from: 1; to: 9999; value: 1; editable: true; enabled: dlg.mode === "every" && !Doc.splitting; onValueChanged: dlg.refresh() }
             AppText { text: Tr.s("splitPagesUnit"); color: Theme.textSecondary }
         }
-        RadioButton {
+        PRadioButton {
             id: rBook; objectName: "splitBookmarks"; ButtonGroup.group: modes; text: Tr.s("splitBookmarks") + (dlg.hasBookmarks ? "" : " (" + Tr.s("noBookmarks") + ")"); checked: dlg.mode === "bookmarks"; enabled: dlg.hasBookmarks && !Doc.splitting
-            contentItem: AppText { leftPadding: 28; text: parent.text; color: parent.enabled ? Theme.text : Theme.textDisabled; verticalAlignment: Text.AlignVCenter }
+
             onClicked: { dlg.mode = "bookmarks"; dlg.refresh() }
         }
         RowLayout {
             Layout.fillWidth: true
-            RadioButton {
+            PRadioButton {
                 id: rSize; objectName: "splitSize"; ButtonGroup.group: modes; text: Tr.s("splitSize"); checked: dlg.mode === "size"; enabled: !Doc.splitting
-                contentItem: AppText { leftPadding: 28; text: parent.text; verticalAlignment: Text.AlignVCenter }
+
                 onClicked: { dlg.mode = "size"; dlg.refresh() }
             }
-            TextField {
+            PTextField {
                 id: sizeField
                 objectName: "splitSizeField"
                 implicitWidth: 80
@@ -203,7 +203,7 @@ Popup {
             Layout.fillWidth: true
             spacing: 8
             AppText { text: Tr.s("splitFolder"); color: Theme.textSecondary }
-            TextField {
+            PTextField {
                 id: folderField
                 objectName: "splitFolderField"
                 Layout.fillWidth: true

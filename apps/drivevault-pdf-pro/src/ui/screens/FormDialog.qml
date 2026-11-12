@@ -22,7 +22,7 @@ Popup {
     modal: true
     dim: true
     width: Math.min(680, (parent ? parent.width : 680) - 48)
-    height: Math.min(700, (parent ? parent.height : 700) - 48)
+    height: Forms.fields.length > 0 ? Math.min(700, (parent ? parent.height : 700) - 48) : Math.min(contentItem.implicitHeight + topPadding + bottomPadding, (parent ? parent.height : 700) - 48)
     padding: 24
     closePolicy: Forms.busy ? Popup.NoAutoClose : Popup.CloseOnEscape
     Overlay.modal: Rectangle { color: "#B3000000" }
@@ -132,7 +132,7 @@ Popup {
         }
         Component {
             id: textEditor
-            TextField {
+            PTextField {
                 objectName: "formField_" + field.name
                 implicitHeight: field.multiline ? 74 : 36
                 text: field.value
@@ -148,12 +148,12 @@ Popup {
         }
         Component {
             id: checkEditor
-            CheckBox {
+            PCheckBox {
                 objectName: "formField_" + field.name
                 checked: field.checked
                 enabled: !field.readOnly && !Forms.busy
                 text: Tr.s("formTick")
-                contentItem: AppText { leftPadding: 28; text: parent.text; verticalAlignment: Text.AlignVCenter }
+
                 onToggled: dlg.setValue(field.name, checked)
             }
         }

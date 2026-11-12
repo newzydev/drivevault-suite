@@ -16,6 +16,7 @@
 #include <QFileInfo>
 #include <QFontDatabase>
 #include <QGuiApplication>
+#include <QLocale>
 #include <QIcon>
 #include <QImage>
 #include <QJsonDocument>
@@ -46,6 +47,7 @@ void loadFonts()
 int main(int argc, char* argv[])
 {
     QGuiApplication app(argc, argv);
+    QLocale::setDefault(QLocale(QLocale::English, QLocale::UnitedStates));      // numbers in the fields are 0-9 in both languages (a Thai system locale would show Thai digits)
     const auto pdfiumShutdown = qScopeGuard(dp::pdf::shutdownPdfium);   // After controllers, renderers and their jobs.
     QGuiApplication::setApplicationName(QStringLiteral("PdfPro"));
     QGuiApplication::setApplicationDisplayName(QString::fromLatin1(dp::version::kProductName));
@@ -63,9 +65,10 @@ int main(int argc, char* argv[])
     QCommandLineOption passwordOption(QStringLiteral("password"), QStringLiteral("Password for the file to open (diagnostics)."), QStringLiteral("text"));
     QCommandLineOption screenshotOption(QStringLiteral("screenshot"), QStringLiteral("Render the window to <file> (PNG) and exit (diagnostics)."), QStringLiteral("file"));
     QCommandLineOption sizeOption(QStringLiteral("size"), QStringLiteral("Window size WxH for --screenshot."), QStringLiteral("WxH"));
+    QCommandLineOption showOption(QStringLiteral("show"), QStringLiteral("Open a window or tool bar before the --screenshot is taken (diagnostics): print, organizer, split, compress, form, security, imageExport, ocr, maintenance, batch, create, prefs, about, edit."), QStringLiteral("name"));
     QCommandLineOption diagnosticsOption(QStringLiteral("diagnostics-json"),
         QStringLiteral("Write local build diagnostics to a new JSON file and exit."), QStringLiteral("file"));
-    parser.addOptions({dataDirOption, langOption, passwordOption, screenshotOption, sizeOption, diagnosticsOption});
+    parser.addOptions({dataDirOption, langOption, passwordOption, screenshotOption, sizeOption, diagnosticsOption, showOption});
     parser.process(app);
 
     if (parser.isSet(diagnosticsOption)) {
@@ -131,6 +134,10 @@ int main(int argc, char* argv[])
         const QStringList wh = parser.value(sizeOption).split(QLatin1Char('x'));
         if (wh.size() == 2)
             window->resize(wh.at(0).toInt(), wh.at(1).toInt());
+    }
+    if (window && parser.isSet(showOption)) {
+        const QString what = parser.value(showOption);
+        QTimer::singleShot(1200, &app, [window, what] { QMetaObject::invokeMethod(window, "diagnosticShow", Q_ARG(QVariant, QVariant(what))); });
     }
     // Diagnostics: write a picture of the window and exit (the pages are rendered by then).
     if (window && parser.isSet(screenshotOption)) {

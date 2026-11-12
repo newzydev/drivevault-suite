@@ -20,6 +20,11 @@ qt_add_qml_module(dp_ui
         components/PMenuItem.qml
         components/LineIcon.qml
         components/PButton.qml
+        components/PRadioButton.qml
+        components/PCheckBox.qml
+        components/PSwitch.qml
+        components/PSlider.qml
+        components/PTextField.qml
         components/ConfirmDialog.qml
         components/LanguageSwitch.qml
         components/PdfTitleBar.qml

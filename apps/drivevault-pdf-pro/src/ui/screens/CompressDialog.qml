@@ -24,7 +24,7 @@ Popup {
     modal: true
     dim: true
     width: Math.min(760, (parent ? parent.width : 760) - 48)
-    height: Math.min(760, (parent ? parent.height : 760) - 48)
+    height: dlg.ran || Compressor.hasResult ? Math.min(760, (parent ? parent.height : 760) - 48) : Math.min(contentItem.implicitHeight + topPadding + bottomPadding, (parent ? parent.height : 760) - 48)
     padding: 24
     closePolicy: Compressor.busy ? Popup.NoAutoClose : Popup.CloseOnEscape
     Overlay.modal: Rectangle { color: "#B3000000" }
@@ -110,7 +110,7 @@ Popup {
             spacing: 14
             Repeater {
                 model: ["low", "medium", "high", "custom"]
-                delegate: RadioButton {
+                delegate: PRadioButton {
                     id: lv
                     required property string modelData
                     objectName: "level_" + modelData
@@ -118,7 +118,7 @@ Popup {
                     text: Tr.s("level_" + modelData)
                     checked: dlg.level === modelData
                     enabled: !Compressor.busy
-                    contentItem: AppText { leftPadding: 28; text: lv.text; verticalAlignment: Text.AlignVCenter }
+
                     onClicked: dlg.applyPreset(modelData)
                 }
             }
@@ -133,10 +133,10 @@ Popup {
             SpinBox { id: dpiBox; objectName: "compressDpi"; from: 0; to: 600; stepSize: 10; editable: true; enabled: !Compressor.busy; onValueModified: dlg.custom() }
             AppText { text: Tr.s("jpegQuality"); color: Theme.textSecondary }
             SpinBox { id: qualityBox; objectName: "compressQuality"; from: 0; to: 100; stepSize: 5; editable: true; enabled: !Compressor.busy; onValueModified: dlg.custom() }
-            CheckBox { id: stripBox; objectName: "compressStrip"; Layout.columnSpan: 2; text: Tr.s("stripExtras"); enabled: !Compressor.busy; onToggled: dlg.custom()
-                contentItem: AppText { leftPadding: 28; text: parent.text; verticalAlignment: Text.AlignVCenter } }
-            CheckBox { id: linearBox; objectName: "compressLinear"; Layout.columnSpan: 2; text: Tr.s("fastWeb"); enabled: !Compressor.busy; onToggled: dlg.custom()
-                contentItem: AppText { leftPadding: 28; text: parent.text; verticalAlignment: Text.AlignVCenter } }
+            PCheckBox { id: stripBox; objectName: "compressStrip"; Layout.columnSpan: 2; text: Tr.s("stripExtras"); enabled: !Compressor.busy; onToggled: dlg.custom()
+ }
+            PCheckBox { id: linearBox; objectName: "compressLinear"; Layout.columnSpan: 2; text: Tr.s("fastWeb"); enabled: !Compressor.busy; onToggled: dlg.custom()
+ }
         }
         AppText { Layout.fillWidth: true; text: Tr.s("compressZeroNote"); color: Theme.textDisabled; font.pixelSize: Theme.fontSm; wrapMode: Text.Wrap }
 

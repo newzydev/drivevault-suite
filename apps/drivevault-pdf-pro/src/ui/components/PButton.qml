@@ -35,7 +35,7 @@ Button {
             text: control.text
             font.weight: control.variant === "primary" ? Font.DemiBold : Font.Medium
             font.pixelSize: control.labelPixelSize > 0 ? control.labelPixelSize : Theme.fontMd
-            color: !control.enabled ? Theme.textDisabled : control.variant === "primary" ? Theme.textOnAccent : Theme.text
+            color: !control.enabled ? (control.variant === "primary" ? Qt.alpha(Theme.textOnAccent, 0.62) : Theme.textDisabled) : control.variant === "primary" ? Theme.textOnAccent : Theme.text
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
@@ -49,7 +49,7 @@ Button {
     }
     background: Rectangle {
         radius: control.cornerRadius >= 0 ? control.cornerRadius : (control.compact ? 8 : 10)
-        color: !control.enabled ? "transparent"
+        color: !control.enabled ? (control.variant === "primary" ? Qt.alpha(Theme.accent, 0.3) : "transparent")
                : control.variant === "primary" ? (control.down ? Theme.accentPressed : control.hovered ? Theme.accentHover : Theme.accent)
                : control.variant === "ghost" ? (control.down ? Theme.border : control.hovered ? Theme.surfaceHover : "transparent")
                : (control.down ? Theme.border : control.hovered ? Theme.surfaceHover : Theme.surface)

@@ -143,7 +143,7 @@ ScrollView {
                 font.pixelSize: Theme.fontXl
                 font.weight: Font.DemiBold
             }
-            TextField {
+            PTextField {
                 id: recentSearch
                 objectName: "recentSearch"
                 visible: Doc.recentFiles.length > 0

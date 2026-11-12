@@ -69,7 +69,7 @@ Popup {
             enabled: !Doc.outputBusy
             model: [Tr.s("toolCompress"), Tr.s("batchWatermark"), Tr.s("protectPdf")]
         }
-        TextField {
+        PTextField {
             id: watermark
             visible: mode.currentIndex === 1
             enabled: !Doc.outputBusy
@@ -77,9 +77,9 @@ Popup {
             maximumLength: 120
             placeholderText: Tr.s("batchWatermark")
         }
-        TextField { id: user; visible: dlg.protect; enabled: !Doc.outputBusy; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: Tr.s("userPasswordOptional") }
-        TextField { id: owner; visible: dlg.protect; enabled: !Doc.outputBusy; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: Tr.s("ownerPassword") }
-        TextField { id: confirm; visible: dlg.protect; enabled: !Doc.outputBusy; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: Tr.s("repeatOwnerPassword") }
+        PTextField { id: user; visible: dlg.protect; enabled: !Doc.outputBusy; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: Tr.s("userPasswordOptional") }
+        PTextField { id: owner; visible: dlg.protect; enabled: !Doc.outputBusy; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: Tr.s("ownerPassword") }
+        PTextField { id: confirm; visible: dlg.protect; enabled: !Doc.outputBusy; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: Tr.s("repeatOwnerPassword") }
         ProgressBar { Layout.fillWidth: true; visible: Doc.outputBusy; value: Doc.outputProgress }
         AppText { Layout.fillWidth: true; visible: dlg.error !== ""; text: Tr.outputError(dlg.error); color: Theme.errorSoft; wrapMode: Text.Wrap }
         ListView {

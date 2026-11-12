@@ -69,7 +69,7 @@ Popup {
                 Layout.fillWidth: true
                 model: [Tr.s("allPages"), Tr.f("currentPageN", dlg.currentPage + 1), Tr.s("pageRange")]
             }
-            TextField {
+            PTextField {
                 id: range
                 objectName: "imageRange"
                 visible: pageMode.currentIndex === 2
@@ -84,12 +84,12 @@ Popup {
             SpinBox { id: resolution; from: 72; to: 600; value: 144; editable: true }
             AppText { visible: dlg.jpeg; text: Tr.s("outputQuality") }
             SpinBox { id: quality; visible: dlg.jpeg; from: 1; to: 100; value: 90; editable: true }
-            CheckBox {
+            PCheckBox {
                 id: alpha
                 visible: !dlg.jpeg
                 Layout.columnSpan: 2
                 text: Tr.s("transparentPng")
-                contentItem: AppText { leftPadding: 28; text: alpha.text; verticalAlignment: Text.AlignVCenter }
+
             }
             AppText { visible: dlg.count > 1; text: Tr.s("outputTarget") }
             ComboBox { id: target; visible: dlg.count > 1; Layout.fillWidth: true; model: ["ZIP", Tr.s("imageFolder")] }

@@ -335,6 +335,12 @@ Item {
         }
         editMode = ""
     }
+    // diagnostics only (--show)
+    function diagnosticOpen(name) {
+        if (name === "print") printDialog.open()
+        else if (name === "edit") Editor.active = true
+    }
+
     function openSearch() {
         searchOpen = true
         Qt.callLater(function () { searchBar.focusField() })
@@ -402,6 +408,8 @@ Item {
     onPxPerPtChanged: renderTimer.restart()
     Timer { id: renderTimer; interval: 140; onTriggered: viewer.renderScale = viewer.pxPerPt }
 
+    component ToolSep: Item { width: 9; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
+
     Rectangle {
         id: readerToolbar
         objectName: "readerToolbar"
@@ -419,7 +427,7 @@ Item {
             anchors.topMargin: 7
             anchors.leftMargin: 12
             anchors.rightMargin: 12
-            spacing: 12
+            spacing: 4
 
             Row {
                 spacing: 4
@@ -427,10 +435,11 @@ Item {
                 PButton { objectName: "toolbarOpen"; compact: true; glyph: "folder"; text: Tr.s("openFile"); tip: text; variant: "ghost"; onClicked: viewer.openRequested() }
             }
 
+            ToolSep {}
             Row {
                 spacing: 4
                 PButton { objectName: "prevPage"; compact: true; text: "‹"; tip: Tr.s("prevPage"); enabled: viewer.currentPage > 0; onClicked: viewer.goTo(viewer.currentPage - 1) }
-                TextField {
+                PTextField {
                     id: pageField
                     objectName: "pageField"
                     implicitWidth: 52
@@ -456,6 +465,7 @@ Item {
                 PButton { objectName: "nextPage"; compact: true; text: "›"; tip: Tr.s("nextPage"); enabled: viewer.currentPage < Doc.pageCount - 1; onClicked: viewer.goTo(viewer.currentPage + 1) }
             }
 
+            ToolSep {}
             Row {
                 spacing: 4
                 PButton { objectName: "zoomOut"; compact: true; text: "−"; tip: Tr.s("zoomOut"); onClicked: viewer.zoomOut() }
@@ -473,6 +483,7 @@ Item {
                 PButton { objectName: "fitPage"; compact: true; text: Tr.s("fitPage"); variant: viewer.zoomMode === "fitPage" ? "secondary" : "ghost"; onClicked: viewer.fit("fitPage") }
             }
 
+            ToolSep {}
             Row {
                 spacing: 4
                 PButton {
@@ -486,10 +497,12 @@ Item {
                 PButton { objectName: "darkPages"; compact: true; glyph: "dark"; tip: Tr.s("darkPages"); variant: Doc.darkPages ? "secondary" : "ghost"; onClicked: Doc.darkPages = !Doc.darkPages }
             }
 
+            ToolSep {}
             Row {
                 spacing: 2
                 PButton { objectName: "findButton"; compact: true; text: Tr.s("find"); variant: viewer.searchOpen ? "secondary" : "ghost"; onClicked: viewer.searchOpen ? viewer.closeSearch() : viewer.openSearch() }
                 PButton { objectName: "printButton"; compact: true; text: Tr.s("print"); variant: "ghost"; onClicked: printDialog.open() }
+                ToolSep {}
                 PButton { objectName: "organizeButton"; compact: true; text: Tr.s("toolOrganizeShort"); variant: "ghost"; tip: Tr.s("toolOrganize"); onClicked: viewer.organizeRequested() }
                 PButton { objectName: "splitButton"; compact: true; text: Tr.s("toolSplitShort"); variant: "ghost"; tip: Tr.s("toolSplit"); onClicked: viewer.splitRequested() }
                 PButton { objectName: "compressButton"; compact: true; text: Tr.s("toolCompressShort"); variant: "ghost"; tip: Tr.s("toolCompress"); onClicked: viewer.compressRequested() }

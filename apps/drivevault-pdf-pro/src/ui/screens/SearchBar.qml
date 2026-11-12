@@ -27,7 +27,7 @@ Rectangle {
         anchors.rightMargin: 14
         spacing: 8
 
-        TextField {
+        PTextField {
             id: field
             objectName: "searchField"
             Layout.preferredWidth: 300

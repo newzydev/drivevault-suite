@@ -2,6 +2,15 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.9.3 (2026-11-12): Cleaner, more consistent controls and tool bar
+  - New radio buttons, check boxes, switches, text fields and sliders (one style in every window); labels no longer touch or overlap the controls.
+  - Numbers in the number fields are always 0-9, also on a Thai Windows (they were shown with Thai digits).
+  - A button that is switched off keeps a dimmed accent colour instead of looking like plain text.
+  - The tool bar of the reader has thin separators between its groups.
+  - The print dialog is wide enough for its options; the compress and form windows are as high as their content when there is nothing to show yet.
+  - Diagnostics: --show <window> opens one window or tool bar before a --screenshot (print, organizer, split, compress, form, security, imageExport, ocr, maintenance, batch, create, prefs, about, edit).
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.9.2 (2026-11-12): Title bar text and About window match Master Pro
   - The program name and the language switch sit in the middle of the title bar like in Master Pro.
   - The About window has the same layout as Master Pro: name, version and build, what the program is, a line about local processing, the third-party notices button and Close.

@@ -133,7 +133,7 @@ ColumnLayout {
             objectName: "redactSearchMode"
             model: [Tr.s("redactText"), "Regex", Tr.s("redactId"), Tr.s("redactPhone"), Tr.s("redactEmail"), Tr.s("redactBank")]
         }
-        TextField {
+        PTextField {
             id: query
             objectName: "redactQuery"
             Layout.fillWidth: true
@@ -186,7 +186,7 @@ ColumnLayout {
             enabled: !Doc.outputBusy
             model: [Tr.s("redactBlack"), Tr.s("redactWhite"), Tr.s("redactRed")]
         }
-        TextField {
+        PTextField {
             id: label
             Layout.fillWidth: true
             enabled: !Doc.outputBusy && !bar.selective

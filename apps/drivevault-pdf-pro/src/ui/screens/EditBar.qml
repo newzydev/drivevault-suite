@@ -145,7 +145,7 @@ Rectangle {
         AppText { height: 32; verticalAlignment: Text.AlignVCenter; text: Tr.s("lineWidth"); color: Theme.textSecondary }
         SpinBox { objectName: "editWidth"; from: 0; to: 40; value: Math.round(Editor.strokeWidth); editable: true; implicitHeight: 32; onValueModified: Editor.setStyle("width", value) }
         AppText { height: 32; verticalAlignment: Text.AlignVCenter; text: Tr.s("opacityLabel"); color: Theme.textSecondary }
-        Slider {
+        PSlider {
             objectName: "editOpacity"
             width: 90; height: 32
             from: 5; to: 100; stepSize: 5
@@ -181,7 +181,7 @@ Rectangle {
             onEditTextChanged: bar.stampText = editText
             onActivated: bar.stampText = currentText
             font.pixelSize: Theme.fontMd
-            contentItem: TextField {
+            contentItem: PTextField {
                 text: stampBox.editText
                 leftPadding: 10
                 color: Theme.text
