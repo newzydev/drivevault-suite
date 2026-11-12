@@ -14,7 +14,7 @@
 | DriveVault Document Pro<br>เอกสาร / documents | - | เร็วๆ นี้ / coming soon |
 | DriveVault Presentation Pro<br>งานนำเสนอ / presentations | - | เร็วๆ นี้ / coming soon |
 | DriveVault Spreadsheet Pro<br>ตาราง / spreadsheets | - | เร็วๆ นี้ / coming soon |
-| **DriveVault PDF Pro**<br>จัดการ PDF / PDF tools | 1.9.0 | [![Download PDF Pro 1.9.0](https://img.shields.io/badge/Download-1.9.0-EF4444?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/newzydev/drivevault-suite/releases/download/drivevault-pdf-pro-v1.9.0/DriveVault-PDF-Pro-Setup-x64.exe)<br>[รายละเอียดรุ่น / release page](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.9.0) |
+| **DriveVault PDF Pro**<br>จัดการ PDF / PDF tools | 1.17.0 | [![Download PDF Pro 1.17.0](https://img.shields.io/badge/Download-1.17.0-EF4444?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/newzydev/drivevault-suite/releases/download/drivevault-pdf-pro-v1.17.0/DriveVault-PDF-Pro-Setup-x64.exe)<br>[รายละเอียดรุ่น / release page](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.17.0) |
 
 ต้องใช้ Windows 10 หรือ 11 (64 บิต) · *Windows 10 or 11, 64-bit.*
 ทุกรุ่นก่อนหน้าอยู่ที่ [Releases](https://github.com/newzydev/drivevault-suite/releases) · *All earlier versions are on the Releases page.*
@@ -34,6 +34,20 @@
 - **AI แบบออฟไลน์ (เลือกเปิดเอง) / Optional offline AI** - ถอดเสียงเป็นซับอัตโนมัติ, ตรวจช่วงเงียบ, แนะนำจุดตัด, ติดตามวัตถุ ทำงานบนเครื่องของคุณทั้งหมด โมเดลเสียงดาวน์โหลดเมื่อคุณกดเอง
 - **ส่งออก / Export** - MP4, MOV, MKV (H.264 + AAC) พร้อมค่าสำเร็จรูป ตรวจไฟล์ที่ส่งออกให้อัตโนมัติ
 - **โปรเจกต์ / Projects** - สื่อที่นำเข้าถูกคัดลอกเก็บไว้ในโฟลเดอร์โปรเจกต์ ย้ายต้นฉบับก็ไม่พัง บันทึกอัตโนมัติและกู้คืนได้
+
+### DriveVault PDF Pro
+โปรแกรมจัดการไฟล์ PDF ทำงานบนเครื่องของคุณทั้งหมด ไม่อัปโหลดไฟล์ไปที่ใด ใช้งานได้ทั้งภาษาไทยและอังกฤษ
+*A PDF program that works on your computer only - nothing is uploaded. Thai and English interface.*
+
+- **อ่านและค้นหา / Read and search** - เปิดหลายไฟล์เป็นแท็บ, ค้นหาทั้งไฟล์, เลือกและคัดลอกข้อความ, บุ๊กมาร์ก, ซูมพิมพ์เอง, มือจับเลื่อน, ถ่ายภาพบริเวณหน้า, อ่านออกเสียงด้วยเสียงของ Windows *(multi-tab reader, find, copy text, bookmarks, typed zoom, hand tool, snapshot, read aloud)*
+- **จัดการหน้า / Pages** - เรียง ลบ ทำซ้ำ หมุน ครอป แทรกหน้าว่าง รวมไฟล์ แยกไฟล์ บีบอัด *(organize, merge, split, compress)*
+- **แก้ไข / Edit** - ใส่ข้อความ (ไทยและอังกฤษ) รูป รูปร่าง ปากกา ไฮไลต์ ตราประทับ โน้ต ลายน้ำ เลขหน้า เลข Bates แก้ข้อความเดิมบางส่วน และบันทึกไฮไลต์/โน้ตเป็นคอมเมนต์ PDF จริงได้ *(add text, pictures, shapes, markup, watermark, Bates numbers; markup can be saved as real PDF comments)*
+- **ฟอร์ม / Forms** - กรอกฟอร์ม สร้างช่องกรอกข้อความ ช่องติ๊ก รายการเลือก ส่งออกและนำเข้าข้อมูลฟอร์ม (XFDF) *(fill, create fields, export / import form data)*
+- **ความปลอดภัย / Security** - ป้องกันด้วยรหัสผ่าน (AES-256), ลบข้อมูลสำคัญแบบ redact และตรวจผล, ลงนามสำเนาด้วยใบรับรองของคุณและตรวจลายเซ็น, ตรวจการเข้าถึงเบื้องต้น *(passwords, verified redaction, signing a copy with your certificate, signature check, quick accessibility check)*
+- **แปลงและชุดงาน / Convert and batch** - OCR ภาษาไทยในเครื่อง, ส่งออกเป็นรูป, สร้าง PDF จากรูป, สร้าง PDF portfolio, เปรียบเทียบสองไฟล์, ชุดงานทั้งโฟลเดอร์ *(local Thai OCR, export images, create PDF, portfolio, compare, batch)*
+
+โปรแกรมไม่แก้ไฟล์ต้นฉบับ - ทุกอย่างบันทึกเป็นสำเนาใหม่ ยังไม่มี: การลงนามแบบมองเห็น, การใส่แท็ก PDF/UA, PDF/A, การแก้ย่อหน้าเดิมให้ไหลต่อกัน
+*It never changes the original - everything is saved as a new copy. Not available yet: visible signatures, PDF/UA tagging, PDF/A, re-flowing existing paragraphs.*
 
 ### DriveVault Master Pro
 ศูนย์รวมโปรแกรม DriveVault: แสดงโปรแกรมที่ติดตั้ง เปิด ติดตั้ง อัปเดต และถอนการติดตั้งจากที่เดียว
