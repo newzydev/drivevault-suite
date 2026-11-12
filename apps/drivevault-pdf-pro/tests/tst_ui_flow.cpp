@@ -1075,6 +1075,31 @@ private slots:
         m_doc->setLanguage(QStringLiteral("en"));
     }
 
+    void removingExistingTextWritesANewCopy()
+    {
+        fresh(m_sixPath, "six.pdf");
+        const QRectF word = wordRect("Page", 0);
+        QVERIFY(!word.isEmpty());
+        QVERIFY(QMetaObject::invokeMethod(m_window, "runTool", Q_ARG(QVariant, QVariant("editExisting"))));
+        QTest::qWait(60);
+        QTest::mouseClick(m_window, Qt::LeftButton, {}, pagePoint(0, word.center().x(), word.center().y()));
+        QObject* dialog = m_window->findChild<QObject*>("replaceTextDialog");
+        QVERIFY(dialog);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+        QVERIFY(click("removeTextRun"));
+        QVERIFY(!find("replacementText")->isEnabled());
+        const QString out = m_dir.filePath("removed-run.pdf");
+        QVERIFY(QMetaObject::invokeMethod(dialog, "save", Q_ARG(QVariant, QVariant(out))));
+        QTRY_COMPARE(dialog->property("result").toString(), out);
+        const auto result = dp::pdf::PdfDocument::open(out, {}, nullptr);
+        QVERIFY(result);
+        QCOMPARE(result->pageCount(), 6);
+        QVERIFY(result->pageText(0).trimmed().isEmpty());
+        QVERIFY(result->pageText(1).contains(QStringLiteral("Page 2 of 6")));
+        QVERIFY(QMetaObject::invokeMethod(dialog, "close"));
+        closeAllTabs();
+    }
+
     void createPdfCommandsWriteAndOpenRealDocuments()
     {
         closeAllTabs();

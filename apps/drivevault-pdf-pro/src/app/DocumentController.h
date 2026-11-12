@@ -152,7 +152,7 @@ public:
     Q_INVOKABLE QString startThaiOcr(const QString& range, int currentPage, const QString& path);
     Q_INVOKABLE QString existingTextAt(int page, double x, double y) const;
     Q_INVOKABLE QString startTextReplacement(int page, double x, double y, const QString& original,
-                                             const QString& replacement, const QString& path);
+                                             const QString& replacement, const QString& path, bool remove = false);
     Q_INVOKABLE void cancelOutput();
     Q_INVOKABLE void cancelImageExport();
     Q_INVOKABLE QString startSecuritySave(const QVariantMap& options, const QString& path);

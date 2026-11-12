@@ -27,9 +27,15 @@ Popup {
         location = point
         original = text
         replacement.text = text
+        removeText.checked = false
         error = ""
         result = ""
         open()
+    }
+    function save(path) {
+        dlg.error = Doc.startTextReplacement(dlg.location.page, dlg.location.x, dlg.location.y,
+                                             dlg.original, replacement.text, path, removeText.checked)
+        dlg.running = dlg.error === ""
     }
     onOpened: { replacement.forceActiveFocus(); replacement.selectAll() }
     Connections {
@@ -50,9 +56,15 @@ Popup {
             id: replacement
             objectName: "replacementText"
             Layout.fillWidth: true
-            enabled: !dlg.running && dlg.result === ""
+            enabled: !dlg.running && dlg.result === "" && !removeText.checked
             maximumLength: 512
             selectByMouse: true
+        }
+        CheckBox {
+            id: removeText
+            objectName: "removeTextRun"
+            text: Tr.s("removeTextRun")
+            enabled: !dlg.running && dlg.result === ""
         }
         ProgressBar { Layout.fillWidth: true; visible: dlg.running; indeterminate: true }
         AppText {
@@ -70,7 +82,8 @@ Popup {
                 variant: "primary"
                 text: dlg.result !== "" ? Tr.s("openFile") : Tr.s("editSave")
                 enabled: !Doc.outputBusy
-                    && (dlg.result !== "" || (replacement.text.trim() !== "" && replacement.text.trim() !== dlg.original))
+                    && (dlg.result !== "" || removeText.checked
+                        || (replacement.text.trim() !== "" && replacement.text.trim() !== dlg.original))
                 onClicked: {
                     if (dlg.result !== "") {
                         dlg.close()
@@ -89,10 +102,6 @@ Popup {
         options: FileDialog.DontConfirmOverwrite
         defaultSuffix: "pdf"
         nameFilters: [Tr.s("pdfFiles")]
-        onAccepted: {
-            dlg.error = Doc.startTextReplacement(dlg.location.page, dlg.location.x, dlg.location.y,
-                                                 dlg.original, replacement.text, selectedFile.toString())
-            dlg.running = dlg.error === ""
-        }
+        onAccepted: dlg.save(selectedFile.toString())
     }
 }

@@ -138,6 +138,21 @@ private slots:
         QCOMPARE(copy->render(0, 1).pixelColor(350, 100), QColor(Qt::blue));
         QVERIFY(input->pageText(0).contains(original));
         QCOMPARE(dp::replaceTextRun(*input, 0, point, original, replacement, source), QStringLiteral("exists"));
+
+        const QString removed = dir.filePath("removed.pdf");
+        QCOMPARE(dp::replaceTextRun(*input, 0, point, original, {}, removed), QStringLiteral("editRunValue"));
+        QVERIFY(!QFileInfo::exists(removed));
+        QCOMPARE(dp::replaceTextRun(*input, 0, point, original, {}, removed, true), QString());
+        const auto without = dp::pdf::PdfDocument::open(removed, {}, nullptr);
+        QVERIFY(without);
+        QVERIFY(without->searchPage(0, original, true, false).isEmpty());
+        QCOMPARE(without->pageText(0).trimmed(), QStringLiteral("Unchanged"));
+        const QImage result = without->render(0, 1);
+        QCOMPARE(result.pixelColor(350, 100), QColor(Qt::blue));
+        QCOMPARE(result.pixelColor(point.toPoint()), QColor(Qt::white));
+        const auto originalOnDisk = dp::pdf::PdfDocument::open(source, {}, nullptr);
+        QVERIFY(originalOnDisk);
+        QVERIFY(originalOnDisk->pageText(0).contains(original));
     }
 
     void imageDimensionsTransparencyAndPixels()

@@ -2,6 +2,10 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.6.0 (2026-11-12): Remove supported text runs from PDF copies
+  - Edit existing text can remove a supported run and verify the new copy before saving.
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.5.0 (2026-11-12): Create blank PDFs and PDFs from images
   - Choose A4, Letter, Legal or custom paper with orientation and margins.
   - Create one page per image, with controls for page order and rotation.

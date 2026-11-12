@@ -39,7 +39,7 @@ bool sameOutside(const QImage& before, const QImage& after, const QRectF& area, 
 } // namespace
 
 QString replaceTextRun(const pdf::PdfDocument& doc, int page, QPointF point, const QString& original,
-                       const QString& replacement, const QString& destination)
+                       const QString& replacement, const QString& destination, bool remove)
 {
     if (QFileInfo::exists(destination))
         return QStringLiteral("exists");
@@ -47,26 +47,28 @@ QString replaceTextRun(const pdf::PdfDocument& doc, int page, QPointF point, con
     const QString text = replacement.trimmed();
     if (run.text.isEmpty() || run.text != original)
         return QStringLiteral("editRunUnsupported");
-    if (text.isEmpty() || text == original || text.size() > 512 || text.contains(QLatin1Char('\n')) || text.contains(QLatin1Char('\r')))
+    if (!remove && (text.isEmpty() || text == original || text.size() > 512 || text.contains(QLatin1Char('\n')) || text.contains(QLatin1Char('\r'))))
         return QStringLiteral("editRunValue");
 
     tools::EditItem item;
-    item.kind = tools::Kind::Text;
-    item.page = page;
-    item.text = text;
-    item.color = run.color;
-    item.fontSize = run.fontSize;
-    constexpr double precision = 16;  // same shaping resolution as the existing editor
-    QFont font(item.font);
-    font.setPixelSize(qRound(item.fontSize * precision));
-    font.setHintingPreference(QFont::PreferNoHinting);
-    const QFontMetricsF metrics(font);
-    const double inkWidth = metrics.horizontalAdvance(text) / precision;
-    const double available = run.bounds.right() - run.baseline.x() + 1.5;
-    if (inkWidth > available)
-        return QStringLiteral("editRunTooWide");
-    item.rect = QRectF(run.baseline.x() - 2, run.baseline.y() - metrics.ascent() / precision - 1,
-                       available + 4, metrics.height() / precision + 2);
+    if (!remove) {
+        item.kind = tools::Kind::Text;
+        item.page = page;
+        item.text = text;
+        item.color = run.color;
+        item.fontSize = run.fontSize;
+        constexpr double precision = 16;  // same shaping resolution as the existing editor
+        QFont font(item.font);
+        font.setPixelSize(qRound(item.fontSize * precision));
+        font.setHintingPreference(QFont::PreferNoHinting);
+        const QFontMetricsF metrics(font);
+        const double inkWidth = metrics.horizontalAdvance(text) / precision;
+        const double available = run.bounds.right() - run.baseline.x() + 1.5;
+        if (inkWidth > available)
+            return QStringLiteral("editRunTooWide");
+        item.rect = QRectF(run.baseline.x() - 2, run.baseline.y() - metrics.ascent() / precision - 1,
+                           available + 4, metrics.height() / precision + 2);
+    }
 
     QTemporaryDir staging(QFileInfo(destination).dir().filePath(QStringLiteral(".drivevault-edit-XXXXXX")));
     if (!staging.isValid())
@@ -78,15 +80,21 @@ QString replaceTextRun(const pdf::PdfDocument& doc, int page, QPointF point, con
     mutableDoc.reset();
 
     auto stripped = pdf::PdfDocument::open(strippedPath, {}, nullptr);
-    if (!stripped || stripped->pageCount() != doc.pageCount())
+    const auto size = doc.pageSizePt(page);
+    if (!stripped || stripped->pageCount() != doc.pageCount() || stripped->pageSizePt(page) != size)
         return QStringLiteral("editRunVerify");
     const QString beforeText = doc.pageText(page);
     const QString strippedText = stripped->pageText(page);
     if (beforeText.count(run.text) != strippedText.count(run.text) + 1)
         return QStringLiteral("editRunVerify");
+    if (remove) {
+        if (!sameOutside(doc.render(page, 1.5), stripped->render(page, 1.5), run.bounds.adjusted(-2, -2, 2, 2), size))
+            return QStringLiteral("editRunVerify");
+        stripped.reset();
+        return QFile::rename(strippedPath, destination) ? QString() : QStringLiteral("write");
+    }
     stripped.reset();
 
-    const auto size = doc.pageSizePt(page);
     const QString copyPath = staging.filePath(QStringLiteral("edited.pdf"));
     const auto saved = tools::saveWithEdits(strippedPath, {}, copyPath, {{page, size, {item}, {}}}, false);
     if (!saved.ok)

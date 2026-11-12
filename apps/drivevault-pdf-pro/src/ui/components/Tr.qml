@@ -45,6 +45,7 @@ QtObject {
         "editExistingDesc": ["Replace a supported text run", "แก้ชุดข้อความที่รองรับ"],
         "editRunPick": ["Click horizontal text on the page to edit it.", "คลิกข้อความแนวนอนบนหน้าเพื่อแก้ไข"],
         "editRunHelp": ["The replacement uses Noto Sans Thai and must fit the original width. Save to a new PDF.", "ข้อความใหม่ใช้ฟอนต์ Noto Sans Thai และต้องพอดีกับความกว้างเดิม บันทึกเป็น PDF ใหม่"],
+        "removeTextRun": ["Remove the selected text from the copy", "ลบชุดข้อความที่เลือกออกจากสำเนา"],
         "output_editRunUnsupported": ["This text cannot be edited here. Try a horizontal text run in an unlocked, unsigned PDF.", "แก้ข้อความตรงนี้ไม่ได้ ลองเลือกข้อความแนวนอนใน PDF ที่ปลดล็อกและไม่มีลายเซ็นดิจิทัล"],
         "output_editRunValue": ["Enter a different, non-empty single line of text.", "พิมพ์ข้อความใหม่หนึ่งบรรทัดที่ไม่ซ้ำข้อความเดิม"],
         "output_editRunTooWide": ["The replacement is wider than the original text. Try a shorter line.", "ข้อความใหม่กว้างกว่าข้อความเดิม ลองพิมพ์ให้สั้นลง"],

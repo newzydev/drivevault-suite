@@ -1035,7 +1035,7 @@ QString DocumentController::existingTextAt(int page, double x, double y) const
 }
 
 QString DocumentController::startTextReplacement(int page, double x, double y, const QString& original,
-                                                  const QString& replacement, const QString& path)
+                                                  const QString& replacement, const QString& path, bool remove)
 {
     if (m_outputBusy)
         return QStringLiteral("busy");
@@ -1048,8 +1048,8 @@ QString DocumentController::startTextReplacement(int page, double x, double y, c
     m_outputBusy = true;
     m_outputProgress = 0;
     emit outputChanged();
-    m_outputPool.start(QRunnable::create([this, doc, page, x, y, original, replacement, destination] {
-        const QString error = replaceTextRun(*doc, page, {x, y}, original, replacement, destination);
+    m_outputPool.start(QRunnable::create([this, doc, page, x, y, original, replacement, destination, remove] {
+        const QString error = replaceTextRun(*doc, page, {x, y}, original, replacement, destination, remove);
         QMetaObject::invokeMethod(this, [this, error, destination] { finishOutput(error, destination); }, Qt::QueuedConnection);
     }));
     return {};
