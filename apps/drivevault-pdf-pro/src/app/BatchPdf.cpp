@@ -1,11 +1,13 @@
 #include "BatchPdf.h"
 #include "pdfengine/PdfDocument.h"
+#include "pdftools/Accessibility.h"
 #include "pdftools/Compress.h"
 #include "pdftools/Overlay.h"
 #include "pdftools/Security.h"
 
 #include <QDir>
 #include <QFile>
+#include <QRegularExpression>
 #include <QTemporaryDir>
 
 namespace dp {
@@ -18,6 +20,11 @@ QString processFile(const QString& source, const QString& staged, const QString&
         protection.userPassword = options.value("user").toString();
         protection.ownerPassword = options.value("owner").toString();
         return tools::protectPdf(source, staged, protection);
+    }
+    if (mode == QLatin1String("titleLanguage")) {
+        // the title is the file name without its extension; the language is the one typed (empty = leave as is)
+        const auto fixed = tools::setTitleAndLanguage(source, {}, staged, QFileInfo(source).completeBaseName(), options.value("language").toString(), false);
+        return fixed.ok ? QString() : fixed.error == QLatin1String("password") ? QStringLiteral("alreadyProtected") : fixed.error;
     }
     pdf::OpenError openError;
     const auto doc = pdf::PdfDocument::open(source, {}, &openError);
@@ -33,9 +40,17 @@ QString processFile(const QString& source, const QString& staged, const QString&
         return !result.ok ? result.error : !result.written ? QStringLiteral("noGain") : QString();
     }
     tools::MarkDef mark;
-    mark.text = options.value("watermark").toString();
-    mark.fontSize = 32;
-    mark.opacity = 0.25;
+    if (mode == QLatin1String("pageNumbers")) {
+        mark.type = tools::MarkDef::PageNumber;
+        mark.text = QStringLiteral("{n} / {total}");
+        mark.fontSize = 11;
+        mark.opacity = 1.0;
+        mark.align = 1;
+    } else {
+        mark.text = options.value("watermark").toString();
+        mark.fontSize = 32;
+        mark.opacity = 0.25;
+    }
     if (!tools::restrictedFonts({}, {mark}).isEmpty())
         return QStringLiteral("fontRestricted");
     QList<tools::PageEdits> pages;
@@ -61,7 +76,13 @@ QVariantList batchPdf(const QString& source, const QString& destination, const Q
         return {};
     }
     const QString mode = options.value("mode").toString();
-    if (mode != QLatin1String("compress") && mode != QLatin1String("protect") && mode != QLatin1String("watermark")) {
+    if (mode != QLatin1String("compress") && mode != QLatin1String("protect") && mode != QLatin1String("watermark") && mode != QLatin1String("pageNumbers")
+        && mode != QLatin1String("titleLanguage")) {
+        error = QStringLiteral("maintenanceOptions");
+        return {};
+    }
+    static const QRegularExpression languageTag(QStringLiteral("^([A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*)?$"));
+    if (mode == QLatin1String("titleLanguage") && !languageTag.match(options.value("language").toString().trimmed()).hasMatch()) {
         error = QStringLiteral("maintenanceOptions");
         return {};
     }

@@ -31,7 +31,8 @@ Popup {
             return
         }
         error = Doc.startBatch(input, output, {
-            mode: ["compress", "watermark", "protect"][mode.currentIndex],
+            mode: ["compress", "watermark", "protect", "pageNumbers", "titleLanguage"][mode.currentIndex],
+            language: language.text.trim(),
             watermark: watermark.text, user: protect ? user.text : "", owner: protect ? owner.text : ""
         })
         user.clear()
@@ -67,7 +68,7 @@ Popup {
             id: mode
             objectName: "batchMode"
             enabled: !Doc.outputBusy
-            model: [Tr.s("toolCompress"), Tr.s("batchWatermark"), Tr.s("protectPdf")]
+            model: [Tr.s("toolCompress"), Tr.s("batchWatermark"), Tr.s("protectPdf"), Tr.s("batchPageNumbers"), Tr.s("batchTitleLanguage")]
         }
         PTextField {
             id: watermark
@@ -77,6 +78,9 @@ Popup {
             maximumLength: 120
             placeholderText: Tr.s("batchWatermark")
         }
+        AppText { Layout.fillWidth: true; visible: mode.currentIndex === 3; text: Tr.s("batchPageNumbersHint"); color: Theme.textSecondary; wrapMode: Text.Wrap }
+        AppText { Layout.fillWidth: true; visible: mode.currentIndex === 4; text: Tr.s("batchTitleLanguageHint"); color: Theme.textSecondary; wrapMode: Text.Wrap }
+        PTextField { id: language; objectName: "batchLanguage"; visible: mode.currentIndex === 4; enabled: !Doc.outputBusy; Layout.fillWidth: true; maximumLength: 20; placeholderText: Tr.s("batchLanguagePlaceholder") }
         PTextField { id: user; visible: dlg.protect; enabled: !Doc.outputBusy; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: Tr.s("userPasswordOptional") }
         PTextField { id: owner; visible: dlg.protect; enabled: !Doc.outputBusy; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: Tr.s("ownerPassword") }
         PTextField { id: confirm; visible: dlg.protect; enabled: !Doc.outputBusy; Layout.fillWidth: true; echoMode: TextInput.Password; placeholderText: Tr.s("repeatOwnerPassword") }

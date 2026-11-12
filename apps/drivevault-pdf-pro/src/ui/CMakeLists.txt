@@ -57,5 +57,6 @@ qt_add_qml_module(dp_ui
         screens/CreatePdfDialog.qml
         screens/CompareDialog.qml
         screens/SignatureDialog.qml
-        screens/AccessibilityDialog.qml)
+        screens/AccessibilityDialog.qml
+        screens/PortfolioDialog.qml)
 target_link_libraries(dp_ui PRIVATE Qt6::Quick Qt6::QuickControls2)

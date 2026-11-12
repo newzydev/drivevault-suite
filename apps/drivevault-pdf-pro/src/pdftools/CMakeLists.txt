@@ -5,7 +5,7 @@ add_library(dp_pdftools STATIC
     Compress.cpp Compress.h
     Overlay.cpp Overlay.h
     Forms.cpp Forms.h FormData.cpp FormData.h
-    Signature.cpp Signature.h Accessibility.cpp Accessibility.h
+    Signature.cpp Signature.h Portfolio.cpp Portfolio.h Accessibility.cpp Accessibility.h
     Security.cpp Security.h
     RedactionAudit.cpp RedactionAudit.h
     SelectiveRedaction.cpp SelectiveRedaction.h

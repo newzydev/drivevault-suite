@@ -2,6 +2,12 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.17.0 (2026-11-12): PDF portfolio and more batch jobs
+  - All tools > Convert > Create PDF portfolio: puts files of any type (up to 1 GiB in total) into one new PDF. Acrobat and other readers with portfolio support show them as a list; other readers show a cover page that names the files. Files with the same name are renamed (name (2).ext). The originals are only read.
+  - Batch (Output tools > Batch): two new jobs: "Page numbers" (adds "1 / 10" at the bottom centre of every page of every PDF in a folder) and "Title and language" (sets the title to the file name and, if typed, the language; protected files are skipped).
+  - Not available: opening a portfolio's files from inside this program, portfolio columns / layouts, saved actions or scripts, OCR or signing in a batch.
+  - The installer is not signed (Windows SmartScreen may warn).
+
 v1.16.0 (2026-11-12): Accessibility check
   - All tools > Fill & protect > Accessibility check (or Ctrl+K): a quick look at the open file: is it tagged, do the figures have descriptions, is the document language and title set (and shown in the title bar), do long files have bookmarks, do form fields have tool tips, does the protection allow screen readers, and which PDF/A part the file says it is (not validated).
   - "Save a copy as...": writes a copy with the title and / or language set (the title is also set to show in the title bar). A protected file stays protected; the open file is never changed.

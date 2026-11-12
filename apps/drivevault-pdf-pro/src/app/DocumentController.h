@@ -155,6 +155,7 @@ public:
 
     Q_INVOKABLE int imagePageCount(const QString& range, int currentPage) const;
     Q_INVOKABLE QString startImageExport(const QVariantMap& options, const QString& path);
+    Q_INVOKABLE QString startPortfolio(const QVariantList& files, const QString& title, const QString& path);   // a PDF portfolio of any files; result: outputFinished
     Q_INVOKABLE QString startCreatePdf(const QVariantMap& options, const QVariantList& images, const QString& path);
     Q_INVOKABLE bool ocrAvailable() const;
     Q_INVOKABLE QString startThaiOcr(const QString& range, int currentPage, const QString& path);

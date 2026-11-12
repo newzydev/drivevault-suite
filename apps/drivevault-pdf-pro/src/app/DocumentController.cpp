@@ -9,6 +9,7 @@
 #include "BatchPdf.h"
 #include "pdftools/DocumentMaintenance.h"
 #include "Redaction.h"
+#include "pdftools/Portfolio.h"
 #include "pdftools/Security.h"
 #include "pdftools/SplitPlan.h"
 
@@ -1060,6 +1061,35 @@ QString DocumentController::startCreatePdf(const QVariantMap& options, const QVa
     emit outputChanged();
     m_outputPool.start(QRunnable::create([this, destination, layout, images, cancel] {
         const QString error = createPdf(destination, layout, images, *cancel, [this](int done, int total) {
+            QMetaObject::invokeMethod(this, [this, done, total] {
+                m_outputProgress = double(done) / total;
+                emit outputChanged();
+            }, Qt::QueuedConnection);
+        });
+        QMetaObject::invokeMethod(this, [this, error, destination] { finishOutput(error, destination); }, Qt::QueuedConnection);
+    }));
+    return {};
+}
+
+QString DocumentController::startPortfolio(const QVariantList& files, const QString& title, const QString& path)
+{
+    if (m_outputBusy)
+        return QStringLiteral("busy");
+    const QString destination = QFileInfo(localPath(path)).absoluteFilePath();
+    QStringList list;
+    for (const QVariant& f : files)
+        list << QFileInfo(localPath(f.toString())).absoluteFilePath();
+    if (list.isEmpty())
+        return QStringLiteral("noFiles");
+    if (QFileInfo(destination).suffix().compare(QLatin1String("pdf"), Qt::CaseInsensitive) != 0)
+        return QStringLiteral("pdfSuffix");
+    const auto cancel = std::make_shared<std::atomic_bool>(false);
+    m_outputCancel = cancel;
+    m_outputBusy = true;
+    m_outputProgress = 0;
+    emit outputChanged();
+    m_outputPool.start(QRunnable::create([this, destination, list, title, cancel] {
+        const QString error = tools::createPortfolio(destination, title, list, true, *cancel, [this](int done, int total) {
             QMetaObject::invokeMethod(this, [this, done, total] {
                 m_outputProgress = double(done) / total;
                 emit outputChanged();
