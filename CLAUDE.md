@@ -142,6 +142,7 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 | Video Editor Pro | 1.11.0 | `drivevault-video-editor-pro-v1.11.0` | `09e8f47` | 2026-11-08 |
 | Video Editor Pro | 1.11.2 | `drivevault-video-editor-pro-v1.11.2` | `6aad2b0` | 2026-11-09 |
 | Video Editor Pro | 1.11.3 | `drivevault-video-editor-pro-v1.11.3` | `7240cb1` | 2026-11-09 |
+| Video Editor Pro | 1.11.4 | `drivevault-video-editor-pro-v1.11.4` | `a35e173` | 2026-11-12 |
 | PDF Pro | 1.0.0 | `drivevault-pdf-pro-v1.0.0` | `60c90bf` | 2026-11-09 |
 | PDF Pro | 1.2.0 | `drivevault-pdf-pro-v1.2.0` | `187c061` | 2026-11-11 |
 | PDF Pro | 1.3.4 | `drivevault-pdf-pro-v1.3.4` | `34b37de` | 2026-11-12 |
