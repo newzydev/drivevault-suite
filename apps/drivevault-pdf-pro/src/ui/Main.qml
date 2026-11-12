@@ -43,6 +43,8 @@ ApplicationWindow {
     property bool openingFiles: false
     property var closedFiles: []
     readonly property var tools: [
+        { key: "createBlankPdf", icon: "page", tint: "#6094ff", group: "convert" },
+        { key: "createFromImages", icon: "pages2", tint: "#4dc987", group: "convert" },
         { key: "exportImages", icon: "download", tint: "#6094ff", group: "convert" },
         { key: "toolForm", icon: "form", tint: "#b282ff", group: "sign" },
         { key: "editExisting", icon: "edit", tint: "#f472b6", group: "edit" },
@@ -66,6 +68,8 @@ ApplicationWindow {
             return
         if (tool === "openFile") {
             fileDialog.open()
+        } else if (tool === "createBlankPdf" || tool === "createFromImages") {
+            createPdfDialog.begin(tool === "createFromImages")
         } else if (tool === "toolMerge") {
             organizer.begin("merge")
         } else if (tool === "batchPdf") {
@@ -451,6 +455,10 @@ ApplicationWindow {
         onOpenResult: path => win.openPath(path)
     }
     BatchDialog { id: batchDialog }
+    CreatePdfDialog {
+        id: createPdfDialog
+        onOpenResult: path => win.openPath(path)
+    }
     SecurityDialog {
         id: securityDialog
         onOpenResultRequested: path => win.openPath(path)

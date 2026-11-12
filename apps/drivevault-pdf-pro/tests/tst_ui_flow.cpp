@@ -1075,6 +1075,52 @@ private slots:
         m_doc->setLanguage(QStringLiteral("en"));
     }
 
+    void createPdfCommandsWriteAndOpenRealDocuments()
+    {
+        closeAllTabs();
+        const QString blank = m_dir.filePath("created-blank.pdf");
+        const QString pictures = m_dir.filePath("created-images.pdf");
+        const QString red = m_dir.filePath("create-red.png");
+        const QString blue = m_dir.filePath("create-blue.png");
+        QImage image(80, 50, QImage::Format_RGB32);
+        image.fill(Qt::red);
+        QVERIFY(image.save(red));
+        image.fill(Qt::blue);
+        QVERIFY(image.save(blue));
+
+        QVERIFY(QMetaObject::invokeMethod(m_window, "runTool", Q_ARG(QVariant, QVariant("createBlankPdf"))));
+        QObject* dialog = m_window->findChild<QObject*>("createPdfDialog");
+        QVERIFY(dialog);
+        QTRY_VERIFY(dialog->property("opened").toBool());
+        QVERIFY(find("createOrientation")->setProperty("currentIndex", 1));
+        QVERIFY(QMetaObject::invokeMethod(dialog, "save", Q_ARG(QVariant, QVariant(blank))));
+        QTRY_COMPARE(m_doc->fileName(), QStringLiteral("created-blank.pdf"));
+        QCOMPARE(m_doc->pageCount(), 1);
+        QVERIFY(m_doc->pageWidthPt(0) > m_doc->pageHeightPt(0));
+
+        QVERIFY(QMetaObject::invokeMethod(m_window, "runTool", Q_ARG(QVariant, QVariant("createFromImages"))));
+        QTRY_VERIFY(dialog->property("opened").toBool());
+        const QVariantList sources{red, blue};
+        QVERIFY(QMetaObject::invokeMethod(dialog, "addImages", Q_ARG(QVariant, QVariant(sources))));
+        QTRY_VERIFY(visible("createMoveUp_1"));
+        QVERIFY(click("createMoveUp_1"));
+        QVERIFY(click("createRotate_0"));
+        QVERIFY(QMetaObject::invokeMethod(dialog, "save", Q_ARG(QVariant, QVariant(pictures))));
+        QTRY_COMPARE(m_doc->fileName(), QStringLiteral("created-images.pdf"));
+        QCOMPARE(m_doc->pageCount(), 2);
+        const auto pdf = dp::pdf::PdfDocument::open(pictures, {}, nullptr);
+        QVERIFY(pdf);
+        const auto first = pdf->render(0, 1);
+        const auto second = pdf->render(1, 1);
+        const QColor firstColor = first.pixelColor(first.rect().center());
+        const QColor secondColor = second.pixelColor(second.rect().center());
+        QVERIFY(firstColor.blue() > 240 && firstColor.red() < 20);
+        QVERIFY(secondColor.red() > 240 && secondColor.blue() < 20);
+        QCOMPARE(first.pixelColor(75, first.height() / 2), QColor(Qt::white)); // rotated image is narrow on landscape paper
+        QVERIFY(second.pixelColor(75, second.height() / 2).blue() < 20);
+        closeAllTabs();
+    }
+
     void windowRestoresMaximizedThenNormalSizeOnReopen()
     {
         closeAllTabs();

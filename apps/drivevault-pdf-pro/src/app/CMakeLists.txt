@@ -15,6 +15,7 @@ add_library(dp_appcore STATIC
     PageRange.cpp PageRange.h
     PrintTask.cpp PrintTask.h
     ImageExport.cpp ImageExport.h
+    CreatePdf.cpp CreatePdf.h
     ThaiOcr.cpp ThaiOcr.h
     ReplaceText.cpp ReplaceText.h
     Redaction.cpp Redaction.h

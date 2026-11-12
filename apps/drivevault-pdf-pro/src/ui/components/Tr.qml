@@ -6,6 +6,23 @@ import DriveVault.PdfPro.Backend
 QtObject {
     readonly property string lang: Doc.language
     readonly property var table: ({
+        "createBlankPdf": ["Create blank PDF", "สร้าง PDF เปล่า"],
+        "createFromImages": ["Create PDF from images", "สร้าง PDF จากรูปภาพ"],
+        "createPaper": ["Paper", "กระดาษ"],
+        "createCustom": ["Custom", "กำหนดเอง"],
+        "createPaperSize": ["Size (mm)", "ขนาด (มม.)"],
+        "createWidth": ["Width (mm)", "ความกว้าง (มม.)"],
+        "createHeight": ["Height (mm)", "ความสูง (มม.)"],
+        "createOrientation": ["Orientation", "แนวกระดาษ"],
+        "createPortrait": ["Portrait", "แนวตั้ง"],
+        "createLandscape": ["Landscape", "แนวนอน"],
+        "createMargin": ["Margin (mm)", "ระยะขอบ (มม.)"],
+        "createAddImages": ["Add images…", "เพิ่มรูปภาพ…"],
+        "createImageFilter": ["Images (*.png *.jpg *.jpeg *.bmp)", "รูปภาพ (*.png *.jpg *.jpeg *.bmp)"],
+        "createMoveUp": ["Move up", "เลื่อนขึ้น"],
+        "createMoveDown": ["Move down", "เลื่อนลง"],
+        "output_createPageLayout": ["The paper size or margin is invalid.", "ขนาดกระดาษหรือระยะขอบไม่ถูกต้อง"],
+        "output_createImageRead": ["An image could not be read.", "ไม่สามารถอ่านรูปภาพในรายการได้"],
         "title": ["DriveVault PDF Pro", "DriveVault PDF Pro"],
         "home": ["Home", "หน้าหลัก"],
         "allTools": ["All tools", "เครื่องมือทั้งหมด"],

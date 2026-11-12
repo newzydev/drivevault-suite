@@ -3,6 +3,7 @@
 #include "PageRange.h"
 #include "PrintTask.h"
 #include "ImageExport.h"
+#include "CreatePdf.h"
 #include "ThaiOcr.h"
 #include "ReplaceText.h"
 #include "BatchPdf.h"
@@ -929,6 +930,57 @@ QString DocumentController::startImageExport(const QVariantMap& options, const Q
 void DocumentController::cancelImageExport()
 {
     cancelOutput();
+}
+
+QString DocumentController::startCreatePdf(const QVariantMap& options, const QVariantList& inputs, const QString& path)
+{
+    if (m_outputBusy)
+        return QStringLiteral("busy");
+    const QString destination = QFileInfo(localPath(path)).absoluteFilePath();
+    if (QFileInfo(destination).suffix().compare(QLatin1String("pdf"), Qt::CaseInsensitive) != 0)
+        return QStringLiteral("pdfSuffix");
+    const QString paper = options.value("paper").toString();
+    QPageSize page(QPageSize::A4);
+    if (paper == QLatin1String("letter"))
+        page = QPageSize(QPageSize::Letter);
+    else if (paper == QLatin1String("legal"))
+        page = QPageSize(QPageSize::Legal);
+    else if (paper == QLatin1String("custom")) {
+        const double width = options.value("width").toDouble();
+        const double height = options.value("height").toDouble();
+        if (!(width >= 20 && width <= 2000 && height >= 20 && height <= 2000))
+            return QStringLiteral("createPageLayout");
+        page = QPageSize(QSizeF(width, height), QPageSize::Millimeter, {}, QPageSize::ExactMatch);
+    }
+    const double margin = options.value("margin", 12).toDouble();
+    const QSizeF size = page.size(QPageSize::Millimeter);
+    if (!(margin >= 0 && 2 * margin + 2 <= qMin(size.width(), size.height())))
+        return QStringLiteral("createPageLayout");
+    const auto orientation = options.value("landscape").toBool() ? QPageLayout::Landscape : QPageLayout::Portrait;
+    const QPageLayout layout(page, orientation, QMarginsF(margin, margin, margin, margin), QPageLayout::Millimeter);
+    QList<PdfImagePage> images;
+    for (const QVariant& input : inputs) {
+        const auto row = input.toMap();
+        const QString source = localPath(row.value("path").toString());
+        if (!QDir::isAbsolutePath(source))
+            return QStringLiteral("createImageRead");
+        images.append({source, row.value("turns").toInt() % 4});
+    }
+    const auto cancel = std::make_shared<std::atomic_bool>(false);
+    m_outputCancel = cancel;
+    m_outputBusy = true;
+    m_outputProgress = 0;
+    emit outputChanged();
+    m_outputPool.start(QRunnable::create([this, destination, layout, images, cancel] {
+        const QString error = createPdf(destination, layout, images, *cancel, [this](int done, int total) {
+            QMetaObject::invokeMethod(this, [this, done, total] {
+                m_outputProgress = double(done) / total;
+                emit outputChanged();
+            }, Qt::QueuedConnection);
+        });
+        QMetaObject::invokeMethod(this, [this, error, destination] { finishOutput(error, destination); }, Qt::QueuedConnection);
+    }));
+    return {};
 }
 
 void DocumentController::cancelOutput()

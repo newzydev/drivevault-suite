@@ -1,4 +1,5 @@
 #include "ImageExport.h"
+#include "CreatePdf.h"
 #include "ThaiOcr.h"
 #include "ReplaceText.h"
 #include "TestPdf.h"
@@ -28,6 +29,30 @@ class TstOutput : public QObject {
 
 private slots:
     void cleanupTestCase() { dp::pdf::shutdownPdfium(); }
+
+    void creatingPdfHandlesCustomPaperCancellationAndBadImages()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const auto path = dir.filePath("custom.pdf");
+        const QPageSize paper(QSizeF(125, 200), QPageSize::Millimeter);
+        const QPageLayout layout(paper, QPageLayout::Portrait, QMarginsF(5, 5, 5, 5), QPageLayout::Millimeter);
+        std::atomic_bool cancelled{true};
+        QCOMPARE(dp::createPdf(path, layout, {}, cancelled, {}), QStringLiteral("cancelled"));
+        QVERIFY(!QFileInfo::exists(path));
+        cancelled = false;
+        const auto bad = write(dir, "broken.png", "invalid image");
+        QCOMPARE(dp::createPdf(path, layout, {{bad, 0}}, cancelled, {}), QStringLiteral("createImageRead"));
+        QVERIFY(!QFileInfo::exists(path));
+        QCOMPARE(dp::createPdf(path, layout, {}, cancelled, {}), QString());
+        QCOMPARE(dp::createPdf(path, layout, {}, cancelled, {}), QStringLiteral("exists"));
+        const auto result = dp::pdf::PdfDocument::open(path, {}, nullptr);
+        QVERIFY(result);
+        QCOMPARE(result->pageCount(), 1);
+        const QSizeF points = result->pageSizePt(0);
+        QVERIFY(qAbs(points.width() - 125 * 72 / 25.4) < 1);
+        QVERIFY(qAbs(points.height() - 200 * 72 / 25.4) < 1);
+    }
 
     void thaiOcrMakesAnImagePageSearchableWithoutChangingItsPixels()
     {
