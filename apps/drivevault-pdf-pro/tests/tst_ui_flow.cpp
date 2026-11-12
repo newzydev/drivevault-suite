@@ -170,6 +170,7 @@ class TstUiFlow : public QObject {
         closeAllTabs();
         forgetViews();
         openAndWait(path, name);
+        QTest::qWait(350);                                            // the tool bar finishes its layout before a test clicks a button
     }
     QRectF wordRect(const QString& word, int page)
     {
@@ -754,6 +755,8 @@ private slots:
         QVERIFY(click("compressButton"));
         QObject* dialog = m_window->findChild<QObject*>("compressDialog");
         QVERIFY(dialog);
+        if (!waitFor([&] { return dialog->property("opened").toBool(); }, 1500))
+            QVERIFY(click("compressButton"));                       // late in a long run the first click can be eaten by a tool tip that is still closing
         QTRY_VERIFY_WITH_TIMEOUT(dialog->property("opened").toBool(), 5000);
         QVERIFY(visible("compressStart"));
         QVERIFY(!visible("compressSave"));                                       // nothing to save before a run

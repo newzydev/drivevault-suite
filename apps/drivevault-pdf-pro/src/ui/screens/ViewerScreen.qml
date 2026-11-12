@@ -479,8 +479,8 @@ Item {
                     onClicked: viewer.setZoom(1.0)
                 }
                 PButton { objectName: "zoomIn"; compact: true; text: "+"; tip: Tr.s("zoomIn"); onClicked: viewer.zoomIn() }
-                PButton { objectName: "fitWidth"; compact: true; text: Tr.s("fitWidth"); variant: viewer.zoomMode === "fitWidth" ? "secondary" : "ghost"; onClicked: viewer.fit("fitWidth") }
-                PButton { objectName: "fitPage"; compact: true; text: Tr.s("fitPage"); variant: viewer.zoomMode === "fitPage" ? "secondary" : "ghost"; onClicked: viewer.fit("fitPage") }
+                PButton { objectName: "fitWidth"; compact: true; glyph: "fitwidth"; tip: Tr.s("fitWidth"); variant: viewer.zoomMode === "fitWidth" ? "secondary" : "ghost"; onClicked: viewer.fit("fitWidth") }
+                PButton { objectName: "fitPage"; compact: true; glyph: "fitpage"; tip: Tr.s("fitPage"); variant: viewer.zoomMode === "fitPage" ? "secondary" : "ghost"; onClicked: viewer.fit("fitPage") }
             }
 
             ToolSep {}
@@ -500,20 +500,21 @@ Item {
             ToolSep {}
             Row {
                 spacing: 2
-                PButton { objectName: "findButton"; compact: true; text: Tr.s("find"); variant: viewer.searchOpen ? "secondary" : "ghost"; onClicked: viewer.searchOpen ? viewer.closeSearch() : viewer.openSearch() }
-                PButton { objectName: "printButton"; compact: true; text: Tr.s("print"); variant: "ghost"; onClicked: printDialog.open() }
+                PButton { objectName: "findButton"; compact: true; glyph: "search"; tip: Tr.s("find"); variant: viewer.searchOpen ? "secondary" : "ghost"; onClicked: viewer.searchOpen ? viewer.closeSearch() : viewer.openSearch() }
+                PButton { objectName: "printButton"; compact: true; glyph: "print"; tip: Tr.s("print"); variant: "ghost"; onClicked: printDialog.open() }
                 ToolSep {}
-                PButton { objectName: "organizeButton"; compact: true; text: Tr.s("toolOrganizeShort"); variant: "ghost"; tip: Tr.s("toolOrganize"); onClicked: viewer.organizeRequested() }
-                PButton { objectName: "splitButton"; compact: true; text: Tr.s("toolSplitShort"); variant: "ghost"; tip: Tr.s("toolSplit"); onClicked: viewer.splitRequested() }
-                PButton { objectName: "compressButton"; compact: true; text: Tr.s("toolCompressShort"); variant: "ghost"; tip: Tr.s("toolCompress"); onClicked: viewer.compressRequested() }
-                PButton { objectName: "editButton"; compact: true; text: Tr.s("toolEdit"); variant: Editor.active ? "secondary" : "ghost"; tip: Doc.rotation === 0 ? Tr.s("toolEditTip") : Tr.s("editNeedsNoRotation"); enabled: !redactions.visible && (Doc.rotation === 0 || Editor.active); onClicked: { viewer.replacingText = false; Editor.active = !Editor.active } }
-                PButton { objectName: "formButton"; compact: true; text: Tr.s("toolFormShort"); variant: "ghost"; tip: Tr.s("toolForm"); onClicked: viewer.formRequested() }
+                PButton { objectName: "organizeButton"; compact: true; glyph: "thumbs"; variant: "ghost"; tip: Tr.s("toolOrganize"); onClicked: viewer.organizeRequested() }
+                PButton { objectName: "splitButton"; compact: true; glyph: "split"; variant: "ghost"; tip: Tr.s("toolSplit"); onClicked: viewer.splitRequested() }
+                PButton { objectName: "compressButton"; compact: true; glyph: "compress"; variant: "ghost"; tip: Tr.s("toolCompress"); onClicked: viewer.compressRequested() }
+                PButton { objectName: "editButton"; compact: true; glyph: "edit"; variant: Editor.active ? "secondary" : "ghost"; tip: Doc.rotation === 0 ? Tr.s("toolEditTip") : Tr.s("editNeedsNoRotation"); enabled: !redactions.visible && (Doc.rotation === 0 || Editor.active); onClicked: { viewer.replacingText = false; Editor.active = !Editor.active } }
+                PButton { objectName: "formButton"; compact: true; glyph: "form"; variant: "ghost"; tip: Tr.s("toolForm"); onClicked: viewer.formRequested() }
                 PButton {
                     id: outputButton
                     objectName: "outputButton"
                     compact: true
                     variant: "ghost"
-                    text: Tr.s("outputTools")
+                    glyph: "export"
+                    tip: Tr.s("outputTools")
                     enabled: !Doc.outputBusy && !redactions.visible
                     onClicked: outputMenu.popup(outputButton, 0, outputButton.height)
                     PMenu {

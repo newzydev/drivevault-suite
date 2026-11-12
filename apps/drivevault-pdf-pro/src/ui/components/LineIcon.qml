@@ -1,6 +1,7 @@
 import QtQuick
 
 // Small line icons drawn with the canvas (no icon font is shipped). name: sidebar | page | pages2 | rotate | dark | thumbs | outline | comment
+// Also: search print split compress fitwidth fitpage export tools attach bookmark
 Canvas {
     id: icon
 
@@ -173,6 +174,50 @@ Canvas {
             roundRect(3.5, 4, 17, 12, 2.5); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(8, 16); ctx.lineTo(8, 20.5); ctx.lineTo(12.5, 16); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(7.5, 8.5); ctx.lineTo(16.5, 8.5); ctx.moveTo(7.5, 11.8); ctx.lineTo(13.5, 11.8); ctx.stroke()
+            break
+        case "search":
+            ctx.beginPath(); ctx.arc(10.5, 10.5, 6, 0, Math.PI * 2); ctx.stroke()
+            strokePath([[15, 15], [20.5, 20.5]])
+            break
+        case "print":
+            strokePath([[7, 9], [7, 3.5], [17, 3.5], [17, 9]])
+            roundRect(3.5, 9, 17, 8, 2); ctx.stroke()
+            strokePath([[7, 14], [7, 20.5], [17, 20.5], [17, 14]])
+            break
+        case "split":
+            roundRect(3.5, 4, 7, 16, 1.5); ctx.stroke()
+            roundRect(13.5, 4, 7, 16, 1.5); ctx.stroke()
+            strokePath([[10.5, 12], [13.5, 12]])
+            break
+        case "compress":
+            strokePath([[4, 4], [10, 10]]); strokePath([[10, 5.5], [10, 10], [5.5, 10]])
+            strokePath([[20, 4], [14, 10]]); strokePath([[14, 5.5], [14, 10], [18.5, 10]])
+            strokePath([[4, 20], [10, 14]]); strokePath([[10, 18.5], [10, 14], [5.5, 14]])
+            strokePath([[20, 20], [14, 14]]); strokePath([[14, 18.5], [14, 14], [18.5, 14]])
+            break
+        case "fitwidth":
+            strokePath([[4, 5], [4, 19]]); strokePath([[20, 5], [20, 19]])
+            strokePath([[7, 12], [17, 12]]); strokePath([[10, 9], [7, 12], [10, 15]]); strokePath([[14, 9], [17, 12], [14, 15]])
+            break
+        case "fitpage":
+            strokePath([[4, 9], [4, 4], [9, 4]]); strokePath([[15, 4], [20, 4], [20, 9]])
+            strokePath([[20, 15], [20, 20], [15, 20]]); strokePath([[9, 20], [4, 20], [4, 15]])
+            roundRect(8.5, 7.5, 7, 9, 1); ctx.stroke()
+            break
+        case "export":
+            strokePath([[12, 4], [12, 15]]); strokePath([[7.5, 10.5], [12, 15], [16.5, 10.5]])
+            strokePath([[4, 15], [4, 20], [20, 20], [20, 15]])
+            break
+        case "tools":
+            strokePath([[4.5, 19.5], [13, 11]])
+            ctx.beginPath(); ctx.arc(16, 8, 4, 0, Math.PI * 2); ctx.stroke()
+            strokePath([[4, 20], [5.5, 18.5]])
+            break
+        case "attach":
+            strokePath([[16, 7], [8.5, 14.5], [8.5, 17], [11, 17], [18.5, 9.5], [18.5, 6], [15, 5.5], [6, 14.5], [6, 18.5], [10, 19]])
+            break
+        case "bookmark":
+            strokePath([[6.5, 4], [17.5, 4], [17.5, 20.5], [12, 16], [6.5, 20.5], [6.5, 4]])
             break
         }
     }
