@@ -4,6 +4,7 @@
 #include "DocumentController.h"
 
 #include <QCryptographicHash>
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QJsonArray>
@@ -29,6 +30,14 @@ using tools::Kind;
 using tools::MarkDef;
 
 namespace {
+
+QString recoverySourceStamp(const QString& path)
+{
+    const QFileInfo file(path);
+    if (!file.isFile() || !file.lastModified().isValid())
+        return {};
+    return QStringLiteral("%1:%2").arg(file.size()).arg(file.lastModified().toMSecsSinceEpoch());
+}
 
 QString kindName(Kind k)
 {
@@ -123,6 +132,7 @@ EditorModel::EditorModel(DocumentController* controller, QObject* parent)
         ++m_rev;
         emit selectionChanged();
         emit editingChanged();
+        checkRecovery();
         emit changed();
     });
     connect(controller, &DocumentController::tabsChanged, this, [this] { pruneClosedTabs(); });
@@ -130,7 +140,6 @@ EditorModel::EditorModel(DocumentController* controller, QObject* parent)
     m_autosave->setSingleShot(true);
     m_autosave->setInterval(2000);
     connect(m_autosave, &QTimer::timeout, this, [this] { writeRecovery(); });
-    connect(controller, &DocumentController::documentChanged, this, [this] { checkRecovery(); });
     checkRecovery();
 }
 
@@ -168,8 +177,10 @@ EditorModel::State* EditorModel::state()
     if (id <= 0 || !m_controller->isOpen())
         return nullptr;
     State& st = m_states[id];
-    if (st.path.isEmpty())
+    if (st.path.isEmpty()) {
         st.path = m_controller->filePath();
+        st.sourceStamp = recoverySourceStamp(st.path);
+    }
     return &st;
 }
 
@@ -1181,7 +1192,8 @@ void EditorModel::writeRecovery()
         QDir().mkpath(QFileInfo(file).absolutePath());
         QSaveFile out(file);
         if (out.open(QIODevice::WriteOnly)) {
-            out.write(QJsonDocument(QJsonObject{{"version", 1}, {"file", st.path}, {"items", items}, {"marks", marks}}).toJson(QJsonDocument::Compact));
+            out.write(QJsonDocument(QJsonObject{{"version", 1}, {"file", st.path}, {"sourceStamp", st.sourceStamp},
+                                              {"items", items}, {"marks", marks}}).toJson(QJsonDocument::Compact));
             out.commit();
         }
     }
@@ -1201,7 +1213,20 @@ void EditorModel::checkRecovery()
     }
 }
 
-bool EditorModel::restoreRecovery()
+bool EditorModel::recoverySourceMatches() const
+{
+    QMutexLocker lock(&m_mutex);
+    const QString path = m_controller->filePath();
+    if (!m_recoverable || path.isEmpty())
+        return false;
+    QFile file(recoveryPath(path));
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+    const auto saved = QJsonDocument::fromJson(file.readAll()).object().value("sourceStamp").toString();
+    return !saved.isEmpty() && saved == recoverySourceStamp(path);
+}
+
+bool EditorModel::restoreRecovery(bool allowUnverifiedSource)
 {
     QMutexLocker lock(&m_mutex);
     State* s = state();
@@ -1213,6 +1238,9 @@ bool EditorModel::restoreRecovery()
     const QJsonObject root = QJsonDocument::fromJson(in.readAll()).object();
     in.close();
     if (root.value("version").toInt() != 1)
+        return false;
+    const QString savedStamp = root.value("sourceStamp").toString();
+    if (!allowUnverifiedSource && (savedStamp.isEmpty() || savedStamp != recoverySourceStamp(s->path)))
         return false;
     Snapshot snap;
     int maxId = 0;
@@ -1228,6 +1256,7 @@ bool EditorModel::restoreRecovery()
     if (snap.items.isEmpty() && snap.marks.isEmpty())
         return false;
     s->now = snap;
+    s->sourceStamp = savedStamp;
     s->nextId = maxId + 1;
     s->dirty = true;
     m_recoverable = false;

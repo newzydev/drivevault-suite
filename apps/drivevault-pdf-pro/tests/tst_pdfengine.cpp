@@ -281,7 +281,7 @@ private slots:
         const int fontId = QFontDatabase::addApplicationFont(QStringLiteral(DP_TEST_FONT_THAI));
         QVERIFY(fontId >= 0);
         const QString family = QFontDatabase::applicationFontFamilies(fontId).value(0);
-        const QString thai = QString::fromUtf8("สวัสดีชาวโลก โปรแกรมอ่านไฟล์ PDF ภาษาไทย");
+        const QString thai = QString::fromUtf8("สวัสดีชาวโลก PDF 30/09/2569 ราคา 1,250 บาท");
         const QString path = m_dir.filePath("thai.pdf");
         {
             QPdfWriter writer(path);
@@ -322,6 +322,15 @@ private slots:
         const QString around = doc->textRange(0, qMax(0, idx - 3), 8);
         QVERIFY2(around.contains(QString::fromUtf8("าว")) || around.contains(QString::fromUtf8("โลก")) || around.contains(QString::fromUtf8("ช")),
                  qPrintable(around));
+        const auto rotatedHits = doc->searchPage(0, QString::fromUtf8("ชาวโลก"), false, false, 1);
+        QCOMPARE(rotatedHits.size(), 1);
+        QVERIFY(!rotatedHits.first().rects.isEmpty());
+        QRectF rotatedWord;
+        for (const QRectF& part : rotatedHits.first().rects)
+            rotatedWord = rotatedWord.united(part);
+        QVERIFY(rotatedWord.height() > rotatedWord.width());
+        QVERIFY(doc->charIndexAt(0, rotatedHits.first().rects.first().center(), 3.0, 1) >= 0);
+        QVERIFY(extracted.contains(QStringLiteral("1,250")));
     }
 
     void anEncryptedFileNeedsThePassword()

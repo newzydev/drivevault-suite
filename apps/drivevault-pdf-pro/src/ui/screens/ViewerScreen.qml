@@ -15,6 +15,9 @@ Item {
     signal splitRequested()
     signal compressRequested()
     signal openPathRequested(string path)
+    signal fileClosed(string path)
+    signal recoveryPromptClosed()
+    readonly property bool recoveryPromptVisible: recoverAsk.visible
     signal formRequested()
     signal imageExportRequested(int page)
     signal securityRequested(bool unlock)
@@ -212,7 +215,11 @@ Item {
         reallyCloseTab(index)
     }
     function reallyCloseTab(index) {
+        const tab = Doc.tabs[index]
+        if (!tab)
+            return
         flushSave()                                // the view of the file is saved while its tab still exists
+        fileClosed(tab.path)
         Doc.closeTab(index)
     }
 
@@ -888,6 +895,7 @@ Item {
     function offerRecovery() {
         if (Editor.recoverable && Doc.filePath !== recoverAsked && !recoverAsk.opened) {
             recoverAsked = Doc.filePath
+            recoverAsk.unverifiedSource = !Editor.recoverySourceMatches()
             recoverAsk.open()
         }
     }
@@ -895,12 +903,21 @@ Item {
     ConfirmDialog {
         id: recoverAsk
         objectName: "recoverAsk"
+        property bool unverifiedSource: false
         title: Tr.s("recoverTitle")
-        text: Tr.s("recoverText")
+        text: Tr.s(unverifiedSource ? "recoverChangedSource" : "recoverText")
         confirmText: Tr.s("recoverRestore")
         cancelText: Tr.s("recoverDiscard")
-        onConfirmed: { Editor.restoreRecovery(); Editor.active = true }
+        onConfirmed: {
+            if (Editor.restoreRecovery(unverifiedSource))
+                Editor.active = true
+            else if (!unverifiedSource && Editor.recoverable && !Editor.recoverySourceMatches()) {
+                viewer.recoverAsked = ""
+                Qt.callLater(viewer.offerRecovery)
+            }
+        }
         onDeclined: Editor.declineRecovery()
+        onClosed: viewer.recoveryPromptClosed()
     }
     ConfirmDialog {
         id: closeAsk

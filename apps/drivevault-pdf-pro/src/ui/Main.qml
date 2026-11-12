@@ -38,6 +38,10 @@ ApplicationWindow {
     readonly property bool toolsVisible: showHome || !Doc.isOpen ? showTools : showReaderTools
     property string category: "all"
     property string pendingTool: ""
+    property var queuedFiles: []
+    property var openFailures: []
+    property bool openingFiles: false
+    property var closedFiles: []
     readonly property var tools: [
         { key: "exportImages", icon: "download", tint: "#6094ff", group: "convert" },
         { key: "toolForm", icon: "form", tint: "#b282ff", group: "sign" },
@@ -155,9 +159,39 @@ ApplicationWindow {
         } else {
             pendingTool = ""
             passwordDialog.close()
-            showNotice(Tr.error(code), true)
+            if (openingFiles)
+                openFailures.push(Doc.localPath(path).split(/[\\/]/).pop() + " — " + Tr.error(code))
+            else
+                showNotice(Tr.error(code), true)
             Doc.removeRecent(Doc.localPath(path))
         }
+        return code
+    }
+
+    function openPaths(paths) {
+        if (paths.length === 0 || openingFiles || passwordDialog.visible)
+            return
+        if (paths.length === 1) {
+            openPath(paths[0])
+            return
+        }
+        queuedFiles = paths.slice()
+        openFailures = []
+        openingFiles = true
+        Qt.callLater(openNextFile)
+    }
+
+    function openNextFile() {
+        if (!openingFiles || passwordDialog.visible || (viewerLoader.item && viewerLoader.item.recoveryPromptVisible))
+            return
+        if (queuedFiles.length === 0) {
+            openingFiles = false
+            if (openFailures.length > 0)
+                showNotice(openFailures.join("\n"), true)
+            return
+        }
+        if (openPath(queuedFiles.shift()) !== "password")
+            Qt.callLater(openNextFile)
     }
 
     ColumnLayout {
@@ -345,6 +379,10 @@ ApplicationWindow {
             toolbarHost: readerToolbarHost
             onOpenRequested: fileDialog.open()
             onOpenPathRequested: path => win.openPath(path)
+            onFileClosed: path => {
+                win.closedFiles = win.closedFiles.filter(file => file !== path).concat([path]).slice(-10)
+            }
+            onRecoveryPromptClosed: if (win.openingFiles) Qt.callLater(win.openNextFile)
             onOrganizeRequested: organizer.begin("organize")
             onSplitRequested: splitDialog.open()
             onCompressRequested: compressDialog.open()
@@ -394,7 +432,8 @@ ApplicationWindow {
         id: fileDialog
         title: Tr.s("openDialogTitle")
         nameFilters: [Tr.s("pdfFiles")]
-        onAccepted: win.openPath(selectedFile.toString())
+        fileMode: win.pendingTool === "" ? FileDialog.OpenFiles : FileDialog.OpenFile
+        onAccepted: win.openPaths(selectedFiles.map(url => url.toString()))
         onRejected: win.pendingTool = ""
     }
     OrganizerDialog {
@@ -435,7 +474,11 @@ ApplicationWindow {
     PasswordDialog {
         id: passwordDialog
         onSubmitted: (path, password) => win.openPath(path, password)
-        onClosed: win.pendingTool = ""
+        onClosed: {
+            win.pendingTool = ""
+            if (win.openingFiles)
+                Qt.callLater(win.openNextFile)
+        }
     }
 
     ToolSearch {
@@ -444,18 +487,14 @@ ApplicationWindow {
         onToolRequested: key => win.runTool(key)
     }
 
-    // drop a PDF file on the window
+    // Open PDF files in their drop order.
     DropArea {
         anchors.fill: parent
         keys: ["text/uri-list"]
         onDropped: drop => {
-            for (const url of drop.urls) {
-                const s = url.toString()
-                if (s.toLowerCase().endsWith(".pdf")) {
-                    win.openPath(s)
-                    return
-                }
-            }
+            if (!win.openingFiles && !passwordDialog.visible)
+                win.openPaths(drop.urls.map(url => url.toString())
+                              .filter(url => Doc.localPath(url).toLowerCase().endsWith(".pdf")))
         }
     }
 
@@ -463,6 +502,16 @@ ApplicationWindow {
     AboutPdfDialog { id: aboutDialog }
 
     Shortcut { sequences: [StandardKey.Open]; onActivated: win.runTool("openFile") }
+    Shortcut {
+        sequences: ["Ctrl+Shift+T"]
+        enabled: win.closedFiles.length > 0 && !win.openingFiles && !passwordDialog.visible
+            && !(viewerLoader.item && viewerLoader.item.recoveryPromptVisible)
+        onActivated: {
+            const path = win.closedFiles[win.closedFiles.length - 1]
+            win.closedFiles = win.closedFiles.slice(0, -1)
+            win.openPath(path)
+        }
+    }
     Shortcut { sequences: ["Ctrl+K"]; onActivated: commandSearch.open() }
     Shortcut { sequences: ["F11"]; onActivated: win.toggleFullScreen() }
     Shortcut { sequences: ["Escape"]; enabled: win.visibility === Window.FullScreen; onActivated: win.toggleFullScreen() }

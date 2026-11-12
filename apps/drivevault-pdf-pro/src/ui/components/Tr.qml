@@ -343,6 +343,7 @@ QtObject {
         "recoverTitle": ["Unsaved edits found", "พบการแก้ไขที่ยังไม่ได้บันทึก"],
         "recoverText": ["This file had edits that were not saved in a new file when the program was last closed. Put them back?", "ไฟล์นี้มีการแก้ไขที่ยังไม่ได้บันทึกเป็นไฟล์ใหม่ตอนปิดโปรแกรมครั้งก่อน ต้องการเอากลับมาหรือไม่?"],
         "recoverRestore": ["Restore", "เอากลับมา"],
+        "recoverChangedSource": ["The source PDF may have changed since this draft was saved. Restored edits may land on the wrong page or position. Restore and review them?", "ไฟล์ PDF ต้นทางอาจเปลี่ยนไปหลังบันทึกฉบับร่าง การแก้ไขที่กู้อาจอยู่ผิดหน้าหรือผิดตำแหน่ง ต้องการกู้เพื่อตรวจสอบหรือไม่?"],
         "recoverDiscard": ["Delete them", "ลบทิ้ง"],
         "outputTools": ["Output", "ส่งออก"],
         "exportImages": ["Export images", "ส่งออกเป็นรูป"],

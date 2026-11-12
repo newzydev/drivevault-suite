@@ -667,6 +667,7 @@ private slots:
             QCOMPARE(c.open(file), QString());
             QVERIFY(e.recoverable());
             QCOMPARE(e.count(), 0);
+            QVERIFY(e.recoverySourceMatches());
             QVERIFY(e.restoreRecovery());
             QVERIFY(!e.recoverable());
             QCOMPARE(e.count(), 3);                                                    // rectangle, text, page number mark
@@ -699,11 +700,14 @@ private slots:
             QVERIFY(e.endDraft());
             QTest::qWait(2600);
         }
+        QCOMPARE(write("rec.pdf", testpdf::make(2)), file); // replace the source after the draft was written
         {
             dp::DocumentController c(data);
             dp::EditorModel e(&c);
             QCOMPARE(c.open(file), QString());
             QVERIFY(e.recoverable());
+            QVERIFY(!e.recoverySourceMatches());
+            QVERIFY(!e.restoreRecovery());
             e.declineRecovery();
             QVERIFY(!e.recoverable());
             QCOMPARE(QDir(data + "/recovery").entryList({"*.json"}).size(), 0);

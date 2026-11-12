@@ -556,7 +556,8 @@ private slots:
         QTest::qWait(150);
         QVERIFY(click("tabClose_0"));                                            // closing saves the view
         QTRY_VERIFY_WITH_TIMEOUT(visible("homeOpen"), 5000);
-        openAndWait(m_sixPath, "six.pdf");
+        QTest::keyClick(m_window, Qt::Key_T, Qt::ControlModifier | Qt::ShiftModifier);
+        QTRY_COMPARE(m_doc->fileName(), QStringLiteral("six.pdf"));
         QTRY_COMPARE_WITH_TIMEOUT(text("pageField"), QStringLiteral("4"), 8000);   // page 4 is back (the second page of the spread 3-4)
         QCOMPARE(m_doc->viewState().value("viewMode").toString(), QStringLiteral("twoPage"));
         QTRY_VERIFY_WITH_TIMEOUT(imageReady("pageImage_3"), 8000);
@@ -615,6 +616,18 @@ private slots:
         QCOMPARE(m_doc->pageCount(), 2);
         QVERIFY(!visible("passwordField"));
         m_doc->close();
+
+        const QString invalid = write("queue-invalid.pdf", "not a PDF");
+        const QVariantList batch{plain, invalid, locked, m_featurePath};
+        QVERIFY(QMetaObject::invokeMethod(m_window, "openPaths", Q_ARG(QVariant, QVariant(batch))));
+        QTRY_VERIFY(visible("passwordField"));
+        QCOMPARE(m_doc->tabs().size(), 1);
+        QCOMPARE(m_doc->fileName(), QStringLiteral("plain.pdf"));
+        QVERIFY(click("passwordCancel"));
+        QTRY_COMPARE(m_doc->tabs().size(), 2);
+        QCOMPARE(m_doc->fileName(), QStringLiteral("feature.pdf"));
+        QTRY_VERIFY(visible("noticeBanner"));
+        closeAllTabs();
     }
 
     void anInvalidFileShowsAMessageAndStaysOnHome()

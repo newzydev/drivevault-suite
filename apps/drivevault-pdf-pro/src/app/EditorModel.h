@@ -123,7 +123,8 @@ public:
     Q_INVOKABLE void discardEdits();                      // forget all edits of the open file
     Q_INVOKABLE bool modifiedFor(int tabId) const;        // that file has edits that are not saved
     // autosave: the edits of every changed file are written to <data dir>/recovery a moment after each change and found again when the file is opened
-    Q_INVOKABLE bool restoreRecovery();                    // put the edits of the earlier run back
+    Q_INVOKABLE bool recoverySourceMatches() const;
+    Q_INVOKABLE bool restoreRecovery(bool allowUnverifiedSource = false);
     Q_INVOKABLE void declineRecovery();                    // delete them
     Q_INVOKABLE void forgetRecovery();                     // delete the recovery files of all open files (the user chose to quit without saving)
 
@@ -166,6 +167,7 @@ private:
         int nextId = 1;
         bool dirty = false;
         QString path;                   // the file this belongs to (for the recovery file)
+        QString sourceStamp;
     };
     State* state();                     // of the open file (created when needed); null when no file is open
     const State* state() const;

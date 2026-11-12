@@ -2,6 +2,12 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.4.0 (2026-11-12): Open multiple PDFs and restore recently closed tabs
+  - Open PDFs in order from the file picker or by dropping multiple files. Password prompts pause the queue.
+  - Reopen a recently closed tab with Ctrl+Shift+T and restore its last view.
+  - Recovery warns when the source PDF changed or its identity could not be verified.
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.3.5 (2026-11-12): Handle password prompts and errors on startup
   - Opening a PDF at launch uses the same password prompt and error message as opening it inside PDF Pro.
   - The installer is unsigned. Clean Windows installation remains an owner-run check.
