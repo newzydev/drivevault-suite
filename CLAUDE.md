@@ -128,6 +128,7 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 | Master Pro | 1.3.2 | `drivevault-master-pro-v1.3.2` | `0c2b21c` | 2026-11-08 |
 | Master Pro | 1.3.3 | `drivevault-master-pro-v1.3.3` | `69f7fae` | 2026-11-08 |
 | Master Pro | 1.5.4 | `drivevault-master-pro-v1.5.4` | `ab6bc5f` | 2026-11-09 |
+| Master Pro | 1.5.5 | `drivevault-master-pro-v1.5.5` | `60c90bf` | 2026-11-09 |
 | Master Pro | 1.5.6 | `drivevault-master-pro-v1.5.6` | `9c68f79` | 2026-11-12 |
 | Video Editor Pro | 1.0.1 | `drivevault-video-editor-pro-v1.0.1` | `1156f9e` | 2026-11-07 |
 | Video Editor Pro | 1.1.0 | `drivevault-video-editor-pro-v1.1.0` | `6859f14` | 2026-11-07 |
@@ -141,7 +142,11 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 | Video Editor Pro | 1.11.0 | `drivevault-video-editor-pro-v1.11.0` | `09e8f47` | 2026-11-08 |
 | Video Editor Pro | 1.11.2 | `drivevault-video-editor-pro-v1.11.2` | `6aad2b0` | 2026-11-09 |
 | Video Editor Pro | 1.11.3 | `drivevault-video-editor-pro-v1.11.3` | `7240cb1` | 2026-11-09 |
+| PDF Pro | 1.0.0 | `drivevault-pdf-pro-v1.0.0` | `60c90bf` | 2026-11-09 |
 | PDF Pro | 1.2.0 | `drivevault-pdf-pro-v1.2.0` | `187c061` | 2026-11-11 |
+| PDF Pro | 1.3.4 | `drivevault-pdf-pro-v1.3.4` | `34b37de` | 2026-11-12 |
+| PDF Pro | 1.6.0 | `drivevault-pdf-pro-v1.6.0` | `2f27ec7` | 2026-11-12 |
+| PDF Pro | 1.8.0 | `drivevault-pdf-pro-v1.8.0` | `308fff3` | 2026-11-12 |
 | PDF Pro | 1.9.0 | `drivevault-pdf-pro-v1.9.0` | `75296f1` | 2026-11-12 |
 | PDF Pro | 1.17.0 | `drivevault-pdf-pro-v1.17.0` | `8db9109` | 2026-11-12 |
 
