@@ -776,3 +776,20 @@ LinkTarget PdfDocument::linkAt(int page, QPointF pt, int rotation) const
 }
 
 } // namespace dp::pdf
+
+namespace dp::pdf {
+
+QString PdfDocument::pageLabel(int page) const
+{
+    if (page < 0 || page >= m_pageSizes.size())
+        return {};
+    QMutexLocker lock(&pdfiumMutex());
+    const unsigned long bytes = FPDF_GetPageLabel(m_impl->doc, page, nullptr, 0);      // UTF-16 with the terminator
+    if (bytes <= 2)
+        return {};
+    QByteArray buffer(int(bytes), '\0');
+    FPDF_GetPageLabel(m_impl->doc, page, buffer.data(), bytes);
+    return QString::fromUtf16(reinterpret_cast<const char16_t*>(buffer.constData()), int(bytes / 2) - 1);
+}
+
+} // namespace dp::pdf

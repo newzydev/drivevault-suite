@@ -2,6 +2,14 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.12.0 (2026-11-12): Reading and navigation
+  - Zoom: the arrow next to the zoom box opens presets (25 % - 800 %) and "Other..." to type any percentage (10 - 800).
+  - Hand tool: drag the page to move it. Snapshot tool: drag a region of a page to copy it to the clipboard as a picture (216 dpi).
+  - Page labels: when the file names its pages (i, ii, A-1 ...), the label is shown in brackets next to the page number.
+  - Read aloud: reads the current page with the voice that is set in Windows (SAPI). Thai needs a Thai voice installed in Windows; a scanned page has no text until OCR.
+  - Not available: layers (the PDF engine cannot switch them) and the single page / cover view.
+  - The installer is not signed (Windows SmartScreen may warn).
+
 v1.11.0 (2026-11-12): Digital signatures and creating form fields
   - Digital signature (All tools > Fill & protect, or Ctrl+K): shows the signatures of the open file (signer, whether the signed content is unchanged, whether something was added afterwards, whether Windows trusts the certificate) and signs a COPY with your certificate file (.pfx / .p12) using Windows cryptography (SHA-256, PKCS#7). The signature is invisible. A protected file and a file that is already signed are refused (rewriting would break the first signature). Online revocation lists are not asked.
   - Create form fields in the Edit bar: text field, tick box and drop-down list (with its entries). They are saved as real form fields that can be filled in with the Form tool (or any PDF reader); the editor shows them as dashed boxes. A filled field keeps its box.

@@ -1532,3 +1532,37 @@ void DocumentController::cancelSplit()
 }
 
 } // namespace dp
+
+namespace dp {
+
+QString DocumentController::pageLabel(int page) const
+{
+    const auto doc = currentDoc();
+    return doc ? doc->pageLabel(page) : QString();
+}
+
+QString DocumentController::pageTextOf(int page) const
+{
+    const auto doc = currentDoc();
+    return doc ? doc->pageText(page) : QString();
+}
+
+bool DocumentController::copyRegion(int page, double x0, double y0, double x1, double y1) const
+{
+    const auto doc = currentDoc();
+    if (!doc || page < 0 || page >= doc->pageCount())
+        return false;
+    constexpr double scale = 3.0;                                  // 216 dpi
+    const int turns = rotationFor(docId());
+    const QImage image = doc->render(page, scale, nullptr, turns);
+    if (image.isNull())
+        return false;
+    const QRect part = QRectF(QPointF(std::min(x0, x1) * scale, std::min(y0, y1) * scale), QPointF(std::max(x0, x1) * scale, std::max(y0, y1) * scale))
+                           .toAlignedRect().intersected(image.rect());
+    if (part.width() < 4 || part.height() < 4)
+        return false;
+    QGuiApplication::clipboard()->setImage(image.copy(part));
+    return true;
+}
+
+} // namespace dp

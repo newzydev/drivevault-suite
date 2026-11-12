@@ -85,6 +85,7 @@ public:
     int pageCount() const { return int(m_pageSizes.size()); }
     // Page size in points (1/72 inch) with the page's own rotation and the view rotation applied.
     QSizeF pageSizePt(int page, int rotation = 0) const;
+    QString pageLabel(int page) const;                    // the label the file gives the page (i, ii, A-1 ...); "" when the file has no page labels
     // Renders the page at `pxPerPt` pixels per point (96/72 = 100 % on screen) onto white. The result is clamped to a safe size.
     // `cancel` (optional) is checked before the work starts. A null image means failure or cancel.
     QImage render(int page, double pxPerPt, const std::atomic_bool* cancel = nullptr, int rotation = 0,

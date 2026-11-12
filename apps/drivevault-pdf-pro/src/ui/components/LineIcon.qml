@@ -157,6 +157,24 @@ Canvas {
             ctx.beginPath(); ctx.arc(12, 12, 8, 0, Math.PI * 2); ctx.stroke()
             ctx.beginPath(); ctx.arc(12, 12, 8, -Math.PI / 2, Math.PI / 2, false); ctx.closePath(); ctx.fill()
             break
+        case "hand":
+            ctx.beginPath(); ctx.moveTo(8, 12); ctx.lineTo(8, 6.5); ctx.arc(9.6, 6.5, 1.6, Math.PI, 0); ctx.lineTo(11.2, 11)
+            ctx.lineTo(11.2, 4.6); ctx.arc(12.8, 4.6, 1.6, Math.PI, 0); ctx.lineTo(14.4, 11)
+            ctx.lineTo(14.4, 5.6); ctx.arc(16, 5.6, 1.6, Math.PI, 0); ctx.lineTo(17.6, 12)
+            ctx.lineTo(17.6, 8.4); ctx.arc(19.2, 8.4, 1.6, Math.PI, 0); ctx.lineTo(20.8, 14.5)
+            ctx.quadraticCurveTo(20.8, 20.5, 14.5, 20.5); ctx.quadraticCurveTo(10, 20.5, 8, 16.5); ctx.lineTo(4.5, 11.5)
+            ctx.quadraticCurveTo(5.5, 10, 8, 12.5); ctx.stroke()
+            break
+        case "snapshot":
+            ctx.beginPath(); ctx.moveTo(4, 8); ctx.lineTo(4, 4); ctx.lineTo(8, 4); ctx.moveTo(16, 4); ctx.lineTo(20, 4); ctx.lineTo(20, 8)
+            ctx.moveTo(20, 16); ctx.lineTo(20, 20); ctx.lineTo(16, 20); ctx.moveTo(8, 20); ctx.lineTo(4, 20); ctx.lineTo(4, 16); ctx.stroke()
+            ctx.beginPath(); ctx.arc(12, 12, 2.6, 0, Math.PI * 2); ctx.fill()
+            break
+        case "speak":
+            ctx.beginPath(); ctx.moveTo(4, 9.5); ctx.lineTo(8, 9.5); ctx.lineTo(13, 5); ctx.lineTo(13, 19); ctx.lineTo(8, 14.5); ctx.lineTo(4, 14.5); ctx.closePath(); ctx.stroke()
+            ctx.beginPath(); ctx.arc(13, 12, 4, -Math.PI / 3, Math.PI / 3, false); ctx.stroke()
+            ctx.beginPath(); ctx.arc(13, 12, 7.5, -Math.PI / 3, Math.PI / 3, false); ctx.stroke()
+            break
         case "thumbs":
             roundRect(3.5, 3.5, 7, 7, 1.6); ctx.stroke()
             roundRect(13.5, 3.5, 7, 7, 1.6); ctx.stroke()

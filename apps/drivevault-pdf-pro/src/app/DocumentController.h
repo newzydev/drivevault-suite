@@ -132,6 +132,10 @@ public:
     Q_INVOKABLE QString selectedText() const;
     QVariantMap textCaret() const;
     Q_INVOKABLE bool copySelection() const;               // to the clipboard; false when nothing is selected
+    Q_INVOKABLE QString pageLabel(int page) const;        // label of a page from the file (i, ii, A-1 ...); "" when it has none
+    Q_INVOKABLE QString pageTextOf(int page) const;       // the text of a page (for reading aloud)
+    // Copies the picture of a part of a page (points as shown, any two corners) to the clipboard at 216 dpi. False when the part is empty.
+    Q_INVOKABLE bool copyRegion(int page, double x0, double y0, double x1, double y1) const;
 
     // ---- structure ----------------------------------------------------------------------------------------------------------
     Q_INVOKABLE QVariantList outline() const;             // [{title, page, level}]

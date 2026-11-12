@@ -98,6 +98,18 @@ Item {
         return !!a && a.hasOwnProperty("selectedText")
     }
     property int readerCursor: Qt.ArrowCursor
+    property string pointerTool: "select"         // "select" | "hand" | "snapshot"
+    property var snapStart: null                  // {page, x, y} of the press while a snapshot region is dragged
+    property rect snapRect: Qt.rect(0, 0, 0, 0)   // the dragged region in pointer coordinates
+    signal noticeRequested(string text, bool isError)
+    function setPointerTool(name) { pointerTool = pointerTool === name ? "select" : name }
+    function readAloud() {
+        if (Speech.speaking) { Speech.stop(); return }
+        if (!Speech.available) { noticeRequested(Tr.s("readNoVoice"), true); return }
+        if (!Speech.speak(Doc.pageTextOf(currentPage)))
+            noticeRequested(Tr.s("readNoText"), true)
+    }
+    Connections { target: Editor; function onActiveChanged() { if (Editor.active) viewer.pointerTool = "select" } }
     property var redactStart: null
 
     function updateRedactDrag(x, y) {
@@ -466,6 +478,15 @@ Item {
                     }
                 }
                 AppText { height: 32; verticalAlignment: Text.AlignVCenter; text: Tr.f("pageOf", Doc.pageCount); color: Theme.textSecondary }
+                AppText {
+                    objectName: "pageLabelText"
+                    height: 32
+                    verticalAlignment: Text.AlignVCenter
+                    visible: text !== ""
+                    readonly property string label: Doc.pageLabel(viewer.currentPage)
+                    text: label !== "" && label !== String(viewer.currentPage + 1) ? "(" + label + ")" : ""
+                    color: Theme.accent
+                }
                 PButton { objectName: "nextPage"; compact: true; text: "›"; tip: Tr.s("nextPage"); enabled: viewer.currentPage < Doc.pageCount - 1; onClicked: viewer.goTo(viewer.currentPage + 1) }
             }
 
@@ -483,6 +504,43 @@ Item {
                     onClicked: viewer.setZoom(1.0)
                 }
                 PButton { objectName: "zoomIn"; compact: true; text: "+"; tip: Tr.s("zoomIn"); onClicked: viewer.zoomIn() }
+                PButton {
+                    id: zoomMenuButton
+                    objectName: "zoomMenuButton"
+                    compact: true
+                    variant: "ghost"
+                    text: "▾"
+                    tip: Tr.s("zoomMenu")
+                    onClicked: zoomMenu.popup(zoomMenuButton, 0, zoomMenuButton.height)
+                    PMenu {
+                        id: zoomMenu
+                        implicitWidth: 160
+                        Repeater {
+                            model: [25, 50, 75, 100, 125, 150, 200, 300, 400, 800]
+                            delegate: PMenuItem { required property int modelData; objectName: "zoomPreset_" + modelData; text: modelData + "%"; onTriggered: viewer.setZoom(modelData / 100) }
+                        }
+                        PMenuItem { objectName: "zoomOther"; text: Tr.s("zoomOther"); onTriggered: { zoomInput.text = String(Math.round(viewer.zoom * 100)); zoomPopup.open() } }
+                    }
+                    Popup {
+                        id: zoomPopup
+                        y: zoomMenuButton.height + 4
+                        padding: 10
+                        background: Rectangle { radius: 10; color: Theme.surface; border.color: Theme.border }
+                        contentItem: Column {
+                            spacing: 6
+                            AppText { text: Tr.s("zoomPercentHint"); color: Theme.textSecondary; font.pixelSize: Theme.fontSm }
+                            PTextField {
+                                id: zoomInput
+                                objectName: "zoomInput"
+                                width: 140
+                                inputMethodHints: Qt.ImhDigitsOnly
+                                validator: IntValidator { bottom: 10; top: 800 }
+                                onAccepted: { const v = parseInt(text); if (v >= 10 && v <= 800) viewer.setZoom(v / 100); zoomPopup.close() }
+                            }
+                        }
+                        onOpened: { zoomInput.forceActiveFocus(); zoomInput.selectAll() }
+                    }
+                }
                 PButton { objectName: "fitWidth"; compact: true; glyph: "fitwidth"; tip: Tr.s("fitWidth"); variant: viewer.zoomMode === "fitWidth" ? "secondary" : "ghost"; onClicked: viewer.fit("fitWidth") }
                 PButton { objectName: "fitPage"; compact: true; glyph: "fitpage"; tip: Tr.s("fitPage"); variant: viewer.zoomMode === "fitPage" ? "secondary" : "ghost"; onClicked: viewer.fit("fitPage") }
             }
@@ -497,6 +555,9 @@ Item {
                     tip: viewer.viewMode === "twoPage" ? Tr.s("viewContinuous") : Tr.s("viewTwoPage")
                     onClicked: viewer.setViewMode(viewer.viewMode === "twoPage" ? "continuous" : "twoPage")
                 }
+                PButton { objectName: "handTool"; compact: true; glyph: "hand"; tip: Tr.s("toolHand"); variant: viewer.pointerTool === "hand" ? "secondary" : "ghost"; enabled: !Editor.active && !redactions.visible; onClicked: viewer.setPointerTool("hand") }
+                PButton { objectName: "snapshotTool"; compact: true; glyph: "snapshot"; tip: Tr.s("toolSnapshot"); variant: viewer.pointerTool === "snapshot" ? "secondary" : "ghost"; enabled: !Editor.active && !redactions.visible; onClicked: viewer.setPointerTool("snapshot") }
+                PButton { objectName: "readAloud"; compact: true; glyph: "speak"; tip: Speech.speaking ? Tr.s("readStop") : Tr.s("readAloud"); variant: Speech.speaking ? "secondary" : "ghost"; onClicked: viewer.readAloud() }
                 PButton { objectName: "rotate"; compact: true; glyph: "rotate"; tip: Tr.s("rotateRight"); enabled: !redactions.visible; onClicked: Doc.rotateView(1) }
                 PButton { objectName: "darkPages"; compact: true; glyph: "dark"; tip: Tr.s("darkPages"); variant: Doc.darkPages ? "secondary" : "ghost"; onClicked: Doc.darkPages = !Doc.darkPages }
             }
@@ -719,7 +780,9 @@ Item {
                     anchors.bottomMargin: 14
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     hoverEnabled: true
-                    cursorShape: redactions.visible || (viewer.editOn && Editor.tool !== "select") ? Qt.CrossCursor
+                    cursorShape: viewer.pointerTool === "hand" && !viewer.editOn && !redactions.visible ? (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
+                        : viewer.pointerTool === "snapshot" && !viewer.editOn && !redactions.visible ? Qt.CrossCursor
+                        : redactions.visible || (viewer.editOn && Editor.tool !== "select") ? Qt.CrossCursor
                         : viewer.editOn || viewer.replacingText ? Qt.ArrowCursor : viewer.readerCursor
                     property real pressX: 0
                     property real pressY: 0
@@ -727,6 +790,8 @@ Item {
                     property real lastY: 0
                     property bool dragged: false
                     property bool extendingSelection: false
+                    property real handX: 0
+                    property real handY: 0
 
                     function extend() {
                         const h = viewer.hit(lastX, lastY)
@@ -742,6 +807,17 @@ Item {
                         }
                         if (mouse.button === Qt.RightButton) {
                             pageMenu.popup()
+                            return
+                        }
+                        if (viewer.pointerTool !== "select" && !viewer.editOn && !viewer.replacingText) {
+                            pressX = lastX = mouse.x
+                            pressY = lastY = mouse.y
+                            handX = pagesView.contentX
+                            handY = pagesView.contentY
+                            if (viewer.pointerTool === "snapshot") {
+                                viewer.snapStart = viewer.hit(mouse.x, mouse.y)
+                                viewer.snapRect = Qt.rect(mouse.x, mouse.y, 0, 0)
+                            }
                             return
                         }
                         if (viewer.replacingText) {
@@ -775,6 +851,15 @@ Item {
                         lastY = mouse.y
                         if (redactions.visible) {
                             viewer.updateRedactDrag(mouse.x, mouse.y)
+                            return
+                        }
+                        if (viewer.pointerTool !== "select" && !viewer.editOn) {
+                            if (pressed && viewer.pointerTool === "hand") {
+                                pagesView.contentX = handX - (mouse.x - pressX)
+                                pagesView.contentY = handY - (mouse.y - pressY)
+                            } else if (pressed && viewer.pointerTool === "snapshot") {
+                                viewer.snapRect = Qt.rect(Math.min(pressX, mouse.x), Math.min(pressY, mouse.y), Math.abs(mouse.x - pressX), Math.abs(mouse.y - pressY))
+                            }
                             return
                         }
                         if (viewer.editOn) {
@@ -817,6 +902,18 @@ Item {
                             redactions.preview = null
                             return
                         }
+                        if (viewer.pointerTool !== "select" && !viewer.editOn) {
+                            if (viewer.pointerTool === "hand") {
+                                pagesView.returnToBounds()
+                            } else if (viewer.snapStart) {
+                                const end = viewer.hit(mouse.x, mouse.y)
+                                const ok = end && end.page === viewer.snapStart.page && Doc.copyRegion(end.page, viewer.snapStart.x, viewer.snapStart.y, end.x, end.y)
+                                viewer.noticeRequested(ok ? Tr.s("snapshotCopied") : Tr.s("snapshotFailed"), !ok)
+                            }
+                            viewer.snapStart = null
+                            viewer.snapRect = Qt.rect(0, 0, 0, 0)
+                            return
+                        }
                         if (viewer.editOn) {
                             viewer.editRelease()
                             return
@@ -841,7 +938,16 @@ Item {
                             }
                         }
                     }
+                    Rectangle {
+                        objectName: "snapshotRect"
+                        visible: viewer.snapStart !== null && viewer.snapRect.width > 1
+                        x: viewer.snapRect.x; y: viewer.snapRect.y; width: viewer.snapRect.width; height: viewer.snapRect.height
+                        color: Qt.alpha(Theme.accent, 0.15)
+                        border.color: Theme.accent
+                        border.width: 1
+                    }
                     onCanceled: {
+                        viewer.snapStart = null
                         autoScroll.stop()
                         viewer.redactStart = null
                         redactions.preview = null

@@ -429,6 +429,22 @@ private slots:
         QCOMPARE(one->pageCount(), 1);
         QCOMPARE(c.startPrint({{"pages", "current"}, {"currentPage", 40}}), QStringLiteral("badRange"));
     }
+    void pageLabelsAndSnapshotCopyToTheClipboard()
+    {
+        DocumentController c(m_dir.filePath("data12"));
+        QVERIFY(c.pageLabel(0).isEmpty());                         // nothing open
+        QVERIFY(!c.copyRegion(0, 0, 0, 100, 100));
+        QCOMPARE(c.open(write("labels.pdf", testpdf::makeFeatureDoc("/PageLabels << /Nums [0 << /S /r >>] >>"))), QString());
+        QCOMPARE(c.pageLabel(0), QStringLiteral("i"));
+        QVERIFY(c.pageLabel(99).isEmpty());
+        QVERIFY(c.pageTextOf(0).contains(QStringLiteral("Hello")));
+
+        QVERIFY(c.copyRegion(0, 10, 20, 110, 70));                 // 100 x 50 points: 300 x 150 pixels
+        const QImage image = QGuiApplication::clipboard()->image();
+        QCOMPARE(image.size(), QSize(300, 150));
+        QVERIFY(!c.copyRegion(0, 10, 10, 11, 11));                 // too small
+        QVERIFY(!c.copyRegion(5, 0, 0, 100, 100));                 // no such page
+    }
 };
 
 QTEST_MAIN(TstController)

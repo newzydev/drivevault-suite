@@ -437,6 +437,7 @@ ApplicationWindow {
             onCompressRequested: compressDialog.open()
             onCompareRequested: compareDialog.open()
             onSignatureRequested: signatureDialog.begin()
+            onNoticeRequested: (text, isError) => win.showNotice(text, isError)
             onFormRequested: formDialog.open()
             onImageExportRequested: page => { imageExportDialog.currentPage = page; imageExportDialog.open() }
             onSecurityRequested: unlock => { securityDialog.unlock = unlock; securityDialog.open() }
