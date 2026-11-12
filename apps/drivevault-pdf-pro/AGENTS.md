@@ -20,7 +20,7 @@ Output: `build/release/bin/DriveVaultPdfPro.exe` (+ `pdfium.dll` copied next to 
 
 ## Commands (from this folder)
 ```powershell
-.\scripts\build.ps1 -Test        # configure + build Release + 14 ctest suites
+.\scripts\build.ps1 -Test        # configure + build Release + 15 ctest suites
 ..\..\scripts\run-pdf-pro.bat    # smoke start / look at the program (no install)
 .\scripts\package.ps1            # release gates and installer, after building Master Pro's setup
 ```

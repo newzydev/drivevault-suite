@@ -64,7 +64,8 @@ ApplicationWindow {
         { key: "batchPdf", icon: "thumbs", tint: "#fbb04c", group: "convert" },
         { key: "repairPdf", icon: "rotate", tint: "#fbb04c", group: "edit" },
         { key: "comparePdf", icon: "split", tint: "#5fc7de", group: "edit" },
-        { key: "digitalSign", icon: "shield", tint: "#5fc7de", group: "sign" }
+        { key: "digitalSign", icon: "shield", tint: "#5fc7de", group: "sign" },
+        { key: "accessibilityCheck", icon: "shield", tint: "#4dc987", group: "sign" }
     ]
 
     function runTool(tool) {
@@ -162,6 +163,7 @@ ApplicationWindow {
         else if (name === "split") splitDialog.open()
         else if (name === "compare") compareDialog.open()
         else if (name === "signature") signatureDialog.begin()
+        else if (name === "accessibility") accessibilityDialog.begin()
         else if (name === "compress") compressDialog.open()
         else if (name === "form") formDialog.open()
         else if (name === "security") securityDialog.open()
@@ -437,6 +439,7 @@ ApplicationWindow {
             onCompressRequested: compressDialog.open()
             onCompareRequested: compareDialog.open()
             onSignatureRequested: signatureDialog.begin()
+            onAccessibilityRequested: accessibilityDialog.begin()
             onNoticeRequested: (text, isError) => win.showNotice(text, isError)
             onFormRequested: formDialog.open()
             onImageExportRequested: page => { imageExportDialog.currentPage = page; imageExportDialog.open() }
@@ -510,6 +513,10 @@ ApplicationWindow {
     SplitDialog { id: splitDialog }
     SignatureDialog {
         id: signatureDialog
+        onOpenResultRequested: path => win.openPath(path)
+    }
+    AccessibilityDialog {
+        id: accessibilityDialog
         onOpenResultRequested: path => win.openPath(path)
     }
     CompareDialog {

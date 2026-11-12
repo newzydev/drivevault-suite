@@ -6,6 +6,7 @@
 #include "PdfComparer.h"
 #include "SignatureManager.h"
 #include "SpeechReader.h"
+#include "AccessibilityChecker.h"
 #include "OverlayImageProvider.h"
 #include "PageListModel.h"
 #include "ThaiOcr.h"
@@ -111,6 +112,7 @@ int main(int argc, char* argv[])
     dp::PdfComparer comparer(&controller);
     dp::SignatureManager signatures(&controller);
     dp::SpeechReader speech;
+    dp::AccessibilityChecker access(&controller);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Doc", &controller);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Organizer", &organizer);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Compressor", &compressor);
@@ -119,6 +121,7 @@ int main(int argc, char* argv[])
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Comparer", &comparer);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Signatures", &signatures);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Speech", &speech);
+    qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Access", &access);
 
     QQmlApplicationEngine engine;
     if (parser.isSet(screenshotOption))

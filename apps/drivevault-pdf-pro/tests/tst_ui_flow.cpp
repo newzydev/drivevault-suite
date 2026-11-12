@@ -9,6 +9,7 @@
 #include "PdfComparer.h"
 #include "SignatureManager.h"
 #include "SpeechReader.h"
+#include "AccessibilityChecker.h"
 #include "OverlayImageProvider.h"
 #include "PageListModel.h"
 #include "TestPdf.h"
@@ -61,6 +62,7 @@ class TstUiFlow : public QObject {
     dp::PdfComparer* m_comparer = nullptr;
     dp::SignatureManager* m_signatures = nullptr;
     dp::SpeechReader* m_speech = nullptr;
+    dp::AccessibilityChecker* m_access = nullptr;
     QQmlApplicationEngine* m_engine = nullptr;
     QQuickWindow* m_window = nullptr;
     QString m_sixPath;
@@ -207,6 +209,7 @@ private slots:
         m_comparer = new dp::PdfComparer(m_doc);
         m_signatures = new dp::SignatureManager(m_doc);
         m_speech = new dp::SpeechReader;
+        m_access = new dp::AccessibilityChecker(m_doc);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Doc", m_doc);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Organizer", m_org);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Compressor", m_cmp);
@@ -215,6 +218,7 @@ private slots:
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Comparer", m_comparer);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Signatures", m_signatures);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Speech", m_speech);
+        qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Access", m_access);
         m_engine = new QQmlApplicationEngine;
         m_engine->addImageProvider(QStringLiteral("pdf"), new dp::PageImageProvider(m_doc));
         m_engine->addImageProvider(QStringLiteral("ovl"), new dp::OverlayImageProvider(m_doc, m_edit));
@@ -234,6 +238,7 @@ private slots:
         delete m_engine;
         delete m_signatures;
         delete m_speech;
+        delete m_access;
         delete m_comparer;
         delete m_forms;
         delete m_edit;

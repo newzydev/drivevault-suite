@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultPdfPro
-    VERSION 1.15.0
+    VERSION 1.16.0
     DESCRIPTION "DriveVault PDF Pro - read, merge, split, compress, edit, protect and redact PDF files"
     LANGUAGES CXX)
 

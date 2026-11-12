@@ -21,6 +21,7 @@ Item {
     signal formRequested()
     signal compareRequested()
     signal signatureRequested()
+    signal accessibilityRequested()
     signal imageExportRequested(int page)
     signal securityRequested(bool unlock)
     signal maintenanceRequested(bool repair)
@@ -49,6 +50,7 @@ Item {
         case "toolForm": formRequested(); break
         case "comparePdf": compareRequested(); break
         case "digitalSign": signatureRequested(); break
+        case "accessibilityCheck": accessibilityRequested(); break
         case "exportImages": imageExportRequested(currentPage); break
         case "thaiOcr": ocrRequested(currentPage); break
         case "protectPdf": securityRequested(false); break

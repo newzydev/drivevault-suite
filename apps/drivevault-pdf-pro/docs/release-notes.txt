@@ -2,6 +2,12 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.16.0 (2026-11-12): Accessibility check
+  - All tools > Fill & protect > Accessibility check (or Ctrl+K): a quick look at the open file: is it tagged, do the figures have descriptions, is the document language and title set (and shown in the title bar), do long files have bookmarks, do form fields have tool tips, does the protection allow screen readers, and which PDF/A part the file says it is (not validated).
+  - "Save a copy as...": writes a copy with the title and / or language set (the title is also set to show in the title bar). A protected file stays protected; the open file is never changed.
+  - This is a quick check, not a full PDF/UA test: reading order, table structure, colour contrast and picture content are not judged. Adding tags, fixing figures, creating PDF/A and preflight are not available.
+  - The installer is not signed (Windows SmartScreen may warn).
+
 v1.15.0 (2026-11-12): Markup as real comments
   - Edit mode, "Markup as comments" (next to Save as): highlight, underline, strike out and note are saved as real PDF annotations (Highlight, Underline, StrikeOut, Text) instead of being drawn into the page. Other PDF programs can select, edit and list them as comments. A note becomes a note icon whose content is the note text. On a page that is turned the markup stays drawn into the page. Other shapes, text and pictures are drawn into the page as before. Off by default.
   - Not available: editing or deleting comments that are already in a file, stamps as annotations, replying to comments.
