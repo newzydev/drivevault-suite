@@ -1016,14 +1016,19 @@ QString DocumentController::startThaiOcr(const QString& range, int currentPage, 
     m_outputProgress = 0;
     emit outputChanged();
     m_outputPool.start(QRunnable::create([this, doc, pages, destination, cancel] {
+        ThaiOcrReport report;
         const QString error = saveSearchableCopy(*doc, pages, destination, *cancel, [this, cancel](int done, int total) {
             QMetaObject::invokeMethod(this, [this, done, total] {
                 m_outputProgress = double(done) / total;
                 emit outputChanged();
             }, Qt::QueuedConnection);
             return !cancel->load();
-        });
-        QMetaObject::invokeMethod(this, [this, error, destination] { finishOutput(error, destination); }, Qt::QueuedConnection);
+        }, &report);
+        QMetaObject::invokeMethod(this, [this, error, destination, report] {
+            if (error.isEmpty() || error == QLatin1String("ocrNoText"))
+                emit thaiOcrReport(report.recognizedPages, report.skippedTextPages, report.unrecognizedPages);
+            finishOutput(error, destination);
+        }, Qt::QueuedConnection);
     }));
     return {};
 }

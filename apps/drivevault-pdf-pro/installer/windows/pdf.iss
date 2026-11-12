@@ -1,6 +1,6 @@
 ﻿; DriveVault PDF Pro. The package script supplies the audited payload and bundled hub.
 #ifndef AppVersion
-  #define AppVersion "1.6.0"
+  #define AppVersion "1.7.0"
 #endif
 #if !Defined(StageDir) || !Defined(OutputDir) || !Defined(MasterSetup) || !Defined(MasterVersion) || !Defined(ArtworkDir)
   #error Build this installer with scripts\package.ps1

@@ -54,7 +54,7 @@ private slots:
         QVERIFY(qAbs(points.height() - 200 * 72 / 25.4) < 1);
     }
 
-    void thaiOcrMakesAnImagePageSearchableWithoutChangingItsPixels()
+    void thaiOcrMakesTenScansSearchableWithoutChangingTheirPixels()
     {
         if (!dp::thaiOcrAvailable())
             QSKIP("Local ONNX Runtime and PaddleOCR models are absent");
@@ -64,35 +64,62 @@ private slots:
         const QString phrase = QStringLiteral("ภาษาไทย");
         const QString source = dir.filePath(QStringLiteral("สแกน.pdf"));
         {
-            QImage image(1200, 700, QImage::Format_RGB32);
-            image.fill(Qt::white);
-            QPainter ink(&image);
-            QFont font(QFontDatabase::applicationFontFamilies(fontId).first());
-            font.setPixelSize(64);
-            ink.setFont(font);
-            ink.drawText(110, 180, phrase);
-            ink.drawText(110, 340, QStringLiteral("เอกสารทดสอบ"));
-            ink.end();
             QPdfWriter writer(source);
             writer.setPageSize(QPageSize(QSizeF(600, 350), QPageSize::Point));
             writer.setPageMargins({}, QPageLayout::Point);
             writer.setResolution(144);
             QPainter page(&writer);
-            page.drawImage(0, 0, image);
+            QFont font(QFontDatabase::applicationFontFamilies(fontId).first());
+            font.setPixelSize(64);
+            for (int i = 0; i < 11; ++i) {
+                if (i > 0)
+                    QVERIFY(writer.newPage());
+                QImage image(1200, 700, QImage::Format_RGB32);
+                image.fill(Qt::white);
+                if (i < 10) {
+                    QPainter ink(&image);
+                    ink.setFont(font);
+                    const int x = i % 2 == 0 ? 110 : 550;
+                    ink.drawText(x, 180, phrase);
+                    ink.drawText(x, 340, QStringLiteral("เอกสารทดสอบ"));
+                }
+                page.drawImage(0, 0, image);
+            }
+            QVERIFY(writer.newPage());
+            page.setFont(font);
+            page.drawText(110, 180, QStringLiteral("Existing selectable text"));
             QVERIFY(page.end());
         }
         const auto input = dp::pdf::PdfDocument::open(source, {}, nullptr);
         QVERIFY(input);
-        QVERIFY(input->pageText(0).isEmpty());
+        QCOMPARE(input->pageCount(), 12);
+        QList<int> pages;
+        for (int i = 0; i < input->pageCount(); ++i)
+            pages.append(i);
         const QString output = dir.filePath(QStringLiteral("ค้นหาได้.pdf"));
         std::atomic_bool cancel = false;
-        QCOMPARE(dp::saveSearchableCopy(*input, {0}, output, cancel, {}), QString());
+        dp::ThaiOcrReport report;
+        QCOMPARE(dp::saveSearchableCopy(*input, pages, output, cancel, {}, &report), QString());
+        QCOMPARE(report.recognizedPages, 10);
+        QCOMPARE(report.skippedTextPages, 1);
+        QCOMPARE(report.unrecognizedPages, 1);
         const auto copy = dp::pdf::PdfDocument::open(output, {}, nullptr);
         QVERIFY(copy);
-        const QString recognized = copy->pageText(0);
-        QVERIFY2(recognized.contains(phrase), qPrintable(recognized));
-        QVERIFY(!copy->searchPage(0, phrase, false, false).isEmpty());
-        QCOMPARE(copy->render(0, 2), input->render(0, 2));
+        QCOMPARE(copy->pageCount(), 12);
+        for (int i = 0; i < 10; ++i) {
+            QVERIFY(input->pageText(i).isEmpty());
+            const QString recognized = copy->pageText(i);
+            QVERIFY2(recognized.contains(phrase), qPrintable(recognized));
+            const auto hits = copy->searchPage(i, phrase, false, false);
+            QVERIFY(!hits.isEmpty() && !hits.first().rects.isEmpty());
+            const auto bounds = hits.first().rects.first();
+            QVERIFY2(qAbs(bounds.left() - (i % 2 == 0 ? 55.0 : 275.0)) < 35,
+                     qPrintable(QStringLiteral("page %1: search x=%2").arg(i + 1).arg(bounds.left())));
+        }
+        QVERIFY(copy->pageText(10).isEmpty());
+        QCOMPARE(copy->pageText(11), input->pageText(11));
+        for (int i : pages)
+            QCOMPARE(copy->render(i, 2), input->render(i, 2));
         QCOMPARE(dp::saveSearchableCopy(*input, {0}, output, cancel, {}), QStringLiteral("exists"));
         cancel = true;
         const QString abandoned = dir.filePath(QStringLiteral("cancelled.pdf"));

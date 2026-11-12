@@ -233,8 +233,17 @@ void addTextLayer(QPDF& pdf, QPDFObjectHandle form, const TextRuns& runs, const 
         cmap += "endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n";
         QPDFObjectHandle toUnicode = QPDFObjectHandle::newStream(&pdf, cmap);
         QPDFObjectHandle widths = QPDFObjectHandle::newArray();
-        for (size_t i = 0; i < n; ++i)
+        QPDFObjectHandle differences = QPDFObjectHandle::newArray();
+        differences.appendItem(QPDFObjectHandle::newInteger(1));
+        for (size_t i = 0; i < n; ++i) {
             widths.appendItem(QPDFObjectHandle::newInteger(int(advance * 1000)));
+            // Every invisible code needs a real glyph bounding box for search highlighting.
+            differences.appendItem(QPDFObjectHandle::newName("/H"));
+        }
+        QPDFObjectHandle encoding = QPDFObjectHandle::newDictionary();
+        encoding.replaceKey("/Type", QPDFObjectHandle::newName("/Encoding"));
+        encoding.replaceKey("/BaseEncoding", QPDFObjectHandle::newName("/WinAnsiEncoding"));
+        encoding.replaceKey("/Differences", differences);
         QPDFObjectHandle font = QPDFObjectHandle::newDictionary();
         font.replaceKey("/Type", QPDFObjectHandle::newName("/Font"));
         font.replaceKey("/Subtype", QPDFObjectHandle::newName("/Type1"));
@@ -242,12 +251,16 @@ void addTextLayer(QPDF& pdf, QPDFObjectHandle form, const TextRuns& runs, const 
         font.replaceKey("/FirstChar", QPDFObjectHandle::newInteger(1));
         font.replaceKey("/LastChar", QPDFObjectHandle::newInteger(int(n)));
         font.replaceKey("/Widths", widths);
+        font.replaceKey("/Encoding", encoding);
         font.replaceKey("/ToUnicode", toUnicode);
         fontDict.replaceKey("/DvTxt" + std::to_string(f + 1), pdf.makeIndirectObject(font));
     }
     std::shared_ptr<Buffer> old = form.getStreamData(qpdf_dl_generalized);
-    std::string data(reinterpret_cast<const char*>(old->getBuffer()), old->getSize());
-    data += content;
+    // Qt's page stream can leave its device-resolution transform active. The
+    // searchable text coordinates are already in PDF points.
+    std::string data = "q\n";
+    data.append(reinterpret_cast<const char*>(old->getBuffer()), old->getSize());
+    data += "\nQ\n" + content;
     form.replaceStreamData(data, QPDFObjectHandle::newNull(), QPDFObjectHandle::newNull());
 }
 

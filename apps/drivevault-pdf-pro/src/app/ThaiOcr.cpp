@@ -239,8 +239,10 @@ bool thaiOcrAvailable()
 }
 
 QString saveSearchableCopy(const pdf::PdfDocument& doc, const QList<int>& pages, const QString& destination,
-                           const std::atomic_bool& cancel, const tools::Progress& progress)
+                           const std::atomic_bool& cancel, const tools::Progress& progress, ThaiOcrReport* report)
 {
+    if (report)
+        *report = {};
 #ifdef DP_ONNX_AVAILABLE
     if (!thaiOcrAvailable() || !loadRuntime())
         return QStringLiteral("ocrModelRequired");
@@ -252,6 +254,7 @@ QString saveSearchableCopy(const pdf::PdfDocument& doc, const QList<int>& pages,
         return QStringLiteral("cancelled");
     const int total = int(pages.size()) + 1;
     QList<tools::PageEdits> edits;
+    ThaiOcrReport summary;
     try {
         Ort::Env env(ORT_LOGGING_LEVEL_ERROR, "DriveVault Thai OCR");
         env.DisableTelemetryEvents();
@@ -266,8 +269,10 @@ QString saveSearchableCopy(const pdf::PdfDocument& doc, const QList<int>& pages,
                 return QStringLiteral("cancelled");
             if (page < 0 || page >= doc.pageCount())
                 return QStringLiteral("range");
-            if (!doc.pageText(page).trimmed().isEmpty())
+            if (!doc.pageText(page).trimmed().isEmpty()) {
+                ++summary.skippedTextPages;
                 continue;
+            }
             const QSizeF size = doc.pageSizePt(page);
             const QImage image = doc.render(page, 3, &cancel, 0, false, false);
             if (image.isNull())
@@ -275,14 +280,19 @@ QString saveSearchableCopy(const pdf::PdfDocument& doc, const QList<int>& pages,
             auto runs = readPage(detector, reader, alphabet, image, size, cancel);
             if (!runs.isEmpty())
                 edits.append({page, size, {}, std::move(runs)});
+            else
+                ++summary.unrecognizedPages;
         }
     } catch (const std::exception&) {
         return QStringLiteral("ocrFailed");
     }
     if (cancel.load())
         return QStringLiteral("cancelled");
-    if (edits.isEmpty())
+    if (edits.isEmpty()) {
+        if (report)
+            *report = summary;
         return QStringLiteral("ocrNoText");
+    }
 
     QTemporaryDir staging(QFileInfo(destination).dir().filePath(QStringLiteral(".drivevault-ocr-XXXXXX")));
     if (!staging.isValid())
@@ -306,7 +316,12 @@ QString saveSearchableCopy(const pdf::PdfDocument& doc, const QList<int>& pages,
     if (cancel.load())
         return QStringLiteral("cancelled");
     verified.reset();
-    return QFile::rename(copy, destination) ? QString() : QStringLiteral("write");
+    if (!QFile::rename(copy, destination))
+        return QStringLiteral("write");
+    summary.recognizedPages = int(edits.size());
+    if (report)
+        *report = summary;
+    return {};
 #else
     Q_UNUSED(doc);
     Q_UNUSED(pages);

@@ -52,6 +52,7 @@ QtObject {
         "output_editRunVerify": ["The edited copy did not pass verification. Choose another text run.", "สำเนาที่แก้ไขไม่ผ่านการตรวจสอบ ลองเลือกชุดข้อความอื่น"],
         "ocrDescription": ["Read Thai and English from scanned pages and save a searchable PDF copy. Pages that already contain text are skipped.", "อ่านข้อความไทยและอังกฤษจากหน้าสแกน แล้วบันทึกสำเนา PDF ที่ค้นหาได้ ระบบจะข้ามหน้าที่มีข้อความอยู่แล้ว"],
         "ocrSave": ["Save searchable PDF", "บันทึก PDF ที่ค้นหาได้"],
+        "ocrPageSummary": ["Searchable text added: %1 pages · Already had text: %2 · No text recognized: %3", "เพิ่มข้อความค้นหาได้ %1 หน้า · มีข้อความอยู่แล้ว %2 หน้า · อ่านข้อความไม่ได้ %3 หน้า"],
         "output_ocrModelRequired": ["Thai OCR needs the local runtime and models in this build.", "OCR ภาษาไทยต้องใช้รันไทม์และโมเดลในเครื่องสำหรับรุ่นนี้"],
         "output_ocrEncrypted": ["Unlock the PDF before running OCR.", "ปลดล็อก PDF ก่อนใช้ OCR"],
         "output_ocrNoText": ["No new text was found on the selected pages.", "ไม่พบข้อความใหม่ในหน้าที่เลือก"],

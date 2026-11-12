@@ -12,6 +12,7 @@ Popup {
     property bool running: false
     property string error: ""
     property string result: ""
+    property string summary: ""
     readonly property string pages: pageMode.currentIndex === 0 ? "all" : pageMode.currentIndex === 1 ? "current" : range.text
     signal openResult(string path)
 
@@ -27,11 +28,16 @@ Popup {
         ready = Doc.ocrAvailable()
         error = ready ? "" : "ocrModelRequired"
         result = ""
+        summary = ""
         pageMode.currentIndex = 0
         range.clear()
     }
     Connections {
         target: Doc
+        function onThaiOcrReport(recognized, skipped, unrecognized) {
+            if (dlg.running)
+                dlg.summary = Tr.f2("ocrPageSummary", recognized, skipped).replace("%3", unrecognized)
+        }
         function onOutputFinished(code, path) {
             if (dlg.running) {
                 dlg.running = false
@@ -58,6 +64,14 @@ Popup {
             placeholderText: Tr.s("rangeHint")
         }
         ProgressBar { Layout.fillWidth: true; visible: dlg.running; value: Doc.outputProgress }
+        AppText {
+            objectName: "ocrSummary"
+            Layout.fillWidth: true
+            visible: !dlg.running && dlg.summary !== ""
+            text: dlg.summary
+            wrapMode: Text.Wrap
+            color: Theme.textSecondary
+        }
         AppText {
             Layout.fillWidth: true
             visible: dlg.error !== "" || dlg.result !== ""
@@ -99,6 +113,7 @@ Popup {
         defaultSuffix: "pdf"
         nameFilters: [Tr.s("pdfFiles")]
         onAccepted: {
+            dlg.summary = ""
             dlg.error = Doc.startThaiOcr(dlg.pages, dlg.currentPage, selectedFile.toString())
             dlg.running = dlg.error === ""
         }

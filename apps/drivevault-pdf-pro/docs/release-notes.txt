@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.7.0 (2026-11-12): Report page results after Thai OCR
+  - See how many pages gained searchable text, already had text, or yielded no recognized text.
+  - Correct search highlighting positions for newly generated searchable text layers.
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.6.0 (2026-11-12): Remove supported text runs from PDF copies
   - Edit existing text can remove a supported run and verify the new copy before saving.
   - The installer is unsigned. Clean Windows installation remains an owner-run check.

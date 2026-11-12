@@ -204,6 +204,7 @@ signals:
     void printFinished(bool ok, const QString& message);
     void outputChanged();
     void outputFinished(const QString& error, const QString& path);
+    void thaiOcrReport(int recognized, int skipped, int unrecognized);
     void maintenanceInspected(const QVariantMap& result);
     void batchFinished(const QString& error, const QVariantList& rows);
     void redactionScanFinished(int sourceId, const QString& error, const QVariantList& marks);
