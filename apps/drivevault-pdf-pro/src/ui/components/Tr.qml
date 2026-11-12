@@ -87,6 +87,8 @@ QtObject {
         "fitPage": ["Fit page", "พอดีหน้า"],
         "actualSize": ["Actual size", "ขนาดจริง"],
         "zoomMenu": ["Zoom", "ซูม"],
+        "markupAsAnnotations": ["Markup as comments", "มาร์กอัปเป็นคอมเมนต์"],
+        "markupAsAnnotationsTip": ["Highlight, underline, strike out and note are saved as real PDF comments that other programs can edit and list (a note becomes a note icon). Off: they are drawn into the page.", "ไฮไลต์ ขีดเส้นใต้ ขีดฆ่า และโน้ต จะถูกบันทึกเป็นคอมเมนต์ PDF จริงที่โปรแกรมอื่นแก้ไขและแสดงรายการได้ (โน้ตจะเป็นไอคอนโน้ต) ถ้าปิด จะวาดลงในหน้า"],
         "formImportData": ["Import data...", "นำเข้าข้อมูล..."],
         "formExportData": ["Export data...", "ส่งออกข้อมูล..."],
         "formDataTip": ["Form data is exchanged as an XFDF file (the standard XML format of PDF forms)", "ข้อมูลฟอร์มแลกเปลี่ยนเป็นไฟล์ XFDF (รูปแบบ XML มาตรฐานของฟอร์ม PDF)"],

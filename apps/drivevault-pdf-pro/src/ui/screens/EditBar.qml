@@ -28,7 +28,7 @@ Rectangle {
     function save(path, overwrite) {
         message = ""
         result = ""
-        const code = Editor.save(path, overwrite)
+        const code = Editor.save(path, overwrite, markupAnnots.checked)
         if (code === "exists") {
             pendingPath = path
             askReplace = true
@@ -209,6 +209,7 @@ Rectangle {
         PTextField { objectName: "editFormOptions"; visible: bar.sel.kind === "formChoice"; width: 230; implicitHeight: 32; height: 32; placeholderText: Tr.s("formOptions"); text: bar.sel.optionsText || ""; onEditingFinished: Editor.setOptions(Editor.selectedId, text) }
         PButton { objectName: "editMarks"; compact: true; text: Tr.s("marksButton"); tip: Tr.s("marksTip"); onClicked: marks.open() }
         PButton { objectName: "editDiscard"; compact: true; variant: "ghost"; text: Tr.s("discardAll"); enabled: Editor.count > 0; onClicked: discardAsk.open() }
+        PCheckBox { id: markupAnnots; objectName: "editMarkupAnnotations"; text: Tr.s("markupAsAnnotations"); ToolTip.visible: hovered; ToolTip.text: Tr.s("markupAsAnnotationsTip") }
         PButton { objectName: "editSave"; text: Editor.busy ? Tr.s("saving") : Tr.s("saveAs"); variant: "primary"; implicitHeight: 32; enabled: Editor.count > 0 && !Editor.busy; onClicked: saveDialog.open() }
         PButton { objectName: "editCancelSave"; compact: true; variant: "ghost"; visible: Editor.busy; text: Tr.s("cancel"); onClicked: Editor.cancelSave() }
         PButton { objectName: "editClose"; compact: true; variant: "ghost"; text: "✕"; tip: Tr.s("closeEditor"); onClicked: Editor.active = false }

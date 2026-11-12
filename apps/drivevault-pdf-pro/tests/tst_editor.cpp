@@ -868,6 +868,58 @@ private slots:
         QVERIFY(e.endDraft());
         QCOMPARE(e.replaceImage(rect, m_dir.filePath("tall.png")), QStringLiteral("notImage"));
     }
+    void markupCanBeSavedAsRealAnnotations()
+    {
+        const QString in = write("an.pdf", testpdf::make(2));
+        EditItem hi;
+        hi.kind = Kind::Highlight;
+        hi.rect = QRectF(100, 100, 200, 20);
+        hi.color = QColor(255, 235, 0, 160);
+        EditItem ul;
+        ul.kind = Kind::Underline;
+        ul.rect = QRectF(100, 200, 150, 14);
+        ul.color = QColor(200, 0, 0);
+        EditItem sk;
+        sk.kind = Kind::Strike;
+        sk.rect = QRectF(100, 250, 150, 14);
+        sk.color = QColor(0, 0, 200);
+        EditItem note;
+        note.kind = Kind::Note;
+        note.page = 1;
+        note.rect = QRectF(300, 300, 120, 60);
+        note.text = QStringLiteral("Check this \u0e17\u0e14\u0e2a\u0e2d\u0e1a");
+        EditItem box = rectItem(0, QRectF(300, 100, 80, 40), QColor(20, 20, 220));
+
+        const QString out = m_dir.filePath("an-out.pdf");
+        const EditResult r = saveWithEdits(in, {}, out, {pageEdits(0, QSizeF(612, 792), {hi, ul, sk, box}), pageEdits(1, QSizeF(612, 792), {note})}, false, {}, true);
+        QVERIFY2(r.ok, qPrintable(r.error + r.detail));
+        QCOMPARE(r.annotations, 4);
+        QVERIFY(check(out));
+        auto doc = PdfDocument::open(out, {}, nullptr);
+        QVERIFY(doc);
+        QStringList types;
+        QString noteText;
+        for (const auto& a : doc->annotations(0)) {
+            types << a.type;
+            if (a.type == "Text")
+                noteText = a.contents;
+        }
+        types.sort();
+        QCOMPARE(types, (QStringList{"Highlight", "StrikeOut", "Text", "Underline"}));
+        QCOMPARE(noteText, note.text);
+        // the shape (not markup) is still drawn into the page; the highlight is an annotation drawn by the viewer over the same place
+        const QImage img = doc->render(0, 1.0, nullptr, 0);
+        QVERIFY(at(img, 340, 120).blue() > 200 && at(img, 340, 120).red() < 60);
+        QVERIFY(at(img, 200, 110).blue() < 120);                                              // yellow-ish highlight tints the white page
+
+        // without the option the same items are drawn and no annotation exists
+        const QString flat = m_dir.filePath("an-flat.pdf");
+        const EditResult f = save(in, flat, {pageEdits(0, QSizeF(612, 792), {hi, ul})});
+        QVERIFY(f.ok);
+        QCOMPARE(f.annotations, 0);
+        auto flatDoc = PdfDocument::open(flat, {}, nullptr);
+        QVERIFY(flatDoc && flatDoc->annotations(0).isEmpty());
+    }
 };
 
 QTEST_MAIN(TstEditor)

@@ -99,13 +99,16 @@ struct EditResult {
     QString detail;               // imageMissing: the file; fontRestricted: the font; others: the library's message
     QStringList warnings;         // "encrypted": the new file keeps the protection of the source
     int pages = 0;                // pages that got something
+    int annotations = 0;          // markup written as real PDF annotations (see `markupAsAnnotations`)
     qint64 bytes = 0;
 };
 
 // Writes `in` with the items burned into the pages as a new file (the items become part of the page contents: they can be selected, copied and
 // searched as text where they are text, but they are no longer editable objects). The source is never changed. Existing `outFile` is refused
 // unless `overwrite`. Progress is (pages done, total).
+// `markupAsAnnotations`: Highlight, Underline, Strike and Note items are written as real annotations (Highlight, Underline, StrikeOut, Text) that any
+// PDF program can select, edit and list as comments, instead of being burned into the page. A page that is turned (/Rotate) keeps them burned in.
 EditResult saveWithEdits(const QString& inFile, const QString& password, const QString& outFile, const QList<PageEdits>& pages, bool overwrite,
-                         const Progress& progress = {});
+                         const Progress& progress = {}, bool markupAsAnnotations = false);
 
 } // namespace dp::tools

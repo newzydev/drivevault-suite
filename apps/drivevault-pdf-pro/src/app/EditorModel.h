@@ -144,7 +144,7 @@ public:
 
     // ---- result
     // Writes a new file with the edits burned in. "" when started, otherwise "noDocument" | "noEdits" | "busy" | "exists" | "fontRestricted".
-    Q_INVOKABLE QString save(const QString& outPath, bool overwrite = false);
+    Q_INVOKABLE QString save(const QString& outPath, bool overwrite = false, bool markupAsAnnotations = false);   // markupAsAnnotations: highlight / underline / strike / note become real PDF annotations
     Q_INVOKABLE void cancelSave();
     Q_INVOKABLE QStringList restrictedFontNames() const;
 

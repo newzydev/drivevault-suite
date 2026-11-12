@@ -636,6 +636,59 @@ int addFormWidgets(QPDF& pdf, QPDFAcroFormDocumentHelper& afdh, QPDFPageObjectHe
     return added;
 }
 
+// ---- markup as real annotations ---------------------------------------------------------------------------------------------------------
+bool isMarkupKind(Kind k) { return k == Kind::Highlight || k == Kind::Underline || k == Kind::Strike || k == Kind::Note; }
+
+QPDFObjectHandle rgbArray(const QColor& c) { return numberArray({c.redF(), c.greenF(), c.blueF()}); }
+
+int addMarkupAnnotations(QPDF& pdf, QPDFPageObjectHelper& page, const QList<EditItem>& items)
+{
+    int added = 0;
+    QPDFObjectHandle pageObj = page.getObjectHandle();
+    const QPDFObjectHandle::Rectangle box = page.getCropBox(true, true).getArrayAsRectangle();
+    for (const EditItem& it : items) {
+        if (!isMarkupKind(it.kind))
+            continue;
+        const QRectF r = it.rect.normalized();
+        const double left = box.llx + r.left();
+        const double right = box.llx + r.right();
+        const double top = box.ury - r.top();
+        const double bottom = box.ury - r.bottom();
+        QPDFObjectHandle a = QPDFObjectHandle::newDictionary();
+        a.replaceKey("/Type", QPDFObjectHandle::newName("/Annot"));
+        a.replaceKey("/F", QPDFObjectHandle::newInteger(4));
+        if (it.kind == Kind::Note) {
+            // a sticky note: the icon sits at the top left corner of the note's box, the text is the content
+            const QColor c = it.fill.isValid() ? it.fill : QColor(255, 240, 140);
+            a.replaceKey("/Subtype", QPDFObjectHandle::newName("/Text"));
+            a.replaceKey("/Rect", numberArray({left, top - 20, left + 20, top}));
+            a.replaceKey("/Name", QPDFObjectHandle::newName("/Note"));
+            a.replaceKey("/Open", QPDFObjectHandle::newBool(false));
+            a.replaceKey("/C", rgbArray(c));
+            a.replaceKey("/Contents", QPDFObjectHandle::newUnicodeString(it.text.toUtf8().toStdString()));
+        } else {
+            const char* subtype = it.kind == Kind::Highlight ? "/Highlight" : it.kind == Kind::Underline ? "/Underline" : "/StrikeOut";
+            a.replaceKey("/Subtype", QPDFObjectHandle::newName(subtype));
+            a.replaceKey("/Rect", numberArray({left, bottom, right, top}));
+            a.replaceKey("/QuadPoints", numberArray({left, top, right, top, left, bottom, right, bottom}));
+            a.replaceKey("/C", rgbArray(it.color));
+            const double alpha = it.kind == Kind::Highlight ? it.color.alphaF() * it.opacity : it.opacity;
+            if (alpha < 0.999)
+                a.replaceKey("/CA", QPDFObjectHandle::newReal(std::clamp(alpha, 0.0, 1.0), 3));
+        }
+        a = pdf.makeIndirectObject(a);
+        a.replaceKey("/P", pageObj);
+        QPDFObjectHandle annots = pageObj.getKey("/Annots");
+        if (!annots.isArray()) {
+            annots = QPDFObjectHandle::newArray();
+            pageObj.replaceKey("/Annots", annots);
+        }
+        annots.appendItem(a);
+        ++added;
+    }
+    return added;
+}
+
 // the standard fonts the fields use (Helvetica for text, ZapfDingbats for ticks) in the form's default resources
 void ensureFormFonts(QPDF& pdf)
 {
@@ -672,7 +725,7 @@ void ensureFormFonts(QPDF& pdf)
 } // namespace
 
 EditResult saveWithEdits(const QString& inFile, const QString& password, const QString& outFile, const QList<PageEdits>& pages, bool overwrite,
-                         const Progress& progress)
+                         const Progress& progress, bool markupAsAnnotations)
 {
     EditResult result;
     QList<PageEdits> work;
@@ -705,6 +758,28 @@ EditResult saveWithEdits(const QString& inFile, const QString& password, const Q
     const int total = int(work.size());
     std::vector<TextRuns> runsPerPage(size_t(work.size()));
     try {
+        QPDF src;
+        src.setSuppressWarnings(true);
+        src.processFile(inFile.toUtf8().constData(), password.isEmpty() ? nullptr : password.toUtf8().constData());
+        std::vector<QPDFPageObjectHelper> srcPages = QPDFPageDocumentHelper(src).getAllPages();
+        // markup that becomes real annotations leaves the overlay (not on turned pages: the overlay handles the rotation)
+        std::vector<QList<EditItem>> annotItems(size_t(work.size()));
+        std::vector<bool> burn(size_t(work.size()), true);
+        if (markupAsAnnotations) {
+            for (int i = 0; i < work.size(); ++i) {
+                const int index = work[i].page;
+                if (index < 0 || index >= int(srcPages.size()))
+                    continue;                                              // the range error is reported below
+                QPDFObjectHandle rotate = srcPages[size_t(index)].getAttribute("/Rotate", false);
+                if (rotate.isInteger() && rotate.getIntValue() % 360 != 0)
+                    continue;
+                QList<EditItem> rest;
+                for (const EditItem& it : work[i].items)
+                    (isMarkupKind(it.kind) ? annotItems[size_t(i)] : rest).append(it);
+                work[i].items = rest;
+                burn[size_t(i)] = !rest.isEmpty() || !work[i].textLayer.isEmpty();
+            }
+        }
         // 1. one overlay document with a page per edited page; Qt shapes the text and embeds the fonts
         {
             QPdfWriter writer(overlayFile);
@@ -735,16 +810,12 @@ EditResult saveWithEdits(const QString& inFile, const QString& password, const Q
         }
 
         // 2. burn each overlay page into its page
-        QPDF src;
-        src.setSuppressWarnings(true);
-        src.processFile(inFile.toUtf8().constData(), password.isEmpty() ? nullptr : password.toUtf8().constData());
         if (src.isEncrypted())
             result.warnings << QStringLiteral("encrypted");
         QPDF ov;
         ov.setSuppressWarnings(true);
         ov.processFile(overlayFile.toUtf8().constData());
         std::vector<QPDFPageObjectHelper> ovPages = QPDFPageDocumentHelper(ov).getAllPages();
-        std::vector<QPDFPageObjectHelper> srcPages = QPDFPageDocumentHelper(src).getAllPages();
         QPDFAcroFormDocumentHelper afdh(src);
         std::set<std::string> fieldNames;
         for (QPDFFormFieldObjectHelper f : afdh.getFormFields())
@@ -762,6 +833,11 @@ EditResult saveWithEdits(const QString& inFile, const QString& password, const Q
             if (index < 0 || index >= int(srcPages.size())) {
                 result.error = QStringLiteral("range");
                 return result;
+            }
+            if (!burn[size_t(i)]) {
+                QPDFPageObjectHelper only = srcPages[size_t(index)];
+                result.annotations += addMarkupAnnotations(src, only, annotItems[size_t(i)]);
+                continue;
             }
             QPDFObjectHandle ovForm = ovPages[size_t(i)].getFormXObjectForPage();
             addTextLayer(ov, ovForm, runsPerPage[size_t(i)], work[i].size);
@@ -786,6 +862,7 @@ EditResult saveWithEdits(const QString& inFile, const QString& password, const Q
             target.addPageContents(QPDFObjectHandle::newStream(&src, "q\n"), true);
             target.addPageContents(QPDFObjectHandle::newStream(&src, "Q\n" + place), false);
             formsAdded += addFormWidgets(src, afdh, target, work[i].items, fieldNames, result.warnings);
+            result.annotations += addMarkupAnnotations(src, target, annotItems[size_t(i)]);
         }
         if (formsAdded > 0) {
             ensureFormFonts(src);

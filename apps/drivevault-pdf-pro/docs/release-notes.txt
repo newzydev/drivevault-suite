@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.15.0 (2026-11-12): Markup as real comments
+  - Edit mode, "Markup as comments" (next to Save as): highlight, underline, strike out and note are saved as real PDF annotations (Highlight, Underline, StrikeOut, Text) instead of being drawn into the page. Other PDF programs can select, edit and list them as comments. A note becomes a note icon whose content is the note text. On a page that is turned the markup stays drawn into the page. Other shapes, text and pictures are drawn into the page as before. Off by default.
+  - Not available: editing or deleting comments that are already in a file, stamps as annotations, replying to comments.
+  - The installer is not signed (Windows SmartScreen may warn).
+
 v1.14.0 (2026-11-12): Form data export and import
   - Fill in a form: "Export data..." saves the values of the form (what the file has, plus what you typed) as an XFDF file, the standard XML format that other PDF programs read. "Import data..." reads an XFDF file and puts the values into the dialog; press Save as to write them into a copy. Names that are not in the form, read-only fields and choices that are not in the list are reported and skipped.
   - Not available: filling directly on the page, creating radio / button / signature fields, CSV and FDF files.

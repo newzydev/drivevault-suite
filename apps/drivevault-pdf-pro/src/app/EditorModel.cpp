@@ -1094,7 +1094,7 @@ QList<EditItem> EditorModel::itemsForPage(int tabId, int page, const QSizeF& siz
     return out;
 }
 
-QString EditorModel::save(const QString& outPath, bool overwrite)
+QString EditorModel::save(const QString& outPath, bool overwrite, bool markupAsAnnotations)
 {
     QMutexLocker lock(&m_mutex);
     const DocumentController::SourceInfo src = m_controller->currentSource();
@@ -1133,12 +1133,12 @@ QString EditorModel::save(const QString& outPath, bool overwrite)
     m_busy = true;
     m_progress = 0.0;
     emit savingChanged();
-    QThreadPool::globalInstance()->start(QRunnable::create([this, src, path, overwrite, pages, cancel, tabId] {
+    QThreadPool::globalInstance()->start(QRunnable::create([this, src, path, overwrite, pages, cancel, tabId, markupAsAnnotations] {
         const tools::EditResult r = tools::saveWithEdits(src.path, src.password, path, pages, overwrite, [this, cancel](int done, int total) {
             QMetaObject::invokeMethod(this, [this, done, total] { m_progress = total > 0 ? double(done) / total : 0.0; emit savingChanged(); },
                                       Qt::QueuedConnection);
             return !cancel->load();
-        });
+        }, markupAsAnnotations);
         QMetaObject::invokeMethod(this, [this, r, path, tabId] {
             m_busy = false;
             m_progress = r.ok ? 1.0 : m_progress;
