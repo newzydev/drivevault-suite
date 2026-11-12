@@ -3,6 +3,7 @@
 #include "Compressor.h"
 #include "EditorModel.h"
 #include "FormFiller.h"
+#include "PdfComparer.h"
 #include "OverlayImageProvider.h"
 #include "PageListModel.h"
 #include "ThaiOcr.h"
@@ -105,11 +106,13 @@ int main(int argc, char* argv[])
     dp::Compressor compressor(&controller);
     dp::EditorModel editor(&controller);
     dp::FormFiller forms(&controller);
+    dp::PdfComparer comparer(&controller);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Doc", &controller);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Organizer", &organizer);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Compressor", &compressor);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Editor", &editor);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Forms", &forms);
+    qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Comparer", &comparer);
 
     QQmlApplicationEngine engine;
     if (parser.isSet(screenshotOption))

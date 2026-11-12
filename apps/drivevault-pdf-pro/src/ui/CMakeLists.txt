@@ -54,5 +54,6 @@ qt_add_qml_module(dp_ui
         screens/RedactionBar.qml
         screens/MaintenanceDialog.qml
         screens/BatchDialog.qml
-        screens/CreatePdfDialog.qml)
+        screens/CreatePdfDialog.qml
+        screens/CompareDialog.qml)
 target_link_libraries(dp_ui PRIVATE Qt6::Quick Qt6::QuickControls2)

@@ -18,6 +18,7 @@
 #include <QFontInfo>
 #include <QMarginsF>
 #include <QMutex>
+#include <QRegularExpression>
 #include <QPageSize>
 #include <QPainter>
 #include <QPainterPath>
@@ -266,6 +267,10 @@ void addTextLayer(QPDF& pdf, QPDFObjectHandle form, const TextRuns& runs, const 
 
 QString replaceTokens(QString text, int page, int pageCount)
 {
+    // {n:0000} = the page number padded with zeros to that width (Bates style numbering: "CASE-{n:000000}")
+    static const QRegularExpression padded(QStringLiteral("\\{n:(0+)\\}"));
+    for (auto m = padded.match(text); m.hasMatch(); m = padded.match(text))
+        text.replace(m.capturedStart(), m.capturedLength(), QString::number(page + 1).rightJustified(int(m.capturedLength(1)), QLatin1Char('0')));
     text.replace(QStringLiteral("{n}"), QString::number(page + 1));
     text.replace(QStringLiteral("{total}"), QString::number(pageCount));
     return text;

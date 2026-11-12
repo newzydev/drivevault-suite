@@ -62,7 +62,8 @@ ApplicationWindow {
         { key: "unlockPdf", icon: "shield", tint: "#5fc7de", group: "sign" },
         { key: "maintenance", icon: "outline", tint: "#5fc7de", group: "edit" },
         { key: "batchPdf", icon: "thumbs", tint: "#fbb04c", group: "convert" },
-        { key: "repairPdf", icon: "rotate", tint: "#fbb04c", group: "edit" }
+        { key: "repairPdf", icon: "rotate", tint: "#fbb04c", group: "edit" },
+        { key: "comparePdf", icon: "split", tint: "#5fc7de", group: "edit" }
     ]
 
     function runTool(tool) {
@@ -158,6 +159,7 @@ ApplicationWindow {
         const viewer = viewerLoader.item
         if (name === "organizer") organizer.begin("organize")
         else if (name === "split") splitDialog.open()
+        else if (name === "compare") compareDialog.open()
         else if (name === "compress") compressDialog.open()
         else if (name === "form") formDialog.open()
         else if (name === "security") securityDialog.open()
@@ -316,13 +318,30 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 0
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Loader {
+                    id: viewerLoader
+                    anchors.fill: parent
+                    active: Doc.isOpen
+                    visible: active && !win.showHome
+                    sourceComponent: viewerComponent
+                }
+                Loader {
+                    anchors.fill: parent
+                    active: win.showHome || !Doc.isOpen
+                    visible: active
+                    sourceComponent: homeComponent
+                }
+            }
             Rectangle {
                 objectName: "toolPanel"
                 visible: win.toolsVisible
                 Layout.preferredWidth: win.width < 1100 ? 218 : 254
                 Layout.fillHeight: true
                 color: Theme.backgroundAlt
-                Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.border }
+                Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: Theme.border }
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 12
@@ -366,23 +385,6 @@ ApplicationWindow {
                             onClicked: win.runTool(tool.key)
                         }
                     }
-                }
-            }
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Loader {
-                    id: viewerLoader
-                    anchors.fill: parent
-                    active: Doc.isOpen
-                    visible: active && !win.showHome
-                    sourceComponent: viewerComponent
-                }
-                Loader {
-                    anchors.fill: parent
-                    active: win.showHome || !Doc.isOpen
-                    visible: active
-                    sourceComponent: homeComponent
                 }
             }
         }
@@ -431,6 +433,7 @@ ApplicationWindow {
             onOrganizeRequested: organizer.begin("organize")
             onSplitRequested: splitDialog.open()
             onCompressRequested: compressDialog.open()
+            onCompareRequested: compareDialog.open()
             onFormRequested: formDialog.open()
             onImageExportRequested: page => { imageExportDialog.currentPage = page; imageExportDialog.open() }
             onSecurityRequested: unlock => { securityDialog.unlock = unlock; securityDialog.open() }
@@ -501,6 +504,10 @@ ApplicationWindow {
         onOpenResultRequested: path => win.openPath(path)
     }
     SplitDialog { id: splitDialog }
+    CompareDialog {
+        id: compareDialog
+        onPageRequested: page => { if (viewerLoader.item) viewerLoader.item.goTo(page) }
+    }
     ImageExportDialog { id: imageExportDialog }
     OcrDialog {
         id: ocrDialog

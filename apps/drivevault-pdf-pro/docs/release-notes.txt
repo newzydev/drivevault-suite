@@ -2,6 +2,12 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.10.0 (2026-11-12): Compare PDF, Bates numbering, tools on the right
+  - Compare PDF (All tools, or Ctrl+K): the open file against another PDF, page by page: lines of text added or removed, how alike the text is, how much of the picture differs, pages that exist in one file only; jump to a page. Nothing is written.
+  - Bates style numbering: use {n:000000} in the text of a header, footer or page number (padded page number).
+  - The tools panel is on the right of the page (like Acrobat), so the page gets more room.
+  - The installer is unsigned. Clean Windows installation remains an owner-run check.
+
 v1.9.4 (2026-11-12): Icon tool bar
   - The reader tool bar uses icons with tool tips (find, print, pages, split, compress, edit, form, export, fit width, fit page) like a professional PDF tool; 10 new line icons.
   - The installer is unsigned. Clean Windows installation remains an owner-run check.

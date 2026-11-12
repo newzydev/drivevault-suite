@@ -716,6 +716,18 @@ private slots:
         }
     }
 
+    void batesNumbersArePaddedAndStartWherePagesStart()
+    {
+        MarkDef m;
+        m.type = MarkDef::Footer;
+        m.text = "CASE-{n:0000} of {total} ({n})";
+        const QList<EditItem> p = marksForPage({m}, 2, 12, QSizeF(612, 792));
+        QCOMPARE(p.size(), 1);
+        QCOMPARE(p.first().text, QStringLiteral("CASE-0003 of 12 (3)"));
+        m.text = "{n:00}/{n:000000}";
+        QCOMPARE(marksForPage({m}, 9, 12, QSizeF(612, 792)).first().text, QStringLiteral("10/000010"));
+    }
+
     void bundledFontsMayBeEmbedded()
     {
         EditItem t;
