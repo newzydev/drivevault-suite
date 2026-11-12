@@ -13,6 +13,7 @@
 #include <QSaveFile>
 #include <QTimer>
 #include <QFileInfo>
+#include <QRegularExpression>
 #include <QSet>
 #include <QFontDatabase>
 #include <QImageReader>
@@ -55,6 +56,9 @@ QString kindName(Kind k)
     case Kind::Stamp: return QStringLiteral("stamp");
     case Kind::Polygon: return QStringLiteral("polygon");
     case Kind::Note: return QStringLiteral("note");
+    case Kind::FormText: return QStringLiteral("formText");
+    case Kind::FormCheck: return QStringLiteral("formCheck");
+    case Kind::FormChoice: return QStringLiteral("formChoice");
     }
     return {};
 }
@@ -62,7 +66,7 @@ QString kindName(Kind k)
 bool kindFromTool(const QString& tool, Kind& out)
 {
     static const QList<Kind> all = {Kind::Text, Kind::Image, Kind::Rect, Kind::Ellipse, Kind::Line, Kind::Arrow,
-                                    Kind::Pen, Kind::Highlight, Kind::Underline, Kind::Strike, Kind::Stamp, Kind::Polygon, Kind::Note};
+                                    Kind::Pen, Kind::Highlight, Kind::Underline, Kind::Strike, Kind::Stamp, Kind::Polygon, Kind::Note, Kind::FormText, Kind::FormCheck, Kind::FormChoice};
     for (Kind k : all)
         if (kindName(k) == tool) {
             out = k;
@@ -72,6 +76,7 @@ bool kindFromTool(const QString& tool, Kind& out)
 }
 
 bool isLine(Kind k) { return k == Kind::Line || k == Kind::Arrow; }
+bool isFormKind(Kind k) { return k == Kind::FormText || k == Kind::FormCheck || k == Kind::FormChoice; }
 bool isPts(Kind k) { return k == Kind::Pen || k == Kind::Polygon; }
 
 double distanceToSegment(const QPointF& p, const QPointF& a, const QPointF& b)
@@ -455,7 +460,7 @@ QVariantMap EditorModel::itemInfo(int id) const
         }
     }
     return {{"id", it->id},       {"kind", kindName(it->kind)}, {"page", it->page},    {"x", b.x()},         {"y", b.y()},
-            {"w", b.width()},     {"h", b.height()},            {"angle", it->angle},  {"text", it->text},   {"handles", handles}};
+            {"w", b.width()},     {"h", b.height()},            {"angle", it->angle},  {"text", it->text},   {"handles", handles}, {"optionsText", it->options.join(QStringLiteral(", "))}};
 }
 
 int EditorModel::handleAt(int page, double x, double y, double tolerance) const
@@ -490,6 +495,20 @@ int EditorModel::beginDraft(int page, const QString& tool, double x, double y)
     beginGesture();
     pushUndo();
     EditItem it = newItem(page, kind);
+    if (isFormKind(kind)) {
+        const QString prefix = kind == Kind::FormCheck ? QStringLiteral("Check") : kind == Kind::FormChoice ? QStringLiteral("List") : QStringLiteral("Text");
+        QSet<QString> used;
+        for (const EditItem& other : s->now.items)
+            if (isFormKind(other.kind))
+                used.insert(other.text);
+        int n = 1;
+        while (used.contains(prefix + QString::number(n)))
+            ++n;
+        it.text = prefix + QString::number(n);
+        it.fill = QColor();
+        if (kind == Kind::FormChoice)
+            it.options = {QStringLiteral("Option 1"), QStringLiteral("Option 2"), QStringLiteral("Option 3")};
+    }
     it.id = s->nextId++;
     m_draftStart = QPointF(x, y);
     if (isLine(kind)) {
@@ -538,7 +557,14 @@ bool EditorModel::endDraft()
         return false;
     }
     bool keep = true;
-    if (it->kind == Kind::Text || it->kind == Kind::Note) {
+    if (isFormKind(it->kind)) {
+        // a click or a tiny drag gives a usable field; a tick box is square
+        const bool check = it->kind == Kind::FormCheck;
+        if (it->rect.width() < 8 || it->rect.height() < 8)
+            it->rect = QRectF(it->rect.topLeft(), check ? QSizeF(18, 18) : QSizeF(160, 24));
+        else if (check)
+            it->rect.setSize(QSizeF(std::min(it->rect.width(), it->rect.height()), std::min(it->rect.width(), it->rect.height())));
+    } else if (it->kind == Kind::Text || it->kind == Kind::Note) {
         if (it->rect.width() < 20 || it->rect.height() < 12)
             it->rect = QRectF(it->rect.topLeft(), QSizeF(std::max(it->kind == Kind::Note ? 180.0 : 220.0, it->rect.width()), std::max(it->kind == Kind::Note ? 100.0 : 0.0, it->fontSize * 1.6 + 6)));
     } else if (it->kind == Kind::Stamp) {
@@ -693,7 +719,7 @@ void EditorModel::beginEdit(int id)
 {
     QMutexLocker lock(&m_mutex);
     const EditItem* it = find(id);
-    if (!it || (it->kind != Kind::Text && it->kind != Kind::Stamp && it->kind != Kind::Note))
+    if (!it || (it->kind != Kind::Text && it->kind != Kind::Stamp && it->kind != Kind::Note && !isFormKind(it->kind)))
         return;
     m_selected = id;
     m_editing = id;
@@ -1111,7 +1137,7 @@ QJsonObject itemJson(const EditItem& it)
             {"rect", QJsonArray{it.rect.x(), it.rect.y(), it.rect.width(), it.rect.height()}},
             {"a", pointJson(it.a)}, {"b", pointJson(it.b)}, {"points", pts}, {"text", it.text}, {"font", it.font}, {"fontSize", it.fontSize},
             {"bold", it.bold}, {"italic", it.italic}, {"align", it.align}, {"color", colorJson(it.color)}, {"fill", colorJson(it.fill)},
-            {"width", it.width}, {"opacity", it.opacity}, {"angle", it.angle}, {"imagePath", it.imagePath}};
+            {"width", it.width}, {"opacity", it.opacity}, {"angle", it.angle}, {"imagePath", it.imagePath}, {"options", QJsonArray::fromStringList(it.options)}};
 }
 
 bool itemFromJson(const QJsonObject& o, EditItem& it)
@@ -1141,6 +1167,8 @@ bool itemFromJson(const QJsonObject& o, EditItem& it)
     it.opacity = o.value("opacity").toDouble(1);
     it.angle = o.value("angle").toDouble();
     it.imagePath = o.value("imagePath").toString();
+    for (const QJsonValue& v : o.value("options").toArray())
+        it.options << v.toString();
     return it.id > 0 && it.page >= 0;
 }
 
@@ -1281,6 +1309,28 @@ void EditorModel::forgetRecovery()
     for (const auto& [id, st] : m_states)
         if (!st.path.isEmpty())
             QFile::remove(recoveryPath(st.path));
+}
+
+} // namespace dp
+
+namespace dp {
+
+void EditorModel::setOptions(int id, const QString& text)
+{
+    QMutexLocker lock(&m_mutex);
+    const EditItem* check = find(id);
+    if (!check || check->kind != Kind::FormChoice)
+        return;
+    QStringList list;
+    for (const QString& part : text.split(QRegularExpression(QStringLiteral("[,\n]")), Qt::SkipEmptyParts))
+        if (!part.trimmed().isEmpty())
+            list << part.trimmed();
+    if (list == check->options)
+        return;
+    pushUndo();
+    EditItem* it = find(id);
+    it->options = list;
+    touch();
 }
 
 } // namespace dp

@@ -16,7 +16,9 @@
 #include <QFileInfo>
 
 #include <algorithm>
+#include <cstdio>
 #include <map>
+#include <set>
 
 namespace dp::tools {
 
@@ -67,6 +69,44 @@ std::vector<Group> uniqueFields(QPDFAcroFormDocumentHelper& afdh)
             have->members.push_back(f);
     }
     return out;
+}
+
+// The text of a filled field is drawn by the generated appearance; the background and border of the field (its /MK) are put in front of it so that the
+// filled field keeps its box.
+void keepFieldBox(QPDFObjectHandle widget)
+{
+    QPDFObjectHandle mk = widget.getKey("/MK");
+    QPDFObjectHandle ap = widget.getKey("/AP");
+    QPDFObjectHandle n = ap.isDictionary() ? ap.getKey("/N") : QPDFObjectHandle::newNull();
+    if (!mk.isDictionary() || !n.isStream())
+        return;
+    QPDFObjectHandle bbox = n.getDict().getKey("/BBox");
+    if (!bbox.isArray() || bbox.getArrayNItems() != 4)
+        return;
+    const double w = bbox.getArrayItem(2).getNumericValue() - bbox.getArrayItem(0).getNumericValue();
+    const double h = bbox.getArrayItem(3).getNumericValue() - bbox.getArrayItem(1).getNumericValue();
+    auto color = [](QPDFObjectHandle a, std::string& out) {
+        if (!a.isArray() || a.getArrayNItems() != 3)
+            return false;
+        char buf[96];
+        std::snprintf(buf, sizeof buf, "%.3f %.3f %.3f", a.getArrayItem(0).getNumericValue(), a.getArrayItem(1).getNumericValue(), a.getArrayItem(2).getNumericValue());
+        out = buf;
+        return true;
+    };
+    std::string bg, bc, prefix;
+    char buf[160];
+    if (color(mk.getKey("/BG"), bg)) {
+        std::snprintf(buf, sizeof buf, "q %s rg 0 0 %.2f %.2f re f Q\n", bg.c_str(), w, h);
+        prefix += buf;
+    }
+    if (color(mk.getKey("/BC"), bc)) {
+        std::snprintf(buf, sizeof buf, "q %s RG 1 w 0.5 0.5 %.2f %.2f re S Q\n", bc.c_str(), w - 1, h - 1);
+        prefix += buf;
+    }
+    if (prefix.empty())
+        return;
+    std::shared_ptr<Buffer> old = n.getStreamData(qpdf_dl_generalized);
+    n.replaceStreamData(prefix + std::string(reinterpret_cast<const char*>(old->getBuffer()), old->getSize()), QPDFObjectHandle::newNull(), QPDFObjectHandle::newNull());
 }
 
 QString errorOf(const QPDFExc& e) { return e.getErrorCode() == qpdf_e_password ? QStringLiteral("password") : QStringLiteral("format"); }
@@ -175,6 +215,7 @@ FormFill fillForm(const QString& file, const QString& password, const QString& o
             result.error = QStringLiteral("noForm");
             return result;
         }
+        std::set<QString> filledNames;
         std::map<QString, Group> byName;
         for (Group& g : uniqueFields(afdh))
             byName.emplace(g.name, g);
@@ -203,6 +244,7 @@ FormFill fillForm(const QString& file, const QString& password, const QString& o
                 }
                 f.setV(text.toUtf8().toStdString(), true);
                 ++result.filled;
+                filledNames.insert(name);
             } else if (ft == "/Ch") {
                 const QString text = it.value().toString();
                 const std::vector<std::string> choices = f.getChoices();
@@ -215,6 +257,7 @@ FormFill fillForm(const QString& file, const QString& password, const QString& o
                 }
                 f.setV(text.toUtf8().toStdString(), true);
                 ++result.filled;
+                filledNames.insert(name);
             } else if (ft == "/Btn" && (f.isCheckbox() || f.isRadioButton())) {
                 std::vector<QPDFAnnotationObjectHelper> widgets;
                 QStringList on;
@@ -251,11 +294,17 @@ FormFill fillForm(const QString& file, const QString& password, const QString& o
                     widgets[i].getObjectHandle().replaceKey("/AS", QPDFObjectHandle::newName(f.isCheckbox() ? state : wanted));
                 }
                 ++result.filled;
+                filledNames.insert(name);
             } else {
                 result.skipped << name + QStringLiteral(": unsupported");
             }
         }
         afdh.generateAppearancesIfNeeded();
+        for (const QString& filledName : filledNames)
+            for (QPDFFormFieldObjectHelper& m : byName.at(filledName).members)
+                for (QPDFAnnotationObjectHelper a : afdh.getAnnotationsForField(m))
+                    if (m.getFieldType() != "/Btn")
+                        keepFieldBox(a.getObjectHandle());
 
         QFile::remove(tmp);
         const QByteArray outputName = tmp.toUtf8();        // Keep the filename alive for QPDFWriter.

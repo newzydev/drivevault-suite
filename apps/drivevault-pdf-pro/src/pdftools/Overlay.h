@@ -15,7 +15,8 @@
 namespace dp::tools {
 
 // What the user can put on a page. All positions are in points, origin at the top left of the page as it is shown without view rotation.
-enum class Kind { Text, Image, Rect, Ellipse, Line, Arrow, Pen, Highlight, Underline, Strike, Stamp, Polygon, Note };
+enum class Kind { Text, Image, Rect, Ellipse, Line, Arrow, Pen, Highlight, Underline, Strike, Stamp, Polygon, Note, FormText, FormCheck, FormChoice };
+// FormText / FormCheck / FormChoice are fill-in form fields: shown as a dashed box in the editor, written as real AcroForm fields (not painted) when saved.
 
 struct EditItem {
     int id = 0;
@@ -36,6 +37,7 @@ struct EditItem {
     double opacity = 1.0;         // 0..1 for the whole item
     double angle = 0;             // degrees clockwise about the centre of `rect`
     QString imagePath;            // Image: PNG / JPEG / ... file
+    QStringList options;          // FormChoice: the entries of the drop-down list (text = the name of any form field)
 
     QRectF bounds() const;        // the box that contains the item (before `angle`)
     QPointF center() const { return bounds().center(); }
@@ -73,7 +75,7 @@ struct TextRun {
 using TextRuns = QList<TextRun>;
 
 // `runs` (optional) receives the lines of text that were drawn.
-void paintItem(class QPainter& painter, const EditItem& item, TextRuns* runs = nullptr);
+void paintItem(class QPainter& painter, const EditItem& item, TextRuns* runs = nullptr, bool editorView = false);
 
 // A transparent picture of the items of one page (what the editor shows over the page). `turns` = view rotation in quarter turns clockwise.
 // `hiddenId` is not drawn (it is being edited).

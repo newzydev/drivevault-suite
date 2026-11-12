@@ -115,6 +115,7 @@ public:
     Q_INVOKABLE void beginEdit(int id);                   // the text of this item is typed into a field above it
     Q_INVOKABLE void endEdit();
     Q_INVOKABLE void setText(int id, const QString& text);
+    Q_INVOKABLE void setOptions(int id, const QString& text);   // the entries of a drop-down field, separated by commas or lines
     Q_INVOKABLE void deleteSelected();
     Q_INVOKABLE void toFront();
     Q_INVOKABLE void toBack();

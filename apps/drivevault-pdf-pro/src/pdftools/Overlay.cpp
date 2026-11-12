@@ -3,7 +3,9 @@
 
 #include <qpdf/Constants.h>
 #include <qpdf/QPDF.hh>
+#include <qpdf/QPDFAcroFormDocumentHelper.hh>
 #include <qpdf/QPDFExc.hh>
+#include <qpdf/QPDFFormFieldObjectHelper.hh>
 #include <qpdf/QPDFMatrix.hh>
 #include <qpdf/QPDFObjectHandle.hh>
 #include <qpdf/QPDFPageDocumentHelper.hh>
@@ -37,6 +39,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <set>
 
 namespace dp::tools {
 
@@ -346,7 +349,7 @@ QList<EditItem> marksForPage(const QList<MarkDef>& marks, int page, int pageCoun
     return out;
 }
 
-void paintItem(QPainter& p, const EditItem& it, TextRuns* runs)
+void paintItem(QPainter& p, const EditItem& it, TextRuns* runs, bool editorView)
 {
     const int firstRun = runs ? int(runs->size()) : 0;
     p.save();
@@ -419,6 +422,26 @@ void paintItem(QPainter& p, const EditItem& it, TextRuns* runs)
             p.drawPolygon(QPolygonF(it.points));
         break;
     }
+    case Kind::FormText:
+    case Kind::FormCheck:
+    case Kind::FormChoice:
+        if (editorView) {
+            // only a marker in the editor: the saved file gets a real form field here
+            p.setPen(QPen(QColor(79, 70, 229), 1.2, Qt::DashLine));
+            p.setBrush(QColor(79, 70, 229, 38));
+            p.drawRect(it.rect);
+            EditItem label = it;
+            label.kind = Kind::Text;
+            label.fontSize = std::min(10.0, std::max(5.0, it.rect.height() * 0.6));
+            label.color = QColor(55, 48, 163);
+            label.align = 0;
+            label.angle = 0;
+            label.opacity = 1;
+            label.fill = QColor();
+            const QString mark = it.kind == Kind::FormCheck ? QStringLiteral("2713 ") : it.kind == Kind::FormChoice ? QStringLiteral("25BE ") : QString();
+            drawText(p, it.rect.adjusted(2, 1, -2, -1), mark + it.text, label, label.color, box.center(), nullptr);
+        }
+        break;
     case Kind::Note: {
         // a sticky note: a yellow card with a darker edge and the text on it
         p.setPen(QPen(it.color.darker(160), 1));
@@ -474,7 +497,7 @@ QImage renderOverlay(const QList<EditItem>& items, const QSizeF& baseSize, doubl
     p.scale(ppp, ppp);
     for (const EditItem& it : items)
         if (it.id != hiddenId)
-            paintItem(p, it);
+            paintItem(p, it, nullptr, true);
     p.end();
     return img;
 }
@@ -502,6 +525,151 @@ QStringList restrictedFonts(const QList<EditItem>& items, const QList<MarkDef>& 
     bad.sort();
     return bad;
 }
+
+namespace {
+
+// ---- fill-in form fields --------------------------------------------------------------------------------------------------------------
+// FormText / FormCheck / FormChoice items become real AcroForm widgets on the page (they are not painted into the overlay).
+bool isFormKind(Kind k) { return k == Kind::FormText || k == Kind::FormCheck || k == Kind::FormChoice; }
+
+QPDFObjectHandle numberArray(std::initializer_list<double> values)
+{
+    QPDFObjectHandle a = QPDFObjectHandle::newArray();
+    for (double v : values)
+        a.appendItem(QPDFObjectHandle::newReal(v, 3));
+    return a;
+}
+
+QPDFObjectHandle formStream(QPDF& pdf, double w, double h, const std::string& content)
+{
+    QPDFObjectHandle s = QPDFObjectHandle::newStream(&pdf, content);
+    s.getDict().replaceKey("/Type", QPDFObjectHandle::newName("/XObject"));
+    s.getDict().replaceKey("/Subtype", QPDFObjectHandle::newName("/Form"));
+    s.getDict().replaceKey("/BBox", numberArray({0, 0, w, h}));
+    return s;
+}
+
+int addFormWidgets(QPDF& pdf, QPDFAcroFormDocumentHelper& afdh, QPDFPageObjectHelper& page, const QList<EditItem>& items, std::set<std::string>& names, QStringList& warnings)
+{
+    int added = 0;
+    QPDFObjectHandle pageObj = page.getObjectHandle();
+    QPDFObjectHandle rotate = pageObj.getKey("/Rotate");
+    QPDFObjectHandle::Rectangle box = page.getCropBox(true, true).getArrayAsRectangle();
+    for (const EditItem& it : items) {
+        if (!isFormKind(it.kind))
+            continue;
+        if (rotate.isInteger() && rotate.getIntValue() % 360 != 0) {
+            if (!warnings.contains(QStringLiteral("formsRotated")))
+                warnings << QStringLiteral("formsRotated");            // fields on a turned page are not written
+            continue;
+        }
+        const QRectF r = it.rect.normalized();
+        const double w = std::max(4.0, r.width());
+        const double h = std::max(4.0, r.height());
+        const double llx = box.llx + r.x();
+        const double ury = box.ury - r.y();
+        const std::string name = it.text.trimmed().isEmpty() ? std::string("Field") : it.text.trimmed().toUtf8().toStdString();
+        std::string unique = name;
+        for (int n = 2; names.count(unique); ++n)
+            unique = name + "_" + std::to_string(n);
+        names.insert(unique);
+
+        QPDFObjectHandle widget = QPDFObjectHandle::newDictionary();
+        widget.replaceKey("/Type", QPDFObjectHandle::newName("/Annot"));
+        widget.replaceKey("/Subtype", QPDFObjectHandle::newName("/Widget"));
+        widget.replaceKey("/T", QPDFObjectHandle::newUnicodeString(unique));
+        widget.replaceKey("/Rect", numberArray({llx, ury - h, llx + w, ury}));
+        widget.replaceKey("/F", QPDFObjectHandle::newInteger(4));
+        QPDFObjectHandle mk = QPDFObjectHandle::newDictionary();
+        mk.replaceKey("/BC", numberArray({0.25, 0.25, 0.3}));
+        mk.replaceKey("/BG", numberArray({0.95, 0.96, 1.0}));
+        widget.replaceKey("/MK", mk);
+        const double fontSize = std::clamp(it.fontSize > 0 ? it.fontSize : 12.0, 6.0, std::max(6.0, h - 4));
+        char da[64];
+        std::snprintf(da, sizeof da, "/Helv %.1f Tf 0 g", fontSize);
+        if (it.kind == Kind::FormCheck) {
+            widget.replaceKey("/FT", QPDFObjectHandle::newName("/Btn"));
+            std::snprintf(da, sizeof da, "/ZaDb 0 Tf 0 g");
+            widget.replaceKey("/V", QPDFObjectHandle::newName("/Off"));
+            widget.replaceKey("/AS", QPDFObjectHandle::newName("/Off"));
+            char buf[512];
+            std::snprintf(buf, sizeof buf, "0.95 0.96 1 rg 0 0 %.2f %.2f re f 0.25 0.25 0.3 RG 1 w 0.5 0.5 %.2f %.2f re S\n", w, h, w - 1, h - 1);
+            const std::string off = buf;
+            std::snprintf(buf, sizeof buf, "%s0 G 2 w 1 J 1 j %.2f %.2f m %.2f %.2f l %.2f %.2f l S\n", off.c_str(), w * 0.22, h * 0.52, w * 0.42, h * 0.26, w * 0.8, h * 0.78);
+            QPDFObjectHandle n = QPDFObjectHandle::newDictionary();
+            n.replaceKey("/Yes", formStream(pdf, w, h, buf));
+            n.replaceKey("/Off", formStream(pdf, w, h, off));
+            QPDFObjectHandle ap = QPDFObjectHandle::newDictionary();
+            ap.replaceKey("/N", n);
+            widget.replaceKey("/AP", ap);
+        } else if (it.kind == Kind::FormChoice) {
+            widget.replaceKey("/FT", QPDFObjectHandle::newName("/Ch"));
+            widget.replaceKey("/Ff", QPDFObjectHandle::newInteger(1 << 17));          // a drop-down list
+            QPDFObjectHandle opt = QPDFObjectHandle::newArray();
+            for (const QString& o : it.options)
+                if (!o.trimmed().isEmpty())
+                    opt.appendItem(QPDFObjectHandle::newUnicodeString(o.trimmed().toUtf8().toStdString()));
+            widget.replaceKey("/Opt", opt);
+        } else {
+            widget.replaceKey("/FT", QPDFObjectHandle::newName("/Tx"));
+        }
+        widget.replaceKey("/DA", QPDFObjectHandle::newString(da));
+        if (it.kind != Kind::FormCheck) {
+            // an empty field already shows its box in every reader
+            char box[200];
+            std::snprintf(box, sizeof box, "0.95 0.96 1 rg 0 0 %.2f %.2f re f 0.25 0.25 0.3 RG 1 w 0.5 0.5 %.2f %.2f re S\n", w, h, w - 1, h - 1);
+            QPDFObjectHandle ap = QPDFObjectHandle::newDictionary();
+            ap.replaceKey("/N", formStream(pdf, w, h, box));
+            widget.replaceKey("/AP", ap);
+        }
+        widget = pdf.makeIndirectObject(widget);
+        widget.replaceKey("/P", pageObj);
+        QPDFObjectHandle annots = pageObj.getKey("/Annots");
+        if (!annots.isArray()) {
+            annots = QPDFObjectHandle::newArray();
+            pageObj.replaceKey("/Annots", annots);
+        }
+        annots.appendItem(widget);
+        afdh.addFormField(QPDFFormFieldObjectHelper(widget));
+        ++added;
+    }
+    return added;
+}
+
+// the standard fonts the fields use (Helvetica for text, ZapfDingbats for ticks) in the form's default resources
+void ensureFormFonts(QPDF& pdf)
+{
+    QPDFObjectHandle acro = pdf.getRoot().getKey("/AcroForm");
+    if (!acro.isDictionary())
+        return;
+    QPDFObjectHandle dr = acro.getKey("/DR");
+    if (!dr.isDictionary()) {
+        dr = QPDFObjectHandle::newDictionary();
+        acro.replaceKey("/DR", dr);
+    }
+    QPDFObjectHandle fonts = dr.getKey("/Font");
+    if (!fonts.isDictionary()) {
+        fonts = QPDFObjectHandle::newDictionary();
+        dr.replaceKey("/Font", fonts);
+    }
+    auto addFont = [&](const char* key, const char* base, bool winAnsi) {
+        if (fonts.hasKey(key))
+            return;
+        QPDFObjectHandle f = QPDFObjectHandle::newDictionary();
+        f.replaceKey("/Type", QPDFObjectHandle::newName("/Font"));
+        f.replaceKey("/Subtype", QPDFObjectHandle::newName("/Type1"));
+        f.replaceKey("/BaseFont", QPDFObjectHandle::newName(base));
+        if (winAnsi)
+            f.replaceKey("/Encoding", QPDFObjectHandle::newName("/WinAnsiEncoding"));
+        fonts.replaceKey(key, pdf.makeIndirectObject(f));
+    };
+    addFont("/Helv", "/Helvetica", true);
+    addFont("/ZaDb", "/ZapfDingbats", false);
+    if (!acro.hasKey("/DA"))
+        acro.replaceKey("/DA", QPDFObjectHandle::newString("/Helv 0 Tf 0 g"));
+}
+
+} // namespace
 
 EditResult saveWithEdits(const QString& inFile, const QString& password, const QString& outFile, const QList<PageEdits>& pages, bool overwrite,
                          const Progress& progress)
@@ -577,6 +745,11 @@ EditResult saveWithEdits(const QString& inFile, const QString& password, const Q
         ov.processFile(overlayFile.toUtf8().constData());
         std::vector<QPDFPageObjectHelper> ovPages = QPDFPageDocumentHelper(ov).getAllPages();
         std::vector<QPDFPageObjectHelper> srcPages = QPDFPageDocumentHelper(src).getAllPages();
+        QPDFAcroFormDocumentHelper afdh(src);
+        std::set<std::string> fieldNames;
+        for (QPDFFormFieldObjectHelper f : afdh.getFormFields())
+            fieldNames.insert(f.getFullyQualifiedName());
+        int formsAdded = 0;
         if (ovPages.size() != size_t(work.size())) {
             result.error = QStringLiteral("unknown");
             result.detail = QStringLiteral("overlay page count");
@@ -612,6 +785,12 @@ EditResult saveWithEdits(const QString& inFile, const QString& password, const Q
             xobjects.replaceKey(name, fo);
             target.addPageContents(QPDFObjectHandle::newStream(&src, "q\n"), true);
             target.addPageContents(QPDFObjectHandle::newStream(&src, "Q\n" + place), false);
+            formsAdded += addFormWidgets(src, afdh, target, work[i].items, fieldNames, result.warnings);
+        }
+        if (formsAdded > 0) {
+            ensureFormFonts(src);
+            afdh.setNeedAppearances(true);
+            afdh.generateAppearancesIfNeeded();
         }
         result.pages = total;
 

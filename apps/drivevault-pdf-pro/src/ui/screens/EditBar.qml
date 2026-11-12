@@ -10,6 +10,7 @@ Rectangle {
     id: bar
     objectName: "editBar"
 
+    readonly property var sel: { Editor.rev; Editor.selectedId; return Editor.selectedId > 0 ? Editor.selectedInfo() : ({}) }
     property string stampText: "APPROVED"
     property string message: ""
     property bool messageIsError: false
@@ -18,7 +19,7 @@ Rectangle {
     property string pendingPath: ""
     signal openResultRequested(string path)
     readonly property var swatches: ["#000000", "#EF4444", "#F59E0B", "#22C55E", "#3B82F6", "#8B5CF6", "#FFFFFF", "#6B7280"]
-    readonly property var toolNames: ["select", "text", "image", "rect", "ellipse", "line", "arrow", "pen", "highlight", "underline", "strike", "stamp", "polygon", "note"]
+    readonly property var toolNames: ["select", "text", "image", "rect", "ellipse", "line", "arrow", "pen", "highlight", "underline", "strike", "stamp", "polygon", "note", "formText", "formCheck", "formChoice"]
 
     implicitHeight: flow.implicitHeight + 16 + msgRow.height
     color: Theme.editBar
@@ -203,6 +204,7 @@ Rectangle {
         PButton { objectName: "editRedo"; compact: true; variant: "ghost"; text: Tr.s("redo"); enabled: Editor.canRedo; onClicked: Editor.redo() }
         Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
 
+        PTextField { objectName: "editFormOptions"; visible: bar.sel.kind === "formChoice"; width: 230; implicitHeight: 32; height: 32; placeholderText: Tr.s("formOptions"); text: bar.sel.optionsText || ""; onEditingFinished: Editor.setOptions(Editor.selectedId, text) }
         PButton { objectName: "editMarks"; compact: true; text: Tr.s("marksButton"); tip: Tr.s("marksTip"); onClicked: marks.open() }
         PButton { objectName: "editDiscard"; compact: true; variant: "ghost"; text: Tr.s("discardAll"); enabled: Editor.count > 0; onClicked: discardAsk.open() }
         PButton { objectName: "editSave"; text: Editor.busy ? Tr.s("saving") : Tr.s("saveAs"); variant: "primary"; implicitHeight: 32; enabled: Editor.count > 0 && !Editor.busy; onClicked: saveDialog.open() }

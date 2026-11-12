@@ -20,6 +20,7 @@ Item {
     readonly property bool recoveryPromptVisible: recoverAsk.visible
     signal formRequested()
     signal compareRequested()
+    signal signatureRequested()
     signal imageExportRequested(int page)
     signal securityRequested(bool unlock)
     signal maintenanceRequested(bool repair)
@@ -47,6 +48,7 @@ Item {
         case "toolCompress": compressRequested(); break
         case "toolForm": formRequested(); break
         case "comparePdf": compareRequested(); break
+        case "digitalSign": signatureRequested(); break
         case "exportImages": imageExportRequested(currentPage); break
         case "thaiOcr": ocrRequested(currentPage); break
         case "protectPdf": securityRequested(false); break

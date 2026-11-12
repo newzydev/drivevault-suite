@@ -5,6 +5,7 @@
 #include "TestPdf.h"
 #include "pdfengine/PdfDocument.h"
 #include "pdfengine/PdfiumRuntime.h"
+#include "pdftools/Forms.h"
 #include "pdftools/Overlay.h"
 
 #include <QDir>
@@ -19,6 +20,7 @@
 #include <QtTest>
 
 using dp::pdf::PdfDocument;
+namespace tools = dp::tools;
 using namespace dp::tools;
 using dp::tools::EditItem;
 
@@ -726,6 +728,75 @@ private slots:
         QCOMPARE(p.first().text, QStringLiteral("CASE-0003 of 12 (3)"));
         m.text = "{n:00}/{n:000000}";
         QCOMPARE(marksForPage({m}, 9, 12, QSizeF(612, 792)).first().text, QStringLiteral("10/000010"));
+    }
+
+    void formFieldsAreCreatedAsRealFormFieldsAndCanBeFilledAndSeenByTheEditor()
+    {
+        dp::DocumentController c(m_dir.filePath("dform"));
+        dp::EditorModel e(&c);
+        const QString in = write("form-src.pdf", testpdf::make(2));
+        QCOMPARE(c.open(in), QString());
+        const int t = e.beginDraft(0, "formText", 100, 100);
+        e.updateDraft(300, 126);
+        QVERIFY(e.endDraft());
+        QCOMPARE(e.itemInfo(t).value("text").toString(), QStringLiteral("Text1"));
+        const int k = e.beginDraft(0, "formCheck", 100, 160);                  // a click: a usable square box
+        QVERIFY(e.endDraft());
+        QCOMPARE(e.itemInfo(k).value("w").toDouble(), 18.0);
+        QCOMPARE(e.itemInfo(k).value("text").toString(), QStringLiteral("Check1"));
+        const int l = e.beginDraft(1, "formChoice", 100, 200);
+        QVERIFY(e.endDraft());
+        QCOMPARE(e.itemInfo(l).value("text").toString(), QStringLiteral("List1"));
+        QCOMPARE(e.itemInfo(l).value("optionsText").toString(), QStringLiteral("Option 1, Option 2, Option 3"));
+        e.setOptions(l, "Thailand, Japan\nFrance");
+        QCOMPARE(e.itemInfo(l).value("optionsText").toString(), QStringLiteral("Thailand, Japan, France"));
+        const int t2 = e.beginDraft(0, "formText", 100, 250);
+        e.updateDraft(300, 276);
+        QVERIFY(e.endDraft());
+        e.beginEdit(t2);                                                        // the name can be typed
+        e.setText(t2, "Text1");                                                // the same name: the written field gets another one
+        e.endEdit();
+        // the editor shows a marker for them; the saved file has real fields
+        const QImage ov = tools::renderOverlay(e.itemsForPage(c.docId(), 0, QSizeF(612, 792), 2, nullptr), QSizeF(612, 792), 1.0, 0, 0);
+        QVERIFY(QColor::fromRgba(ov.pixel(150, 100)).alpha() > 0);
+
+        const QString out = m_dir.filePath("form-out.pdf");
+        QSignalSpy done(&e, &dp::EditorModel::saveFinished);
+        QCOMPARE(e.save(out), QString());
+        QVERIFY(QTest::qWaitFor([&] { return done.count() > 0; }, 30000));
+        QVERIFY2(done.first().at(0).toBool(), qPrintable(done.first().at(1).toString()));
+        QVERIFY(check(out));
+        const tools::FormRead r = tools::readFormFields(out, {});
+        QVERIFY(r.ok && r.hasForm);
+        QCOMPARE(r.fields.size(), 4);
+        auto field = [&](const QString& n) -> const tools::FormField* { for (const tools::FormField& f : r.fields) if (f.name == n) return &f; return nullptr; };
+        QVERIFY(field("Text1") && field("Text1")->type == "text" && field("Text1")->page == 0);
+        QVERIFY(field("Text1_2") && field("Text1_2")->type == "text");
+        QVERIFY(field("Check1") && field("Check1")->type == "checkbox");
+        QVERIFY(field("List1") && field("List1")->type == "choice" && field("List1")->page == 1);
+        QCOMPARE(field("List1")->options, (QStringList{"Thailand", "Japan", "France"}));
+        // they can be filled in, and the filled copy shows the values
+        tools::FormFill f = tools::fillForm(out, {}, m_dir.filePath("form-filled.pdf"), {{"Text1", "Hello"}, {"Check1", true}, {"List1", "Japan"}}, false);
+        QVERIFY2(f.ok, qPrintable(f.error));
+        QCOMPARE(f.filled, 3);
+        auto doc = PdfDocument::open(m_dir.filePath("form-filled.pdf"), {}, nullptr);
+        QVERIFY(doc);
+        const QImage page = doc->render(0, 1.0, nullptr, 0);
+        int dark = 0;                                                           // the tick in the box at (100..118, 160..178)
+        for (int y = 160; y < 178; ++y)
+            for (int x = 100; x < 118; ++x)
+                if (QColor(page.pixel(x, y)).lightness() < 110)
+                    ++dark;
+        QVERIFY2(dark > 10, qPrintable(QString::number(dark)));
+        int ink = 0;                                                            // "Hello" in the text field
+        for (int y = 100; y < 126; ++y)
+            for (int x = 102; x < 300; ++x)
+                if (QColor(page.pixel(x, y)).lightness() < 110)
+                    ++ink;
+        QVERIFY2(ink > 40, qPrintable(QString::number(ink)));
+        // the empty field boxes are drawn by the reader too (their border)
+        const QImage empty = PdfDocument::open(out, {}, nullptr)->render(0, 1.0, nullptr, 0);
+        QVERIFY(QColor(empty.pixel(150, 100)).lightness() < 250 || QColor(empty.pixel(150, 101)).lightness() < 250);
     }
 
     void bundledFontsMayBeEmbedded()
