@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.14.0 (2026-11-12): Form data export and import
+  - Fill in a form: "Export data..." saves the values of the form (what the file has, plus what you typed) as an XFDF file, the standard XML format that other PDF programs read. "Import data..." reads an XFDF file and puts the values into the dialog; press Save as to write them into a copy. Names that are not in the form, read-only fields and choices that are not in the list are reported and skipped.
+  - Not available: filling directly on the page, creating radio / button / signature fields, CSV and FDF files.
+  - The installer is not signed (Windows SmartScreen may warn).
+
 v1.13.0 (2026-11-12): Snap guides and replacing a picture
   - Edit mode, "Snap": while you move or resize an item, its edges and centre stick to the page edges, the page centre and the edges / centres of other items on the page (4 point reach). A red guide line shows what it stuck to. Switch it off with the same button. Arrow-key nudges never snap.
   - Replace picture: a picture you added can be swapped for another file; its centre and width stay and the height follows the new proportions. One undo step.

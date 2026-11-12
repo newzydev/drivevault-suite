@@ -1,12 +1,14 @@
 #include "FormFiller.h"
 
 #include "DocumentController.h"
+#include "pdftools/FormData.h"
 #include "pdftools/Forms.h"
 
 #include <QDir>
 #include <QFileInfo>
 #include <QRunnable>
 #include <QThreadPool>
+#include <QUrl>
 
 namespace dp {
 
@@ -61,6 +63,51 @@ QString FormFiller::load()
         }, Qt::QueuedConnection);
     }));
     return {};
+}
+
+namespace {
+QList<tools::FormField> fieldsOf(const QVariantList& list)
+{
+    QList<tools::FormField> out;
+    for (const QVariant& v : list) {
+        const QVariantMap m = v.toMap();
+        tools::FormField f;
+        f.name = m.value(QStringLiteral("name")).toString();
+        f.type = m.value(QStringLiteral("type")).toString();
+        f.value = m.value(QStringLiteral("value")).toString();
+        f.checked = m.value(QStringLiteral("checked")).toBool();
+        f.options = m.value(QStringLiteral("options")).toStringList();
+        f.readOnly = m.value(QStringLiteral("readOnly")).toBool();
+        out.append(f);
+    }
+    return out;
+}
+QString localPathOf(const QString& pathOrUrl)
+{
+    const QUrl url(pathOrUrl);
+    return url.isLocalFile() ? url.toLocalFile() : pathOrUrl;
+}
+} // namespace
+
+QString FormFiller::exportData(const QVariantMap& values, const QString& pathOrUrl)
+{
+    if (m_fields.isEmpty())
+        return QStringLiteral("noFields");
+    QMap<QString, QVariant> map;
+    for (auto it = values.begin(); it != values.end(); ++it)
+        map.insert(it.key(), it.value());
+    return tools::writeXfdf(QDir::toNativeSeparators(QFileInfo(localPathOf(pathOrUrl)).absoluteFilePath()), fieldsOf(m_fields), map);
+}
+
+QVariantMap FormFiller::importData(const QString& pathOrUrl)
+{
+    if (m_fields.isEmpty())
+        return {{"ok", false}, {"error", QStringLiteral("noFields")}};
+    const tools::FormDataRead r = tools::readXfdf(localPathOf(pathOrUrl), fieldsOf(m_fields));
+    QVariantMap values;
+    for (auto it = r.values.begin(); it != r.values.end(); ++it)
+        values.insert(it.key(), it.value());
+    return {{"ok", r.ok}, {"error", r.error}, {"values", values}, {"matched", int(r.values.size())}, {"unknown", r.unknown}, {"skipped", r.skipped}};
 }
 
 QString FormFiller::save(const QVariantMap& values, const QString& outPath, bool overwrite)

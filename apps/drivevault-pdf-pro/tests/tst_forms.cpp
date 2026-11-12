@@ -3,6 +3,7 @@
 #include "pdfengine/PdfDocument.h"
 #include "pdfengine/PdfiumRuntime.h"
 #include "pdftools/Forms.h"
+#include "pdftools/FormData.h"
 
 #include <QDir>
 #include <QFile>
@@ -211,6 +212,58 @@ private slots:
             QCOMPARE(field(readFormFields(m_dir.filePath("l-out.pdf"), "open-secret"), "name")->value, QStringLiteral("Secret"));
             QCOMPARE(readFormFields(m_dir.filePath("l-out.pdf"), {}).error, QStringLiteral("password"));
         }
+    }
+    void formDataRoundTripsThroughXfdf()
+    {
+        const FormRead r = readFormFields(write("x.pdf", formPdf()), {});
+        QVERIFY(r.ok && !r.fields.isEmpty());
+        const QString xfdf = m_dir.filePath("data.xfdf");
+        QMap<QString, QVariant> typed{{"name", QStringLiteral("Somchai <A&B> ไทย")}, {"agree", true}, {"country", QStringLiteral("Japan")}, {"size", QStringLiteral("L")}};
+        QCOMPARE(writeXfdf(xfdf, r.fields, typed), QString());
+
+        QFile f(xfdf);
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        const QByteArray text = f.readAll();
+        QVERIFY(text.contains("http://ns.adobe.com/xfdf/"));
+        QVERIFY(text.contains("<value>Yes</value>"));
+        QVERIFY(text.contains("&lt;A&amp;B&gt;"));                           // escaped, not raw
+        f.close();
+
+        const FormDataRead back = readXfdf(xfdf, r.fields);
+        QVERIFY(back.ok);
+        QCOMPARE(back.values.value("name").toString(), QStringLiteral("Somchai <A&B> ไทย"));
+        QCOMPARE(back.values.value("agree").toBool(), true);
+        QCOMPARE(back.values.value("country").toString(), QStringLiteral("Japan"));
+        QCOMPARE(back.values.value("size").toString(), QStringLiteral("L"));
+        QVERIFY(back.skipped.contains(QStringLiteral("locked: readonly")));   // the read-only field is exported but never imported
+        QVERIFY(back.unknown.isEmpty());
+    }
+    void formDataImportIsStrict()
+    {
+        const FormRead r = readFormFields(write("y.pdf", formPdf()), {});
+        QCOMPARE(readXfdf(m_dir.filePath("missing.xfdf"), r.fields).error, QStringLiteral("file"));
+        write("bad.xfdf", "<html/>");
+        QCOMPARE(readXfdf(m_dir.filePath("bad.xfdf"), r.fields).error, QStringLiteral("format"));
+        write("broken.xfdf", "<xfdf xmlns=\"http://ns.adobe.com/xfdf/\"><fields><field name=\"a\">");
+        QCOMPARE(readXfdf(m_dir.filePath("broken.xfdf"), r.fields).error, QStringLiteral("format"));
+
+        // nested names, unknown names, a value that is not an option, a check box turned off
+        write("n.xfdf", "<?xml version=\"1.0\"?><xfdf xmlns=\"http://ns.adobe.com/xfdf/\"><fields>"
+                        "<field name=\"name\"><value>A</value></field><field name=\"ghost\"><value>x</value></field>"
+                        "<field name=\"country\"><value>Mars</value></field><field name=\"agree\"><value>Off</value></field>"
+                        "</fields></xfdf>");
+        const FormDataRead d = readXfdf(m_dir.filePath("n.xfdf"), r.fields);
+        QVERIFY(d.ok);
+        QCOMPARE(d.values.value("name").toString(), QStringLiteral("A"));
+        QCOMPARE(d.values.value("agree").toBool(), false);
+        QVERIFY(!d.values.contains("country"));
+        QVERIFY(d.skipped.contains(QStringLiteral("country: option")));
+        QCOMPARE(d.unknown, QStringList{QStringLiteral("ghost")});
+
+        // imported values can be written into a copy and read back
+        QMap<QString, QVariant> values = d.values;
+        const FormFill fill = fillForm(m_dir.filePath("y.pdf"), {}, m_dir.filePath("y-out.pdf"), values, false);
+        QVERIFY(fill.ok);
     }
 };
 

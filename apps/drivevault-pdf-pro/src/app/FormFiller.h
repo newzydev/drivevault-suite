@@ -36,6 +36,11 @@ public:
     // values: name -> text / option name / bool. "" when started, otherwise "noDocument" | "busy" | "exists" | "sameFile" | "noValues".
     Q_INVOKABLE QString save(const QVariantMap& values, const QString& outPath, bool overwrite = false);
 
+    // Form data as XFDF. `values` = what the user typed so far (name -> value); the rest is what the file has. "" or "noFields" | "write".
+    Q_INVOKABLE QString exportData(const QVariantMap& values, const QString& pathOrUrl);
+    // {ok, error ("file" | "format" | "noFields"), values: {name: value}, matched, unknown: [name], skipped: ["name: reason"]}
+    Q_INVOKABLE QVariantMap importData(const QString& pathOrUrl);
+
 signals:
     void changed();
     // error: "" | "password" | "file" | "format" | "exists" | "write" | "unknown" | "noForm"; skipped: "name: reason"

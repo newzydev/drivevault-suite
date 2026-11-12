@@ -51,6 +51,39 @@ Popup {
         }
     }
     function fail(text) { message = text; messageIsError = true }
+    function exportTo(url) {
+        message = ""
+        result = ""
+        const code = Forms.exportData(edits, url)
+        if (code === "")
+            { messageIsError = false; message = Tr.s("formDataExported") }
+        else
+            fail(Tr.s(code === "write" ? "errWrite" : "noFormFields"))
+    }
+    function importFrom(url) {
+        message = ""
+        result = ""
+        const r = Forms.importData(url)
+        if (!r.ok) {
+            fail(Tr.s(r.error === "format" ? "formDataBad" : r.error === "noFields" ? "noFormFields" : "errFile"))
+            return
+        }
+        const next = Object.assign({}, edits)
+        for (const k in r.values)
+            next[k] = r.values[k]
+        edits = next
+        messageIsError = false
+        let t = Tr.f("formDataImported", r.matched)
+        if (r.unknown.length > 0)
+            t += "  " + Tr.f("formDataUnknown", r.unknown.length)
+        if (r.skipped.length > 0) {
+            const parts = []
+            for (const s of r.skipped)
+                parts.push(reasonText(s))
+            t += "  " + Tr.s("formSkipped") + " " + parts.join(", ")
+        }
+        message = t
+    }
 
     onAboutToShow: {
         edits = ({})
@@ -135,7 +168,7 @@ Popup {
             PTextField {
                 objectName: "formField_" + field.name
                 implicitHeight: field.multiline ? 74 : 36
-                text: field.value
+                text: dlg.edits[field.name] !== undefined ? dlg.edits[field.name] : field.value
                 enabled: !field.readOnly && !Forms.busy
                 maximumLength: field.maxLength > 0 ? field.maxLength : 32767
                 color: Theme.text
@@ -150,7 +183,7 @@ Popup {
             id: checkEditor
             PCheckBox {
                 objectName: "formField_" + field.name
-                checked: field.checked
+                checked: dlg.edits[field.name] !== undefined ? dlg.edits[field.name] : field.checked
                 enabled: !field.readOnly && !Forms.busy
                 text: Tr.s("formTick")
 
@@ -165,7 +198,7 @@ Popup {
                 implicitHeight: 36
                 model: field.options
                 enabled: !field.readOnly && !Forms.busy
-                currentIndex: field.options.indexOf(field.value)
+                currentIndex: field.options.indexOf(dlg.edits[field.name] !== undefined ? dlg.edits[field.name] : field.value)
                 onActivated: dlg.setValue(field.name, currentText)
                 font.pixelSize: Theme.fontMd
                 contentItem: AppText { leftPadding: 10; text: cb.displayText; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter }
@@ -180,7 +213,7 @@ Popup {
                 implicitHeight: 36
                 model: [Tr.s("formNoChoice")].concat(field.options)
                 enabled: !field.readOnly && !Forms.busy
-                currentIndex: field.options.indexOf(field.value) + 1
+                currentIndex: field.options.indexOf(dlg.edits[field.name] !== undefined ? dlg.edits[field.name] : field.value) + 1
                 onActivated: dlg.setValue(field.name, currentIndex === 0 ? "" : currentText)
                 font.pixelSize: Theme.fontMd
                 contentItem: AppText { leftPadding: 10; text: rb.displayText; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter }
@@ -200,6 +233,8 @@ Popup {
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
+            PButton { objectName: "formImportData"; variant: "ghost"; text: Tr.s("formImportData"); tip: Tr.s("formDataTip"); visible: Forms.fields.length > 0; enabled: !Forms.busy; onClicked: importDialog.open() }
+            PButton { objectName: "formExportData"; variant: "ghost"; text: Tr.s("formExportData"); tip: Tr.s("formDataTip"); visible: Forms.fields.length > 0; enabled: !Forms.busy; onClicked: exportDialog.open() }
             Item { Layout.fillWidth: true }
             PButton { objectName: "formOpenResult"; visible: dlg.result !== ""; text: Tr.s("openResult"); onClicked: { const p = dlg.result; dlg.close(); dlg.openResultRequested(p) } }
             PButton { objectName: "formClose"; variant: "ghost"; text: Tr.s("close"); enabled: !Forms.busy; onClicked: dlg.close() }
@@ -207,6 +242,21 @@ Popup {
         }
     }
 
+    FileDialog {
+        id: importDialog
+        title: Tr.s("formImportData")
+        nameFilters: [Tr.s("formDataFiles")]
+        onAccepted: dlg.importFrom(selectedFile.toString())
+    }
+    FileDialog {
+        id: exportDialog
+        title: Tr.s("formExportData")
+        nameFilters: [Tr.s("formDataFiles")]
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "xfdf"
+        currentFolder: Doc.isOpen ? "file:///" + Doc.filePath.replace(/\\/g, "/").replace(/\/[^\/]*$/, "") : ""
+        onAccepted: dlg.exportTo(selectedFile.toString())
+    }
     FileDialog {
         id: saveDialog
         title: Tr.s("formSaveAs")

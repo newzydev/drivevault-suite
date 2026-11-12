@@ -4,7 +4,7 @@ add_library(dp_pdftools STATIC
     SplitPlan.cpp SplitPlan.h
     Compress.cpp Compress.h
     Overlay.cpp Overlay.h
-    Forms.cpp Forms.h
+    Forms.cpp Forms.h FormData.cpp FormData.h
     Signature.cpp Signature.h
     Security.cpp Security.h
     RedactionAudit.cpp RedactionAudit.h
