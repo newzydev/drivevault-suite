@@ -74,8 +74,8 @@ const CatalogEntry kCatalog[] = {
      u"ตาราง สูตร และแผนภูมิ อยู่ในแผน - ยังไม่พร้อมใช้งาน",
      "office", "S"},
     {"drivevault.pdf", "PdfPro", "DriveVault PDF Pro", "#EF4444", false,
-     u"Read, merge, split, edit and protect PDF files.",
-     u"อ่าน รวม แยก แก้ไข และป้องกันไฟล์ PDF",
+     u"Read, search, edit, fill forms, merge, split, compress, protect, sign and OCR PDF files. Everything runs on your PC.",
+     u"อ่าน ค้นหา แก้ไข กรอกฟอร์ม รวม แยก บีบอัด ป้องกัน ลงนาม และ OCR ไฟล์ PDF ทำงานบนเครื่องของคุณทั้งหมด",
      "office", "PDF"},
 };
 

@@ -78,6 +78,20 @@ private slots:
         QVERIFY(win::versionInfo(p("nothing.exe"), "ProductName").isEmpty());
     }
 
+    // the card text of PDF Pro says what the program does, and the update check asks for enough releases (30 would drop the older programs once there are many)
+    void thePdfProCardIsDescribedAndTheFeedAsksForManyReleases()
+    {
+        QVERIFY(Hub::Options().releasesUrl.contains(QStringLiteral("per_page=100")));
+        Hub hub(options());
+        hub.setLanguage("en");
+        const QString en = find(hub, "drivevault.pdf").value("description").toString();
+        QVERIFY(en.contains("OCR") && en.contains("PC"));
+        hub.setLanguage("th");
+        const QString th = find(hub, "drivevault.pdf").value("description").toString();
+        QVERIFY(th.contains("OCR") && th != en);
+        QVERIFY(!find(hub, "drivevault.pdf").value("planned").toBool());
+    }
+
     void thePlannedSuiteIsListedHonestly()
     {
         Hub hub(options());

@@ -46,6 +46,6 @@ refusal while a program is installed, uninstall, empty-folder clean-up) is teste
 
 ## Status
 
-VERSION 1.5.5 (recognizes PDF Pro setups and releases). Not code-signed (`package.ps1 -Sign` uses the shared signing script). Not tested on a separate clean PC / VM,
+VERSION 1.5.6 (clearer PDF Pro card text; reads up to 100 releases of the feed). Not code-signed (`package.ps1 -Sign` uses the shared signing script). Not tested on a separate clean PC / VM,
 and the all-users path under `C:\Program Files` needs administrator rights and was not run by the automated tests (the per-user path was). `LICENSE.txt` and the installer licence pages are the drafted EULA generated from `shared/legal`
 (not yet reviewed by a lawyer).

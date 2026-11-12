@@ -40,7 +40,7 @@ public:
         QString dataDir;                                                  // settings; default %LOCALAPPDATA%\DriveVault\MasterPro
         QString appDir;
         // Where the releases come from. The defaults are the official repository; tests point both at local files.
-        QString releasesUrl = QStringLiteral("https://api.github.com/repos/newzydev/drivevault-suite/releases?per_page=30");
+        QString releasesUrl = QStringLiteral("https://api.github.com/repos/newzydev/drivevault-suite/releases?per_page=100");
         QString downloadPrefix = QStringLiteral("https://github.com/newzydev/drivevault-suite/releases/download/");                                                   // where installers\ and licenses\ live; default: the program folder
         // A download that fails because the server is busy (HTTP 502 / 503 / 504, timeout, connection cut) is tried again.
         // When a download still fails after the retries, the release page on GitHub is opened in the browser so the user can download by hand.

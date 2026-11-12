@@ -1,6 +1,11 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.5.6 (2026-11-12): PDF Pro card text and a longer release feed
+  - The PDF Pro card describes what the program does today (read, search, edit, fill forms, merge, split, compress, protect, sign, Thai OCR; everything on your PC), in Thai and English.
+  - "Check for updates" now asks GitHub for up to 100 releases instead of 30. With 30, the newest program versions could fall out of the answer once enough releases exist, and a program would show no online version.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.5.5 (2026-11-09): Recognize PDF Pro installers and online releases
   - PDF Pro is listed with its actual install status and red accent.
   - The hub reads the PDF Pro release feed using the same verified-download checks.
