@@ -34,7 +34,7 @@ ApplicationWindow {
     property rect normalGeometry
     property bool showHome: !Doc.isOpen
     property bool showTools: true
-    property bool showReaderTools: false
+    property bool showReaderTools: true
     readonly property bool toolsVisible: showHome || !Doc.isOpen ? showTools : showReaderTools
     property string category: "all"
     property string pendingTool: ""

@@ -73,7 +73,7 @@ Item {
 
     // ---- view state ---------------------------------------------------------------------------------------------------
     property real zoom: 1.0                       // 1.0 = 100 % = 96 dpi on screen
-    property string zoomMode: "reading"           // "reading" | "fitWidth" | "fitPage" | "custom"
+    property string zoomMode: "custom"            // "fitWidth" | "fitPage" | "custom"
     property string viewMode: "continuous"        // "continuous" | "twoPage"
     property int currentPage: 0
     property bool showSidebar: false
@@ -123,7 +123,7 @@ Item {
             const availH = Math.max(100, pagesView.height - 36)
             return Math.min(byWidth, availH / (maxH * 96 / 72))
         }
-        return zoomMode === "reading" ? Math.min(1.0, byWidth) : byWidth
+        return byWidth
     }
     function applyFit() {
         if (zoomMode !== "custom")
@@ -361,10 +361,10 @@ Item {
     function restoreView() {
         const st = Doc.viewState()
         viewMode = st.viewMode === "twoPage" ? "twoPage" : "continuous"
-        zoomMode = ["custom", "fitWidth", "fitPage"].includes(st.zoomMode) ? st.zoomMode : "reading"
+        zoomMode = st.zoomMode === "fitWidth" || st.zoomMode === "fitPage" ? st.zoomMode : "custom"
         measure()
-        if (zoomMode === "custom" && st.zoom > 0)
-            zoom = Math.max(0.1, Math.min(8.0, st.zoom))
+        if (zoomMode === "custom")
+            zoom = st.zoomMode === "custom" && st.zoom > 0 ? Math.max(0.1, Math.min(8.0, st.zoom)) : 1.0
         else
             applyFit()
         renderScale = pxPerPt
@@ -451,7 +451,7 @@ Item {
                 PButton {
                     objectName: "zoomLabel"
                     compact: true
-                    variant: "ghost"
+                    variant: viewer.zoomMode === "custom" && viewer.zoom === 1.0 ? "secondary" : "ghost"
                     implicitWidth: 58
                     text: Math.round(viewer.zoom * 100) + "%"
                     tip: Tr.s("actualSize")

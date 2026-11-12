@@ -239,7 +239,8 @@ private slots:
         QVERIFY(image->width() > 300 && image->height() > image->width());     // a portrait page
         QCOMPARE(text("zoomLabel"), QStringLiteral("100%"));
         QVERIFY(!visible("sidePanel"));
-        QVERIFY(!visible("toolPanel"));
+        QVERIFY(visible("toolPanel"));
+        QCOMPARE(find("zoomLabel")->property("variant").toString(), QStringLiteral("secondary"));
         const auto* pages = find("pages");
         const double pageCenter = image->mapToScene(QPointF(image->width() / 2, 0)).x();
         const double viewportCenter = pages->mapToScene(QPointF(pages->width() / 2, 0)).x();
@@ -763,6 +764,7 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(visible("editBar"), 3000);
         QVERIFY(visible("tool_rect") && visible("editSave"));
         QVERIFY(!find("editSave")->isEnabled());                                  // nothing to save yet
+        QVERIFY(click("fitPage"));                                                // keep all drag targets inside the test window
 
         // draw a rectangle with the mouse
         QVERIFY(click("tool_rect"));
