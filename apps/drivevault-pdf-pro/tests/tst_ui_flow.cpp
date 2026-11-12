@@ -18,6 +18,9 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QProcess>
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
@@ -1202,6 +1205,56 @@ private slots:
             QCOMPARE(window->size(), normalSize);
             QVERIFY(window->close());
         }
+    }
+
+    void aLocalWorkspaceReopensTheSavedTabs()
+    {
+        fresh(m_sixPath, "six.pdf");
+        QCOMPARE(m_doc->open(m_featurePath), QString());
+        const QString workspace = m_dir.filePath("tabs.dvworkspace");
+        QVERIFY(QMetaObject::invokeMethod(m_window, "saveWorkspaceFile", Q_ARG(QVariant, QVariant(workspace))));
+        QVERIFY(QFileInfo::exists(workspace));
+        QCOMPARE(m_doc->saveWorkspace(workspace), QStringLiteral("exists"));
+        closeAllTabs();
+        QVERIFY(QMetaObject::invokeMethod(m_window, "openWorkspaceFile", Q_ARG(QVariant, QVariant(workspace))));
+        QTRY_COMPARE(m_doc->tabs().size(), 2);
+        QCOMPARE(m_doc->tabs().first().toMap().value("title").toString(), QStringLiteral("six.pdf"));
+        QCOMPARE(m_doc->fileName(), QStringLiteral("feature.pdf"));
+        const QJsonDocument invalidDocument(QJsonObject{
+            {"version", 1}, {"files", QJsonArray{QStringLiteral("https://example.invalid/sample.pdf")}}
+        });
+        const QString invalid = write("invalid.dvworkspace", invalidDocument.toJson());
+        QCOMPARE(m_doc->readWorkspace(invalid).value("error").toString(), QStringLiteral("workspaceFormat"));
+        closeAllTabs();
+    }
+
+    void diagnosticsAreLocalAndDoNotOpenDocumentsOrOverwriteReports()
+    {
+        const QString path = m_dir.filePath("diagnostics.json");
+        const QString profile = m_dir.filePath("diagnostics-profile");
+        QProcess process;
+        const auto exe = QCoreApplication::applicationDirPath() + "/DriveVaultPdfPro.exe";
+        const QStringList arguments{"--data-dir", profile, "--diagnostics-json", path, m_sixPath};
+        process.start(exe, arguments);
+        QVERIFY(process.waitForFinished(15000));
+        QCOMPARE(process.exitStatus(), QProcess::NormalExit);
+        QCOMPARE(process.exitCode(), 0);
+        QVERIFY(!QFileInfo::exists(profile));
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const QByteArray original = file.readAll();
+        file.close();
+        const auto json = QJsonDocument::fromJson(original).object();
+        QCOMPARE(json.value("version").toString(), m_doc->version());
+        QVERIFY(!json.value("build").toString().isEmpty());
+        QVERIFY(json.value("thaiOcrFilesPresent").isBool());
+        QCOMPARE(json.size(), 7);
+        QVERIFY(!original.contains("six.pdf"));
+        process.start(exe, arguments);
+        QVERIFY(process.waitForFinished(15000));
+        QCOMPARE(process.exitCode(), 3);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        QCOMPARE(file.readAll(), original);
     }
 
     void noQmlWarningsWereEmitted()

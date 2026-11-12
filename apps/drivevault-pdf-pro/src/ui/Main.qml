@@ -43,6 +43,8 @@ ApplicationWindow {
     property bool openingFiles: false
     property var closedFiles: []
     readonly property var tools: [
+        { key: "openWorkspace", icon: "folder", tint: "#6094ff", group: "workspace" },
+        { key: "saveWorkspace", icon: "download", tint: "#6094ff", group: "workspace" },
         { key: "createBlankPdf", icon: "page", tint: "#6094ff", group: "convert" },
         { key: "createFromImages", icon: "pages2", tint: "#4dc987", group: "convert" },
         { key: "exportImages", icon: "download", tint: "#6094ff", group: "convert" },
@@ -68,6 +70,12 @@ ApplicationWindow {
             return
         if (tool === "openFile") {
             fileDialog.open()
+        } else if (tool === "openWorkspace") {
+            if (!openingFiles && !passwordDialog.visible)
+                workspaceOpen.open()
+        } else if (tool === "saveWorkspace") {
+            if (Doc.isOpen)
+                workspaceSave.open()
         } else if (tool === "createBlankPdf" || tool === "createFromImages") {
             createPdfDialog.begin(tool === "createFromImages")
         } else if (tool === "toolMerge") {
@@ -198,6 +206,19 @@ ApplicationWindow {
             Qt.callLater(openNextFile)
     }
 
+    function openWorkspaceFile(path) {
+        const workspace = Doc.readWorkspace(path)
+        if (workspace.error)
+            showNotice(Tr.outputError(workspace.error), true)
+        else
+            openPaths(workspace.files)
+    }
+
+    function saveWorkspaceFile(path) {
+        const error = Doc.saveWorkspace(path)
+        showNotice(error === "" ? Tr.s("workspaceSaved") : Tr.outputError(error), error !== "")
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -315,7 +336,8 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
-                        model: win.tools.filter(tool => win.category === "all" || tool.group === win.category)
+                        model: win.tools.filter(tool => (win.category === "all" || tool.group === win.category)
+                                                && (tool.key !== "saveWorkspace" || Doc.isOpen))
                         ScrollBar.vertical: ScrollBar {}
                         delegate: ToolEntry {
                             required property var modelData
@@ -440,6 +462,21 @@ ApplicationWindow {
         onAccepted: win.openPaths(selectedFiles.map(url => url.toString()))
         onRejected: win.pendingTool = ""
     }
+    FileDialog {
+        id: workspaceOpen
+        title: Tr.s("openWorkspace")
+        nameFilters: [Tr.s("workspaceFiles")]
+        onAccepted: win.openWorkspaceFile(selectedFile.toString())
+    }
+    FileDialog {
+        id: workspaceSave
+        title: Tr.s("saveWorkspace")
+        fileMode: FileDialog.SaveFile
+        options: FileDialog.DontConfirmOverwrite
+        defaultSuffix: "dvworkspace"
+        nameFilters: [Tr.s("workspaceFiles")]
+        onAccepted: win.saveWorkspaceFile(selectedFile.toString())
+    }
     OrganizerDialog {
         id: organizer
         onOpenResultRequested: path => win.openPath(path)
@@ -491,7 +528,8 @@ ApplicationWindow {
 
     ToolSearch {
         id: commandSearch
-        tools: [{ key: "openFile", icon: "folder", tint: Theme.text }].concat(win.tools)
+        tools: [{ key: "openFile", icon: "folder", tint: Theme.text }]
+            .concat(win.tools.filter(tool => tool.key !== "saveWorkspace" || Doc.isOpen))
         onToolRequested: key => win.runTool(key)
     }
 

@@ -106,6 +106,8 @@ public:
     Q_INVOKABLE void removeRecent(const QString& path);
     Q_INVOKABLE bool openRecentFolder(const QString& path) const;
     Q_INVOKABLE QString localPath(const QString& pathOrUrl) const;
+    Q_INVOKABLE QString saveWorkspace(const QString& path) const;
+    Q_INVOKABLE QVariantMap readWorkspace(const QString& path) const;
     Q_INVOKABLE void rotateView(int turns);              // +1 = 90 degrees clockwise, -1 = counter clockwise
     // The remembered view of the current file: {page, zoom, zoomMode, viewMode, rotation} (empty map for a file never seen).
     Q_INVOKABLE QVariantMap viewState() const;

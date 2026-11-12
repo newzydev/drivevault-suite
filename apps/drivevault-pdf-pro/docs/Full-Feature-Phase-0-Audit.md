@@ -319,3 +319,11 @@
 - **Phase 6 (J3/A10)** หน้าต่างเมทาดาทาและไฟล์แนบแสดงเวอร์ชัน PDF จำนวนหน้า สถานะการเข้ารหัส และชื่อ BaseFont จาก font dictionaries ที่ตรวจพบ ใช้ worker และ QML เดิม เกณฑ์ผ่านคือค่าตรงกับ fixture และ UI แสดงข้อมูลจริง รายชื่อเป็น inventory ของชื่อทรัพยากรที่พบในไฟล์ การตรวจฟอนต์ติดตั้งหรือยืนยันการฝังฟอนต์เป็นงานถัดไป
 - Phase 5 ยังเหลือ permission/signature guard ในเส้นทางเขียนอื่นและ redaction corpus ส่วน Phase 6 ยังเหลือ Compare PDF, accessibility/preflight และ workflow batch เพิ่มเติม รอคำยืนยันก่อนเริ่ม Phase 7
 - `apps/drivevault-pdf-pro/scripts/build.ps1 -Test` ผ่าน 12/12 suites รวม QDF ที่ตรวจ action และ payload, metadata ของไฟล์เข้ารหัส และข้อมูลที่แสดงใน QML เปิดบิลด์ Release ด้วย `scripts/run-pdf-pro.bat` และตรวจคู่ไฟล์คำสั่ง agent ครบ 25 โฟลเดอร์
+
+## Phase 7 และ 8 — รอบ 1.9.0
+
+- **Phase 7 (O5)** บันทึกกลุ่มแท็บเป็นไฟล์ `.dvworkspace` ที่ผู้ใช้เลือก เก็บลำดับและพาธ PDF แบบข้อความธรรมดา จำกัด 128 รายการและ 128 KiB ตรวจรูปแบบก่อนส่งเข้าคิวเปิดเดิม จึงใช้กล่องรหัสผ่านและข้อความผิดพลาดเดิม การเปิดเพิ่มเข้าแท็บที่มีอยู่และพาธต้องยังใช้ได้ ไม่เพิ่ม schema ใน settings
+- **Phase 8 (P5)** `main.cpp` เพิ่ม `--diagnostics-json <file>` สำหรับเวอร์ชัน เลขบิลด์ Qt ระบบปฏิบัติการ สถาปัตยกรรม และสถานะพบไฟล์ OCR เขียนตามคำสั่งผู้ใช้และออกก่อนสร้าง controller หรือเปิดเอกสาร ชื่อซ้ำจะคืน exit code 3
+- เกณฑ์ผ่านคือสร้าง workspace จากแท็บจริง เปิดกลับตามลำดับ ปฏิเสธ URL และชื่อซ้ำ และรัน executable จริงเพื่อยืนยันรายงานมีเฉพาะคีย์ที่กำหนด ไม่เปิดเอกสารหรือสร้างโปรไฟล์
+- Phase 7 ยังต้องประเมินผู้ให้บริการและข้อกำหนดก่อนทำ AI, cloud, e-sign และ sharing ส่วน Phase 8 ยังต้องทดสอบการติดตั้ง Windows สะอาด ตรวจ performance ด้วยเอกสารจริงและลงนามเมื่อมีใบรับรอง
+- `apps/drivevault-pdf-pro/scripts/build.ps1 -Test` รอบแรก Qt moc ไม่สร้าง metaobject สำหรับ fixture JSON แบบ raw string ทำให้ linker รายงาน LNK2001 แก้ fixture ให้สร้าง JSON ด้วย Qt แล้วรันซ้ำผ่าน 12/12 suites รวมเปิดแท็บกลับและรันรายงานจาก executable จริง เปิดบิลด์ Release ด้วย `scripts/run-pdf-pro.bat` ได้ และตรวจคู่ไฟล์คำสั่ง agent ครบ 25 โฟลเดอร์

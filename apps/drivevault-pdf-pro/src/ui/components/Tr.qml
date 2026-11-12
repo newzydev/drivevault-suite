@@ -6,6 +6,12 @@ import DriveVault.PdfPro.Backend
 QtObject {
     readonly property string lang: Doc.language
     readonly property var table: ({
+        "openWorkspace": ["Open tab workspace", "เปิดเวิร์กสเปซแท็บ"],
+        "saveWorkspace": ["Save tab workspace (file paths only)", "บันทึกเวิร์กสเปซแท็บ (เฉพาะพาธไฟล์)"],
+        "workspaceFiles": ["DriveVault workspace (*.dvworkspace)", "เวิร์กสเปซ DriveVault (*.dvworkspace)"],
+        "workspaceSaved": ["Tab workspace saved.", "บันทึกเวิร์กสเปซแท็บแล้ว"],
+        "output_workspaceFormat": ["The workspace format or a PDF path is invalid.", "รูปแบบเวิร์กสเปซหรือพาธ PDF ไม่ถูกต้อง"],
+        "output_workspaceSize": ["The workspace must contain 1–128 PDF paths and be no larger than 128 KiB.", "เวิร์กสเปซต้องมีพาธ PDF 1–128 รายการ และมีขนาดไม่เกิน 128 KiB"],
         "createBlankPdf": ["Create blank PDF", "สร้าง PDF เปล่า"],
         "createFromImages": ["Create PDF from images", "สร้าง PDF จากรูปภาพ"],
         "createPaper": ["Paper", "กระดาษ"],

@@ -21,6 +21,7 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QJsonDocument>
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QLocale>
 #include <QMutexLocker>
@@ -29,6 +30,7 @@
 #include <QScreen>
 #include <QSettings>
 #include <QThreadPool>
+#include <QTemporaryFile>
 
 #include <algorithm>
 #include <numeric>
@@ -38,6 +40,16 @@ namespace dp {
 namespace {
 constexpr int kMaxRecent = 10;
 constexpr int kMaxRememberedViews = 100;
+constexpr int kMaxWorkspaceFiles = 128;
+constexpr int kMaxWorkspaceBytes = 128 * 1024;
+
+bool workspacePdfPath(const QString& path)
+{
+    const QString normalized = QDir::fromNativeSeparators(path);
+    return normalized.size() > 3 && normalized[0].isLetter() && normalized.sliced(1, 2) == QLatin1String(":/")
+        && !normalized.contains(QChar::Null)
+        && QFileInfo(normalized).suffix().compare(QLatin1String("pdf"), Qt::CaseInsensitive) == 0;
+}
 
 QString errorCode(pdf::OpenError e)
 {
@@ -226,6 +238,61 @@ int DocumentController::rotationFor(int id) const
 }
 
 // ---- tabs ------------------------------------------------------------------------------------------------------------------
+
+QString DocumentController::saveWorkspace(const QString& path) const
+{
+    const QString destination = localPath(path);
+    if (QFileInfo(destination).suffix().compare(QLatin1String("dvworkspace"), Qt::CaseInsensitive) != 0)
+        return QStringLiteral("workspaceFormat");
+    const auto openTabs = tabs();
+    if (openTabs.isEmpty() || openTabs.size() > kMaxWorkspaceFiles)
+        return QStringLiteral("workspaceSize");
+    QJsonArray files;
+    for (const auto& tab : openTabs) {
+        const QString file = tab.toMap().value("path").toString();
+        if (!workspacePdfPath(file))
+            return QStringLiteral("workspaceFormat");
+        files.append(file);
+    }
+    const QByteArray json = QJsonDocument(QJsonObject{{"version", 1}, {"files", files}}).toJson(QJsonDocument::Compact);
+    if (json.size() > kMaxWorkspaceBytes)
+        return QStringLiteral("workspaceSize");
+    if (QFileInfo::exists(destination))
+        return QStringLiteral("exists");
+    QTemporaryFile temporary(destination + QStringLiteral(".XXXXXX"));
+    if (!temporary.open() || temporary.write(json) != json.size() || !temporary.flush())
+        return QStringLiteral("write");
+    temporary.close();
+    if (!temporary.rename(destination))
+        return QFileInfo::exists(destination) ? QStringLiteral("exists") : QStringLiteral("write");
+    temporary.setAutoRemove(false);
+    return {};
+}
+
+QVariantMap DocumentController::readWorkspace(const QString& path) const
+{
+    QFile file(localPath(path));
+    if (!file.open(QIODevice::ReadOnly))
+        return {{"error", QStringLiteral("file")}};
+    const QByteArray json = file.read(kMaxWorkspaceBytes + 1);
+    if (json.size() > kMaxWorkspaceBytes)
+        return {{"error", QStringLiteral("workspaceSize")}};
+    const auto root = QJsonDocument::fromJson(json).object();
+    if (root.value("version").toInt() != 1 || !root.value("files").isArray())
+        return {{"error", QStringLiteral("workspaceFormat")}};
+    const auto entries = root.value("files").toArray();
+    if (entries.isEmpty() || entries.size() > kMaxWorkspaceFiles)
+        return {{"error", QStringLiteral("workspaceSize")}};
+    QStringList files;
+    for (const auto& entry : entries) {
+        const QString path = entry.toString();
+        if (!workspacePdfPath(path))
+            return {{"error", QStringLiteral("workspaceFormat")}};
+        if (!files.contains(path, Qt::CaseInsensitive))
+            files.append(path);
+    }
+    return {{"files", files}};
+}
 
 QString DocumentController::open(const QString& pathOrUrl, const QString& password)
 {

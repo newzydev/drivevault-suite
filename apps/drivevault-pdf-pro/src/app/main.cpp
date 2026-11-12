@@ -5,22 +5,27 @@
 #include "FormFiller.h"
 #include "OverlayImageProvider.h"
 #include "PageListModel.h"
+#include "ThaiOcr.h"
 #include "pdfengine/PdfiumRuntime.h"
 
 #include "dp/Version.h"
 
 #include <QCommandLineParser>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QImage>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QScopeGuard>
 #include <QStandardPaths>
+#include <QSysInfo>
 #include <QTimer>
 #include <QtQml/qqml.h>
 
@@ -58,8 +63,30 @@ int main(int argc, char* argv[])
     QCommandLineOption passwordOption(QStringLiteral("password"), QStringLiteral("Password for the file to open (diagnostics)."), QStringLiteral("text"));
     QCommandLineOption screenshotOption(QStringLiteral("screenshot"), QStringLiteral("Render the window to <file> (PNG) and exit (diagnostics)."), QStringLiteral("file"));
     QCommandLineOption sizeOption(QStringLiteral("size"), QStringLiteral("Window size WxH for --screenshot."), QStringLiteral("WxH"));
-    parser.addOptions({dataDirOption, langOption, passwordOption, screenshotOption, sizeOption});
+    QCommandLineOption diagnosticsOption(QStringLiteral("diagnostics-json"),
+        QStringLiteral("Write local build diagnostics to a new JSON file and exit."), QStringLiteral("file"));
+    parser.addOptions({dataDirOption, langOption, passwordOption, screenshotOption, sizeOption, diagnosticsOption});
     parser.process(app);
+
+    if (parser.isSet(diagnosticsOption)) {
+        const QByteArray data = QJsonDocument(QJsonObject{
+            {"version", QCoreApplication::applicationVersion()},
+            {"build", QString::fromLatin1(dp::version::kBuildNumber)},
+            {"qt", QString::fromLatin1(qVersion())},
+            {"os", QSysInfo::productType()},
+            {"osVersion", QSysInfo::productVersion()},
+            {"architecture", QSysInfo::currentCpuArchitecture()},
+            {"thaiOcrFilesPresent", dp::thaiOcrAvailable()}
+        }).toJson(QJsonDocument::Indented);
+        QFile file(parser.value(diagnosticsOption));
+        if (!file.open(QIODevice::WriteOnly | QIODevice::NewOnly))
+            return 3;
+        if (file.write(data) != data.size() || !file.flush()) {
+            file.remove();
+            return 3;
+        }
+        return 0;
+    }
 
     loadFonts();
     QQuickStyle::setStyle(QStringLiteral("Basic"));
