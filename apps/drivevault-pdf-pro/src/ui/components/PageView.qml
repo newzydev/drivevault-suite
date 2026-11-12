@@ -109,11 +109,13 @@ Item {
         model: pv.textSelectionEnabled ? pv.selectionRects : []
         delegate: Rectangle {
             required property var modelData
-            x: modelData.x * pv.pxPerPt
-            y: modelData.y * pv.pxPerPt
-            width: modelData.w * pv.pxPerPt
-            height: modelData.h * pv.pxPerPt
-            color: Doc.darkPages ? "#805E9FFF" : "#553B82F6"
+            readonly property bool vertical: Doc.rotation % 2 !== 0
+            readonly property real padding: 1.5 * pv.pxPerPt
+            x: Math.max(0, Math.floor(modelData.x * pv.pxPerPt - (vertical ? padding : 0)))
+            y: Math.max(0, Math.floor(modelData.y * pv.pxPerPt - (vertical ? 0 : padding)))
+            width: Math.min(pv.width, Math.ceil((modelData.x + modelData.w) * pv.pxPerPt + (vertical ? padding : 0))) - x
+            height: Math.min(pv.height, Math.ceil((modelData.y + modelData.h) * pv.pxPerPt + (vertical ? 0 : padding))) - y
+            color: Doc.darkPages ? "#805E9FFF" : "#70458DB8"
         }
     }
     Rectangle {

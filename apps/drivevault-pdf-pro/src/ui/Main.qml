@@ -34,6 +34,8 @@ ApplicationWindow {
     property rect normalGeometry
     property bool showHome: !Doc.isOpen
     property bool showTools: true
+    property bool showReaderTools: false
+    readonly property bool toolsVisible: showHome || !Doc.isOpen ? showTools : showReaderTools
     property string category: "all"
     property string pendingTool: ""
     readonly property var tools: [
@@ -200,7 +202,11 @@ ApplicationWindow {
                         variant: "ghost"
                         compact: true
                         onClicked: {
-                            win.showTools = win.category !== modelData.key || !win.showTools
+                            const show = win.category !== modelData.key || !win.toolsVisible
+                            if (win.showHome || !Doc.isOpen)
+                                win.showTools = show
+                            else
+                                win.showReaderTools = show
                             win.category = modelData.key
                         }
                         Rectangle {
@@ -209,7 +215,7 @@ ApplicationWindow {
                             width: parent.width - 12
                             height: 2
                             color: Theme.accent
-                            visible: win.showTools && win.category === parent.modelData.key
+                            visible: win.toolsVisible && win.category === parent.modelData.key
                         }
                     }
                 }
@@ -233,7 +239,8 @@ ApplicationWindow {
             Layout.fillHeight: true
             spacing: 0
             Rectangle {
-                visible: win.showTools
+                objectName: "toolPanel"
+                visible: win.toolsVisible
                 Layout.preferredWidth: win.width < 1100 ? 218 : 254
                 Layout.fillHeight: true
                 color: Theme.backgroundAlt
@@ -252,7 +259,18 @@ ApplicationWindow {
                             text: Tr.s(({ all: "allTools", edit: "editCategory", convert: "convertCategory",
                                         sign: "protectCategory" })[win.category])
                         }
-                        PButton { compact: true; variant: "ghost"; glyph: "close"; tip: Tr.s("dismiss"); onClicked: win.showTools = false }
+                        PButton {
+                            compact: true
+                            variant: "ghost"
+                            glyph: "close"
+                            tip: Tr.s("dismiss")
+                            onClicked: {
+                                if (win.showHome || !Doc.isOpen)
+                                    win.showTools = false
+                                else
+                                    win.showReaderTools = false
+                            }
+                        }
                     }
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
                     ListView {

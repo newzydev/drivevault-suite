@@ -69,7 +69,7 @@ inline QByteArray makeFeatureDoc()
         /* 2 */ "<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R] /Count 3 >>",
         /* 3 */ "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
         /* 4 */ "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R /Annots [14 0 R 15 0 R 16 0 R 17 0 R] >>",
-        /* 5 */ stream("BT /F1 18 Tf 72 700 Td (Hello search world) Tj 0 -24 Td (search again, SEARCH) Tj ET"),
+        /* 5 */ stream("BT /F1 18 Tf 72 700 Td (Hello ) Tj (search ) Tj (world) Tj 0 -24 Td (search again, SEARCH) Tj ET"),
         /* 6 */ "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>",
         /* 7 */ stream("BT /F1 18 Tf 72 700 Td (Second page) Tj ET"),
         /* 8 */ "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 10 0 R >>",

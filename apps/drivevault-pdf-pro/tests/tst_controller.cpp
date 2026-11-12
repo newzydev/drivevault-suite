@@ -290,7 +290,7 @@ private slots:
         c.selectMove(0, world.value("x").toDouble() + world.value("w").toDouble() - 1, y);
         QVERIFY(c.hasSelection());
         QCOMPARE(c.selectedText().trimmed(), QStringLiteral("Hello search world"));
-        QVERIFY(!c.selectionRects(0).isEmpty());
+        QCOMPARE(c.selectionRects(0).size(), 1);
         QVERIFY(c.selectionRects(1).isEmpty());
         QVERIFY(c.copySelection());
         QCOMPARE(QGuiApplication::clipboard()->text().trimmed(), QStringLiteral("Hello search world"));
@@ -313,6 +313,7 @@ private slots:
         QVERIFY(!c.selectionRects(0).isEmpty() && !c.selectionRects(1).isEmpty());
 
         c.selectAll();
+        QCOMPARE(c.selectionRects(0).size(), 2);
         QVERIFY(c.selectedText().contains("Third page"));
         QVERIFY(c.selectedText().contains("Hello"));
         QVERIFY(!c.selectionRects(2).isEmpty());

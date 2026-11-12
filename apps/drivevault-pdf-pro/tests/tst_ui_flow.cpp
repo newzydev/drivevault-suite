@@ -237,7 +237,13 @@ private slots:
         QCOMPARE(text("pageField"), QStringLiteral("1"));
         QQuickItem* image = find("pageImage_0");
         QVERIFY(image->width() > 300 && image->height() > image->width());     // a portrait page
-        QVERIFY(visible("thumbnails"));
+        QCOMPARE(text("zoomLabel"), QStringLiteral("100%"));
+        QVERIFY(!visible("sidePanel"));
+        QVERIFY(!visible("toolPanel"));
+        const auto* pages = find("pages");
+        const double pageCenter = image->mapToScene(QPointF(image->width() / 2, 0)).x();
+        const double viewportCenter = pages->mapToScene(QPointF(pages->width() / 2, 0)).x();
+        QVERIFY(qAbs(pageCenter - viewportCenter) < 2);
         QVERIFY(visible("tab_0"));
     }
 
@@ -293,12 +299,12 @@ private slots:
 
     void theSidePanelCanBeHiddenAndShowsTheThumbnails()
     {
+        QVERIFY(!visible("sidePanel"));
+        QVERIFY(click("toggleSidebar"));
         QVERIFY(visible("sidePanel"));
         QVERIFY(visible("thumbnails"));
         QVERIFY(click("toggleSidebar"));
         QVERIFY(!visible("sidePanel"));
-        QVERIFY(click("toggleSidebar"));
-        QVERIFY(visible("sidePanel"));
     }
 
     void titleBarTogglesAndDialogs()
@@ -367,6 +373,7 @@ private slots:
     void theBookmarkAndCommentPanelsListTheStructureAndJump()
     {
         fresh(m_featurePath, "feature.pdf");
+        QVERIFY(click("toggleSidebar"));
         QVERIFY(click("sideOutline"));
         QVERIFY(visible("outline_0") && visible("outline_1") && visible("outline_2"));
         QVERIFY(!visible("noOutline"));

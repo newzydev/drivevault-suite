@@ -54,6 +54,23 @@ QVariantMap rectMap(const QRectF& r)
     return {{QStringLiteral("x"), r.x()}, {QStringLiteral("y"), r.y()}, {QStringLiteral("w"), r.width()}, {QStringLiteral("h"), r.height()}};
 }
 
+bool onSameSelectionLine(const QRectF& a, const QRectF& b, bool vertical)
+{
+    const double aTop = vertical ? a.left() : a.top();
+    const double aBottom = vertical ? a.right() : a.bottom();
+    const double bTop = vertical ? b.left() : b.top();
+    const double bBottom = vertical ? b.right() : b.bottom();
+    const double thickness = std::min(aBottom - aTop, bBottom - bTop);
+    if (std::min(aBottom, bBottom) - std::max(aTop, bTop) < thickness * 0.55)
+        return false;
+
+    const double aStart = vertical ? a.top() : a.left();
+    const double aEnd = vertical ? a.bottom() : a.right();
+    const double bStart = vertical ? b.top() : b.left();
+    const double bEnd = vertical ? b.bottom() : b.right();
+    return std::max(aStart, bStart) - std::min(aEnd, bEnd) <= thickness * 0.35;
+}
+
 QSettings iniFile(const QString& dataDir)
 {
     return QSettings(dataDir + QStringLiteral("/settings.ini"), QSettings::IniFormat);
@@ -664,8 +681,23 @@ QVariantList DocumentController::selectionRects(int page) const
     const int end = page == to.page ? to.ch : doc->charCount(page);
     if (end <= start)
         return out;
-    for (const QRectF& r : doc->textRects(page, start, end - start, currentRotation()))
-        out.append(rectMap(r));
+    const int rotation = currentRotation();
+    const bool vertical = rotation % 2 != 0;
+    QRectF line;
+    // PDFium may return several rectangles for one line when the PDF splits its text into runs.
+    for (const QRectF& rect : doc->textRects(page, start, end - start, rotation)) {
+        if (rect.isEmpty())
+            continue;
+        if (!line.isEmpty() && onSameSelectionLine(line, rect, vertical)) {
+            line = line.united(rect);
+        } else {
+            if (!line.isEmpty())
+                out.append(rectMap(line));
+            line = rect;
+        }
+    }
+    if (!line.isEmpty())
+        out.append(rectMap(line));
     return out;
 }
 

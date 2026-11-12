@@ -73,10 +73,10 @@ Item {
 
     // ---- view state ---------------------------------------------------------------------------------------------------
     property real zoom: 1.0                       // 1.0 = 100 % = 96 dpi on screen
-    property string zoomMode: "fitWidth"          // "fitWidth" | "fitPage" | "custom"
+    property string zoomMode: "reading"           // "reading" | "fitWidth" | "fitPage" | "custom"
     property string viewMode: "continuous"        // "continuous" | "twoPage"
     property int currentPage: 0
-    property bool showSidebar: true
+    property bool showSidebar: false
     property bool searchOpen: false
     property real maxW: 612                       // largest page as shown, in points
     property real maxH: 792
@@ -123,7 +123,7 @@ Item {
             const availH = Math.max(100, pagesView.height - 36)
             return Math.min(byWidth, availH / (maxH * 96 / 72))
         }
-        return byWidth
+        return zoomMode === "reading" ? Math.min(1.0, byWidth) : byWidth
     }
     function applyFit() {
         if (zoomMode !== "custom")
@@ -361,7 +361,7 @@ Item {
     function restoreView() {
         const st = Doc.viewState()
         viewMode = st.viewMode === "twoPage" ? "twoPage" : "continuous"
-        zoomMode = (st.zoomMode === "custom" || st.zoomMode === "fitPage") ? st.zoomMode : "fitWidth"
+        zoomMode = ["custom", "fitWidth", "fitPage"].includes(st.zoomMode) ? st.zoomMode : "reading"
         measure()
         if (zoomMode === "custom" && st.zoom > 0)
             zoom = Math.max(0.1, Math.min(8.0, st.zoom))
@@ -388,8 +388,6 @@ Item {
         function onSearchTarget(page, y) { viewer.goTo(page, y) }
     }
     Component.onCompleted: { restoreView(); offerRecovery() }
-    onWidthChanged: applyFit()
-    onHeightChanged: applyFit()
     onPxPerPtChanged: renderTimer.restart()
     Timer { id: renderTimer; interval: 140; onTriggered: viewer.renderScale = viewer.pxPerPt }
 
@@ -584,6 +582,8 @@ Item {
 
                 ListView {
                     id: pagesView
+                    onWidthChanged: viewer.applyFit()
+                    onHeightChanged: viewer.applyFit()
                     objectName: "pages"
                     anchors.fill: parent
                     model: Doc.isOpen ? viewer.spreadCount : 0
