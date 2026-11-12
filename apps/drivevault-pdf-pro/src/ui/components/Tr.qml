@@ -135,6 +135,7 @@ QtObject {
         "switchToEnglish": ["Switch to English", "เปลี่ยนเป็นภาษาอังกฤษ"],
         "switchToThai": ["Switch to Thai", "เปลี่ยนเป็นภาษาไทย"],
         "switchToLight": ["Switch to light theme", "เปลี่ยนเป็นธีมสว่าง"],
+        "moreOptions": ["More options", "ตัวเลือกเพิ่มเติม"],
         "switchToDark": ["Switch to dark theme", "เปลี่ยนเป็นธีมมืด"],
         "preferences": ["Settings", "ตั้งค่า"],
         "about": ["About", "เกี่ยวกับ"],

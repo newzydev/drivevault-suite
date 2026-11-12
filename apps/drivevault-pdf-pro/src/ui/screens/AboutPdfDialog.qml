@@ -7,27 +7,30 @@ Popup {
     id: dialog
     parent: Overlay.overlay
     anchors.centerIn: parent
-    width: Math.min(410, parent.width - 48)
+    width: Math.min(480, parent ? parent.width - 48 : 480)
     padding: 24
     modal: true
+    dim: true
     focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-    background: Rectangle { radius: Theme.radiusLarge; color: Theme.backgroundAlt; border.color: Theme.border }
+    Overlay.modal: Rectangle { color: "#B3000000" }
+    background: Rectangle { radius: Theme.radius; color: Theme.backgroundAlt; border.color: Theme.border }
 
     contentItem: ColumnLayout {
         spacing: 12
         RowLayout {
-            spacing: 12
+            Layout.fillWidth: true
+            spacing: 16
             Image {
                 source: "qrc:/icons/app.png"
-                sourceSize.width: 80
-                Layout.preferredWidth: 40
-                Layout.preferredHeight: 40
+                sourceSize.width: 128
+                Layout.preferredWidth: 64
+                Layout.preferredHeight: 64
             }
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 0
-                AppText { Layout.fillWidth: true; text: Tr.s("title"); font.pixelSize: Theme.fontXl; font.weight: Font.DemiBold }
+                spacing: 2
+                AppText { Layout.fillWidth: true; text: Tr.s("title"); font.pixelSize: 20; font.weight: Font.Bold; wrapMode: Text.Wrap }
                 AppText {
                     objectName: "aboutVersion"
                     Layout.fillWidth: true
@@ -37,7 +40,14 @@ Popup {
                 }
             }
         }
-        AppText { Layout.fillWidth: true; text: Tr.s("aboutLocal"); wrapMode: Text.Wrap }
-        PButton { objectName: "aboutClose"; Layout.alignment: Qt.AlignRight; text: Tr.s("close"); onClicked: dialog.close() }
+        AppText { Layout.fillWidth: true; text: Tr.s("aboutLocal"); color: Theme.textSecondary; font.pixelSize: Theme.fontSm; wrapMode: Text.Wrap }
+        PButton {
+            objectName: "aboutClose"
+            Layout.alignment: Qt.AlignRight
+            Layout.topMargin: 8
+            text: Tr.s("close")
+            variant: "primary"
+            onClicked: dialog.close()
+        }
     }
 }

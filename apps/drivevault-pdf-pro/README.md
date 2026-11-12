@@ -3,7 +3,7 @@
 Native Windows PDF program of the DriveVault suite (C++20, Qt 6.8 / Qt Quick, PDFium, qpdf). Works on this computer only - nothing is uploaded.
 Accent colour red `#EF4444`. The full plan and the phases are in [`docs/PDF-Pro-Plan.md`](docs/PDF-Pro-Plan.md).
 
-## [Version 1.3.3](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.3.3)
+## [Version 1.3.4](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.3.4)
 
 | Works now (tested) | Not built yet (planned, see the plan) |
 |---|---|

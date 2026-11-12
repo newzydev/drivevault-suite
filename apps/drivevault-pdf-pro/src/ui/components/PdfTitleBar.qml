@@ -59,29 +59,32 @@ Rectangle {
             }
         }
 
-        Row {
-            spacing: 6
-            LanguageSwitch {}
-            PButton {
-                objectName: "themeToggle"
-                compact: true
-                glyph: Theme.light ? "moon" : "sun"
-                tip: Tr.s(Theme.light ? "switchToDark" : "switchToLight")
-                onClicked: Doc.lightTheme = !Doc.lightTheme
-            }
-            PButton {
-                objectName: "settingsButton"
-                compact: true
-                glyph: "settings"
-                tip: Tr.s("preferences")
-                onClicked: bar.settingsRequested()
-            }
-            PButton {
-                objectName: "aboutButton"
-                compact: true
-                glyph: "info"
-                tip: Tr.s("about")
-                onClicked: bar.aboutRequested()
+        LanguageSwitch {}
+        PButton {
+            objectName: "titleMenuButton"
+            compact: true
+            text: "⋯"
+            tip: Tr.s("moreOptions")
+            onClicked: titleMenu.visible ? titleMenu.close() : titleMenu.popup(width - titleMenu.width, height + 6)
+            PMenu {
+                id: titleMenu
+                width: 250
+                PMenuItem {
+                    objectName: "themeToggle"
+                    text: Tr.s(Theme.light ? "switchToDark" : "switchToLight")
+                    onTriggered: Doc.lightTheme = !Doc.lightTheme
+                }
+                PMenuItem {
+                    objectName: "settingsButton"
+                    text: Tr.s("preferences")
+                    onTriggered: bar.settingsRequested()
+                }
+                MenuSeparator { padding: 4; contentItem: Rectangle { implicitHeight: 1; color: Theme.border } }
+                PMenuItem {
+                    objectName: "aboutButton"
+                    text: Tr.s("about")
+                    onTriggered: bar.aboutRequested()
+                }
             }
         }
         Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; color: Theme.border }

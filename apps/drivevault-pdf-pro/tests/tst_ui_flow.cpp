@@ -311,20 +311,22 @@ private slots:
     void titleBarTogglesAndDialogs()
     {
         QCOMPARE(text("toolbarOpen"), QStringLiteral("Open PDF…"));
-        QCOMPARE(text("languageToggle"), QStringLiteral("EN"));
-        QVERIFY(click("languageToggle"));
+        QVERIFY(find("languageToggle_en")->property("current").toBool());
+        QVERIFY(click("languageToggle_th"));
         QCOMPARE(m_doc->language(), QStringLiteral("th"));
         QCOMPARE(text("toolbarOpen"), QString::fromUtf8("เปิดไฟล์ PDF…"));
-        QCOMPARE(text("languageToggle"), QStringLiteral("ไทย"));
-        QVERIFY(click("languageToggle"));
+        QVERIFY(find("languageToggle_th")->property("current").toBool());
+        QVERIFY(click("languageToggle_en"));
         QCOMPARE(text("toolbarOpen"), QStringLiteral("Open PDF…"));
 
         const QColor darkBackground = m_window->color();
+        QVERIFY(click("titleMenuButton"));
         QVERIFY(click("themeToggle"));
         QVERIFY(m_doc->lightTheme());
         QVERIFY(!m_doc->darkPages());
         QVERIFY(m_window->color().lightness() > darkBackground.lightness());
 
+        QVERIFY(click("titleMenuButton"));
         QVERIFY(click("settingsButton"));
         QTRY_VERIFY(visible("settingsTheme"));
         QVERIFY(find("settingsTheme")->property("checked").toBool());
@@ -339,6 +341,7 @@ private slots:
         QVERIFY(click("settingsClose"));
         QTRY_VERIFY(!visible("settingsTheme"));
 
+        QVERIFY(click("titleMenuButton"));
         QVERIFY(click("aboutButton"));
         QTRY_VERIFY(visible("aboutVersion"));
         QVERIFY(text("aboutVersion").contains(m_doc->version()));
