@@ -3,12 +3,13 @@
 Native Windows PDF program of the DriveVault suite (C++20, Qt 6.8 / Qt Quick, PDFium, qpdf). Works on this computer only - nothing is uploaded.
 Accent colour red `#EF4444`. The first plan is in [`docs/PDF-Pro-Plan.md`](docs/PDF-Pro-Plan.md); the work since then (towards the local functions of Acrobat Pro) is tracked phase by phase in [`docs/Acrobat-Parity-Roadmap.md`](docs/Acrobat-Parity-Roadmap.md), where every phase says what is done and what is not.
 
-## [Version 1.18.1](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.18.1)
+## [Version 1.19.0](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.19.0)
 
 | Works now (tested) | Not built yet (planned, see the plan) |
 |---|---|
 | **Home and All tools** with document tabs, tool categories, recommended tools and command search (Ctrl+K) | |
 | **Scan & OCR (Thai)** reads Thai and English on image-only PDF pages locally. Select all pages, the current page or a range, then save a searchable copy. It skips pages with existing text and requires an unlocked PDF. Recognition quality varies with the scan. | OCR on pages that already have text, perspective correction and complex reading order |
+| **AI assistant** (side panel tab "AI"): ask questions about the open document and get a summary, answered by a language model that runs on this computer (llama.cpp with Qwen3.5-4B, GPU through Vulkan, CPU as fallback). Answers name the pages they come from; a long document is summarised part by part. It only reads: it never changes the document. The model (2.7 GB) is downloaded by the setup (task) or by the Download button, never silently. Answers can be wrong: check the pages named. | Questions across several documents, scanned pages without OCR (the panel offers the OCR tool), table or figure understanding |
 | **Edit existing text** replaces a supported horizontal text run in a new PDF. Thai and English are shaped with Noto Sans Thai. The replacement must fit the existing width. Signed, encrypted and unsupported text objects are refused. | Paragraph reflow, matching the source font, and editing text inside forms or vector outlines |
 | **Organize pages** (button "Pages"): thumbnails, select, **drag to reorder**, delete, duplicate, turn 90 degrees, **crop margins**, insert blank pages, add pages of other files, undo / redo; saves a **new** file (nothing is changed in place, an existing file is replaced only after a question) | Fonts: subsetting / merging (not done, not planned soon) |
 | **Edit** (button "Edit"): put **text** (Thai and English), **pictures**, rectangles, ellipses, lines, arrows, **pen**, highlight / underline / strike-out, **stamps**, **sticky notes** and **polygons** on any page; select, move, resize, turn, front / back, colour, fill, line width, opacity, font, size, bold / italic, alignment; a watermark, page numbers, header and footer on every page (Bates style numbers with `{n:000000}`); **snap guides** while moving and resizing; replace a picture you added; undo / redo; saved as a **new file** (the things become part of the pages, or, with "Markup as comments", highlight / underline / strike-out and notes become **real PDF comments** that other programs can edit) | Editing or deleting comments that are already in a file, stamps as annotations, replying to comments |
@@ -60,6 +61,7 @@ and, for the password tests, **qpdf** (`.tools\qpdf`, Apache-2.0, 12.4.2 msvc64)
 For Thai OCR, put the [ONNX Runtime 1.24.4 Windows x64 CPU SDK](https://github.com/microsoft/onnxruntime/releases/tag/v1.24.4) in
 `.tools\onnxruntime-win-x64-1.24.4`. Put the files of [OpenThai 2.0 OCR Text](https://huggingface.co/iapp/OpenThai2.0-OCR-Text) (Apache-2.0, 4 MB: `det.onnx`, `rec.onnx`,
 `rec_dict.txt`, `NOTICE`; revision 40e8e9ff) in `.tools\openthai-ocr`.
+For the AI assistant, put the [llama.cpp b12170 Windows Vulkan x64 build](https://github.com/ggml-org/llama.cpp/releases/tag/b12170) unpacked in `.tools\llm\llama-vulkan` (MIT; packaging checks the SHA-256 of 23 files). The model Qwen3.5-4B-Q4_K_M.gguf is downloaded by the setup or the program, not packaged.
 The local reader build can run without these files. Packaging requires the audited versions and checks their hashes.
 
 ```powershell

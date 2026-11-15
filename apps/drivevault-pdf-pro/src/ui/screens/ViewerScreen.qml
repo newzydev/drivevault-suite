@@ -357,6 +357,7 @@ Item {
     function diagnosticOpen(name) {
         if (name === "print") printDialog.open()
         else if (name === "edit") Editor.active = true
+        else if (name === "ai") { showSidebar = true; sidePanel.mode = "ai" }
     }
 
     function openSearch() {
@@ -664,6 +665,7 @@ Item {
                 currentPage: viewer.currentPage
                 dpr: viewer.dpr
                 onPageRequested: (page, y) => viewer.goTo(page, y)
+                onOcrRequested: viewer.ocrRequested(viewer.currentPage)
             }
 
             Rectangle {

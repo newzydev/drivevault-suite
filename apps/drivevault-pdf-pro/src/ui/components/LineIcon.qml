@@ -188,6 +188,13 @@ Canvas {
                 ctx.beginPath(); ctx.moveTo(9, y); ctx.lineTo(i === 1 ? 17 : 21, y); ctx.stroke()
             }
             break
+        case "ai":
+            // a large and a small four-pointed sparkle
+            ctx.beginPath(); ctx.moveTo(10, 3); ctx.quadraticCurveTo(10.6, 9.4, 17, 10); ctx.quadraticCurveTo(10.6, 10.6, 10, 17); ctx.quadraticCurveTo(9.4, 10.6, 3, 10)
+            ctx.quadraticCurveTo(9.4, 9.4, 10, 3); ctx.closePath(); ctx.stroke()
+            ctx.beginPath(); ctx.moveTo(18, 14.5); ctx.lineTo(18.7, 16.8); ctx.lineTo(21, 17.5); ctx.lineTo(18.7, 18.2); ctx.lineTo(18, 20.5); ctx.lineTo(17.3, 18.2)
+            ctx.lineTo(15, 17.5); ctx.lineTo(17.3, 16.8); ctx.closePath(); ctx.stroke()
+            break
         case "comment":
             roundRect(3.5, 4, 17, 12, 2.5); ctx.stroke()
             ctx.beginPath(); ctx.moveTo(8, 16); ctx.lineTo(8, 20.5); ctx.lineTo(12.5, 16); ctx.stroke()

@@ -17,12 +17,14 @@ add_library(dp_appcore STATIC
     ImageExport.cpp ImageExport.h
     CreatePdf.cpp CreatePdf.h
     ThaiOcr.cpp ThaiOcr.h
+    DocumentSearch.cpp DocumentSearch.h AssistantPrompts.cpp AssistantPrompts.h ChatStream.cpp ChatStream.h LlamaServer.cpp LlamaServer.h
+    ModelDownloader.cpp ModelDownloader.h DocumentAssistant.cpp DocumentAssistant.h
     ReplaceText.cpp ReplaceText.h
     Redaction.cpp Redaction.h
     BatchPdf.cpp BatchPdf.h
     PageListModel.cpp PageListModel.h Compressor.cpp Compressor.h FormFiller.cpp FormFiller.h PdfComparer.cpp PdfComparer.h SpeechReader.cpp SpeechReader.h SignatureManager.cpp SignatureManager.h AccessibilityChecker.cpp AccessibilityChecker.h EditorModel.cpp EditorModel.h OverlayImageProvider.cpp OverlayImageProvider.h)
 target_include_directories(dp_appcore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(dp_appcore PUBLIC dp_pdfengine dp_pdftools Qt6::Gui Qt6::Qml Qt6::Quick Qt6::PrintSupport sapi ole32)
+target_link_libraries(dp_appcore PUBLIC dp_pdfengine dp_pdftools Qt6::Gui Qt6::Qml Qt6::Quick Qt6::PrintSupport Qt6::Network sapi ole32)
 if(DP_ONNX_AVAILABLE)
     target_compile_definitions(dp_appcore PRIVATE DP_ONNX_AVAILABLE)
     target_include_directories(dp_appcore SYSTEM PRIVATE "${DP_ONNX_DIR}/include")

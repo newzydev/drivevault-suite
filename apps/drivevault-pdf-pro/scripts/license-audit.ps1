@@ -12,7 +12,9 @@ $required = @(
     'licenses\Qt\qtbase-6.8.3.spdx', 'licenses\Qt\qtdeclarative-6.8.3.spdx', 'licenses\Qt\qtsvg-6.8.3.spdx',
     'licenses\OCR\ONNX-Runtime-LICENSE.txt', 'licenses\OCR\ONNX-Runtime-ThirdPartyNotices.txt',
     'licenses\OCR\OpenThai-OCR-NOTICE.txt', 'onnxruntime.dll', 'models\openthai-ocr-detection.onnx',
-    'models\openthai-ocr-recognition.onnx', 'models\openthai-ocr-dict.txt'
+    'models\openthai-ocr-recognition.onnx', 'models\openthai-ocr-dict.txt',
+    'licenses\llama.cpp-LICENSE.txt', 'licenses\LLVM-OpenMP-LICENSE.txt', 'licenses\Qwen3.5-NOTICE.txt',
+    'ai\llama\llama-server.exe'
 )
 foreach ($relative in $required) {
     $file = Get-Item -LiteralPath (Join-Path $root $relative)
@@ -42,6 +44,8 @@ foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {
     elseif ($path -eq 'qpdf30.dll') { 'qpdf' }
     elseif ($path -eq 'onnxruntime.dll' -or ($path -like 'licenses\OCR\ONNX-Runtime-*' -and $path -in $required)) { 'Microsoft ONNX Runtime' }
     elseif ($path -in $required -and ($path -like 'models\openthai-ocr-*' -or $path -like 'licenses\OCR\OpenThai-OCR-*')) { 'OpenThai OCR (iApp) / PaddleOCR PP-OCRv6' }
+    elseif ($path -like 'ai\llama\*' -and $file.Extension -in '.exe', '.dll' -and $file.Name -notmatch '^(msvcp|vcruntime|concrt)') { 'llama.cpp (MIT) / ggml / LLVM OpenMP' }
+    elseif ($path -like 'ai\llama\*' -and $file.Name -match '^(msvcp|vcruntime|concrt)') { 'Microsoft Visual C++ runtime' }
     elseif ($path -in $known -or $path -in $required) { 'DriveVault / third-party notices and runtime' }
     else { throw "No approved licence owner for $path" }
     $counts[$owner] = 1 + [int]$counts[$owner]

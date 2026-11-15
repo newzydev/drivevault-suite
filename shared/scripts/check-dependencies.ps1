@@ -30,7 +30,7 @@ foreach ($f in $files) {
         if ($dep -like 'api-ms-win-*' -or $dep -like 'ext-ms-win-*') { continue }
         # where this file may find it: its own folder, the application folder (for the main program and its plug-ins)
         $local = $shipped.ContainsKey($dep)
-        if ($f.DirectoryName -like '*\ai\whisper') {
+        if ($f.DirectoryName -like '*\ai\whisper' -or $f.DirectoryName -like '*\ai\llama') {
             $local = Test-Path (Join-Path $f.DirectoryName $dep)        # a separate program: only its own folder counts
         }
         if ($local) { continue }

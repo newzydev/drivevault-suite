@@ -47,6 +47,14 @@ copyright the PaddlePaddle Authors, Apache License 2.0; the Thai line recogniser
 Model: https://huggingface.co/iapp/OpenThai2.0-OCR-Text (revision 40e8e9ff, files checked by SHA-256)
 Source of the base models: https://github.com/PaddlePaddle/PaddleOCR
 
+llama.cpp (build b12170, Vulkan) and ggml: Copyright the ggml authors, MIT. See licenses\llama.cpp-LICENSE.txt. It is the engine of the AI assistant and runs
+as a separate program (ai\llama\llama-server.exe) in its own folder. Its OpenMP runtime: LLVM Project, Apache-2.0 with LLVM exceptions
+(licenses\LLVM-OpenMP-LICENSE.txt). Source: https://github.com/ggml-org/llama.cpp/releases/tag/b12170
+
+Qwen3.5-4B (AI assistant language model, NOT part of the installer): Copyright Alibaba Cloud / Qwen team, Apache License 2.0 (licenses\Apache-2.0.txt,
+licenses\Qwen3.5-NOTICE.txt). Downloaded only when the user agrees (setup task or button) from the unsloth GGUF conversion
+https://huggingface.co/unsloth/Qwen3.5-4B-GGUF (revision e87f1764), checked by SHA-256.
+
 Microsoft Visual C++ runtime: redistributed under the Visual Studio
 redistributable terms. The runtime DLLs are installed app-local.
 

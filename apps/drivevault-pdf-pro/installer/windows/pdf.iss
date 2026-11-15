@@ -1,6 +1,6 @@
 ﻿; DriveVault PDF Pro. The package script supplies the audited payload and bundled hub.
 #ifndef AppVersion
-  #define AppVersion "1.18.1"
+  #define AppVersion "1.19.0"
 #endif
 #if !Defined(StageDir) || !Defined(OutputDir) || !Defined(MasterSetup) || !Defined(MasterVersion) || !Defined(ArtworkDir)
   #error Build this installer with scripts\package.ps1
@@ -52,12 +52,30 @@ Name: "thai"; MessagesFile: "compiler:Languages\Thai.isl"; LicenseFile: "license
 english.DesktopTask=Create a desktop shortcut
 english.UserGuide=PDF Pro User Guide
 english.HubFailure=DriveVault Master Pro setup did not complete (code %1).
+english.AiModelsTask=Download the AI assistant model now (about 2.7 GB, Qwen3.5-4B). Needs an Internet connection; skip it to download it later with the Download button in the AI assistant panel.
+english.AiModelsGroup=AI features:
+english.DownloadingModels=Downloading the AI assistant model...
+english.ModelsFailed=The program was installed, but the AI assistant model was not downloaded (%1). You can download it later with the Download button in the AI assistant panel.
+english.ModelsCancelled=cancelled
+english.ModelsNoSpace=Not enough free disk space for the AI assistant model (about %1 MB needed).
 thai.DesktopTask=สร้างทางลัดบนเดสก์ท็อป
 thai.UserGuide=คู่มือ PDF Pro
 thai.HubFailure=ติดตั้ง DriveVault Master Pro ไม่สำเร็จ (รหัส %1)
+thai.AiModelsTask=ดาวน์โหลดโมเดลผู้ช่วย AI ตอนนี้ (ประมาณ 2.7 GB, Qwen3.5-4B) ต้องต่ออินเทอร์เน็ต ถ้าข้ามไปจะดาวน์โหลดทีหลังได้ด้วยปุ่มดาวน์โหลดในแผงผู้ช่วย AI
+thai.AiModelsGroup=ฟีเจอร์ AI:
+thai.DownloadingModels=กำลังดาวน์โหลดโมเดลผู้ช่วย AI...
+thai.ModelsFailed=ติดตั้งโปรแกรมแล้ว แต่ดาวน์โหลดโมเดลผู้ช่วย AI ไม่สำเร็จ (%1) ดาวน์โหลดทีหลังได้ด้วยปุ่มดาวน์โหลดในแผงผู้ช่วย AI
+thai.ModelsCancelled=ยกเลิก
+thai.ModelsNoSpace=พื้นที่ดิสก์ว่างไม่พอสำหรับโมเดลผู้ช่วย AI (ต้องการประมาณ %1 MB)
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:DesktopTask}"; Flags: unchecked
+Name: "aimodels"; Description: "{cm:AiModelsTask}"; GroupDescription: "{cm:AiModelsGroup}"
+
+[UninstallDelete]
+; the downloaded model is not tracked as an installed file
+Type: files; Name: "{app}\ai\models\Qwen3.5-4B-Q4_K_M.gguf"
+Type: dirifempty; Name: "{app}\ai\models"
 
 [Files]
 Source: "{#StageDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -120,4 +138,110 @@ begin
     ExpandConstant('{language}');
   if not Exec(ExpandConstant('{tmp}\MasterProSetup.exe'), Args, '', SW_HIDE, ewWaitUntilTerminated, Code) or (Code <> 0) then
     Result := FmtMessage(CustomMessage('HubFailure'), [IntToStr(Code)]);
+end;
+
+// ---- AI assistant model (downloaded while installing) ------------------------------------------------------------------------------
+// Pinned revision, fixed size and SHA-256 (the same values as src\app\ModelDownloader.cpp: change both together).
+const
+  QwenUrl = 'https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/e87f176479d0855a907a41277aca2f8ee7a09523/Qwen3.5-4B-Q4_K_M.gguf';
+  QwenName = 'Qwen3.5-4B-Q4_K_M.gguf';
+  QwenSize = 2740937888;
+  QwenSha = '00fe7986ff5f6b463e62455821146049db6f9313603938a70800d1fb69ef11a4';
+
+var
+  ModelPage: TDownloadWizardPage;
+  ModelsNote: String;      // why the model was not installed ('' when all is well)
+
+function OnModelProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
+begin
+  Result := True;
+end;
+
+procedure InitializeWizard();
+begin
+  ModelPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), CustomMessage('DownloadingModels'), @OnModelProgress);
+end;
+
+function HaveModel(): Boolean;
+var
+  S: Int64;
+  Path: String;
+begin
+  Path := AddBackslash(ExpandConstant('{app}')) + 'ai\models\' + QwenName;
+  Result := FileExists(Path) and FileSize64(Path, S) and (S = QwenSize);
+end;
+
+// The model is downloaded into {tmp} (checked against its SHA-256 by the download itself) and placed in {app}\ai\models afterwards.
+procedure DownloadModel();
+var
+  FreeTmp, TotalTmp, FreeApp, TotalApp, Needed: Int64;
+begin
+  ModelsNote := '';
+  if HaveModel() then
+    Exit;
+  Needed := QwenSize + 700 * 1024 * 1024;
+  if GetSpaceOnDisk64(ExtractFileDrive(ExpandConstant('{tmp}')), FreeTmp, TotalTmp) and
+     GetSpaceOnDisk64(ExtractFileDrive(ExpandConstant('{app}')), FreeApp, TotalApp) then
+  begin
+    if CompareText(ExtractFileDrive(ExpandConstant('{tmp}')), ExtractFileDrive(ExpandConstant('{app}'))) = 0 then
+    begin
+      if FreeApp < Needed then
+      begin
+        ModelsNote := FmtMessage(CustomMessage('ModelsNoSpace'), [IntToStr(Needed div (1024 * 1024))]);
+        Exit;
+      end;
+    end
+    else if (FreeTmp < QwenSize + 200 * 1024 * 1024) or (FreeApp < Needed) then
+    begin
+      ModelsNote := FmtMessage(CustomMessage('ModelsNoSpace'), [IntToStr(Needed div (1024 * 1024))]);
+      Exit;
+    end;
+  end;
+  ModelPage.Clear;
+  ModelPage.Add(QwenUrl, QwenName, QwenSha);
+  ModelPage.Show;
+  try
+    try
+      ModelPage.Download;
+    except
+      if ModelPage.AbortedByUser then
+        ModelsNote := FmtMessage(CustomMessage('ModelsFailed'), [CustomMessage('ModelsCancelled')])
+      else
+        ModelsNote := FmtMessage(CustomMessage('ModelsFailed'), [GetExceptionMessage]);
+    end;
+  finally
+    ModelPage.Hide;
+  end;
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := True;
+  // Silent installs (the hub, tests) never download; the AI assistant panel can download the model later.
+  if (CurPageID = wpReady) and (not WizardSilent()) and WizardIsTaskSelected('aimodels') then
+    DownloadModel();
+end;
+
+procedure PlaceModel();
+var
+  Src, Dir, Dst: String;
+begin
+  Src := ExpandConstant('{tmp}\') + QwenName;
+  if not FileExists(Src) then
+    Exit;
+  Dir := AddBackslash(ExpandConstant('{app}')) + 'ai\models';
+  ForceDirectories(Dir);
+  Dst := AddBackslash(Dir) + QwenName;
+  DeleteFile(Dst);
+  if not RenameFile(Src, Dst) then
+    if CopyFile(Src, Dst, False) then
+      DeleteFile(Src);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    PlaceModel();
+  if (CurStep = ssDone) and (ModelsNote <> '') then
+    SuppressibleMsgBox(ModelsNote, mbInformation, MB_OK, IDOK);
 end;

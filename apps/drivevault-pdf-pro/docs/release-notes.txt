@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.19.0 (2026-11-15): AI assistant for questions and summaries
+  - New: the "AI" tab of the side panel answers questions about the open document and summarises it with a language model that runs on this computer (llama.cpp Vulkan engine with CPU fallback, Qwen3.5-4B). Answers name the pages they come from; a long document is summarised part by part; the assistant only reads and never changes the document. Nothing leaves the computer.
+  - The model (2.7 GB, Apache-2.0) is not in the installer: the setup offers to download it (SHA-256 checked; silent installs never download), or press Download in the panel. Answers can be wrong: check the pages named.
+  - Note: the installer is not code-signed yet, so Windows SmartScreen may warn.
+
 v1.18.1 (2026-11-15): dotted lines and table rulings in OCR
   - Fixed: in a scanned form, the label in front of a dotted line ("name ...........") is read again. The dots used to be read as a string of digits and the label was lost. The dotted line is now cut out before the label is read, and a string of nothing but Thai zeros, ones and punctuation is never written to the text layer.
   - Fixed: the ruling of a table or form that the box of a line touches (the line under a heading, the top of a table), and ink from the line above or below, is wiped from the line before it is read; these used to turn into extra characters or hide the label.

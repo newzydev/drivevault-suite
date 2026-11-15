@@ -1,0 +1,6 @@
+Qwen3.5-4B language model (not part of the installer)
+
+The AI assistant of DriveVault PDF Pro uses the language model Qwen3.5-4B (Copyright Alibaba Cloud / the Qwen team, Apache License 2.0; the licence text is
+in Apache-2.0.txt). The program does not contain the model. It is downloaded, only when you agree (a task of the setup, or the Download button in the AI
+assistant panel), from https://huggingface.co/unsloth/Qwen3.5-4B-GGUF (the GGUF conversion "Qwen3.5-4B-Q4_K_M.gguf" of https://huggingface.co/Qwen/Qwen3.5-4B,
+revision e87f1764, about 2.7 GB) and checked against its SHA-256. Its answers can be wrong: check the pages the assistant names.

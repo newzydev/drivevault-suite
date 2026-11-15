@@ -132,6 +132,47 @@ Copy-Item -LiteralPath (Join-Path $onnxDir 'LICENSE') -Destination (Join-Path $o
 Copy-Item -LiteralPath (Join-Path $onnxDir 'ThirdPartyNotices.txt') -Destination (Join-Path $ocrLic 'ONNX-Runtime-ThirdPartyNotices.txt')
 # OpenThai 2.0 OCR Text (Apache-2.0, built on PaddlePaddle PP-OCRv6-tiny): the model's own NOTICE goes with the Apache-2.0 text (licenses\Apache-2.0.txt)
 Copy-Item -LiteralPath (Join-Path $ocrModels 'NOTICE') -Destination (Join-Path $ocrLic 'OpenThai-OCR-NOTICE.txt')
+# llama.cpp (MIT, Vulkan build b12170): the engine of the AI assistant. llama-server.exe runs the language model as a separate program in its own folder (ai\llama).
+# The model itself (Qwen3.5-4B, 2.7 GB, Apache-2.0) is NOT shipped: the setup downloads it when the user agrees, or the user presses a button in the program.
+$llamaDir = Join-Path $toolsRoot 'llm\llama-vulkan'
+$llamaFiles = [ordered]@{
+    'llama-server.exe' = 'fe352ae80869c9e0f57153c5fe78a0daf01cd9107280f564b164a09307867c29'
+    'llama-server-impl.dll' = '0d4a4fc6321b2c558d3210704a3817bf0727a50166123b157cd30213833f7661'
+    'llama.dll' = 'cd32952a8f363bf651e67b24b23c7f808a52da7cb5ea84efec1567a39527207b'
+    'llama-common.dll' = '4329ccd7de848efc06af30be778c278ae07c9f7be65543b3b3e5d176591a05a8'
+    'ggml.dll' = '2b56a3a514d5d545d34def24ec49711e86eb7de5bd32f0c412171081e0c12fd0'
+    'ggml-base.dll' = 'a9cb6445722f52a222413e019dbcdb59f8cff82fc11ef209dfc497fd86adaabd'
+    'ggml-vulkan.dll' = '1d6315a88aa3c51b15bb0440b3cf3ebc4f9662c262d3eeccc67e9f7d61b1dc39'
+    'libomp.dll' = 'a12116ba72d1d6820407cf30be23da04ce79d6bb8a71a5ee71759c5a1faa6f1c'
+    'mtmd.dll' = 'd08e8a5083665ed328a59ee0def6285bb5ffdd683abc5d9a7877991af6921d77'
+    'ggml-cpu-alderlake.dll' = '87936bc87a65dab6792086e5bcb2559d56a8366f7f91f56abb2e372e38a4d70f'
+    'ggml-cpu-cannonlake.dll' = 'dd3cffe293555f31724da51b64bac5c3b2f7d97e274c8f7e86e38d06f179daf6'
+    'ggml-cpu-cascadelake.dll' = 'eb154c970c75637dff88fe7d133a88ce95fdd7b025679d7521e6f3f7b97fe1c8'
+    'ggml-cpu-cooperlake.dll' = 'a1bb905c401a4f80f80cbde1bc275a6f2a4fa7795278d70f99f83be15788c95f'
+    'ggml-cpu-haswell.dll' = '8be60592cca4ecefa498fee715cac3943d1735c42148be431a82695a8d497ee2'
+    'ggml-cpu-icelake.dll' = 'c7e965a28eab2e9ac939dc62cc331da2e2a053ad190f3928c72ae8a794797fae'
+    'ggml-cpu-ivybridge.dll' = 'edccfb0a57a68ee516ced5fa5924baf473cb21cca80eb23808e64d2ec803a566'
+    'ggml-cpu-piledriver.dll' = 'e80dc16e81a584797c6a917fd581f68c056afc0653775b944dd97bf434c4c06b'
+    'ggml-cpu-sandybridge.dll' = '8c07d2a396be16b506566bd92f53f04368d895b6e8dfdfc23ead025fe3354177'
+    'ggml-cpu-sapphirerapids.dll' = 'c87aa88e5ff1581d1c49530b41030d7fbd7fbf2ae7b01bb6949ba014a06296b3'
+    'ggml-cpu-skylakex.dll' = '9d249c6dda908fa6ec98dedca4276302f6b166df3dded54a9a31a79d79e7fc16'
+    'ggml-cpu-sse42.dll' = '3ec623e099c35712e89fd7c9aafe556334be30b7d98985a19ee566abe70606c8'
+    'ggml-cpu-x64.dll' = '2cca197feef476036115f33d2ff1dc40de4d711f478ce3defb5ad6fea6e0ac68'
+    'ggml-cpu-zen4.dll' = '40e6f283963b928d61809ea4ef7d166fc84183d50ce7252ee61f7f288605267b'
+}
+$llamaStage = Join-Path $stage 'ai\llama'
+New-Item -ItemType Directory -Path $llamaStage -Force | Out-Null
+foreach ($name in $llamaFiles.Keys) {
+    $source = Join-Path $llamaDir $name
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw "Put the llama.cpp b12170 Vulkan build in .tools\llm\llama-vulkan first: $name" }
+    $digest = & (Join-Path $sharedScripts 'file-sha256.ps1') -Path $source
+    if ($digest -cne $llamaFiles[$name]) { throw "llama.cpp file does not match the audited build b12170: $name" }
+    Copy-Item -LiteralPath $source -Destination $llamaStage
+}
+foreach ($dll in 'msvcp140.dll', 'msvcp140_1.dll', 'msvcp140_2.dll', 'vcruntime140.dll', 'vcruntime140_1.dll', 'concrt140.dll') {
+    Copy-Item -LiteralPath (Join-Path $crt.FullName $dll) -Destination $llamaStage      # a separate program only looks in its own folder
+}
+
 foreach ($doc in 'user-guide.en.html', 'user-guide.th.html', 'release-notes.txt') {
     Copy-Item -LiteralPath (Join-Path $DvRoot "docs\$doc") -Destination $docs
 }

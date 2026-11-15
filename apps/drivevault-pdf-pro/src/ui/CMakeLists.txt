@@ -39,6 +39,7 @@ qt_add_qml_module(dp_ui
         screens/FileTabs.qml
         screens/SearchBar.qml
         screens/SidePanel.qml
+        screens/AiPanel.qml
         screens/LinkDialog.qml
         screens/PrintDialog.qml
         screens/OrganizerDialog.qml

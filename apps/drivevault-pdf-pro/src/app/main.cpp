@@ -6,6 +6,7 @@
 #include "PdfComparer.h"
 #include "SignatureManager.h"
 #include "SpeechReader.h"
+#include "DocumentAssistant.h"
 #include "AccessibilityChecker.h"
 #include "OverlayImageProvider.h"
 #include "PageListModel.h"
@@ -69,7 +70,7 @@ int main(int argc, char* argv[])
     QCommandLineOption passwordOption(QStringLiteral("password"), QStringLiteral("Password for the file to open (diagnostics)."), QStringLiteral("text"));
     QCommandLineOption screenshotOption(QStringLiteral("screenshot"), QStringLiteral("Render the window to <file> (PNG) and exit (diagnostics)."), QStringLiteral("file"));
     QCommandLineOption sizeOption(QStringLiteral("size"), QStringLiteral("Window size WxH for --screenshot."), QStringLiteral("WxH"));
-    QCommandLineOption showOption(QStringLiteral("show"), QStringLiteral("Open a window or tool bar before the --screenshot is taken (diagnostics): print, organizer, split, compress, form, security, imageExport, ocr, maintenance, batch, create, prefs, about, edit."), QStringLiteral("name"));
+    QCommandLineOption showOption(QStringLiteral("show"), QStringLiteral("Open a window or tool bar before the --screenshot is taken (diagnostics): print, organizer, split, compress, form, security, imageExport, ocr, maintenance, batch, create, prefs, about, edit, ai."), QStringLiteral("name"));
     QCommandLineOption diagnosticsOption(QStringLiteral("diagnostics-json"),
         QStringLiteral("Write local build diagnostics to a new JSON file and exit."), QStringLiteral("file"));
     parser.addOptions({dataDirOption, langOption, passwordOption, screenshotOption, sizeOption, diagnosticsOption, showOption});
@@ -112,6 +113,7 @@ int main(int argc, char* argv[])
     dp::PdfComparer comparer(&controller);
     dp::SignatureManager signatures(&controller);
     dp::SpeechReader speech;
+    dp::DocumentAssistant assistant(&controller);
     dp::AccessibilityChecker access(&controller);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Doc", &controller);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Organizer", &organizer);
@@ -121,6 +123,7 @@ int main(int argc, char* argv[])
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Comparer", &comparer);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Signatures", &signatures);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Speech", &speech);
+    qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Assistant", &assistant);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Access", &access);
 
     QQmlApplicationEngine engine;
