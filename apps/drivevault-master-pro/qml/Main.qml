@@ -314,9 +314,21 @@ ApplicationWindow {
             }
         }
 
+        // ---- AI Q&A and Agentic AI: the same page with another mode (no AI is connected yet; the page says so) -----------------------------
+        AiWorkspace {
+            id: aiWorkspace
+            objectName: "aiWorkspace"
+            visible: win.tab !== "programs"
+            mode: win.tab === "agent" ? "agent" : "ask"
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            onTabPicked: key => win.tab = key
+        }
+
         // ---- hero + programs by section --------------------------------------------------------------------------------------------
         Flickable {
             id: scroller
+            visible: win.tab === "programs"
             Layout.fillWidth: true
             Layout.fillHeight: true
             contentHeight: page.implicitHeight
@@ -361,53 +373,17 @@ ApplicationWindow {
                         spacing: 10
 
                         // tabs: Programs | AI Q&A | Agentic AI
-                        Rectangle {
-                            id: tabBar
+                        TabSwitcher {
                             objectName: "tabBar"
                             Layout.alignment: Qt.AlignHCenter
-                            implicitHeight: 40
-                            implicitWidth: tabRow.implicitWidth + 8
-                            radius: 20
-                            color: "#E61B1D24"
-                            border.width: 1
-                            border.color: Theme.border
-                            Row {
-                                id: tabRow
-                                anchors.centerIn: parent
-                                spacing: 2
-                                Repeater {
-                                    model: win.tabs
-                                    delegate: AbstractButton {
-                                        id: tabButton
-                                        required property var modelData
-                                        objectName: "tab_" + modelData.key
-                                        readonly property bool current: win.tab === modelData.key
-                                        implicitWidth: Math.max(96, tabLabel.implicitWidth + 40)
-                                        implicitHeight: 32
-                                        hoverEnabled: true
-                                        onClicked: win.tab = modelData.key
-                                        HoverHandler { cursorShape: Qt.PointingHandCursor }
-                                        Accessible.role: Accessible.PageTab
-                                        Accessible.name: Tr.s("tab_" + modelData.key)
-                                        contentItem: Text {
-                                            id: tabLabel
-                                            text: Tr.s("tab_" + tabButton.modelData.key)
-                                            font.pixelSize: 14
-                                            font.weight: Font.DemiBold
-                                            color: tabButton.current ? Theme.readableOn(Theme.accent) : tabButton.hovered ? Theme.text : Theme.textSecondary
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                        background: Rectangle { radius: 16; color: tabButton.current ? Theme.accent : tabButton.hovered ? Theme.surfaceHover : "transparent" }
-                                    }
-                                }
-                            }
+                            current: win.tab
+                            onPicked: key => win.tab = key
                         }
                         Item { Layout.preferredHeight: 6 }
 
                         Text {
                             Layout.fillWidth: true
-                            text: win.tab === "programs" ? Tr.s("heroTitle") : Tr.s("tab_" + win.tab)
+                            text: Tr.s("heroTitle")
                             font.pixelSize: 34
                             font.weight: Font.Bold
                             color: Theme.text
@@ -419,7 +395,7 @@ ApplicationWindow {
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: win.tab === "programs" ? Tr.s("subtitle") : Tr.s("soonSubtitle")
+                            text: Tr.s("subtitle")
                             font.pixelSize: 15
                             color: Theme.textSecondary
                             horizontalAlignment: Text.AlignHCenter
@@ -434,8 +410,6 @@ ApplicationWindow {
                         Rectangle {
                             id: searchBar
                             objectName: "searchBar"
-                            opacity: win.tab === "programs" ? 1 : 0          // keeps its place, so the tabs do not jump when the tab changes
-                            enabled: win.tab === "programs"
                             Layout.alignment: Qt.AlignHCenter
                             Layout.fillWidth: true
                             Layout.maximumWidth: 700
@@ -587,40 +561,8 @@ ApplicationWindow {
                     }
                 }
 
-                // AI Q&A / Agentic AI: not built yet, so the page says so (no mock-up)
-                ColumnLayout {
-                    objectName: "soonPage"
-                    visible: win.tab !== "programs"
-                    Layout.fillWidth: true
-                    Layout.topMargin: 48
-                    Layout.bottomMargin: 60
-                    spacing: 14
-                    Rectangle {
-                        Layout.alignment: Qt.AlignHCenter
-                        height: 26
-                        width: soonBadge.implicitWidth + 24
-                        radius: 13
-                        color: Theme.surface
-                        border.width: 1
-                        border.color: Theme.border
-                        Text { id: soonBadge; anchors.centerIn: parent; text: Tr.s("comingSoon"); font.pixelSize: 13; font.weight: Font.Medium; color: Theme.textSecondary }
-                    }
-                    Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 40
-                        Layout.rightMargin: 40
-                        text: Tr.s(win.tab === "ask" ? "soonAsk" : "soonAgent")
-                        font.pixelSize: 15
-                        color: Theme.textSecondary
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.Wrap
-                    }
-                }
-
                 // the sections
                 ColumnLayout {
-                    visible: win.tab === "programs"
                     Layout.fillWidth: true
                     Layout.leftMargin: 40
                     Layout.rightMargin: 40

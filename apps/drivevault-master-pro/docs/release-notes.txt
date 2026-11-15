@@ -1,8 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.7.0 (2026-11-15): The AI Q&A and Agentic AI pages
+  - New: the pages of the AI Q&A and Agentic AI tabs: a list of conversations / tasks on the left, the conversation with the message box in the middle, and a side panel on the right (sources, or plan and changes). Example prompts fill the message box.
+  - **No AI is connected yet.** The pages say "Not connected": the message box only keeps what you type in the window (nothing is sent anywhere), and the buttons that need an AI (New conversation / New task, Send) are switched off. There are no made-up answers.
+
 v1.6.0 (2026-11-15): Tabs at the top, "Check for updates" in the search bar
-  - New: three tabs above the headline - Programs, AI Q&A and Agentic AI (โปรแกรม / เอไอถามตอบ / เอเจนติกเอไอ). Programs is the page you know. AI Q&A and Agentic AI are not built yet: their tabs show a "Coming soon" page that says so; nothing there works yet.
+  - New: three tabs above the headline - Programs, AI Q&A and Agentic AI (โปรแกรม / เอไอถามตอบ / เอเจนติกเอไอ). Programs is the page you know.
   - The "Check for updates" button moved from the top bar into the search bar (at its right end). It does the same as before.
   - Diagnostics: the exe accepts --tab programs|ask|agent together with --screenshot.
   - Not code-signed (Windows SmartScreen may warn).

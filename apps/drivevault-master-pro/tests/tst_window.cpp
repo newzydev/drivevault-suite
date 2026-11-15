@@ -79,6 +79,9 @@ private slots:
         QVERIFY(countNear(programs, qRgb(0x8B, 0x5C, 0xF6), 14) > 1500);
         QVERIFY2(countNear(ask, qRgb(0x8B, 0x5C, 0xF6), 14) < 300, "no program cards on the AI Q&A tab");
         QVERIFY2(countNear(agent, qRgb(0x8B, 0x5C, 0xF6), 14) < 300, "no program cards on the Agentic AI tab");
+        // the AI page: a side bar of "#0D0E11" on the left and the amber tab / diamond mark are drawn (the hero glow of the Programs page is gone)
+        QVERIFY2(countNear(ask, qRgb(0x0D, 0x0E, 0x11), 2) > 20000, "the AI page has its side bar");
+        QVERIFY2(countNear(ask, qRgb(0xF5, 0x9E, 0x0B), 20) > 300, "the selected tab and the mark are amber");
     }
 
     void thaiRendersToo()
