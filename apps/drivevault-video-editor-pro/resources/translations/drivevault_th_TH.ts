@@ -128,23 +128,33 @@
         <translation>ไม่ได้ติดตั้งมาให้ คุณดาวน์โหลดหรือนำเข้าเอง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AboutPage.qml" line="71"/>
+        <location filename="../../src/ui/settings/AboutPage.qml" line="69"/>
+        <source>runs the OpenThai speech model.</source>
+        <translation>ใช้รันโมเดลเสียง OpenThai</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AboutPage.qml" line="70"/>
+        <source>Thai speech model; not installed, downloaded by you.</source>
+        <translation>โมเดลเสียงภาษาไทย ไม่ได้ติดตั้งมาให้ คุณดาวน์โหลดเอง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AboutPage.qml" line="73"/>
         <source>Redistributable under the Visual Studio license terms.</source>
         <translation>แจกจ่ายต่อได้ตามเงื่อนไขสัญญาอนุญาตของ Visual Studio</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AboutPage.qml" line="86"/>
+        <location filename="../../src/ui/settings/AboutPage.qml" line="88"/>
         <source>Third-Party Notices</source>
         <translation>ประกาศของบุคคลที่สาม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AboutPage.qml" line="87"/>
-        <location filename="../../src/ui/settings/AboutPage.qml" line="92"/>
+        <location filename="../../src/ui/settings/AboutPage.qml" line="89"/>
+        <location filename="../../src/ui/settings/AboutPage.qml" line="94"/>
         <source>This document was not found next to the application.</source>
         <translation>ไม่พบเอกสารนี้ข้างโปรแกรม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AboutPage.qml" line="91"/>
+        <location filename="../../src/ui/settings/AboutPage.qml" line="93"/>
         <source>Open licenses folder</source>
         <translation>เปิดโฟลเดอร์สัญญาอนุญาต</translation>
     </message>
@@ -153,7 +163,7 @@
         <translation type="vanished">เชื่อมโยงแบบไดนามิก ผู้ใช้สามารถเปลี่ยนไลบรารี Qt ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AboutPage.qml" line="100"/>
+        <location filename="../../src/ui/settings/AboutPage.qml" line="102"/>
         <source>Full texts are installed with the application in the licenses folder.</source>
         <translation>ข้อความฉบับเต็มติดตั้งพร้อมโปรแกรมในโฟลเดอร์ licenses</translation>
     </message>
@@ -191,6 +201,7 @@
     </message>
     <message>
         <location filename="../../src/ui/settings/AiPage.qml" line="28"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="54"/>
         <source>Automatic</source>
         <translation>อัตโนมัติ</translation>
     </message>
@@ -210,127 +221,181 @@
         <translation>ไม่ส่งเสียง วิดีโอ หรือข้อความถอดเสียงออกจากเครื่องนี้เด็ดขาด การดาวน์โหลดโมเดลจะเริ่มโดยคุณเท่านั้น</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="48"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="47"/>
+        <source>Speech to text</source>
+        <translation>ถอดเสียงเป็นข้อความ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="49"/>
+        <source>Speech engine</source>
+        <translation>เอนจินถอดเสียง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="50"/>
+        <source>Automatic uses the OpenThai model for Thai (when it is installed) and whisper.cpp for every other language.</source>
+        <translation>อัตโนมัติจะใช้โมเดล OpenThai สำหรับภาษาไทย (เมื่อติดตั้งแล้ว) และใช้ whisper.cpp กับภาษาอื่นทั้งหมด</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="54"/>
+        <source>OpenThai (Thai only)</source>
+        <translation>OpenThai (ภาษาไทยเท่านั้น)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="59"/>
+        <source>OpenThai 2.0 ASR model</source>
+        <translation>โมเดล OpenThai 2.0 ASR</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="60"/>
+        <source>This build has no ONNX Runtime, so the model cannot run.</source>
+        <translation>โปรแกรมรุ่นนี้ไม่มี ONNX Runtime จึงรันโมเดลไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="61"/>
+        <source>Installed. It runs on this computer; nothing is uploaded.</source>
+        <translation>ติดตั้งแล้ว ทำงานบนเครื่องนี้ ไม่มีการอัปโหลดอะไร</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="62"/>
+        <source>Not installed. Download the files from huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt, about 2.6 GB) and put them in %1</source>
+        <translation>ยังไม่ได้ติดตั้ง ดาวน์โหลดไฟล์จาก huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt ขนาดรวมประมาณ 2.6 GB) แล้ววางไว้ใน %1</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="66"/>
+        <source>OpenThai model folder</source>
+        <translation>โฟลเดอร์โมเดล OpenThai</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="68"/>
+        <source>Open folder</source>
+        <translation>เปิดโฟลเดอร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="72"/>
         <source>Connect Claude Code / Codex (MCP)</source>
         <translation>เชื่อมต่อ Claude Code / Codex (MCP)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="49"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="73"/>
         <source>Lets an AI coding assistant on this computer work on the open project: list media and clips, edit the timeline, run the AI helpers. Every edit is one undo step. It listens on this computer only and needs the private token below.</source>
         <translation>ให้ผู้ช่วย AI ที่เขียนโค้ดบนเครื่องนี้ทำงานกับโปรเจกต์ที่เปิดอยู่ได้ เช่น ดูรายการสื่อและคลิป แก้ไทม์ไลน์ และใช้ตัวช่วย AI ทุกการแก้ไขเป็นหนึ่งขั้นของ Undo เซิร์ฟเวอร์รับเฉพาะการเชื่อมต่อจากเครื่องนี้และต้องใช้โทเคนส่วนตัวด้านล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="53"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="77"/>
         <source>Enable MCP server</source>
         <translation>เปิดเซิร์ฟเวอร์ MCP</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="54"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="78"/>
         <source>Running at %1</source>
         <translation>กำลังทำงานที่ %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="54"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="78"/>
         <source>Off. Nothing is listening.</source>
         <translation>ปิดอยู่ ไม่มีการรับการเชื่อมต่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="62"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="86"/>
         <source>Port</source>
         <translation>พอร์ต</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="63"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="87"/>
         <source>Restart the server (switch it off and on) after changing it.</source>
         <translation>หลังเปลี่ยนพอร์ต ให้ปิดแล้วเปิดเซิร์ฟเวอร์ใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="73"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="97"/>
         <source>Claude Code</source>
         <translation>Claude Code</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="74"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="98"/>
         <source>Copy this command and run it once in a terminal. It contains your private token.</source>
         <translation>คัดลอกคำสั่งนี้ไปรันหนึ่งครั้งในเทอร์มินัล คำสั่งมีโทเคนส่วนตัวของคุณอยู่ด้วย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="75"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="99"/>
         <source>Copy command</source>
         <translation>คัดลอกคำสั่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="79"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="103"/>
         <source>Codex</source>
         <translation>Codex</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="80"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="104"/>
         <source>Copy this block into ~/.codex/config.toml, then set the token variable shown in its last line.</source>
         <translation>คัดลอกบล็อกนี้ไปใส่ใน ~/.codex/config.toml แล้วตั้งค่าตัวแปรโทเคนตามบรรทัดสุดท้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="81"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="105"/>
         <source>Copy config</source>
         <translation>คัดลอกการตั้งค่า</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="85"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="109"/>
         <source>New token</source>
         <translation>โทเคนใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="86"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="110"/>
         <source>The old token stops working at once; connect your assistant again.</source>
         <translation>โทเคนเก่าจะใช้ไม่ได้ทันที ต้องเชื่อมต่อผู้ช่วยของคุณใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="87"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="111"/>
         <source>Create new token</source>
         <translation>สร้างโทเคนใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="90"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="114"/>
         <source>Feature status</source>
         <translation>สถานะฟีเจอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="94"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="118"/>
         <source>Speech to text and auto captions</source>
         <translation>ถอดเสียงเป็นข้อความและสร้างคำบรรยายอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="94"/>
-        <source>whisper.cpp — Thai and English</source>
-        <translation>whisper.cpp — ภาษาไทยและอังกฤษ</translation>
+        <location filename="../../src/ui/settings/AiPage.qml" line="118"/>
+        <source>OpenThai 2.0 for Thai, whisper.cpp for other languages</source>
+        <translation>OpenThai 2.0 สำหรับภาษาไทย whisper.cpp สำหรับภาษาอื่น</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="95"/>
+        <source>whisper.cpp — Thai and English</source>
+        <translation type="vanished">whisper.cpp — ภาษาไทยและอังกฤษ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="119"/>
         <source>Silence detection</source>
         <translation>ตรวจจับช่วงเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="95"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="119"/>
         <source>Highlight and remove silent passages</source>
         <translation>ไฮไลต์และตัดช่วงที่ไม่มีเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="96"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="120"/>
         <source>Smart cut suggestions</source>
         <translation>แนะนำจุดตัดอัจฉริยะ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="96"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="120"/>
         <source>Scene changes and audio activity</source>
         <translation>จุดเปลี่ยนฉากและความเคลื่อนไหวของเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="97"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="121"/>
         <source>Audio enhancement</source>
         <translation>ปรับปรุงคุณภาพเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="97"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="121"/>
         <source>Spectral noise reduction (signal processing, no neural model)</source>
         <translation>ลดเสียงรบกวนด้วยสเปกตรัม (การประมวลผลสัญญาณ ไม่ใช้โมเดลเครือข่ายประสาท)</translation>
     </message>
@@ -339,32 +404,32 @@
         <translation type="vanished">ลดเสียงรบกวนและเพิ่มความชัดของเสียงพูด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="98"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="122"/>
         <source>Object tracking</source>
         <translation>ติดตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="98"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="122"/>
         <source>Follow a subject across frames</source>
         <translation>ติดตามวัตถุข้ามเฟรม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="99"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="123"/>
         <source>Natural language assistant</source>
         <translation>ผู้ช่วยภาษาธรรมชาติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="99"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="123"/>
         <source>Typed commands from plain language</source>
         <translation>สั่งงานด้วยภาษาพูดทั่วไปแล้วแปลงเป็นคำสั่งที่ตรวจสอบได้</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="107"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="133"/>
         <source>Engine missing</source>
         <translation>ไม่พบเอนจิน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="112"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="138"/>
         <source>Model manager</source>
         <translation>ตัวจัดการโมเดล</translation>
     </message>
@@ -543,242 +608,240 @@
         <translation>ผู้ช่วยเข้าใจคำสั่งภาษาไทยและอังกฤษชุดหนึ่งที่กำหนดไว้ (ไม่ใช่โมเดลแชต) ใช้ได้เฉพาะฟีเจอร์ด้านล่างและไม่แก้ไขสิ่งใดนอกโปรเจกต์ ผลลัพธ์จะแสดงให้คุณยืนยัน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="163"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="167"/>
         <source>Auto captions</source>
         <translation>ซับอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="172"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="176"/>
         <source>Engine missing</source>
         <translation>ไม่พบเอนจิน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="178"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="182"/>
         <source>Language</source>
         <translation>ภาษา</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="184"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="188"/>
         <source>Detect automatically</source>
         <translation>ตรวจจับอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="194"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="198"/>
         <source>Transcribe timeline</source>
         <translation>ถอดเสียงไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="200"/>
         <source>A speech model is required. Download or import one in the model manager below.</source>
-        <translation>ต้องมีโมเดลเสียง กรุณาดาวน์โหลดหรือนำเข้าในตัวจัดการโมเดลด้านล่าง</translation>
+        <translation type="vanished">ต้องมีโมเดลเสียง กรุณาดาวน์โหลดหรือนำเข้าในตัวจัดการโมเดลด้านล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="201"/>
         <source>The speech engine (whisper.cpp) was not found next to the application.</source>
-        <translation>ไม่พบเอนจินถอดเสียง (whisper.cpp) ข้างโปรแกรม</translation>
+        <translation type="vanished">ไม่พบเอนจินถอดเสียง (whisper.cpp) ข้างโปรแกรม</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/editor/AiPanel.qml" line="212"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="215"/>
         <source>… and %n more phrase(s).</source>
         <translation>
             <numerusform>… และอีก %n ประโยค</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="216"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="219"/>
         <source>Add to timeline</source>
         <translation>เพิ่มลงไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="217"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="220"/>
         <source>Discard</source>
         <translation>ทิ้ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="220"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="223"/>
         <source>Automatic captions are not always accurate, especially with noise, music or names. Added captions are normal subtitle clips: select one to correct its text; File → Export or the Export workspace saves them as SRT.</source>
         <translation>ซับอัตโนมัติอาจไม่แม่นยำเสมอไป โดยเฉพาะเมื่อมีเสียงรบกวน เพลง หรือชื่อเฉพาะ ซับที่เพิ่มเป็นคลิปซับไตเติลปกติ: เลือกคลิปเพื่อแก้ข้อความ และส่งออกเป็น SRT ได้ในพื้นที่ส่งออก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="226"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="229"/>
         <source>Silence detection</source>
         <translation>ตรวจจับความเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="232"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="235"/>
         <source>Threshold</source>
         <translation>เกณฑ์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="238"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="241"/>
         <source>Min. length</source>
         <translation>ความยาวขั้นต่ำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="247"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="250"/>
         <source>Find silent passages</source>
         <translation>หาช่วงที่เงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="261"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="264"/>
         <source>Go to this passage</source>
         <translation>ไปที่ช่วงนี้</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/editor/AiPanel.qml" line="264"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="267"/>
         <source>… and %n more. All of them are highlighted in the timeline.</source>
         <translation>
             <numerusform>… และอีก %n ช่วง ทุกช่วงถูกไฮไลต์ในไทม์ไลน์</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="268"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="271"/>
         <source>Remove all…</source>
         <translation>ลบทั้งหมด…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="269"/>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="316"/>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="437"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="272"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="319"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="440"/>
         <source>Clear</source>
         <translation>ล้าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="277"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="280"/>
         <source>Smart cut suggestions</source>
         <translation>แนะนำจุดตัดอัจฉริยะ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="283"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="286"/>
         <source>Sensitivity</source>
         <translation>ความไว</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="291"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="294"/>
         <source>Suggest cut points</source>
         <translation>แนะนำจุดตัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="297"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="300"/>
         <source>Looks for scene changes inside clips and for pauses (using the silence settings above). Nothing is cut until you split.</source>
         <translation>มองหาการเปลี่ยนฉากภายในคลิปและช่วงหยุด (ใช้ค่าความเงียบด้านบน) ยังไม่มีอะไรถูกตัดจนกว่าคุณจะสั่งแบ่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="307"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="310"/>
         <source>Go to this point</source>
         <translation>ไปที่จุดนี้</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="308"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="311"/>
         <source>Split here</source>
         <translation>แบ่งตรงนี้</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/editor/AiPanel.qml" line="311"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="314"/>
         <source>… and %n more.</source>
         <translation>
             <numerusform>… และอีก %n รายการ</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="315"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="318"/>
         <source>Split at all…</source>
         <translation>แบ่งทุกจุด…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="324"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="327"/>
         <source>Audio enhancement</source>
         <translation>ปรับปรุงเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="330"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="333"/>
         <source>Noise reduction</source>
         <translation>ลดเสียงรบกวน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="336"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="339"/>
         <source>Remove rumble</source>
         <translation>ลดเสียงอู้</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="342"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="345"/>
         <source>Even out level</source>
         <translation>ปรับระดับเสียงให้สม่ำเสมอ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="351"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="354"/>
         <source>Enhance selected audio</source>
         <translation>ปรับปรุงเสียงที่เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="357"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="360"/>
         <source>Select an audio clip first. Uses spectral noise reduction (classical signal processing, no neural model) and writes a cleaned copy into the project&apos;s AI folder; the clip then uses the copy and Undo restores the original.</source>
         <translation>เลือกคลิปเสียงก่อน ใช้การลดเสียงรบกวนด้วยสเปกตรัม (การประมวลผลสัญญาณแบบคลาสสิก ไม่ใช้โมเดลเครือข่ายประสาท) และเขียนสำเนาที่ทำความสะอาดแล้วในโฟลเดอร์ AI ของโปรเจกต์ คลิปจะใช้สำเนานั้น และเลิกทำจะคืนต้นฉบับ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="364"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="367"/>
         <source>Object tracking</source>
         <translation>ติดตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="378"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="381"/>
         <source>Show region</source>
         <translation>แสดงพื้นที่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="387"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="390"/>
         <source>Left</source>
         <translation>ซ้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="387"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="390"/>
         <source>Top</source>
         <translation>บน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="388"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="391"/>
         <source>Width</source>
         <translation>กว้าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="388"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="391"/>
         <source>Height</source>
         <translation>สูง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="403"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="406"/>
         <source>Select a video clip, move the playhead to a frame where the subject is visible, place the rectangle over it (drag it on the monitor or use the sliders) and track.</source>
         <translation>เลือกคลิปวิดีโอ เลื่อนเพลย์เฮดไปที่เฟรมที่เห็นวัตถุ วางกรอบทับวัตถุ (ลากบนมอนิเตอร์หรือใช้แถบเลื่อน) แล้วเริ่มติดตาม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="409"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="412"/>
         <source>Track from playhead</source>
         <translation>ติดตามจากเพลย์เฮด</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ui/editor/AiPanel.qml" line="418"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="421"/>
         <source>%n frame(s) tracked, average match %1 %</source>
         <translation>
             <numerusform>ติดตามแล้ว %n เฟรม ความตรงเฉลี่ย %1 %</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="428"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="431"/>
         <source>Stabilize clip</source>
         <translation>ทำให้คลิปนิ่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="433"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="436"/>
         <source>Selected clip follows</source>
         <translation>คลิปที่เลือกตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="440"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="443"/>
         <source>Stabilize counter-moves the tracked clip; &quot;follows&quot; moves another video or image clip (for example a logo on a layer above) with the subject. Both write Position keyframes you can edit in the Inspector.</source>
         <translation>ทำให้นิ่งคือขยับคลิปที่ติดตามสวนทางกัน ส่วน &quot;ตาม&quot; คือให้คลิปวิดีโอหรือภาพอื่น (เช่น โลโก้บนเลเยอร์ด้านบน) เคลื่อนที่ตามวัตถุ ทั้งสองแบบสร้างคีย์เฟรมตำแหน่งที่แก้ไขได้ในอินสเปกเตอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/AiPanel.qml" line="446"/>
+        <location filename="../../src/ui/editor/AiPanel.qml" line="449"/>
         <source>Speech models</source>
         <translation>โมเดลเสียง</translation>
     </message>
@@ -5366,289 +5429,319 @@
 <context>
     <name>dv::AiController</name>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="96"/>
+        <location filename="../../src/ai/AiController.cpp" line="95"/>
+        <source>The OpenThai speech model only understands Thai. Choose another speech engine in Settings &gt; AI for English.</source>
+        <translation>โมเดลเสียง OpenThai เข้าใจเฉพาะภาษาไทย สำหรับภาษาอังกฤษให้เลือกเอนจินอื่นใน ตั้งค่า &gt; AI</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/AiController.cpp" line="99"/>
+        <source>This build has no ONNX Runtime, so the OpenThai speech model cannot run.</source>
+        <translation>โปรแกรมรุ่นนี้ไม่มี ONNX Runtime จึงรันโมเดลเสียง OpenThai ไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/AiController.cpp" line="103"/>
+        <source>The OpenThai speech model is not installed. Put its files in %1 (see Settings &gt; AI).</source>
+        <translation>ยังไม่ได้ติดตั้งโมเดลเสียง OpenThai ให้วางไฟล์ของโมเดลไว้ใน %1 (ดู ตั้งค่า &gt; AI)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/AiController.cpp" line="130"/>
+        <source>A speech model is required. Download or import one in the model manager below.</source>
+        <translation>ต้องมีโมเดลเสียง กรุณาดาวน์โหลดหรือนำเข้าในตัวจัดการโมเดลด้านล่าง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/AiController.cpp" line="132"/>
+        <source>The speech engine (whisper.cpp) was not found next to the application.</source>
+        <translation>ไม่พบเอนจินถอดเสียง (whisper.cpp) ข้างโปรแกรม</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/AiController.cpp" line="134"/>
+        <source>For better Thai captions install the OpenThai speech model: put its files in %1 (see Settings &gt; AI).</source>
+        <translation>ถ้าต้องการคำบรรยายภาษาไทยที่แม่นขึ้น ให้ติดตั้งโมเดลเสียง OpenThai: วางไฟล์ของโมเดลไว้ใน %1 (ดู ตั้งค่า &gt; AI)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/AiController.cpp" line="164"/>
         <source>Another AI task is running. Wait for it or cancel it.</source>
         <translation>มีงาน AI อื่นกำลังทำงานอยู่ กรุณารอหรือยกเลิก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="140"/>
-        <location filename="../../src/ai/AiController.cpp" line="316"/>
+        <location filename="../../src/ai/AiController.cpp" line="208"/>
+        <location filename="../../src/ai/AiController.cpp" line="392"/>
         <source>Cancelled.</source>
         <translation>ยกเลิกแล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="173"/>
-        <location filename="../../src/ai/AiController.cpp" line="221"/>
-        <location filename="../../src/ai/AiController.cpp" line="294"/>
+        <location filename="../../src/ai/AiController.cpp" line="241"/>
+        <location filename="../../src/ai/AiController.cpp" line="289"/>
+        <location filename="../../src/ai/AiController.cpp" line="362"/>
         <source>The timeline is empty.</source>
         <translation>ไทม์ไลน์ว่างเปล่า</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="175"/>
+        <location filename="../../src/ai/AiController.cpp" line="243"/>
         <source>The timeline has no audio to analyse.</source>
         <translation>ไทม์ไลน์ไม่มีเสียงให้วิเคราะห์</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="180"/>
+        <location filename="../../src/ai/AiController.cpp" line="248"/>
         <source>Looking for silent passages…</source>
         <translation>กำลังหาช่วงที่เงียบ…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="192"/>
+        <location filename="../../src/ai/AiController.cpp" line="260"/>
         <source>No silent passages found with these settings.</source>
         <translation>ไม่พบช่วงเงียบด้วยค่าที่ตั้งไว้</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="193"/>
+        <location filename="../../src/ai/AiController.cpp" line="261"/>
         <source>%n silent passage(s), %1 s in total. Review them in the timeline, then apply.</source>
         <translation>
             <numerusform>พบช่วงเงียบ %n ช่วง รวม %1 วินาที ตรวจดูในไทม์ไลน์แล้วจึงนำไปใช้</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="202"/>
+        <location filename="../../src/ai/AiController.cpp" line="270"/>
         <source>There are no silent passages to remove.</source>
         <translation>ไม่มีช่วงเงียบให้ลบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="205"/>
+        <location filename="../../src/ai/AiController.cpp" line="273"/>
         <source>Silent passages removed. Use Undo to bring them back.</source>
         <translation>ลบช่วงเงียบแล้ว ใช้เลิกทำเพื่อนำกลับมา</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="228"/>
+        <location filename="../../src/ai/AiController.cpp" line="296"/>
         <source>Analysing scenes and pauses…</source>
         <translation>กำลังวิเคราะห์ฉากและช่วงหยุด…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="239"/>
+        <location filename="../../src/ai/AiController.cpp" line="307"/>
         <source>Scene change</source>
         <translation>เปลี่ยนฉาก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="241"/>
+        <location filename="../../src/ai/AiController.cpp" line="309"/>
         <source>Silence starts</source>
         <translation>เริ่มเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="242"/>
+        <location filename="../../src/ai/AiController.cpp" line="310"/>
         <source>Silence ends</source>
         <translation>สิ้นสุดความเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="249"/>
+        <location filename="../../src/ai/AiController.cpp" line="317"/>
         <source>No cut points found with these settings.</source>
         <translation>ไม่พบจุดตัดด้วยค่าที่ตั้งไว้</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="250"/>
+        <location filename="../../src/ai/AiController.cpp" line="318"/>
         <source>%n suggested cut point(s). Nothing was cut yet.</source>
         <translation>
             <numerusform>แนะนำจุดตัด %n จุด ยังไม่มีอะไรถูกตัด</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="258"/>
+        <location filename="../../src/ai/AiController.cpp" line="326"/>
         <source>There is no such suggestion.</source>
         <translation>ไม่มีข้อเสนอนี้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="267"/>
+        <location filename="../../src/ai/AiController.cpp" line="335"/>
         <source>There are no suggestions to apply.</source>
         <translation>ไม่มีข้อเสนอให้ใช้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="269"/>
+        <location filename="../../src/ai/AiController.cpp" line="337"/>
         <source>Apply suggested cuts</source>
         <translation>ใช้จุดตัดที่แนะนำ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="296"/>
+        <location filename="../../src/ai/AiController.cpp" line="364"/>
         <source>The timeline has no audio to transcribe.</source>
         <translation>ไทม์ไลน์ไม่มีเสียงให้ถอด</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="298"/>
+        <location filename="../../src/ai/AiController.cpp" line="374"/>
         <source>The speech engine (whisper.cpp) was not found.</source>
         <translation>ไม่พบเอนจินถอดเสียง (whisper.cpp)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="301"/>
+        <location filename="../../src/ai/AiController.cpp" line="377"/>
         <source>A speech model is required. Download or import one in the model manager.</source>
         <translation>ต้องมีโมเดลเสียง กรุณาดาวน์โหลดหรือนำเข้าในตัวจัดการโมเดล</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="310"/>
+        <location filename="../../src/ai/AiController.cpp" line="386"/>
         <source>Transcribing speech…</source>
         <translation>กำลังถอดเสียง…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="328"/>
+        <location filename="../../src/ai/AiController.cpp" line="404"/>
         <source>No speech was recognised.</source>
         <translation>ไม่พบเสียงพูด</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="329"/>
+        <location filename="../../src/ai/AiController.cpp" line="405"/>
         <source>%n phrase(s) recognised. Automatic captions are not always accurate - check and correct the text.</source>
         <translation>
             <numerusform>จดจำได้ %n ประโยค ซับอัตโนมัติอาจไม่แม่นยำเสมอไป - กรุณาตรวจและแก้ข้อความ</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="337"/>
+        <location filename="../../src/ai/AiController.cpp" line="413"/>
         <source>There are no captions to add.</source>
         <translation>ไม่มีซับให้เพิ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="350"/>
+        <location filename="../../src/ai/AiController.cpp" line="426"/>
         <source>Captions added to the subtitle track. Select a subtitle to edit its text.</source>
         <translation>เพิ่มซับลงแทร็กซับไตเติลแล้ว เลือกซับเพื่อแก้ข้อความ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="369"/>
+        <location filename="../../src/ai/AiController.cpp" line="445"/>
         <source>Select an audio clip on the timeline first.</source>
         <translation>กรุณาเลือกคลิปเสียงในไทม์ไลน์ก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="373"/>
+        <location filename="../../src/ai/AiController.cpp" line="449"/>
         <source>The selected clip has no audio.</source>
         <translation>คลิปที่เลือกไม่มีเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="376"/>
-        <location filename="../../src/ai/AiController.cpp" line="441"/>
+        <location filename="../../src/ai/AiController.cpp" line="452"/>
+        <location filename="../../src/ai/AiController.cpp" line="517"/>
         <source>The media file is missing.</source>
         <translation>ไม่พบไฟล์สื่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="387"/>
+        <location filename="../../src/ai/AiController.cpp" line="463"/>
         <source>Enhancing audio…</source>
         <translation>กำลังปรับปรุงเสียง…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="399"/>
+        <location filename="../../src/ai/AiController.cpp" line="475"/>
         <source>The enhanced file could not be imported.</source>
         <translation>นำเข้าไฟล์ที่ปรับปรุงแล้วไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="411"/>
+        <location filename="../../src/ai/AiController.cpp" line="487"/>
         <source>The clip now uses the enhanced audio. Undo restores the original.</source>
         <translation>คลิปใช้เสียงที่ปรับปรุงแล้ว เลิกทำจะคืนต้นฉบับ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="415"/>
+        <location filename="../../src/ai/AiController.cpp" line="491"/>
         <source>The enhanced file was created but could not be prepared.</source>
         <translation>สร้างไฟล์ที่ปรับปรุงแล้วแต่เตรียมใช้งานไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="429"/>
+        <location filename="../../src/ai/AiController.cpp" line="505"/>
         <source>Select a video clip on the timeline first.</source>
         <translation>กรุณาเลือกคลิปวิดีโอในไทม์ไลน์ก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="432"/>
+        <location filename="../../src/ai/AiController.cpp" line="508"/>
         <source>Titles cannot be tracked.</source>
         <translation>ติดตามชื่อเรื่องไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="437"/>
+        <location filename="../../src/ai/AiController.cpp" line="513"/>
         <source>Move the playhead onto the clip, at the frame where the subject is visible.</source>
         <translation>เลื่อนเพลย์เฮดไปบนคลิป ที่เฟรมที่เห็นวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="447"/>
+        <location filename="../../src/ai/AiController.cpp" line="523"/>
         <source>Tracking…</source>
         <translation>กำลังติดตาม…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="453"/>
+        <location filename="../../src/ai/AiController.cpp" line="529"/>
         <source>Tracking failed.</source>
         <translation>ติดตามไม่สำเร็จ</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="464"/>
+        <location filename="../../src/ai/AiController.cpp" line="540"/>
         <source>Tracked %n frame(s). Choose how to use the motion.</source>
         <translation>
             <numerusform>ติดตามแล้ว %n เฟรม เลือกวิธีใช้การเคลื่อนไหว</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="472"/>
+        <location filename="../../src/ai/AiController.cpp" line="548"/>
         <source>There is no tracking data.</source>
         <translation>ไม่มีข้อมูลการติดตาม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="477"/>
+        <location filename="../../src/ai/AiController.cpp" line="553"/>
         <source>Select the clip that should follow the subject.</source>
         <translation>เลือกคลิปที่ต้องการให้ตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="480"/>
+        <location filename="../../src/ai/AiController.cpp" line="556"/>
         <source>The clip no longer exists.</source>
         <translation>ไม่มีคลิปนี้แล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="482"/>
+        <location filename="../../src/ai/AiController.cpp" line="558"/>
         <source>Titles cannot be keyframed yet. Use a video or image clip.</source>
         <translation>ยังใส่คีย์เฟรมให้ชื่อเรื่องไม่ได้ ใช้คลิปวิดีโอหรือภาพแทน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="484"/>
+        <location filename="../../src/ai/AiController.cpp" line="560"/>
         <source>Choose a clip on a video track.</source>
         <translation>เลือกคลิปบนแทร็กวิดีโอ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="511"/>
+        <location filename="../../src/ai/AiController.cpp" line="587"/>
         <source>Stabilize</source>
         <translation>ทำให้นิ่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="511"/>
+        <location filename="../../src/ai/AiController.cpp" line="587"/>
         <source>Follow tracked subject</source>
         <translation>ตามวัตถุที่ติดตาม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="517"/>
+        <location filename="../../src/ai/AiController.cpp" line="593"/>
         <source>Stabilization keyframes added to the clip (Position X / Y).</source>
         <translation>เพิ่มคีย์เฟรมทำให้นิ่งลงในคลิปแล้ว (ตำแหน่ง X / Y)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="518"/>
+        <location filename="../../src/ai/AiController.cpp" line="594"/>
         <source>Position keyframes added: the clip follows the subject.</source>
         <translation>เพิ่มคีย์เฟรมตำแหน่งแล้ว: คลิปตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="536"/>
+        <location filename="../../src/ai/AiController.cpp" line="612"/>
         <source>Transcribe the timeline audio into subtitles</source>
         <translation>ถอดเสียงของไทม์ไลน์เป็นซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="537"/>
+        <location filename="../../src/ai/AiController.cpp" line="613"/>
         <source>Find silent passages</source>
         <translation>หาช่วงที่เงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="538"/>
+        <location filename="../../src/ai/AiController.cpp" line="614"/>
         <source>Suggest cut points at scene changes and pauses</source>
         <translation>แนะนำจุดตัดที่การเปลี่ยนฉากและช่วงหยุด</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="539"/>
+        <location filename="../../src/ai/AiController.cpp" line="615"/>
         <source>Reduce noise and even out the audio of the selected clip</source>
         <translation>ลดเสียงรบกวนและปรับระดับเสียงของคลิปที่เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="540"/>
+        <location filename="../../src/ai/AiController.cpp" line="616"/>
         <source>Track a region of the selected clip (choose the region in the Tracking section)</source>
         <translation>ติดตามพื้นที่ของคลิปที่เลือก (เลือกพื้นที่ในส่วนติดตามวัตถุ)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="542"/>
+        <location filename="../../src/ai/AiController.cpp" line="618"/>
         <source>I can: create subtitles, find silent passages, suggest cut points, clean up speech audio. Try: &quot;create Thai subtitles&quot;.</source>
         <translation>ฉันทำได้: สร้างซับไตเติล หาช่วงเงียบ แนะนำจุดตัด ทำเสียงพูดให้ชัด ลองพิมพ์: &quot;สร้างซับไทย&quot;</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="544"/>
+        <location filename="../../src/ai/AiController.cpp" line="620"/>
         <source>I did not understand that. Try: &quot;create Thai subtitles&quot;, &quot;find the silent parts&quot;, &quot;suggest cut points&quot; or &quot;make the speech clearer&quot;.</source>
         <translation>ไม่เข้าใจคำสั่งนี้ ลองพิมพ์: &quot;สร้างซับไทย&quot;, &quot;หาช่วงที่เงียบ&quot;, &quot;แนะนำจุดตัด&quot; หรือ &quot;ปรับเสียงพูดให้ชัดขึ้น&quot;</translation>
     </message>
@@ -5729,12 +5822,12 @@
         <translation type="vanished">ไม่มีคลิปวิดีโอให้ใช้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="557"/>
+        <location filename="../../src/ai/AiController.cpp" line="633"/>
         <source>Choose the region to track in the Tracking section first.</source>
         <translation>กรุณาเลือกพื้นที่ที่จะติดตามในส่วนติดตามวัตถุก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="559"/>
+        <location filename="../../src/ai/AiController.cpp" line="635"/>
         <source>I did not understand that request.</source>
         <translation>ไม่เข้าใจคำขอนี้</translation>
     </message>

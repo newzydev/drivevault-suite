@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultVideoEditorPro
-    VERSION 1.12.0
+    VERSION 1.13.0
     DESCRIPTION "DriveVault Video Editor Pro - Professional Desktop Video Editor"
     LANGUAGES CXX)
 
@@ -21,6 +21,21 @@ qt_standard_project_setup(REQUIRES 6.8)
 
 if(MSVC)
     add_compile_options(/W4 /wd4702 /utf-8 /permissive- /Zc:__cplusplus)
+endif()
+
+# ONNX Runtime (CPU) runs the OpenThai speech model. It is optional: without it the program builds and uses whisper.cpp only.
+set(DV_TOOLS_DIR "${CMAKE_SOURCE_DIR}/../../.tools")
+if(DEFINED ENV{DV_TOOLS_DIR})
+    set(DV_TOOLS_DIR "$ENV{DV_TOOLS_DIR}")
+endif()
+set(DV_ONNX_DIR "${DV_TOOLS_DIR}/onnxruntime-win-x64-1.24.4" CACHE PATH "ONNX Runtime CPU SDK (include/, lib/onnxruntime.lib, lib/onnxruntime.dll)")
+set(DV_ONNX_AVAILABLE OFF)
+if(EXISTS "${DV_ONNX_DIR}/include/onnxruntime_cxx_api.h" AND EXISTS "${DV_ONNX_DIR}/lib/onnxruntime.lib" AND EXISTS "${DV_ONNX_DIR}/lib/onnxruntime.dll")
+    set(DV_ONNX_AVAILABLE ON)
+    file(COPY "${DV_ONNX_DIR}/lib/onnxruntime.dll" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+    message(STATUS "ONNX Runtime found: ${DV_ONNX_DIR}")
+else()
+    message(STATUS "ONNX Runtime not found in ${DV_ONNX_DIR}: the OpenThai speech model is not built in")
 endif()
 
 add_subdirectory(src/core)

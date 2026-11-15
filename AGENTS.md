@@ -10,13 +10,13 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 
 | Folder | Program |
 |---|---|
-| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.12.0 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
+| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.13.0 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
 | `apps/drivevault-master-pro` | DriveVault Master Pro 1.5.6 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
 | `apps/drivevault-pdf-pro` | DriveVault PDF Pro 1.17.0 (plan in `apps/drivevault-pdf-pro/docs/PDF-Pro-Plan.md`). PDFium + qpdf, Thai OCR with ONNX Runtime. Accent colour red `#EF4444`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
 | `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md), `run-master-pro.bat` / `run-video-editor.bat` / `run-pdf-pro.bat` (open the Release build without installing: Qt on PATH, then start the exe; extra arguments are passed on - use these for the smoke start). |
 | `docs` | `suite-integration.md` (contract between programs and hub). |
-| `.tools` (not in git) | Portable toolchain: CMake, Ninja, Qt 6.8.3 msvc2022_64, Inno Setup, FFmpeg (LGPL shared), whisper.cpp + models, PDFium (BSD-3), qpdf (Apache-2.0), Python. |
+| `.tools` (not in git) | Portable toolchain: CMake, Ninja, Qt 6.8.3 msvc2022_64, Inno Setup, FFmpeg (LGPL shared), whisper.cpp + models, PDFium (BSD-3), qpdf (Apache-2.0), ONNX Runtime 1.24.4 (MIT), the OpenThai ASR model (`openthai-asr`, OpenMDW-1.1, about 2.6 GB, never shipped), Python. |
 
 Planned (do not pretend they exist): Image Editor Pro, Audio Editor Pro. New programs go in `apps/drivevault-<name>` (lower case, words joined with `-`).
 

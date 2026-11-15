@@ -38,6 +38,7 @@ function Get-Owner([string]$rel) {
     }
     if ($name -match '^(msvcp|vcruntime|vcomp|concrt)\d*(_\d+)?\.dll$') { return @('Microsoft Visual C++ runtime', 'Microsoft redistributable terms') }
     if ($name -match '^(avcodec|avformat|avutil|swscale|swresample)-\d+\.dll$') { return @('FFmpeg', 'LGPL-3.0') }
+    if ($name -eq 'onnxruntime.dll') { return @('ONNX Runtime (Microsoft)', 'MIT') }
     if ($name -like 'qt6*.dll' -or $r -like 'platforms\*' -or $r -like 'imageformats\*' -or $r -like 'iconengines\*' -or $r -like 'generic\*' -or
         $r -like 'networkinformation\*' -or $r -like 'tls\*' -or $r -like 'qml\*' -or $r -like 'styles\*') { return @('Qt', 'LGPL-3.0') }
     return $null
@@ -78,6 +79,7 @@ if (-not ($files | Where-Object { $_.Name -like 'msvcp140.dll' -and $_.Directory
 
 # ---- 4. license texts and notices that must accompany the binaries ---------------------------------------------------------
 $required = 'LICENSE.txt', 'LGPL-3.0.txt', 'FFmpeg-LICENSE.txt', 'whisper.cpp-LICENSE.txt', 'whisper-model-LICENSE.txt', 'OFL-Inter.txt', 'OFL-NotoSansThai.txt', 'THIRD-PARTY-NOTICES.txt'
+if (Test-Path (Join-Path $StageDir 'onnxruntime.dll')) { $required += 'onnxruntime-LICENSE.txt' }
 foreach ($n in $required) {
     if (-not (Test-Path (Join-Path $StageDir "licenses\$n"))) { $problems.Add("Missing in licenses\: $n") }
 }

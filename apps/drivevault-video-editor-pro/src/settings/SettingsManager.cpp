@@ -70,6 +70,8 @@ const QList<SettingsManager::Definition>& SettingsManager::definitions()
         def("aiModelsLocation", Type::Path, ""),
         def("aiOfflineOnly", Type::Bool, true),
         def("aiModel", Type::String, ""),
+        // Speech to text: auto = OpenThai for Thai (when its model is installed), whisper.cpp for everything else
+        def("aiSpeechEngine", Type::Choice, "auto", {}, {}, {"auto", "openthai", "whisper"}),
         // MCP server (lets Claude Code / Codex drive the open project over localhost; off until the user switches it on)
         def("mcpEnabled", Type::Bool, false),
         def("mcpPort", Type::Int, 38491, 1024, 65535),

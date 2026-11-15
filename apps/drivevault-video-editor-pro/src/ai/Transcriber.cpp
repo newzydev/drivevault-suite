@@ -1,5 +1,6 @@
 #include "Transcriber.h"
 
+#include "ai/OpenThaiAsr.h"
 #include "playback/AudioMixer.h"
 
 #include <QCoreApplication>
@@ -78,31 +79,12 @@ bool writeWav16kMono(const QString& path, const std::vector<int16_t>& pcm)
 }
 } // namespace
 
-TranscribeResult transcribeTimeline(const TranscribeRequest& req, const ProgressFn& progress, const std::atomic_bool& cancel)
+std::vector<int16_t> mixTimeline16k(const SnapshotPtr& snapshot, const ProgressFn& progress, const std::atomic_bool& cancel, bool* cancelled)
 {
-    TranscribeResult result;
-    if (!req.snapshot || req.snapshot->durationFrames <= 0) {
-        result.error = QStringLiteral("The timeline is empty.");
-        return result;
-    }
-    if (req.whisperExe.isEmpty() || !QFileInfo::exists(req.whisperExe)) {
-        result.error = QStringLiteral("whisper.cpp was not found.");
-        return result;
-    }
-    if (!QFileInfo::exists(req.model)) {
-        result.error = QStringLiteral("The speech model file was not found.");
-        return result;
-    }
-    QDir().mkpath(req.workDir);
-    const QString base = QDir(req.workDir).filePath(QStringLiteral("dv_asr_") + QUuid::createUuid().toString(QUuid::Id128));
-    const QString wav = base + QStringLiteral(".wav");
-    const QString srt = base + QStringLiteral(".srt");
-    struct Cleanup { QString a, b; ~Cleanup() { QFile::remove(a); QFile::remove(b); } } cleanup{wav, srt};
-
-    // 1. mix the timeline and bring it to 16 kHz mono
-    const RenderSnapshot& snap = *req.snapshot;
+    *cancelled = false;
+    const RenderSnapshot& snap = *snapshot;
     AudioMixer mixer;
-    mixer.setSnapshot(req.snapshot);
+    mixer.setSnapshot(snapshot);
     const int64_t total = timecode::frameToSample(snap.durationFrames, snap.fps, snap.sampleRate);
     const double ratio = double(snap.sampleRate) / 16000.0;
     std::vector<int16_t> pcm;
@@ -114,8 +96,8 @@ TranscribeResult transcribeTimeline(const TranscribeRequest& req, const Progress
     int64_t consumed = 0;
     for (int64_t pos = 0; pos < total; pos += kBlock) {
         if (cancel.load()) {
-            result.cancelled = true;
-            return result;
+            *cancelled = true;
+            return {};
         }
         const int n = int(std::min<int64_t>(kBlock, total - pos));
         mixer.render(pos, n, buf.data());
@@ -131,7 +113,60 @@ TranscribeResult transcribeTimeline(const TranscribeRequest& req, const Progress
             }
         }
         if (progress)
-            progress(0.1 * double(pos + n) / double(total));
+            progress(double(pos + n) / double(total));
+    }
+    return pcm;
+}
+
+TranscribeResult transcribeTimeline(const TranscribeRequest& req, const ProgressFn& progress, const std::atomic_bool& cancel)
+{
+    TranscribeResult result;
+    if (!req.snapshot || req.snapshot->durationFrames <= 0) {
+        result.error = QStringLiteral("The timeline is empty.");
+        return result;
+    }
+
+    // OpenThai: no external process, the model runs in this program (ONNX Runtime)
+    if (req.engine == QLatin1String("openthai")) {
+        bool cancelled = false;
+        const std::vector<int16_t> pcm = mixTimeline16k(req.snapshot, [&](double p) { if (progress) progress(0.1 * p); }, cancel, &cancelled);
+        if (cancelled) {
+            result.cancelled = true;
+            return result;
+        }
+        std::vector<float> samples(pcm.size());
+        for (size_t i = 0; i < pcm.size(); ++i)
+            samples[i] = float(pcm[i]) / 32768.f;
+        const OpenThaiResult r = openThaiTranscribe(samples, req.openThaiDir, QStringLiteral("th"),
+                                                    [&](double p) { if (progress) progress(0.1 + 0.9 * p); }, cancel);
+        result.segments = r.segments;
+        result.error = r.error;
+        result.cancelled = r.cancelled;
+        if (r.ok() && progress)
+            progress(1.0);
+        return result;
+    }
+
+    if (req.whisperExe.isEmpty() || !QFileInfo::exists(req.whisperExe)) {
+        result.error = QStringLiteral("whisper.cpp was not found.");
+        return result;
+    }
+    if (!QFileInfo::exists(req.model)) {
+        result.error = QStringLiteral("The speech model file was not found.");
+        return result;
+    }
+    QDir().mkpath(req.workDir);
+    const QString base = QDir(req.workDir).filePath(QStringLiteral("dv_asr_") + QUuid::createUuid().toString(QUuid::Id128));
+    const QString wav = base + QStringLiteral(".wav");
+    const QString srt = base + QStringLiteral(".srt");
+    struct Cleanup { QString a, b; ~Cleanup() { QFile::remove(a); QFile::remove(b); } } cleanup{wav, srt};
+
+    // 1. mix the timeline and bring it to 16 kHz mono
+    bool cancelled = false;
+    const std::vector<int16_t> pcm = mixTimeline16k(req.snapshot, [&](double p) { if (progress) progress(0.1 * p); }, cancel, &cancelled);
+    if (cancelled) {
+        result.cancelled = true;
+        return result;
     }
     if (!writeWav16kMono(wav, pcm)) {
         result.error = QStringLiteral("Cannot write the temporary audio file.");

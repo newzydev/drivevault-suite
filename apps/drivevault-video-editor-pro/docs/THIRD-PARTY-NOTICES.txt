@@ -29,6 +29,12 @@ The full license texts are in the "licenses" folder next to this file. The machi
    (Copyright (c) 2022 OpenAI). Other models (tiny, small) are downloaded or imported by you.
    Recognition results can contain errors.
 
+3a. ONNX Runtime (onnxruntime.dll)  -  MIT                                          licenses\onnxruntime-LICENSE.txt
+   Copyright (c) Microsoft Corporation. Runs the OpenThai speech model on the CPU inside the program.
+   The OpenThai 2.0 ASR Streaming model (iApp / OpenThai, OpenMDW-1.1, built on NVIDIA Nemotron ASR Streaming) is NOT part of the installer:
+   it is a separate download (huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX) that you place in the folder shown in Settings > AI.
+   If you copy or share that model, keep its LICENSE file with it. Recognition results can contain errors.
+
 4. Inter font  and  Noto Sans Thai font  -  SIL Open Font License 1.1                 licenses\OFL-Inter.txt, licenses\OFL-NotoSansThai.txt
 
 5. Microsoft Visual C++ runtime (msvcp140*.dll, vcruntime140*.dll, vcomp140.dll)  -  redistributed under the Microsoft Visual Studio

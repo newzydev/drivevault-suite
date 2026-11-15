@@ -107,6 +107,15 @@ if (Test-Path $modelFile) {
     Write-Warning "ggml-base.bin not found in $modelFile - the installer will not contain a speech model"
 }
 
+# ONNX Runtime (CPU, MIT): runs the OpenThai speech model in the program itself (about 14 MB). The model (about 2.6 GB, OpenMDW-1.1) is NOT shipped:
+# the user puts it in <data>\models\openthai-asr (Settings > AI shows where).
+$onnxDll = Join-Path $SuiteRoot '.tools\onnxruntime-win-x64-1.24.4\lib\onnxruntime.dll'
+if (Test-Path $onnxDll) {
+    Copy-Item $onnxDll $stage
+    Copy-Item (Join-Path $DvRoot 'third_party\onnxruntime-LICENSE.txt') (Join-Path $lic 'onnxruntime-LICENSE.txt')
+} else {
+    Write-Warning "onnxruntime.dll not found in $onnxDll - the installer will not contain the OpenThai speech engine"
+}
 
 # Licenses, notices, documentation and the product manifest for the DriveVault hub.
 Copy-Item (Join-Path $DvRoot 'third_party\LGPL-3.0.txt') $lic

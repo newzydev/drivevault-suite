@@ -44,6 +44,30 @@ ColumnLayout {
         }
     }
 
+    Section { title: qsTr("Speech to text"); Layout.topMargin: 22 }
+    SettingRow {
+        title: qsTr("Speech engine")
+        description: qsTr("Automatic uses the OpenThai model for Thai (when it is installed) and whisper.cpp for every other language.")
+        AppComboBox {
+            objectName: "speechEngine"
+            current: AppSettings.values.aiSpeechEngine
+            options: [ { value: "auto", label: qsTr("Automatic") }, { value: "openthai", label: qsTr("OpenThai (Thai only)") }, { value: "whisper", label: "whisper.cpp" } ]
+            onPicked: value => AppSettings.set("aiSpeechEngine", value)
+        }
+    }
+    SettingRow {
+        title: qsTr("OpenThai 2.0 ASR model")
+        description: Ai.openThaiStatus === "notBuilt" ? qsTr("This build has no ONNX Runtime, so the model cannot run.")
+                     : Ai.openThaiStatus === "available" ? qsTr("Installed. It runs on this computer; nothing is uploaded.")
+                     : qsTr("Not installed. Download the files from huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt, about 2.6 GB) and put them in %1").arg(Ai.openThaiFolder)
+        StatusBadge { kind: Ai.openThaiStatus === "available" ? "available" : Ai.openThaiStatus === "modelRequired" ? "modelRequired" : "unsupported" }
+    }
+    SettingRow {
+        title: qsTr("OpenThai model folder")
+        description: Ai.openThaiFolder
+        AppButton { text: qsTr("Open folder"); onClicked: SysInfo.openFolder(Ai.openThaiFolder) }
+    }
+
     Section {
         title: qsTr("Connect Claude Code / Codex (MCP)")
         note: qsTr("Lets an AI coding assistant on this computer work on the open project: list media and clips, edit the timeline, run the AI helpers. Every edit is one undo step. It listens on this computer only and needs the private token below.")
@@ -91,7 +115,7 @@ ColumnLayout {
 
     Repeater {
         model: [
-            { name: qsTr("Speech to text and auto captions"), desc: qsTr("whisper.cpp — Thai and English"), key: "captions" },
+            { name: qsTr("Speech to text and auto captions"), desc: qsTr("OpenThai 2.0 for Thai, whisper.cpp for other languages"), key: "captions" },
             { name: qsTr("Silence detection"), desc: qsTr("Highlight and remove silent passages") },
             { name: qsTr("Smart cut suggestions"), desc: qsTr("Scene changes and audio activity") },
             { name: qsTr("Audio enhancement"), desc: qsTr("Spectral noise reduction (signal processing, no neural model)") },
@@ -103,8 +127,10 @@ ColumnLayout {
             title: modelData.name
             description: modelData.desc
             StatusBadge {
-                kind: modelData.key === "captions" ? (Ai.whisperStatus === "available" ? "available" : Ai.whisperStatus === "modelRequired" ? "modelRequired" : "unsupported") : "available"
-                label: modelData.key === "captions" && Ai.whisperStatus === "engineMissing" ? qsTr("Engine missing") : ""
+                // captions: available when either engine can run (Thai: OpenThai or whisper.cpp; other languages: whisper.cpp)
+                readonly property bool captionsOk: Ai.whisperStatus === "available" || Ai.openThaiStatus === "available"
+                kind: modelData.key === "captions" ? (captionsOk ? "available" : Ai.whisperStatus === "modelRequired" ? "modelRequired" : "unsupported") : "available"
+                label: modelData.key === "captions" && !captionsOk && Ai.whisperStatus === "engineMissing" ? qsTr("Engine missing") : ""
             }
         }
     }

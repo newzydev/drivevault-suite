@@ -3,6 +3,8 @@
 #include "ai/Assistant.h"
 #include "ai/AudioAnalysis.h"
 #include "ai/AudioEnhancer.h"
+#include "ai/OpenThaiAsr.h"
+#include "core/AppPaths.h"
 #include "project/TrackListModel.h"
 #include "ai/Transcriber.h"
 #include "core/Logger.h"
@@ -45,7 +47,8 @@ AiController::AiController(ProjectManager* project, SettingsManager* settings, Q
 {
     connect(&m_models, &ModelManager::modelsChanged, this, &AiController::statusChanged);
     connect(m_settings, &SettingsManager::valueChanged, this, [this](const QString& key) {
-        if (key == QLatin1String("aiEnabled") || key == QLatin1String("aiModelsLocation") || key == QLatin1String("aiModel"))
+        if (key == QLatin1String("aiEnabled") || key == QLatin1String("aiModelsLocation") || key == QLatin1String("aiModel")
+            || key == QLatin1String("aiSpeechEngine"))
             emit statusChanged();
     });
 }
@@ -66,6 +69,71 @@ bool AiController::enabled() const
 QString AiController::whisperPath() const
 {
     return m_whisperOverride.isEmpty() ? ai::whisperExecutable() : m_whisperOverride;
+}
+
+QString AiController::openThaiStatus() const
+{
+    if (!ai::openThaiCompiledIn())
+        return QStringLiteral("notBuilt");
+    return ai::openThaiModelDir().isEmpty() ? QStringLiteral("modelRequired") : QStringLiteral("available");
+}
+
+QString AiController::openThaiFolder() const
+{
+    return paths::dataDir() + QStringLiteral("/models/openthai-asr");
+}
+
+// auto: Thai goes to OpenThai when it is installed, everything else to whisper.cpp. openthai: Thai only. whisper: whisper.cpp.
+QString AiController::speechEngineFor(const QString& language, QString* problem) const
+{
+    const QString choice = m_settings->get(QStringLiteral("aiSpeechEngine")).toString();
+    const bool openThai = openThaiStatus() == QLatin1String("available");
+    if (choice == QLatin1String("whisper") || (choice == QLatin1String("auto") && !(openThai && language == QLatin1String("th"))))
+        return QStringLiteral("whisper");
+    // OpenThai was chosen (or Thai in auto mode)
+    if (language == QLatin1String("en")) {
+        *problem = tr("The OpenThai speech model only understands Thai. Choose another speech engine in Settings > AI for English.");
+        return {};
+    }
+    if (!ai::openThaiCompiledIn()) {
+        *problem = tr("This build has no ONNX Runtime, so the OpenThai speech model cannot run.");
+        return {};
+    }
+    if (!openThai) {
+        *problem = tr("The OpenThai speech model is not installed. Put its files in %1 (see Settings > AI).").arg(QDir::toNativeSeparators(openThaiFolder()));
+        return {};
+    }
+    return QStringLiteral("openthai");
+}
+
+// available | modelRequired | engineMissing | unsupported for the engine that would transcribe `language`.
+QString AiController::captionStatus(const QString& language) const
+{
+    QString problem;
+    const QString engine = speechEngineFor(language.isEmpty() ? QStringLiteral("auto") : language, &problem);
+    if (engine == QLatin1String("openthai"))
+        return QStringLiteral("available");
+    if (engine == QLatin1String("whisper"))
+        return whisperStatus();
+    return openThaiStatus() == QLatin1String("modelRequired") ? QStringLiteral("modelRequired") : QStringLiteral("unsupported");
+}
+
+QString AiController::captionNote(const QString& language) const
+{
+    QString problem;
+    const QString engine = speechEngineFor(language.isEmpty() ? QStringLiteral("auto") : language, &problem);
+    if (engine.isEmpty())
+        return problem;
+    if (engine == QLatin1String("whisper")) {
+        const QString status = whisperStatus();
+        if (status == QLatin1String("modelRequired"))
+            return tr("A speech model is required. Download or import one in the model manager below.");
+        if (status == QLatin1String("engineMissing"))
+            return tr("The speech engine (whisper.cpp) was not found next to the application.");
+        if (language == QLatin1String("th") && openThaiStatus() == QLatin1String("modelRequired"))
+            return tr("For better Thai captions install the OpenThai speech model: put its files in %1 (see Settings > AI).").arg(QDir::toNativeSeparators(openThaiFolder()));
+    }
+    return {};
 }
 
 QString AiController::whisperStatus() const
@@ -294,16 +362,24 @@ QString AiController::transcribe(const QString& languageIn)
         return tr("The timeline is empty.");
     if (!hasAudioClips(*snap))
         return tr("The timeline has no audio to transcribe.");
-    if (whisperPath().isEmpty())
-        return tr("The speech engine (whisper.cpp) was not found.");
-    const QString model = m_models.selectedPath();
-    if (model.isEmpty())
-        return tr("A speech model is required. Download or import one in the model manager.");
+    const QString language = languageIn.isEmpty() ? QStringLiteral("auto") : languageIn;
     ai::TranscribeRequest req;
+    QString problem;
+    req.engine = speechEngineFor(language, &problem);
+    if (req.engine.isEmpty())
+        return problem;
+    req.openThaiDir = ai::openThaiModelDir();
+    if (req.engine == QLatin1String("whisper")) {
+        if (whisperPath().isEmpty())
+            return tr("The speech engine (whisper.cpp) was not found.");
+        const QString model = m_models.selectedPath();
+        if (model.isEmpty())
+            return tr("A speech model is required. Download or import one in the model manager.");
+        req.whisperExe = whisperPath();
+        req.model = model;
+    }
     req.snapshot = snap;
-    req.whisperExe = whisperPath();
-    req.model = model;
-    req.language = languageIn.isEmpty() ? QStringLiteral("auto") : languageIn;
+    req.language = language;
     req.workDir = QDir::tempPath();
     req.threads = std::clamp(QThread::idealThreadCount() / 2, 1, 8);
     auto out = std::make_shared<ai::TranscribeResult>();

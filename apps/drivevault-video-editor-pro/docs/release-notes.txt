@@ -1,6 +1,13 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.13.0 (2026-11-15)
+--------------
+  - New: OpenThai 2.0 ASR Streaming (iApp, OpenMDW-1.1) as the speech recogniser for Thai captions. It runs inside the program on the CPU (ONNX Runtime) - nothing is uploaded - and replaces whisper.cpp for Thai when its model is installed. Other languages still use whisper.cpp. Settings > AI > Speech engine: Automatic (default), OpenThai (Thai only) or whisper.cpp.
+  - The OpenThai model is not part of the installer (about 2.6 GB). Download encoder.onnx, encoder.onnx.data, decoder_joint.onnx and tokens.txt from huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX and put them in the folder shown in Settings > AI (there is a button that opens it). Until then Thai captions keep using whisper.cpp.
+  - Long audio is cut at pauses and every piece is recognised on its own (the exported model takes one utterance at a time). Thai text uses the standard sara am character. Captions can be wrong - check them. English words mostly come out in Thai letters.
+  - The MCP tool get_ai_status reports the OpenThai model status.
+
 Version 1.12.0 (2026-11-15)
 --------------
   - New: MCP server. Claude Code, Codex or any other MCP client on this computer can now work on the project that is open in the editor: list media, tracks and clips, import media, add / move / trim / split / delete clips, add subtitles and markers, undo / redo, save, and run the offline AI helpers (silence search, captions). Every edit is one undo step.

@@ -17,6 +17,7 @@ dv_add_test(tst_timeline)
 dv_add_test(tst_effects)
 dv_add_test(tst_ai)
 dv_add_test(tst_mcp)
+dv_add_test(tst_openthai)
 dv_add_test(tst_phase5)
 dv_add_test(tst_pipeline)
 

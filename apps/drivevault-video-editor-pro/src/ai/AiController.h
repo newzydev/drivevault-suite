@@ -28,6 +28,8 @@ class AiController : public QObject {
     Q_PROPERTY(double progress READ progress NOTIFY progressChanged FINAL)
     Q_PROPERTY(QString message READ message NOTIFY messageChanged FINAL)
     Q_PROPERTY(QString whisperStatus READ whisperStatus NOTIFY statusChanged FINAL)    // available | modelRequired | engineMissing
+    Q_PROPERTY(QString openThaiStatus READ openThaiStatus NOTIFY statusChanged FINAL)    // available | modelRequired | notBuilt
+    Q_PROPERTY(QString openThaiFolder READ openThaiFolder CONSTANT FINAL)                // where the model files go
     Q_PROPERTY(QVariantList silences READ silences NOTIFY resultsChanged FINAL)       // [{start, end, startTimecode, seconds}]
     Q_PROPERTY(QVariantList suggestions READ suggestions NOTIFY resultsChanged FINAL) // [{frame, kind, label, timecode}]
     Q_PROPERTY(QVariantList captions READ captions NOTIFY resultsChanged FINAL)       // [{start, end, text, timecode}]
@@ -46,6 +48,10 @@ public:
     double progress() const { return m_progress; }
     QString message() const { return m_message; }
     QString whisperStatus() const;
+    QString openThaiStatus() const;
+    QString openThaiFolder() const;
+    // "whisper" | "openthai" for a language (th | en | auto), or "" and the reason in `problem` (settings: aiSpeechEngine).
+    QString speechEngineFor(const QString& language, QString* problem) const;
     bool enabled() const;
     QVariantList silences() const { return m_silences; }
     QVariantList suggestions() const { return m_suggestions; }
@@ -59,6 +65,9 @@ public:
     Q_INVOKABLE QString detectSilence(double thresholdDb, int minSilenceMs);
     Q_INVOKABLE QString suggestCuts(double sensitivity, double silenceThresholdDb, int minSilenceMs);
     Q_INVOKABLE QString transcribe(const QString& language);           // "th" | "en" | "auto" | "" (setting)
+    // Which engine would run and whether it can: status = available | modelRequired | engineMissing | unsupported; note = why not / a hint, "" when fine.
+    Q_INVOKABLE QString captionStatus(const QString& language) const;
+    Q_INVOKABLE QString captionNote(const QString& language) const;
     Q_INVOKABLE QString enhanceSelected(double strength, bool highPass, bool normalize);
     Q_INVOKABLE QString startTracking(double x, double y, double w, double h);   // region of the selected clip at the playhead, 0..1
     Q_INVOKABLE void cancel();

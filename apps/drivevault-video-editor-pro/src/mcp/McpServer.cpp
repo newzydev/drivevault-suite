@@ -752,7 +752,7 @@ void McpServer::registerTools()
     addTool("get_ai_status", "State of the AI helper: busy, task, progress, message, speech engine status, and the results waiting to be applied (silent passages, captions).", none, {}, true,
             [this](const QJsonObject&) {
                 return jsonResult({{"enabled", m_ai->enabled()}, {"busy", m_ai->busy()}, {"task", m_ai->task()}, {"progress", m_ai->progress()}, {"message", m_ai->message()},
-                                   {"speechEngine", m_ai->whisperStatus()},
+                                   {"speechEngine", m_ai->whisperStatus()}, {"openThaiModel", m_ai->openThaiStatus()},
                                    {"silences", QJsonArray::fromVariantList(m_ai->silences().mid(0, 200))}, {"silenceCount", int(m_ai->silences().size())},
                                    {"captions", QJsonArray::fromVariantList(m_ai->captions().mid(0, 200))}, {"captionCount", int(m_ai->captions().size())}});
             });
@@ -783,7 +783,7 @@ void McpServer::registerTools()
                 return err.isEmpty() ? textResult(QStringLiteral("Silent passages removed. undo brings them back.")) : fail(err);
             });
 
-    addTool("transcribe", "Starts speech-to-text of the timeline audio (offline). It runs in the background; poll get_ai_status. Captions can be wrong. Nothing is added until apply_captions.",
+    addTool("transcribe", "Starts speech-to-text of the timeline audio (offline). Thai uses the OpenThai model when it is installed, other languages use whisper.cpp (see get_ai_status). It runs in the background; poll get_ai_status. Captions can be wrong. Nothing is added until apply_captions.",
             QJsonObject{{"language", prop("string", "th, en or auto (default auto)")}}, {}, false,
             [this, needProject, needAi](const QJsonObject& in) {
                 if (const QString e = needProject(); !e.isEmpty())

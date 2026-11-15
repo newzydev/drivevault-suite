@@ -159,6 +159,10 @@ Item {
 
             // ---- captions -----------------------------------------------------------------------------------
             ParamSection {
+                id: captionsSection
+                // the engine depends on the language and on the settings; the two status properties make the binding re-evaluate when they change
+                readonly property string capStatus: { Ai.whisperStatus; Ai.openThaiStatus; return Ai.captionStatus(langBox.current) }
+                readonly property string capNote: { Ai.whisperStatus; Ai.openThaiStatus; return Ai.captionNote(langBox.current) }
                 visible: root.enabled
                 title: qsTr("Auto captions")
                 controlled: true
@@ -168,8 +172,8 @@ Item {
                     Layout.fillWidth: true
                     StatusBadge {
                         objectName: "captionStatus"
-                        kind: Ai.whisperStatus === "available" ? "available" : Ai.whisperStatus === "modelRequired" ? "modelRequired" : "unsupported"
-                        label: Ai.whisperStatus === "engineMissing" ? qsTr("Engine missing") : ""
+                        kind: captionsSection.capStatus === "available" ? "available" : captionsSection.capStatus === "modelRequired" ? "modelRequired" : "unsupported"
+                        label: captionsSection.capStatus === "engineMissing" ? qsTr("Engine missing") : ""
                     }
                     Item { Layout.fillWidth: true }
                 }
@@ -192,13 +196,12 @@ Item {
                         variant: "primary"
                         iconName: "text"
                         text: qsTr("Transcribe timeline")
-                        enabled: root.hasClips && !Ai.busy && Ai.whisperStatus === "available"
+                        enabled: root.hasClips && !Ai.busy && captionsSection.capStatus === "available"
                         onClicked: root.report(Ai.transcribe(langBox.current))
                     }
                     Item { Layout.fillWidth: true }
                 }
-                Note { visible: Ai.whisperStatus === "modelRequired"; text: qsTr("A speech model is required. Download or import one in the model manager below.") }
-                Note { visible: Ai.whisperStatus === "engineMissing"; text: qsTr("The speech engine (whisper.cpp) was not found next to the application.") }
+                Note { visible: captionsSection.capNote !== ""; text: captionsSection.capNote }
                 Repeater {
                     model: Ai.captions.slice(0, 8)
                     delegate: RowLayout {

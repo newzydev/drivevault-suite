@@ -66,6 +66,8 @@ ColumnLayout {
             { name: "FFmpeg 8.1", license: "LGPL v3 - " + qsTr("shared build without GPL or non-free parts, dynamically linked.") },
             { name: "whisper.cpp / ggml", license: "MIT - " + qsTr("speech recognition engine (separate program).") },
             { name: "OpenAI Whisper models", license: "MIT - " + qsTr("not installed; downloaded or imported by you.") },
+            { name: "ONNX Runtime", license: "MIT - " + qsTr("runs the OpenThai speech model.") },
+            { name: "OpenThai 2.0 ASR Streaming", license: "OpenMDW-1.1 - " + qsTr("Thai speech model; not installed, downloaded by you.") },
             { name: "Inter", license: "SIL Open Font License 1.1" },
             { name: "Noto Sans Thai", license: "SIL Open Font License 1.1" },
             { name: "Microsoft Visual C++ runtime", license: qsTr("Redistributable under the Visual Studio license terms.") }
