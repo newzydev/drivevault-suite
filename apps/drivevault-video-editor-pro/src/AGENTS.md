@@ -2,8 +2,8 @@
 
 ## Module map (each folder = one static library `dv_<name>`; dependencies point downwards only)
 ```
-ui (QML) -> app (AppContext / AppController / main) -> ai, export, playback -> project -> timeline, media, settings, localization -> core
-platform (Windows integration) is used by app only.
+ui (QML) -> app (AppContext / AppController / main) -> mcp, ai, export, playback -> project -> timeline, media, settings, localization -> core
+platform (Windows integration) is used by app only. mcp (the MCP server for Claude Code / Codex) uses project, timeline and ai.
 ```
 | Folder | Contents |
 |---|---|
@@ -16,6 +16,7 @@ platform (Windows integration) is used by app only.
 | `playback` | `Compositor`, `Effects`, `AudioMixer`, WinMM `AudioOutput`, `PlaybackEngine`, `FrameView` |
 | `export` | `Exporter` (encode, validate, proxy, audio-only, PNG frame), `ExportController`, `ProxyManager` |
 | `ai` | offline AI services: silence / scenes, enhancement, tracking, whisper.cpp captions, model manager, assistant, `AiController` |
+| `mcp` | `McpServer`: Model Context Protocol server on localhost (off by default, token) so Claude Code / Codex can edit the open project (see `mcp/CLAUDE.md`) |
 | `app` | `AppContext` (all QML-facing backend objects), `AppController`, `main.cpp` (command line, headless export) |
 | `ui` | QML module `DriveVault.UI` (see `ui/CLAUDE.md`) |
 

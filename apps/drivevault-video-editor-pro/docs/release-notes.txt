@@ -1,6 +1,12 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.12.0 (2026-11-15)
+--------------
+  - New: MCP server. Claude Code, Codex or any other MCP client on this computer can now work on the project that is open in the editor: list media, tracks and clips, import media, add / move / trim / split / delete clips, add subtitles and markers, undo / redo, save, and run the offline AI helpers (silence search, captions). Every edit is one undo step.
+  - It is off until you switch it on in Settings > AI > Connect Claude Code / Codex (MCP). It listens on this computer only (127.0.0.1, port 38491 by default), needs a private token, refuses browser pages, and cannot run programs, delete files or reach the network. The settings page has copy buttons for the Claude Code command and the Codex config. See docs\mcp.md.
+  - Not available through MCP yet: export, effects, keyframes, tracking, audio enhancement.
+
 Version 1.11.5 (2026-11-15)
 --------------
   - Changed: the Edit screen's menu bar no longer shows a small logo at its left end (the title bar above already shows it) and no longer has a Settings button at the right end (Settings is in the "..." menu of the title bar, or Ctrl+,).

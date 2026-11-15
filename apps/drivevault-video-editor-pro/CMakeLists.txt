@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultVideoEditorPro
-    VERSION 1.11.5
+    VERSION 1.12.0
     DESCRIPTION "DriveVault Video Editor Pro - Professional Desktop Video Editor"
     LANGUAGES CXX)
 
@@ -33,6 +33,7 @@ add_subdirectory(src/platform)
 add_subdirectory(src/export)
 add_subdirectory(src/playback)
 add_subdirectory(src/ai)
+add_subdirectory(src/mcp)
 add_subdirectory(src/ui)
 add_subdirectory(src/app)
 

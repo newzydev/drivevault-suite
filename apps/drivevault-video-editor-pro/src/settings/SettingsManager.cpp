@@ -70,6 +70,10 @@ const QList<SettingsManager::Definition>& SettingsManager::definitions()
         def("aiModelsLocation", Type::Path, ""),
         def("aiOfflineOnly", Type::Bool, true),
         def("aiModel", Type::String, ""),
+        // MCP server (lets Claude Code / Codex drive the open project over localhost; off until the user switches it on)
+        def("mcpEnabled", Type::Bool, false),
+        def("mcpPort", Type::Int, 38491, 1024, 65535),
+        def("mcpToken", Type::String, ""),
         // Export
         def("exportFormat", Type::Choice, "mp4", {}, {}, {"mp4", "mov", "mkv", "m4a"}),
         def("exportRange", Type::Choice, "all", {}, {}, {"all", "inout"}),

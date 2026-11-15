@@ -44,6 +44,49 @@ ColumnLayout {
         }
     }
 
+    Section {
+        title: qsTr("Connect Claude Code / Codex (MCP)")
+        note: qsTr("Lets an AI coding assistant on this computer work on the open project: list media and clips, edit the timeline, run the AI helpers. Every edit is one undo step. It listens on this computer only and needs the private token below.")
+        Layout.topMargin: 22
+    }
+    SettingRow {
+        title: qsTr("Enable MCP server")
+        description: Mcp.running ? qsTr("Running at %1").arg(Mcp.url) : (Mcp.error !== "" ? Mcp.error : qsTr("Off. Nothing is listening."))
+        AppSwitch {
+            objectName: "mcpSwitch"
+            checked: AppSettings.values.mcpEnabled
+            onToggled: AppSettings.set("mcpEnabled", checked)
+        }
+    }
+    SettingRow {
+        title: qsTr("Port")
+        description: qsTr("Restart the server (switch it off and on) after changing it.")
+        AppTextField {
+            implicitWidth: 120
+            text: String(AppSettings.values.mcpPort)
+            inputMethodHints: Qt.ImhDigitsOnly
+            onEditingFinished: AppSettings.set("mcpPort", parseInt(text))
+        }
+    }
+    SettingRow {
+        visible: Mcp.running
+        title: qsTr("Claude Code")
+        description: qsTr("Copy this command and run it once in a terminal. It contains your private token.")
+        AppButton { text: qsTr("Copy command"); onClicked: Mcp.copyText(Mcp.claudeCodeCommand) }
+    }
+    SettingRow {
+        visible: Mcp.running
+        title: qsTr("Codex")
+        description: qsTr("Copy this block into ~/.codex/config.toml, then set the token variable shown in its last line.")
+        AppButton { text: qsTr("Copy config"); onClicked: Mcp.copyText(Mcp.codexConfig) }
+    }
+    SettingRow {
+        visible: Mcp.running
+        title: qsTr("New token")
+        description: qsTr("The old token stops working at once; connect your assistant again.")
+        AppButton { text: qsTr("Create new token"); onClicked: Mcp.regenerateToken() }
+    }
+
     Section { title: qsTr("Feature status"); Layout.topMargin: 22 }
 
     Repeater {

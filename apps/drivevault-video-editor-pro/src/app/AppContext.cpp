@@ -18,6 +18,7 @@ AppContext::AppContext(QObject* parent)
     , playback(&projects, &settings)
     , exporter(&projects)
     , ai(&projects, &settings)
+    , mcp(&projects, &ai, &settings)
     , proxies(&projects, &settings)
 {
 }
@@ -52,6 +53,7 @@ void AppContext::registerQmlTypes()
     qmlRegisterSingletonInstance(uri, 1, 0, "Playback", &playback);
     qmlRegisterSingletonInstance(uri, 1, 0, "ExportJob", &exporter);
     qmlRegisterSingletonInstance(uri, 1, 0, "Ai", &ai);
+    qmlRegisterSingletonInstance(uri, 1, 0, "Mcp", &mcp);
     qmlRegisterSingletonInstance(uri, 1, 0, "Proxies", &proxies);
     qmlRegisterType<FrameView>(uri, 1, 0, "FrameView");
     qmlRegisterType<WaveformItem>(uri, 1, 0, "WaveformItem");

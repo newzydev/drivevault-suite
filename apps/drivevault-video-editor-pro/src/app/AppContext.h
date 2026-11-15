@@ -5,6 +5,7 @@
 #include "export/ExportController.h"
 #include "export/ProxyManager.h"
 #include "localization/LanguageManager.h"
+#include "mcp/McpServer.h"
 #include "playback/PlaybackEngine.h"
 #include "platform/SystemInfo.h"
 #include "platform/WindowsIntegration.h"
@@ -32,6 +33,7 @@ public:
     PlaybackEngine playback;
     ExportController exporter;
     AiController ai;
+    McpServer mcp;
     ProxyManager proxies;
     AppController controller;
     SystemInfo systemInfo;

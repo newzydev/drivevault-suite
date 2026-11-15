@@ -208,6 +208,10 @@ int main(int argc, char* argv[])
         });
     }
 
+    // The MCP server (Claude Code / Codex) only runs in a normal interactive session, never for --screenshot / --bench, and only when the user switched it on.
+    if (!parser.isSet(screenshotOption) && !parser.isSet(benchOption))
+        ctx.mcp.applySettings();
+
     const int rc = app.exec();
     settings.save();
     qCInfo(lcApp) << "Exit code" << rc;
