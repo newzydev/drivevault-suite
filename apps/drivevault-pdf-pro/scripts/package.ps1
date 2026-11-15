@@ -38,7 +38,7 @@ $toolsRoot = if ($env:DV_TOOLS_DIR) { $env:DV_TOOLS_DIR } else { Join-Path $Suit
 $pdfium = if ($env:DV_PDFIUM_DIR) { $env:DV_PDFIUM_DIR } else { Join-Path $toolsRoot 'pdfium' }
 $qpdfDir = if ($env:DV_QPDF_DIR) { $env:DV_QPDF_DIR } else { Join-Path $toolsRoot 'qpdf' }
 $onnxDir = Join-Path $toolsRoot 'onnxruntime-win-x64-1.24.4'
-$ocrModels = Join-Path $toolsRoot 'paddleocr-thai'
+$ocrModels = Join-Path $toolsRoot 'openthai-ocr'
 if (-not (Select-String -LiteralPath (Join-Path $pdfium 'VERSION') -Pattern '^BUILD=8138$') -or
     (Get-Content -LiteralPath (Join-Path $pdfium 'args.gn') -Raw) -notmatch 'pdf_enable_v8 = false' -or
     (Get-Content -LiteralPath (Join-Path $pdfium 'args.gn') -Raw) -notmatch 'pdf_enable_xfa = false') {
@@ -73,9 +73,9 @@ foreach ($engine in @(@{ Root = $pdfium; Name = 'pdfium.dll' }, @{ Root = $qpdfD
 }
 $ocrFiles = [ordered]@{
     'onnxruntime.dll' = 'b95efb2113b603bbbf3f191061c5516a871ed546893c820e4f3b7b6c358dbf2a'
-    'models\paddle-text-detection.onnx' = 'ee40e80071ba3a320d4efda75f3e22047a7d049e9bf7bcaaf9daea23fc21b935'
-    'models\paddle-thai-recognition.onnx' = '2b6e56b1872200349e227574c25aeb0e0f9af9b8356e9ff5f75ac543a535669a'
-    'models\paddle-thai-dict.txt' = '57f5406f94bb6688fb7077f7be65f08bbd71cecf48c01ea26c522cb5c4836b7a'
+    'models\openthai-ocr-detection.onnx' = '193bab7a04fca699a6c82e6abb5b81bdb28177f0abd4062552b04908dafb19f8'
+    'models\openthai-ocr-recognition.onnx' = '82ec89533346faadcb30df96703dad2dd7521de65709e60d83fd9745b8968124'
+    'models\openthai-ocr-dict.txt' = '259ef2636cec0eeae225ae9fd9a63fa9305285650c22d7ec34fe8a82b24c2f1a'
 }
 New-Item -ItemType Directory -Path (Join-Path $stage 'models') | Out-Null
 foreach ($relative in $ocrFiles.Keys) {
@@ -130,9 +130,8 @@ Copy-Item -Path (Join-Path $pdfium 'licenses\*') -Destination $pdfiumLic
 Copy-Item -LiteralPath (Join-Path $toolsRoot 'InnoSetup\license.txt') -Destination (Join-Path $lic 'Inno-Setup-LICENSE.txt')
 Copy-Item -LiteralPath (Join-Path $onnxDir 'LICENSE') -Destination (Join-Path $ocrLic 'ONNX-Runtime-LICENSE.txt')
 Copy-Item -LiteralPath (Join-Path $onnxDir 'ThirdPartyNotices.txt') -Destination (Join-Path $ocrLic 'ONNX-Runtime-ThirdPartyNotices.txt')
-foreach ($model in 'paddle-text-detection.onnx', 'paddle-thai-recognition.onnx', 'paddle-thai-dict.txt') {
-    Copy-Item -LiteralPath (Join-Path $ocrModels "$model.LICENCE.txt") -Destination $ocrLic
-}
+# OpenThai 2.0 OCR Text (Apache-2.0, built on PaddlePaddle PP-OCRv6-tiny): the model's own NOTICE goes with the Apache-2.0 text (licenses\Apache-2.0.txt)
+Copy-Item -LiteralPath (Join-Path $ocrModels 'NOTICE') -Destination (Join-Path $ocrLic 'OpenThai-OCR-NOTICE.txt')
 foreach ($doc in 'user-guide.en.html', 'user-guide.th.html', 'release-notes.txt') {
     Copy-Item -LiteralPath (Join-Path $DvRoot "docs\$doc") -Destination $docs
 }

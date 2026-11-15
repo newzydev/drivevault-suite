@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultPdfPro
-    VERSION 1.17.0
+    VERSION 1.18.0
     DESCRIPTION "DriveVault PDF Pro - read, merge, split, compress, edit, protect and redact PDF files"
     LANGUAGES CXX)
 
@@ -67,13 +67,18 @@ if(DEFINED ENV{DV_TOOLS_DIR})
     set(DP_OCR_TOOLS "$ENV{DV_TOOLS_DIR}")
 endif()
 set(DP_ONNX_DIR "${DP_OCR_TOOLS}/onnxruntime-win-x64-1.24.4" CACHE PATH "ONNX Runtime CPU SDK")
-set(DP_OCR_MODELS_DIR "${DP_OCR_TOOLS}/paddleocr-thai" CACHE PATH "PaddleOCR Thai models")
+set(DP_OPENTHAI_OCR_DIR "${DP_OCR_TOOLS}/openthai-ocr" CACHE PATH "OpenThai 2.0 OCR Text models (det.onnx, rec.onnx, rec_dict.txt)")
 set(DP_ONNX_AVAILABLE OFF CACHE INTERNAL "Build includes the Thai OCR engine")
 if(EXISTS "${DP_ONNX_DIR}/include/onnxruntime_cxx_api.h" AND EXISTS "${DP_ONNX_DIR}/lib/onnxruntime.dll")
     file(COPY "${DP_ONNX_DIR}/lib/onnxruntime.dll" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-    foreach(model paddle-text-detection.onnx paddle-thai-recognition.onnx paddle-thai-dict.txt)
-        if(EXISTS "${DP_OCR_MODELS_DIR}/${model}")
-            file(COPY "${DP_OCR_MODELS_DIR}/${model}" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/models")
+    # the model files keep their own names in the model folder; the program looks for these names
+    file(MAKE_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/models")
+    foreach(pair "det.onnx|openthai-ocr-detection.onnx" "rec.onnx|openthai-ocr-recognition.onnx" "rec_dict.txt|openthai-ocr-dict.txt")
+        string(REPLACE "|" ";" pair_list "${pair}")
+        list(GET pair_list 0 source_name)
+        list(GET pair_list 1 target_name)
+        if(EXISTS "${DP_OPENTHAI_OCR_DIR}/${source_name}")
+            file(COPY_FILE "${DP_OPENTHAI_OCR_DIR}/${source_name}" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/models/${target_name}")
         endif()
     endforeach()
     set(DP_ONNX_AVAILABLE ON CACHE INTERNAL "Build includes the Thai OCR engine")

@@ -38,12 +38,14 @@ ONNX Runtime 1.24.4 CPU: Copyright Microsoft Corporation, MIT. See
 licenses\OCR\ONNX-Runtime-LICENSE.txt and ONNX-Runtime-ThirdPartyNotices.txt.
 Build: https://github.com/microsoft/onnxruntime/releases/tag/v1.24.4
 
-PaddleOCR: Copyright the PaddlePaddle Authors, Apache License 2.0.
-The unmodified PP-OCRv3 mobile detector, PP-OCRv5 Thai mobile recognizer and
-Thai alphabet use the ONNX conversion published by monkt/paddleocr-onnx.
-See the individual model and alphabet licences in licenses\OCR.
-Source: https://github.com/PaddlePaddle/PaddleOCR
-ONNX distribution: https://huggingface.co/monkt/paddleocr-onnx
+OpenThai 2.0 OCR Text: Copyright iApp Technology (OpenThai), Apache License 2.0
+(licenses\Apache-2.0.txt, notice in licenses\OCR\OpenThai-OCR-NOTICE.txt).
+The text detector (det.onnx) is the unmodified PaddlePaddle PP-OCRv6-tiny detector,
+copyright the PaddlePaddle Authors, Apache License 2.0; the Thai line recogniser
+(rec.onnx) is a fine-tune of PP-OCRv6-tiny trained by iApp, with its character list
+(rec_dict.txt). Text rules (Thai spelling, line filter) follow the model's published runtime.
+Model: https://huggingface.co/iapp/OpenThai2.0-OCR-Text (revision 40e8e9ff, files checked by SHA-256)
+Source of the base models: https://github.com/PaddlePaddle/PaddleOCR
 
 Microsoft Visual C++ runtime: redistributed under the Visual Studio
 redistributable terms. The runtime DLLs are installed app-local.

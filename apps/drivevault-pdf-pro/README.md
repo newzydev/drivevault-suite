@@ -3,7 +3,7 @@
 Native Windows PDF program of the DriveVault suite (C++20, Qt 6.8 / Qt Quick, PDFium, qpdf). Works on this computer only - nothing is uploaded.
 Accent colour red `#EF4444`. The first plan is in [`docs/PDF-Pro-Plan.md`](docs/PDF-Pro-Plan.md); the work since then (towards the local functions of Acrobat Pro) is tracked phase by phase in [`docs/Acrobat-Parity-Roadmap.md`](docs/Acrobat-Parity-Roadmap.md), where every phase says what is done and what is not.
 
-## [Version 1.17.0](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.17.0)
+## [Version 1.18.0](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.18.0)
 
 | Works now (tested) | Not built yet (planned, see the plan) |
 |---|---|
@@ -58,9 +58,8 @@ Prerequisites: the suite's `.tools` folder with Qt 6.8.3, CMake, Ninja, **PDFium
 and, for the password tests, **qpdf** (`.tools\qpdf`, Apache-2.0, 12.4.2 msvc64). See `docs/DEVELOPMENT.md` in the repository root.
 
 For Thai OCR, put the [ONNX Runtime 1.24.4 Windows x64 CPU SDK](https://github.com/microsoft/onnxruntime/releases/tag/v1.24.4) in
-`.tools\onnxruntime-win-x64-1.24.4`. Put `paddle-text-detection.onnx` (PP-OCRv3 mobile),
-`paddle-thai-recognition.onnx` and `paddle-thai-dict.txt` (PP-OCRv5 Thai) with their `.LICENCE.txt` files in
-`.tools\paddleocr-thai`. The model distribution is [monkt/paddleocr-onnx](https://huggingface.co/monkt/paddleocr-onnx).
+`.tools\onnxruntime-win-x64-1.24.4`. Put the files of [OpenThai 2.0 OCR Text](https://huggingface.co/iapp/OpenThai2.0-OCR-Text) (Apache-2.0, 4 MB: `det.onnx`, `rec.onnx`,
+`rec_dict.txt`, `NOTICE`; revision 40e8e9ff) in `.tools\openthai-ocr`.
 The local reader build can run without these files. Packaging requires the audited versions and checks their hashes.
 
 ```powershell

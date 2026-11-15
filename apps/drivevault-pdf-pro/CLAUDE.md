@@ -25,6 +25,9 @@ Output: `build/release/bin/DriveVaultPdfPro.exe` (+ `pdfium.dll` copied next to 
 .\scripts\package.ps1            # release gates and installer, after building Master Pro's setup
 ```
 
+## Thai OCR
+- `src/app/ThaiOcr.cpp` runs **OpenThai 2.0 OCR Text** (iApp, Apache-2.0; `det.onnx` = PP-OCRv6-tiny detector, `rec.onnx` = Thai CTC line recogniser, `rec_dict.txt`) with ONNX Runtime on the CPU, in this process. Models: `.tools\openthai-ocr` (revision 40e8e9ff, SHA-256 pinned in `scripts\package.ps1`; CMake copies them to `bin\models\openthai-ocr-*`). The OCR **Markdown** model of the same family is a 2.4 GB GPU model and is not used. Per page: detector map (long side 1280, thresholds from `det.yml`) -> components -> boxes that follow the line tilt (`cutLine`) -> `flattenCrop` -> recogniser -> `canonicalThai` + `fixThaiScripts` -> `keepOcrLine` (kept from confidence 0.5, not the model card's 0.8: a dropped line is lost for search). Not ported from the model's Python runtime: page turning (sideways / upside down), deskew above 2.5 degrees, gutter splitting, column reading order. Measured: on a real 8-page office document the same recall as the PaddleOCR models (97.4 % / 97.5 %) at 3x the speed (0.48 s a page); `tests/tst_ocrreal.cpp` repeats that on any PDF (`DV_TEST_REAL_PDF`, numbers only) and `tests/tst_ocr.cpp` measures the character error rate on generated scans (Noto Sans Thai and the Windows Thai fonts) and has regression floors: re-measure before changing a constant (`std::vector<T> v(size_t(x))` is a function declaration; `emit` is a Qt macro).
+
 ## Gotchas
 - `fpdfview.h` includes `windows.h`: `NOMINMAX` is defined on `dp_pdfengine` (PUBLIC), keep it.
 - PDFium is not thread safe: every call holds `pdfiumMutex()` (inside `PdfDocument`). Never call `FPDF_*` from anywhere else.
