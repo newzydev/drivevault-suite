@@ -447,6 +447,14 @@ Item {
                                 onClicked: folderDialog.open()
                             }
                             Chip {
+                                objectName: "aiWeb"
+                                visible: root.ch.provider === "local"
+                                clickable: true
+                                enabled: !root.ch.busy
+                                text: Tr.s(Ai.webEnabled ? "ai_web_on" : "ai_web_off")
+                                onClicked: Ai.webEnabled = !Ai.webEnabled
+                            }
+                            Chip {
                                 objectName: "aiPermission"
                                 visible: root.agent
                                 clickable: true
@@ -499,7 +507,7 @@ Item {
                     SideTitle { Layout.topMargin: 14; text: Tr.s("ai_side_privacy") }
                     Text {
                         Layout.fillWidth: true
-                        text: Tr.s("privacy_" + (root.ch.provider === "" ? "none" : root.ch.provider))
+                        text: Tr.s("privacy_" + (root.ch.provider === "" ? "none" : root.ch.provider === "local" && Ai.webEnabled ? "local_web" : root.ch.provider))
                         font.pixelSize: 13
                         color: Theme.textSecondary
                         wrapMode: Text.Wrap

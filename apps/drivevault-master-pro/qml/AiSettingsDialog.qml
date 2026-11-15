@@ -113,13 +113,24 @@ Popup {
                     }
                 }
                 Note { text: Tr.s("set_provider_hint"); visible: dlg.provider === "" }
-                Note { text: Tr.s("privacy_" + (dlg.provider === "" ? "none" : dlg.provider)); visible: dlg.provider !== "" }
+                Note { text: Tr.s("privacy_" + (dlg.provider === "local" && Ai.webEnabled ? "local_web" : dlg.provider)); visible: dlg.provider !== "" }
 
                 // ---- a model on this computer ----------------------------------------------------------------------------------------
                 ColumnLayout {
                     visible: dlg.provider === "local"
                     Layout.fillWidth: true
                     spacing: 8
+
+                    Heading { text: Tr.s("set_web") }
+                    Card {
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 10
+                            Text { Layout.fillWidth: true; text: Tr.s("set_web_on"); font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
+                            AiSwitch { objectName: "webSwitch"; checked: Ai.webEnabled; onToggled: Ai.webEnabled = checked }
+                        }
+                        Text { Layout.fillWidth: true; text: Tr.s("set_web_note"); font.pixelSize: 12; color: Theme.textSecondary; wrapMode: Text.Wrap }
+                    }
 
                     Heading { text: Tr.s("set_engine") }
                     Card {

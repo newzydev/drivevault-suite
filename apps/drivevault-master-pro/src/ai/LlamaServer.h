@@ -33,6 +33,7 @@ public:
     QString error() const { return m_error; }              // noEngine | noModel | startFailed (details in detail())
     QString detail() const { return m_detail; }
     bool usesGpu() const { return m_gpu; }
+    bool isExternal() const { return m_external; }          // tests: a server that was not started by this object
 
     void start(const QString& modelPath);                  // asynchronous: stateChanged() reports Starting, then Ready or Failed; another model restarts it
     void stop();

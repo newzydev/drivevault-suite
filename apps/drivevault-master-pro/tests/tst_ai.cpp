@@ -1,8 +1,11 @@
 // The AI of Master Pro: stream parsers, HTTP chat (OpenAI style and Anthropic) against a fake server on this computer, the command line programs through a
 // stand-in (stdin, events, cancel), model links and downloads, the key store and the two pages with their saved conversations. No real AI is called.
 #include "Hub.h"
+#include "ai/AgentTools.h"
 #include "ai/AiService.h"
 #include "ai/CliChat.h"
+#include "ai/LocalAgent.h"
+#include "ai/WebTools.h"
 #include "ai/HttpChat.h"
 #include "ai/ModelDownloader.h"
 #include "ai/ModelStore.h"
@@ -33,6 +36,8 @@ public:
     QByteArray contentType = "text/event-stream";
     QByteArray body;
     QByteArray lastRequest;
+    QList<QByteArray> queue;                       // one answer per request (when empty: `body`)
+    QList<QByteArray> log;                         // every request, oldest first
     int requests = 0;
 
     FakeServer()
@@ -50,9 +55,11 @@ public:
                     if (data.size() < end + 4 + cl)
                         return;
                     lastRequest = data;
+                    log << data;
                     ++requests;
-                    QByteArray out = "HTTP/1.1 " + QByteArray::number(status) + " X\r\nContent-Type: " + contentType + "\r\nContent-Length: " + QByteArray::number(body.size())
-                                     + "\r\nConnection: close\r\n\r\n" + body;
+                    const QByteArray answer = queue.isEmpty() ? body : queue.takeFirst();
+                    QByteArray out = "HTTP/1.1 " + QByteArray::number(status) + " X\r\nContent-Type: " + contentType + "\r\nContent-Length: " + QByteArray::number(answer.size())
+                                     + "\r\nConnection: close\r\n\r\n" + answer;
                     s->write(out);
                     s->disconnectFromHost();
                 });
@@ -74,6 +81,22 @@ QByteArray sse(const QStringList& datas)
 QJsonObject requestBody(const QByteArray& request)
 {
     return QJsonDocument::fromJson(request.mid(request.indexOf("\r\n\r\n") + 4)).object();
+}
+
+// an OpenAI style answer of the (fake) model: text and / or tool calls
+QJsonObject agentCall(const char* id, const char* name, const QJsonObject& args)
+{
+    return QJsonObject{{"id", QLatin1String(id)}, {"type", "function"},
+                       {"function", QJsonObject{{"name", QLatin1String(name)}, {"arguments", QString::fromUtf8(QJsonDocument(args).toJson(QJsonDocument::Compact))}}}};
+}
+
+QByteArray agentReply(const QJsonArray& calls, const QString& content)
+{
+    QJsonObject message{{"role", "assistant"}};
+    message["content"] = content.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(content);
+    if (!calls.isEmpty())
+        message["tool_calls"] = calls;
+    return QJsonDocument(QJsonObject{{"choices", QJsonArray{QJsonObject{{"message", message}}}}}).toJson(QJsonDocument::Compact);
 }
 
 } // namespace
@@ -532,6 +555,291 @@ private slots:
         ai.llama()->stop();
     }
 
+    // ---- agent tools: only inside the folder ------------------------------------------------------------------------------------------
+    void agentToolsStayInTheFolder()
+    {
+        QDir().mkpath(m_dir.filePath("work/sub"));
+        auto write = [&](const QString& rel, const QByteArray& data) {
+            QFile f(m_dir.filePath("work/" + rel));
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(data);
+        };
+        write("notes.txt", "alpha\nBeta line\ngamma\n");
+        write("sub/deep.txt", "needle in a haystack\n");
+        write("pic.bin", QByteArray("\0\1\2\3", 4));
+        QFile outside(m_dir.filePath("secret.txt"));
+        QVERIFY(outside.open(QIODevice::WriteOnly));
+        outside.write("TOP SECRET");
+        outside.close();
+
+        AgentTools ro(m_dir.filePath("work"), false);
+        QCOMPARE(ro.specs().size(), 3);                                    // no write_file when edits are not allowed
+        auto list = ro.run("list_files", {});
+        QVERIFY(!list.error && list.text.contains("notes.txt") && list.text.contains("sub/"));
+        QVERIFY(ro.run("read_file", {{"path", "notes.txt"}}).text.contains("Beta line"));
+        QVERIFY(ro.run("read_file", {{"path", "sub/deep.txt"}}).text.contains("needle"));
+        QVERIFY(ro.run("read_file", {{"path", "pic.bin"}}).error);          // binary
+        auto found = ro.run("search_text", {{"query", "NEEDLE"}});
+        QVERIFY(found.text.contains("sub/deep.txt:1"));
+        // leaving the folder is refused in every spelling
+        for (const char* bad : {"../secret.txt", "..\\secret.txt", "sub/../../secret.txt", "C:/Windows/win.ini", "/etc/passwd", "\\\\server\\share\\x", "notes.txt:stream"}) {
+            const auto r = ro.run("read_file", {{"path", bad}});
+            QVERIFY2(r.error && !r.text.contains("SECRET"), bad);
+        }
+        QVERIFY(ro.run("list_files", {{"path", ".."}}).error);
+        // read only: writing is refused even when the model asks for it
+        QVERIFY(ro.run("write_file", {{"path", "x.txt"}, {"content", "x"}}).error);
+        QVERIFY(!QFileInfo::exists(m_dir.filePath("work/x.txt")));
+
+        AgentTools rw(m_dir.filePath("work"), true);
+        QCOMPARE(rw.specs().size(), 4);
+        auto w = rw.run("write_file", {{"path", "sub/new.txt"}, {"content", "hello"}});
+        QVERIFY2(!w.error, qPrintable(w.text));
+        QCOMPARE(rw.run("read_file", {{"path", "sub/new.txt"}}).text, QString("hello"));
+        // replacing a file saves the old one first
+        w = rw.run("write_file", {{"path", "notes.txt"}, {"content", "replaced"}});
+        QVERIFY2(!w.error && w.text.contains(".drivevault-backup"), qPrintable(w.text));
+        const auto backups = QDir(m_dir.filePath("work/.drivevault-backup")).entryList({"notes.txt.*.bak"}, QDir::Files);
+        QCOMPARE(backups.size(), 1);
+        QFile old(m_dir.filePath("work/.drivevault-backup/" + backups.first()));
+        QVERIFY(old.open(QIODevice::ReadOnly));
+        QVERIFY(old.readAll().contains("Beta line"));
+        QVERIFY(rw.run("write_file", {{"path", "../escape.txt"}, {"content", "x"}}).error);
+        QVERIFY(!QFileInfo::exists(m_dir.filePath("escape.txt")));
+        QVERIFY(rw.run("write_file", {{"path", "nofolder/x.txt"}, {"content", "x"}}).error);        // no folder is created on the way
+        QVERIFY(rw.run("run_command", {{"command", "dir"}}).error);                                  // there is no such tool
+    }
+
+    // ---- web tools ------------------------------------------------------------------------------------------------------------------
+    void webAddressesAreChecked()
+    {
+        QVERIFY(WebTools::checkUrl(QUrl("https://example.com/page")).isEmpty());
+        for (const char* bad : {"http://localhost/x", "http://127.0.0.1:8080/", "https://192.168.1.10/", "http://10.0.0.5/", "http://169.254.169.254/latest/meta-data",
+                                "https://[::1]/", "http://[fd00::1]/", "http://[::ffff:127.0.0.1]/", "ftp://example.com/", "file:///C:/Windows/win.ini",
+                                "https://user:pw@example.com/", "https://example.com:8443/", "http://intranet/", "https://printer.local/", "javascript:alert(1)"})
+            QVERIFY2(!WebTools::checkUrl(QUrl(bad)).isEmpty(), bad);
+        QVERIFY(WebTools::addressIsPublic(QHostAddress("8.8.8.8")));
+        QVERIFY(WebTools::addressIsPublic(QHostAddress("2606:4700:4700::1111")));
+        QVERIFY(!WebTools::addressIsPublic(QHostAddress("172.20.1.1")));
+        QVERIFY(!WebTools::addressIsPublic(QHostAddress("100.64.0.1")));
+        QVERIFY(!WebTools::addressIsPublic(QHostAddress("::ffff:10.1.2.3")));
+    }
+    void webResultsAndPagesAreParsed()
+    {
+        const QString html =
+            "<div class=\"result\"><a rel=\"nofollow\" class=\"result__a\" href=\"//duckduckgo.com/l/?uddg=https%3A%2F%2Fhuggingface.co%2Funsloth%2FQwen3.5%2D4B%2DGGUF&amp;rut=abc\">unsloth/Qwen3.5-4B-GGUF &middot; Hugging Face</a>"
+            "<a class=\"result__snippet\" href=\"//duckduckgo.com/l/?uddg=x\">Qwen3.5 <b>4B</b> in GGUF &amp; more</a></div>"
+            "<div class=\"result\"><a class=\"result__a\" href=\"//duckduckgo.com/y.js?ad_domain=shop.example\">An advertisement</a></div>"
+            "<div class=\"result\"><a class=\"result__a\" href=\"https://example.org/direct\">Direct link</a></div>";
+        const auto hits = WebTools::parseSearch(html);
+        QCOMPARE(hits.size(), 2);                                         // the advertisement (a duckduckgo address) is not a result
+        QCOMPARE(hits.at(0).url, QString("https://huggingface.co/unsloth/Qwen3.5-4B-GGUF"));
+        QVERIFY(hits.at(0).title.startsWith("unsloth/Qwen3.5-4B-GGUF"));
+        QCOMPARE(hits.at(0).snippet, QString("Qwen3.5 4B in GGUF & more"));
+        QVERIFY(WebTools::formatHits(hits).contains("1. unsloth"));
+        QCOMPARE(WebTools::formatHits({}), QString("No results."));
+        const QString text = WebTools::htmlToText("<html><head><title>t</title><style>p{}</style></head><body><nav>menu</nav><h1>Title</h1><p>One &amp; two</p>"
+                                                  "<script>evil()</script><p>Three</p></body></html>", 1000);
+        QCOMPARE(text, QString("Title\nOne & two\nThree"));
+        QVERIFY(WebTools::htmlToText(QString(50000, 'x'), 100).size() < 200);
+    }
+    void webToolsRefuseThisComputer()
+    {
+        QNetworkAccessManager net;
+        WebTools web(&net);
+        QString out;
+        bool err = false, called = false;
+        web.run("fetch_page", {{"url", "http://127.0.0.1/secret"}}, [&](const QString& t, bool e) { out = t; err = e; called = true; });
+        QVERIFY(called && err);
+        QVERIFY(out.contains("not reachable"));
+        called = false;
+        web.run("web_search", {{"query", " "}}, [&](const QString& t, bool e) { out = t; err = e; called = true; });
+        QVERIFY(called && err);
+        QVERIFY(WebTools::handles("web_search") && WebTools::handles("fetch_page") && !WebTools::handles("read_file"));
+    }
+    // the real Internet: only when asked for (DM_TEST_WEB=1)
+    void realWebSearchAndPage()
+    {
+        if (qEnvironmentVariable("DM_TEST_WEB") != QLatin1String("1"))
+            QSKIP("set DM_TEST_WEB=1 to use the real Internet");
+        QNetworkAccessManager net;
+        WebTools web(&net);
+        QString out;
+        bool err = true, called = false;
+        web.run("web_search", {{"query", "Qt 6.8 release notes"}}, [&](const QString& t, bool e) { out = t; err = e; called = true; });
+        QTRY_VERIFY_WITH_TIMEOUT(called, 30000);
+        QVERIFY2(!err && out.contains("http"), qPrintable(out.left(200)));
+        fprintf(stderr, "REAL SEARCH: %s\n", qPrintable(out.left(300)));
+        called = false;
+        web.run("fetch_page", {{"url", "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF"}}, [&](const QString& t, bool e) { out = t; err = e; called = true; });
+        QTRY_VERIFY_WITH_TIMEOUT(called, 30000);
+        QVERIFY2(!err && out.contains("Qwen3.5"), qPrintable(out.left(200)));
+        fprintf(stderr, "REAL PAGE: %s\n", qPrintable(out.left(200).simplified()));
+    }
+
+    // ---- the local agent: tools, results, answer ------------------------------------------------------------------------------------
+    void localAgentRunsToolsAndAnswers()
+    {
+        QDir().mkpath(m_dir.filePath("agentwork"));
+        QFile f(m_dir.filePath("agentwork/todo.txt"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("buy milk\n");
+        f.close();
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("c1", "list_files", {}), agentCall("c2", "read_file", {{"path", "todo.txt"}})}, QString())
+                     << agentReply({}, QStringLiteral("The file todo.txt says: buy milk."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QString text;
+        QStringList activity;
+        connect(&agent, &LocalAgent::piece, [&](const QString& t) { text += t; });
+        connect(&agent, &LocalAgent::activity, [&](const QString& a) { activity << a; });
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("agentwork");
+        c.system = "sys";
+        c.history = {{"user", "what is in my folder?"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QCOMPARE(text, QString("The file todo.txt says: buy milk."));
+        QCOMPARE(activity, QStringList({"List", "Read: todo.txt"}));
+        QCOMPARE(server.requests, 2);
+        // the second request carries the assistant's calls and both tool results
+        const QJsonArray msgs = requestBody(server.log.at(1)).value("messages").toArray();
+        QVERIFY(msgs.size() >= 5);
+        QCOMPARE(msgs.at(msgs.size() - 1).toObject().value("role").toString(), QString("tool"));
+        QVERIFY(msgs.at(msgs.size() - 1).toObject().value("content").toString().contains("buy milk"));
+        QVERIFY(msgs.at(msgs.size() - 2).toObject().value("content").toString().contains("todo.txt"));
+        // the request offers the tools; read only = no write_file
+        const QJsonArray tools = requestBody(server.log.at(0)).value("tools").toArray();
+        QCOMPARE(tools.size(), 3);
+        // a refusal: it needs a folder or the web, and only this computer's server
+        LocalAgent other(&net);
+        c.folder.clear();
+        c.web = false;
+        QCOMPARE(other.start(c), QString("noTools"));
+        c.folder = m_dir.path();
+        c.baseUrl = "http://example.com/v1";
+        QCOMPARE(other.start(c), QString("badUrl"));
+    }
+    void localAgentStopsAfterTooManySteps()
+    {
+        FakeServer server;
+        server.contentType = "application/json";
+        server.body = R"({"choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"c","type":"function","function":{"name":"list_files","arguments":"{}"}}]}}]})";
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.path();
+        c.history = {{"user", "loop"}};
+        c.maxSteps = 3;
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QCOMPARE(done.at(0).at(1).toString(), QString("tooManySteps"));
+        QCOMPARE(server.requests, 3);
+    }
+    void theAgentPageUsesTheLocalModel()
+    {
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << R"({"choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"c1","type":"function","function":{"name":"list_files","arguments":"{}"}}]}}]})"
+                     << R"({"choices":[{"message":{"role":"assistant","content":"There is one file."}}]})";
+        QDir().mkpath(m_dir.filePath("pagework"));
+        QFile model(m_dir.filePath("fake-model.gguf"));
+        QVERIFY(model.open(QIODevice::WriteOnly));
+        model.write("x");
+        model.close();
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hub4");
+        dm::Hub hub(o);
+        AiService ai(&hub, nullptr, false);
+        auto* agent = qobject_cast<AiChannel*>(ai.agent());
+        QCOMPARE(agent->provider(), QString("local"));                    // the model on this PC is the default of both pages
+        QCOMPARE(qobject_cast<AiChannel*>(ai.ask())->provider(), QString("local"));
+        QVERIFY(agent->providers().contains("local"));
+        ai.selectLocalModel(m_dir.filePath("fake-model.gguf"));
+        ai.llama()->useExternalServer(server.base(), "");
+        QCOMPARE(agent->notReady(), QString("noFolder"));
+        agent->setFolder(m_dir.filePath("pagework"));
+        ai.setWebEnabled(false);
+        if (!ai.engineFound())
+            QSKIP("no llama.cpp engine on this PC");
+        QCOMPARE(agent->notReady(), QString());
+        QCOMPARE(agent->send("what files are here?"), QString());
+        QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 15000);
+        const QVariantMap reply = agent->messages().at(1).toMap();
+        QCOMPARE(reply.value("errorCode").toString(), QString());
+        QCOMPARE(reply.value("text").toString(), QString("There is one file."));
+        QCOMPARE(reply.value("activity").toStringList(), QStringList({"List"}));
+        // the Q&A page without web and folder is a plain chat (no tools in the request)
+        QCOMPARE(requestBody(server.log.at(0)).value("tools").toArray().size(), 3);
+    }
+
+    // The real local model as an agent: it must call the file tool by itself, and (with DM_TEST_WEB=1) the web tool.
+    void realLocalAgentUsesTools()
+    {
+        if (qEnvironmentVariable("DM_TEST_REAL_LLM") != QLatin1String("1"))
+            QSKIP("set DM_TEST_REAL_LLM=1 to run the real local model");
+        QString model = qEnvironmentVariable("DM_TEST_MODEL");
+        for (QDir d(QCoreApplication::applicationDirPath()); model.isEmpty() && d.exists(); ) {
+            if (QFileInfo::exists(d.filePath(".tools/llm/Qwen3.5-4B-Q4_K_M.gguf")))
+                model = d.filePath(".tools/llm/Qwen3.5-4B-Q4_K_M.gguf");
+            if (!d.cdUp())
+                break;
+        }
+        QDir().mkpath(m_dir.filePath("realwork"));
+        QFile f(m_dir.filePath("realwork/shopping.txt"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("Shopping list\n- 3 apples\n- 2 liters of milk\n- bread\n");
+        f.close();
+        QNetworkAccessManager net;
+        LlamaServer server(&net);
+        server.start(model);
+        QTRY_VERIFY_WITH_TIMEOUT(server.state() == LlamaServer::State::Ready || server.state() == LlamaServer::State::Failed, 240000);
+        QVERIFY2(server.state() == LlamaServer::State::Ready, qPrintable(server.error()));
+
+        auto ask = [&](const QString& question, bool web, QString* text, QStringList* activity, QString* code) {
+            LocalAgent agent(&net);
+            connect(&agent, &LocalAgent::piece, [&](const QString& t) { *text += t; });
+            connect(&agent, &LocalAgent::activity, [&](const QString& a) { *activity << a; });
+            QSignalSpy done(&agent, &LocalAgent::finished);
+            LocalAgent::Config c;
+            c.baseUrl = server.baseUrl() + "/v1";
+            c.apiKey = server.apiKey();
+            c.folder = m_dir.filePath("realwork");
+            c.web = web;
+            c.system = "You are an assistant that works inside the folder the user chose, with tools. Look at the files before you answer. Answer briefly.";
+            c.history = {{"user", question}};
+            QCOMPARE(agent.start(c), QString());
+            QVERIFY(done.wait(300000));
+            *code = done.at(0).at(1).toString();
+        };
+        QString text, code;
+        QStringList activity;
+        ask("How many liters of milk are on my shopping list? Look in the folder.", false, &text, &activity, &code);
+        fprintf(stderr, "REAL AGENT files: code=%s activity=%s answer=%s\n", qPrintable(code), qPrintable(activity.join(" | ")), qPrintable(text.left(200)));
+        QVERIFY2(code.isEmpty(), qPrintable(code));
+        QVERIFY(!activity.isEmpty());
+        QVERIFY(text.contains("2"));
+
+        if (qEnvironmentVariable("DM_TEST_WEB") == QLatin1String("1")) {
+            text.clear();
+            activity.clear();
+            ask("Search the web to find out what the capital city of Thailand is, then answer in one sentence.", true, &text, &activity, &code);
+            fprintf(stderr, "REAL AGENT web: code=%s activity=%s answer=%s\n", qPrintable(code), qPrintable(activity.join(" | ")), qPrintable(text.left(200)));
+            QVERIFY2(code.isEmpty(), qPrintable(code));
+            QVERIFY(activity.join(" ").contains("Web search"));
+            QVERIFY(text.contains("Bangkok", Qt::CaseInsensitive) || text.contains("กรุงเทพ"));
+        }
+        server.stop();
+    }
+
     // ---- keys ------------------------------------------------------------------------------------------------------------------
     void keysAreEncrypted()
     {
@@ -557,8 +865,10 @@ private slots:
             dm::Hub hub(o);
             AiService ai(&hub, nullptr, false);
             auto* ask = qobject_cast<AiChannel*>(ai.ask());
-            QCOMPARE(ask->notReady(), QString("noProvider"));
-            QCOMPARE(ask->send("hello"), QString("noProvider"));
+            QCOMPARE(ask->provider(), QString("local"));                   // the model on this PC is the default
+            const QString first = ask->notReady();
+            QVERIFY(first == "noModel" || first == "noEngine");
+            QCOMPARE(ask->send("hello"), first);
             ask->setProvider("openai");
             QCOMPARE(ask->notReady(), QString("noModel"));
             ai.setOpenAi(server.base() + "/v1", "gpt-test", "");           // this computer: no key needed
@@ -581,9 +891,9 @@ private slots:
             // the agent page has its own conversations and only the CLI programs
             auto* agent = qobject_cast<AiChannel*>(ai.agent());
             QCOMPARE(agent->conversations().size(), 0);
-            QCOMPARE(agent->providers(), QStringList({"claude", "codex"}));
+            QCOMPARE(agent->providers(), QStringList({"local", "claude", "codex"}));
             agent->setProvider("openai");                                  // not a provider of this page
-            QCOMPARE(agent->provider(), QString());
+            QCOMPARE(agent->provider(), QString("local"));                 // unchanged: not a provider of this page
             // the key is not in the settings file in clear text
             ai.setOpenAi(server.base() + "/v1", "gpt-test", "sk-plain-key");
             QFile f(dataDir + "/ai/settings.json");

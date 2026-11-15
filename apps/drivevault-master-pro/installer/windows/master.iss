@@ -3,7 +3,7 @@
 ; The program installers run this setup silently when Master Pro is missing or older, so it is always there before a program.
 
 #ifndef AppVersion
-  #define AppVersion "1.9.1"
+  #define AppVersion "1.10.0"
 #endif
 #ifndef StageDir
   #error StageDir must point at the deployed application folder (see scripts\package.ps1)
@@ -64,9 +64,27 @@ english.DesktopTask=Create a &desktop shortcut
 english.ProductsInstalled=DriveVault programs are still installed. DriveVault Master Pro manages them, so it can only be uninstalled after they have been uninstalled.%n%nOpen Master Pro to uninstall them first.
 thai.DesktopTask=สร้างทางลัดบน&เดสก์ท็อป
 thai.ProductsInstalled=ยังมีโปรแกรม DriveVault ติดตั้งอยู่ DriveVault Master Pro เป็นตัวจัดการโปรแกรมเหล่านั้น จึงถอนการติดตั้งได้ต่อเมื่อถอนโปรแกรมทั้งหมดแล้ว%n%nเปิด Master Pro เพื่อถอนโปรแกรมเหล่านั้นก่อน
+english.AiModelsTask=Download the AI model now (about 2.7 GB, Qwen3.5-4B). It runs on this computer; nothing you ask is sent to the Internet. Needs an Internet connection for the download; skip it to download a model later in the AI settings of Master Pro.
+english.AiModelsGroup=AI features:
+english.DownloadingModels=Downloading the AI model...
+english.ModelsFailed=The program was installed, but the AI model was not downloaded (%1). You can download it later in the AI settings of Master Pro.
+english.ModelsCancelled=cancelled
+english.ModelsNoSpace=Not enough free disk space for the AI model (about %1 MB needed).
+thai.AiModelsTask=ดาวน์โหลดโมเดล AI ตอนนี้ (ประมาณ 2.7 GB, Qwen3.5-4B) โมเดลรันในเครื่องนี้ สิ่งที่ถามไม่ถูกส่งออกอินเทอร์เน็ต ต้องต่ออินเทอร์เน็ตเพื่อดาวน์โหลด ถ้าข้ามไปจะดาวน์โหลดโมเดลทีหลังได้ที่ตั้งค่า AI ของ Master Pro
+thai.AiModelsGroup=ฟีเจอร์ AI:
+thai.DownloadingModels=กำลังดาวน์โหลดโมเดล AI...
+thai.ModelsFailed=ติดตั้งโปรแกรมแล้ว แต่ดาวน์โหลดโมเดล AI ไม่สำเร็จ (%1) ดาวน์โหลดทีหลังได้ที่ตั้งค่า AI ของ Master Pro
+thai.ModelsCancelled=ยกเลิก
+thai.ModelsNoSpace=พื้นที่ดิสก์ว่างไม่พอสำหรับโมเดล AI (ต้องการประมาณ %1 MB)
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:DesktopTask}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "aimodels"; Description: "{cm:AiModelsTask}"; GroupDescription: "{cm:AiModelsGroup}"
+
+[UninstallDelete]
+; the downloaded model is not tracked as an installed file (models the user downloaded later in the program stay: only an empty folder is removed)
+Type: files; Name: "{app}\ai\models\Qwen3.5-4B-Q4_K_M.gguf"
+Type: dirifempty; Name: "{app}\ai\models"
 
 [Dirs]
 ; where setup files of the DriveVault programs can be put for installing / updating from Master Pro
@@ -93,6 +111,103 @@ Root: HKA; Subkey: "Software\DriveVault\MasterPro"; ValueType: string; ValueName
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
+// ---- AI model (downloaded while installing) ------------------------------------------------------------------------------------------
+// Pinned revision, fixed size and SHA-256 (the same values as src\ai\ModelStore.cpp and DriveVault PDF Pro: change them together). The download itself checks
+// the SHA-256. Silent installs (the program installers run this setup silently first) never download: the AI settings of Master Pro can download later.
+const
+  QwenUrl = 'https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/e87f176479d0855a907a41277aca2f8ee7a09523/Qwen3.5-4B-Q4_K_M.gguf';
+  QwenName = 'Qwen3.5-4B-Q4_K_M.gguf';
+  QwenSize = 2740937888;
+  QwenSha = '00fe7986ff5f6b463e62455821146049db6f9313603938a70800d1fb69ef11a4';
+
+var
+  ModelPage: TDownloadWizardPage;
+  ModelsNote: String;      // why the model was not installed ('' when all is well)
+
+function OnModelProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
+begin
+  Result := True;
+end;
+
+procedure InitializeWizard();
+begin
+  ModelPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), CustomMessage('DownloadingModels'), @OnModelProgress);
+end;
+
+function HaveModel(): Boolean;
+var
+  S: Int64;
+  Path: String;
+begin
+  Path := AddBackslash(ExpandConstant('{app}')) + 'ai\models\' + QwenName;
+  Result := FileExists(Path) and FileSize64(Path, S) and (S = QwenSize);
+end;
+
+procedure DownloadModel();
+var
+  FreeTmp, TotalTmp, FreeApp, TotalApp, Needed: Int64;
+begin
+  ModelsNote := '';
+  if HaveModel() then
+    Exit;
+  Needed := QwenSize + 700 * 1024 * 1024;
+  if GetSpaceOnDisk64(ExtractFileDrive(ExpandConstant('{tmp}')), FreeTmp, TotalTmp) and
+     GetSpaceOnDisk64(ExtractFileDrive(ExpandConstant('{app}')), FreeApp, TotalApp) then
+  begin
+    if CompareText(ExtractFileDrive(ExpandConstant('{tmp}')), ExtractFileDrive(ExpandConstant('{app}'))) = 0 then
+    begin
+      if FreeApp < Needed then
+      begin
+        ModelsNote := FmtMessage(CustomMessage('ModelsNoSpace'), [IntToStr(Needed div (1024 * 1024))]);
+        Exit;
+      end;
+    end
+    else if (FreeTmp < QwenSize + 200 * 1024 * 1024) or (FreeApp < Needed) then
+    begin
+      ModelsNote := FmtMessage(CustomMessage('ModelsNoSpace'), [IntToStr(Needed div (1024 * 1024))]);
+      Exit;
+    end;
+  end;
+  ModelPage.Clear;
+  ModelPage.Add(QwenUrl, QwenName, QwenSha);
+  ModelPage.Show;
+  try
+    try
+      ModelPage.Download;
+    except
+      if ModelPage.AbortedByUser then
+        ModelsNote := FmtMessage(CustomMessage('ModelsFailed'), [CustomMessage('ModelsCancelled')])
+      else
+        ModelsNote := FmtMessage(CustomMessage('ModelsFailed'), [GetExceptionMessage]);
+    end;
+  finally
+    ModelPage.Hide;
+  end;
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := True;
+  if (CurPageID = wpReady) and (not WizardSilent()) and WizardIsTaskSelected('aimodels') then
+    DownloadModel();
+end;
+
+procedure PlaceModel();
+var
+  Src, Dir, Dst: String;
+begin
+  Src := ExpandConstant('{tmp}\') + QwenName;
+  if not FileExists(Src) then
+    Exit;
+  Dir := AddBackslash(ExpandConstant('{app}')) + 'ai\models';
+  ForceDirectories(Dir);
+  Dst := AddBackslash(Dir) + QwenName;
+  DeleteFile(Dst);
+  if not RenameFile(Src, Dst) then
+    if CopyFile(Src, Dst, False) then
+      DeleteFile(Src);
+end;
+
 function HasProducts(Root: Integer): Boolean;
 var
   Names: TArrayOfString;
@@ -114,6 +229,14 @@ end;
 // Settings and the list of installer folders belong to the user: they stay unless the folder is empty.
 // The suite folder is shared: it was created by whichever installer ran first, so this uninstaller cannot remove it by itself while its own
 // file is still there. A tiny delayed 'rmdir' (it only removes an EMPTY folder, so other DriveVault programs are never touched) finishes the job.
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    PlaceModel();
+  if (CurStep = ssDone) and (ModelsNote <> '') then
+    SuppressibleMsgBox(ModelsNote, mbInformation, MB_OK, IDOK);
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   ResultCode: Integer;

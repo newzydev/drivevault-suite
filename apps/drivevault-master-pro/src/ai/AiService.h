@@ -2,11 +2,13 @@
 
 #include "CliChat.h"
 #include "HttpChat.h"
+#include "LocalAgent.h"
 #include "LlamaServer.h"
 #include "ModelDownloader.h"
 #include "ModelStore.h"
 
 #include <QList>
+#include <functional>
 #include <QObject>
 #include <QStringList>
 #include <QVariantList>
@@ -107,6 +109,9 @@ private:
     void sendHttp(HttpChat::Request request);
     void sendLocal(const QString& userText);
     void sendCli(const QString& userText);
+    void sendLocalAgent(const QString& userText);
+    void withLocalServer(const std::function<void()>& go);        // runs `go` when the local model is ready (starts it when needed)
+    void appendActivity(const QString& text);
     void appendPiece(const QString& text);
     void finish(bool ok, const QString& code, const QString& detail);
     QString systemPrompt() const;
@@ -125,6 +130,7 @@ private:
     QString m_status;
     HttpChat* m_http = nullptr;
     CliChat* m_cli = nullptr;
+    LocalAgent* m_localAgent = nullptr;
     QMetaObject::Connection m_waitLocal;
     QTimer* m_viewTimer = nullptr;
     int m_generation = 0;                                  // bumps on stop / switch: a late callback of an old request does nothing
@@ -143,6 +149,7 @@ class AiService : public QObject {
     Q_PROPERTY(QString modelsFolder READ modelsFolder CONSTANT FINAL)
     Q_PROPERTY(QVariantMap openai READ openai NOTIFY settingsChanged FINAL)            // {baseUrl, model, keySet}
     Q_PROPERTY(QVariantMap anthropic READ anthropic NOTIFY settingsChanged FINAL)      // {model, keySet}
+    Q_PROPERTY(bool webEnabled READ webEnabled WRITE setWebEnabled NOTIFY settingsChanged FINAL)   // the local AI may search the web (web_search, fetch_page)
     Q_PROPERTY(bool downloading READ downloading NOTIFY downloadChanged FINAL)
     Q_PROPERTY(double downloadProgress READ downloadProgress NOTIFY downloadChanged FINAL)
     Q_PROPERTY(QString downloadCode READ downloadCode NOTIFY downloadChanged FINAL)
@@ -164,6 +171,8 @@ public:
     QVariantList catalog() const;
     QVariantList installedModels() const;
     QString localModel() const { return m_localModel; }
+    bool webEnabled() const { return m_web; }
+    void setWebEnabled(bool on);
     QString modelsFolder() const;
     QVariantMap openai() const;
     QVariantMap anthropic() const;
@@ -224,6 +233,7 @@ private:
     QStringList m_installDirs;                             // install folders of the programs found by the hub (they may carry the engine and models)
     QVariantMap m_cli;
     QString m_localModel;
+    bool m_web = true;                                     // the local AI may use the web tools (the owner asked for it; the switch is in the settings and on the page)
     QString m_openaiBase = QStringLiteral("https://api.openai.com/v1");
     QString m_openaiModel;
     QString m_openaiKeyEnc;

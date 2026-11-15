@@ -81,7 +81,7 @@ AiChannel::~AiChannel()
 QStringList AiChannel::providers() const
 {
     if (isAgent())
-        return {QStringLiteral("claude"), QStringLiteral("codex")};
+        return {QStringLiteral("local"), QStringLiteral("claude"), QStringLiteral("codex")};
     return {QStringLiteral("local"), QStringLiteral("openai"), QStringLiteral("anthropic"), QStringLiteral("claude"), QStringLiteral("codex")};
 }
 
@@ -212,7 +212,10 @@ void AiChannel::beginRequest(const QString& userText)
     saveConversations();
 
     if (m_provider == QLatin1String("local")) {
-        sendLocal(userText);
+        if (isAgent() || m_service->webEnabled())
+            sendLocalAgent(userText);                              // tools: the folder (agent) and / or the web
+        else
+            sendLocal(userText);
     } else if (m_provider == QLatin1String("openai") || m_provider == QLatin1String("anthropic")) {
         HttpChat::Request r;
         if (m_provider == QLatin1String("openai")) {
@@ -298,28 +301,17 @@ void AiChannel::sendHttp(HttpChat::Request request)
         setBusy(true, QStringLiteral("starting"));
 }
 
-void AiChannel::sendLocal(const QString&)
+void AiChannel::withLocalServer(const std::function<void()>& run)
 {
     LlamaServer* server = m_service->llama();
     const QString model = m_service->localModel();
     const int gen = m_generation;
-    auto go = [this, server, gen] {
+    auto go = [this, gen, run] {
         if (gen != m_generation || !m_busy)
             return;
-        HttpChat::Request r;
-        r.kind = HttpChat::Kind::OpenAi;
-        r.baseUrl = server->baseUrl() + QStringLiteral("/v1");
-        r.apiKey = server->apiKey();
-        r.model = QStringLiteral("local");
-        r.system = systemPrompt();
-        QList<Message> past = find(m_runId)->messages;
-        past.removeLast();
-        r.messages = historyFor(past, 14000);                      // the 8192 token window of the local server
-        r.extraBody = QJsonObject{{"chat_template_kwargs", QJsonObject{{"enable_thinking", false}}}};
-        sendHttp(r);
-        server->touch();
+        run();
     };
-    if (server->state() == LlamaServer::State::Ready && server->modelPath() == model) {
+    if (server->state() == LlamaServer::State::Ready && (server->isExternal() || server->modelPath() == model)) {
         go();
         return;
     }
@@ -338,6 +330,73 @@ void AiChannel::sendLocal(const QString&)
         }
     });
     server->start(model);
+}
+
+void AiChannel::sendLocal(const QString&)
+{
+    withLocalServer([this] {
+        LlamaServer* server = m_service->llama();
+        HttpChat::Request r;
+        r.kind = HttpChat::Kind::OpenAi;
+        r.baseUrl = server->baseUrl() + QStringLiteral("/v1");
+        r.apiKey = server->apiKey();
+        r.model = QStringLiteral("local");
+        r.system = systemPrompt();
+        QList<Message> past = find(m_runId)->messages;
+        past.removeLast();
+        r.messages = historyFor(past, 14000);                      // the 8192 token window of the local server
+        r.extraBody = QJsonObject{{"chat_template_kwargs", QJsonObject{{"enable_thinking", false}}}};
+        sendHttp(r);
+        server->touch();
+    });
+}
+
+void AiChannel::sendLocalAgent(const QString&)
+{
+    withLocalServer([this] {
+        LlamaServer* server = m_service->llama();
+        LocalAgent::Config c;
+        c.baseUrl = server->baseUrl() + QStringLiteral("/v1");
+        c.apiKey = server->apiKey();
+        c.folder = isAgent() ? m_folder : QString();
+        c.allowEdits = isAgent() && m_allowEdits;
+        c.web = m_service->webEnabled();
+        const QString web = c.web ? QStringLiteral("\n\nYou can look things up on the Internet with web_search and fetch_page. Search when the answer needs current or unknown "
+                                                   "facts (not for what you already know), open a page to read it, and say which pages you used (title and address).")
+                                  : QString();
+        if (isAgent()) {
+            c.system = QStringLiteral("You are an assistant that works inside the folder the user chose, with tools: list_files, read_file, search_text")
+                       + (m_allowEdits ? QStringLiteral(" and write_file. ") : QStringLiteral(". You can only read; you cannot change anything. "))
+                       + QStringLiteral("Look at the files before you answer or change anything, and never invent what a file contains. Make only the changes the user asked "
+                                        "for, then say briefly what you did. You cannot run programs. Answer in the language of the user's message (Thai or English).")
+                       + web;
+        } else {
+            c.system = systemPrompt() + web;
+        }
+        QList<Message> past = find(m_runId)->messages;
+        past.removeLast();
+        c.history = historyFor(past, 14000);
+        if (!m_localAgent) {
+            m_localAgent = new LocalAgent(m_service->net(), this);
+            connect(m_localAgent, &LocalAgent::piece, this, &AiChannel::appendPiece);
+            connect(m_localAgent, &LocalAgent::activity, this, &AiChannel::appendActivity);
+            connect(m_localAgent, &LocalAgent::finished, this, &AiChannel::finish);
+        }
+        const QString err = m_localAgent->start(c);
+        if (!err.isEmpty())
+            finish(false, err, {});
+        else
+            setBusy(true, QStringLiteral("starting"));
+        server->touch();
+    });
+}
+
+void AiChannel::appendActivity(const QString& text)
+{
+    if (Conversation* conv = find(m_runId); conv && !conv->messages.isEmpty()) {
+        conv->messages.last().activity << text;
+        scheduleView();
+    }
 }
 
 void AiChannel::sendCli(const QString& userText)
@@ -360,12 +419,7 @@ void AiChannel::sendCli(const QString& userText)
     if (!m_cli) {
         m_cli = new CliChat(this);
         connect(m_cli, &CliChat::piece, this, &AiChannel::appendPiece);
-        connect(m_cli, &CliChat::activity, this, [this](const QString& a) {
-            if (Conversation* conv = find(m_runId); conv && !conv->messages.isEmpty()) {
-                conv->messages.last().activity << a;
-                scheduleView();
-            }
-        });
+        connect(m_cli, &CliChat::activity, this, &AiChannel::appendActivity);
         connect(m_cli, &CliChat::sessionId, this, [this](const QString& id) {
             if (Conversation* conv = find(m_runId); conv && m_provider == QLatin1String("claude"))
                 conv->sessionId = id;
@@ -418,6 +472,8 @@ void AiChannel::cancelRunning()
         m_http->cancel();
     if (m_cli && m_cli->running())
         m_cli->cancel();
+    if (m_localAgent && m_localAgent->running())
+        m_localAgent->cancel();
 }
 
 void AiChannel::stop()
@@ -427,8 +483,9 @@ void AiChannel::stop()
     ++m_generation;
     const bool http = m_http && m_http->running();
     const bool cli = m_cli && m_cli->running();
+    const bool agent = m_localAgent && m_localAgent->running();
     cancelRunning();
-    if (!http && !cli)
+    if (!http && !cli && !agent)
         finish(false, QStringLiteral("cancelled"), {});      // still starting the model: nothing is running yet
 }
 
@@ -501,7 +558,7 @@ void AiChannel::applySettings(const QVariantMap& v)
 {
     m_provider = v.value(QStringLiteral("provider")).toString();
     if (!providers().contains(m_provider))
-        m_provider.clear();
+        m_provider = QStringLiteral("local");                      // the model on this PC is the first choice of both pages
     m_folder = v.value(QStringLiteral("folder")).toString();
     m_allowEdits = v.value(QStringLiteral("allowEdits")).toBool();
     emit settingsChanged();
@@ -682,6 +739,7 @@ void AiService::loadSettings()
     m_ask->applySettings(o.value(QLatin1String("ask")).toObject().toVariantMap());
     m_agent->applySettings(o.value(QLatin1String("agent")).toObject().toVariantMap());
     m_localModel = o.value(QLatin1String("local")).toObject().value(QLatin1String("model")).toString();
+    m_web = o.value(QLatin1String("web")).toBool(true);
     const QJsonObject oa = o.value(QLatin1String("openai")).toObject();
     if (!oa.value(QLatin1String("baseUrl")).toString().isEmpty())
         m_openaiBase = oa.value(QLatin1String("baseUrl")).toString();
@@ -699,6 +757,7 @@ void AiService::saveSettings()
     o["ask"] = QJsonObject::fromVariantMap(m_ask->settingsValues());
     o["agent"] = QJsonObject::fromVariantMap(m_agent->settingsValues());
     o["local"] = QJsonObject{{"model", m_localModel}};
+    o["web"] = m_web;
     o["openai"] = QJsonObject{{"baseUrl", m_openaiBase}, {"model", m_openaiModel}, {"key", m_openaiKeyEnc}};
     o["anthropic"] = QJsonObject{{"model", m_anthropicModel}, {"key", m_anthropicKeyEnc}};
     writeJson(m_dir + QStringLiteral("/settings.json"), o);
@@ -734,6 +793,15 @@ void AiService::clearKey(const QString& provider)
     saveSettings();
     emit settingsChanged();
     m_ask->reloadReadiness();
+}
+
+void AiService::setWebEnabled(bool on)
+{
+    if (on == m_web)
+        return;
+    m_web = on;
+    saveSettings();
+    emit settingsChanged();
 }
 
 void AiService::selectLocalModel(const QString& path)
