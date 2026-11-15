@@ -40,6 +40,11 @@ Positions are **frame numbers** at the project frame rate (`get_project_info` re
 
 Not available through MCP (yet): export / render, effects, keyframes, tracking, audio enhancement, titles other than subtitles. The server cannot run programs, delete files or reach the network.
 
+## The AI cursor
+
+While an assistant works, the editor shows a mouse pointer with a caption that moves to what is being edited and says what it is doing (for example "Cutting at frame 120"). Each edit waits a moment (about 0.7 s) so that the pointer arrives first; reading tools only change the caption.
+It is only a display: the pointer does not click for the assistant, and the edit is made by the tool, not by the pointer. Switch it off in Settings > AI > *Show the AI cursor* (setting `mcpCursor`).
+
 ## Safety notes
 
 - Anyone who has the token can edit the open project from this computer: treat it like a password. Do not paste it in public places.

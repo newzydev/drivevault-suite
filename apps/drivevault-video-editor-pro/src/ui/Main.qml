@@ -289,6 +289,22 @@ ApplicationWindow {
         z: 1000
     }
 
+    // The AI cursor: shown while Claude Code / Codex works on the project over MCP (setting "mcpCursor"); only draws, never takes input.
+    AgentCursor {
+        id: agentCursor
+        objectName: "agentCursor"
+    }
+    Connections {
+        target: Mcp
+        function onAgentAction(target, label, frame, trackRow) {
+            const p = editorLoader.item ? editorLoader.item.agentPoint(target, frame, trackRow) : null
+            if (p)
+                agentCursor.act(p.x, p.y, label)
+            else
+                agentCursor.act(undefined, undefined, label)
+        }
+    }
+
     // A window without the Windows frame has no resize edges: thin strips along the sides and corners start the system resize.
     component ResizeEdge: MouseArea {
         required property int edges

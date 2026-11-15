@@ -259,6 +259,29 @@ private slots:
                                                QByteArray::number(notice.size()) + "\r\n\r\n" + notice);
         QVERIFY2(note.startsWith("HTTP/1.1 202"), note.constData());
 
+        // the AI cursor: a tool call announces itself (target + caption) and the answer still arrives, a little later; with the setting off nothing is announced
+        {
+            QSignalSpy spy(m_mcp.get(), &McpServer::agentAction);
+            const QByteArray call = R"({"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"split_at","arguments":{"frame":120}}})";
+            auto postCall = [&] {
+                return http(port, "POST /mcp HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer " + token.toUtf8() + "\r\nContent-Length: " +
+                                      QByteArray::number(call.size()) + "\r\n\r\n" + call);
+            };
+            QElapsedTimer waited;
+            waited.start();
+            const QByteArray answer = postCall();
+            QVERIFY2(answer.startsWith("HTTP/1.1 200"), answer.constData());
+            QVERIFY2(waited.elapsed() >= 600, "the tool waits for the cursor");
+            QCOMPARE(spy.count(), 1);
+            QCOMPARE(spy.at(0).at(0).toString(), QString("timeline"));
+            QCOMPARE(spy.at(0).at(2).toLongLong(), qint64(120));
+            QVERIFY(!spy.at(0).at(1).toString().isEmpty());
+            QVERIFY(m_settings->set("mcpCursor", false));
+            QVERIFY2(postCall().startsWith("HTTP/1.1 200"), "cursor off");
+            QCOMPARE(spy.count(), 1);
+            QVERIFY(m_settings->set("mcpCursor", true));
+        }
+
         // a new token cuts the old one off at once
         const QString old = token;
         const QString fresh = m_mcp->regenerateToken();

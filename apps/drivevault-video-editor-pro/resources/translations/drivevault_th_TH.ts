@@ -320,6 +320,16 @@
         <translation>เปิดเซิร์ฟเวอร์ MCP</translation>
     </message>
     <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="125"/>
+        <source>Show the AI cursor</source>
+        <translation>แสดงเคอร์เซอร์ AI</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="126"/>
+        <source>While an assistant works, a mouse pointer moves to what it edits and says what it is doing. It only shows; it does not click for the assistant.</source>
+        <translation>ขณะผู้ช่วยทำงาน จะมีเมาส์เลื่อนไปยังจุดที่กำลังแก้และบอกว่ากำลังทำอะไร เป็นเพียงการแสดงผล ไม่ได้คลิกแทนผู้ช่วย</translation>
+    </message>
+    <message>
         <location filename="../../src/ui/settings/AiPage.qml" line="107"/>
         <source>Running at %1</source>
         <translation>กำลังทำงานที่ %1</translation>
@@ -340,62 +350,62 @@
         <translation>หลังเปลี่ยนพอร์ต ให้ปิดแล้วเปิดเซิร์ฟเวอร์ใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="126"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="135"/>
         <source>Claude Code</source>
         <translation>Claude Code</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="127"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="136"/>
         <source>Copy this command and run it once in a terminal. It contains your private token.</source>
         <translation>คัดลอกคำสั่งนี้ไปรันหนึ่งครั้งในเทอร์มินัล คำสั่งมีโทเคนส่วนตัวของคุณอยู่ด้วย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="128"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="137"/>
         <source>Copy command</source>
         <translation>คัดลอกคำสั่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="132"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="141"/>
         <source>Codex</source>
         <translation>Codex</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="133"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="142"/>
         <source>Copy this block into ~/.codex/config.toml, then set the token variable shown in its last line.</source>
         <translation>คัดลอกบล็อกนี้ไปใส่ใน ~/.codex/config.toml แล้วตั้งค่าตัวแปรโทเคนตามบรรทัดสุดท้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="134"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="143"/>
         <source>Copy config</source>
         <translation>คัดลอกการตั้งค่า</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="138"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="147"/>
         <source>New token</source>
         <translation>โทเคนใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="139"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="148"/>
         <source>The old token stops working at once; connect your assistant again.</source>
         <translation>โทเคนเก่าจะใช้ไม่ได้ทันที ต้องเชื่อมต่อผู้ช่วยของคุณใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="140"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="149"/>
         <source>Create new token</source>
         <translation>สร้างโทเคนใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="143"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="152"/>
         <source>Feature status</source>
         <translation>สถานะฟีเจอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="147"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="156"/>
         <source>Speech to text and auto captions</source>
         <translation>ถอดเสียงเป็นข้อความและสร้างคำบรรยายอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="147"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="156"/>
         <source>OpenThai 2.0 for Thai, whisper.cpp for other languages</source>
         <translation>OpenThai 2.0 สำหรับภาษาไทย whisper.cpp สำหรับภาษาอื่น</translation>
     </message>
@@ -404,32 +414,32 @@
         <translation type="vanished">whisper.cpp — ภาษาไทยและอังกฤษ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="148"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="157"/>
         <source>Silence detection</source>
         <translation>ตรวจจับช่วงเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="148"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="157"/>
         <source>Highlight and remove silent passages</source>
         <translation>ไฮไลต์และตัดช่วงที่ไม่มีเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="149"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="158"/>
         <source>Smart cut suggestions</source>
         <translation>แนะนำจุดตัดอัจฉริยะ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="149"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="158"/>
         <source>Scene changes and audio activity</source>
         <translation>จุดเปลี่ยนฉากและความเคลื่อนไหวของเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="150"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="159"/>
         <source>Audio enhancement</source>
         <translation>ปรับปรุงคุณภาพเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="150"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="159"/>
         <source>Spectral noise reduction (signal processing, no neural model)</source>
         <translation>ลดเสียงรบกวนด้วยสเปกตรัม (การประมวลผลสัญญาณ ไม่ใช้โมเดลเครือข่ายประสาท)</translation>
     </message>
@@ -438,32 +448,32 @@
         <translation type="vanished">ลดเสียงรบกวนและเพิ่มความชัดของเสียงพูด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="151"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="160"/>
         <source>Object tracking</source>
         <translation>ติดตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="151"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="160"/>
         <source>Follow a subject across frames</source>
         <translation>ติดตามวัตถุข้ามเฟรม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="152"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="161"/>
         <source>Natural language assistant</source>
         <translation>ผู้ช่วยภาษาธรรมชาติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="152"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="161"/>
         <source>Typed commands from plain language</source>
         <translation>สั่งงานด้วยภาษาพูดทั่วไปแล้วแปลงเป็นคำสั่งที่ตรวจสอบได้</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="162"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="171"/>
         <source>Engine missing</source>
         <translation>ไม่พบเอนจิน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="167"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="176"/>
         <source>Model manager</source>
         <translation>ตัวจัดการโมเดล</translation>
     </message>
@@ -1930,12 +1940,12 @@
 <context>
     <name>EditorScreen</name>
     <message>
-        <location filename="../../src/ui/editor/EditorScreen.qml" line="252"/>
+        <location filename="../../src/ui/editor/EditorScreen.qml" line="274"/>
         <source>Timeline</source>
         <translation>ไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/EditorScreen.qml" line="252"/>
+        <location filename="../../src/ui/editor/EditorScreen.qml" line="274"/>
         <source>Mixer</source>
         <translation>มิกเซอร์</translation>
     </message>
@@ -4362,299 +4372,299 @@
 <context>
     <name>TimelinePanel</name>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="138"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="144"/>
         <source>Subtitle</source>
         <translation>ซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="154"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="160"/>
         <source>Import subtitles (.srt)</source>
         <translation>นำเข้าซับไตเติล (.srt)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="155"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="163"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="161"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="169"/>
         <source>SubRip subtitles (*.srt)</source>
         <translation>ซับไตเติล SubRip (*.srt)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="155"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="161"/>
         <source>All files (*)</source>
         <translation>ไฟล์ทั้งหมด (*)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="160"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="166"/>
         <source>Export subtitles (.srt)</source>
         <translation>ส่งออกซับไตเติล (.srt)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="212"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="218"/>
         <source>Rename marker</source>
         <translation>เปลี่ยนชื่อมาร์กเกอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="188"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="218"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="194"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="224"/>
         <source>Cancel</source>
         <translation>ยกเลิก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="193"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="219"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="199"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="225"/>
         <source>OK</source>
         <translation>ตกลง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="225"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="231"/>
         <source>Rename…</source>
         <translation>เปลี่ยนชื่อ…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="226"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="232"/>
         <source>Delete marker</source>
         <translation>ลบมาร์กเกอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="230"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="236"/>
         <source>Title</source>
         <translation>ชื่อเรื่อง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="231"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="237"/>
         <source>Lower third</source>
         <translation>แถบชื่อล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="232"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="238"/>
         <source>Caption</source>
         <translation>คำบรรยายภาพ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="234"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="240"/>
         <source>Subtitle at playhead</source>
         <translation>ซับไตเติลที่เพลย์เฮด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="235"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="241"/>
         <source>Import subtitles (.srt)…</source>
         <translation>นำเข้าซับไตเติล (.srt)…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="236"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="242"/>
         <source>Export subtitles (.srt)…</source>
         <translation>ส่งออกซับไตเติล (.srt)…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="238"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="251"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="244"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="257"/>
         <source>Add video track</source>
         <translation>เพิ่มแทร็กวิดีโอ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="239"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="252"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="245"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="258"/>
         <source>Add audio track</source>
         <translation>เพิ่มแทร็กเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="240"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="246"/>
         <source>Add subtitle track</source>
         <translation>เพิ่มแทร็กซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="253"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="259"/>
         <source>Remove track</source>
         <translation>ลบแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="246"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="252"/>
         <source>Lock / unlock</source>
         <translation>ล็อก / ปลดล็อก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="182"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="188"/>
         <source>Rename track</source>
         <translation>เปลี่ยนชื่อแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="204"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="210"/>
         <source>Delete this track?</source>
         <translation>ลบแทร็กนี้หรือไม่?</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="205"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="211"/>
         <source>The track still has clips. They are deleted together with the track, and this cannot be undone (the undo history is cleared).</source>
         <translation>แทร็กนี้ยังมีคลิปอยู่ คลิปจะถูกลบพร้อมกับแทร็ก และย้อนกลับไม่ได้ (ประวัติการย้อนกลับจะถูกล้าง)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="206"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="212"/>
         <source>Delete track</source>
         <translation>ลบแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="245"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="251"/>
         <source>Rename track…</source>
         <translation>เปลี่ยนชื่อแทร็ก…</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="247"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="253"/>
         <source>Compact track</source>
         <translation>แทร็กแบบย่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="248"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="254"/>
         <source>Normal height</source>
         <translation>ความสูงปกติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="249"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="255"/>
         <source>Tall track</source>
         <translation>แทร็กแบบสูง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="258"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="281"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="264"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="287"/>
         <source>Split at Playhead</source>
         <translation>แยกคลิปที่เพลย์เฮด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="259"/>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="282"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="265"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="288"/>
         <source>Delete</source>
         <translation>ลบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="260"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="266"/>
         <source>Ripple Delete</source>
         <translation>ลบและปิดช่องว่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="262"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="268"/>
         <source>Cut</source>
         <translation>ตัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="263"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="269"/>
         <source>Copy</source>
         <translation>คัดลอก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="264"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="270"/>
         <source>Paste at Playhead</source>
         <translation>วางที่เพลย์เฮด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="266"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="272"/>
         <source>Group</source>
         <translation>จัดกลุ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="267"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="273"/>
         <source>Ungroup</source>
         <translation>เลิกจัดกลุ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="276"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="282"/>
         <source>Timeline</source>
         <translation>ไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="279"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="285"/>
         <source>Undo</source>
         <translation>เลิกทำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="280"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="286"/>
         <source>Redo</source>
         <translation>ทำซ้ำ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="285"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="291"/>
         <source>Select</source>
         <translation>เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="285"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="291"/>
         <source>Ripple trim</source>
         <translation>ตัดแบบริปเปิล</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="286"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="292"/>
         <source>Roll edit</source>
         <translation>ม้วนจุดตัด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="286"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="292"/>
         <source>Slip</source>
         <translation>สลิป</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="286"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="292"/>
         <source>Slide</source>
         <translation>สไลด์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="298"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="304"/>
         <source>Add marker</source>
         <translation>เพิ่มมาร์กเกอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="299"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="305"/>
         <source>Add titles, subtitles and tracks</source>
         <translation>เพิ่มชื่อเรื่อง ซับไตเติล และแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="305"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="311"/>
         <source>Snapping</source>
         <translation>การดูดติด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="308"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="314"/>
         <source>Zoom out</source>
         <translation>ซูมออก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="315"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="321"/>
         <source>Timeline zoom</source>
         <translation>ซูมไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="317"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="323"/>
         <source>Zoom in</source>
         <translation>ซูมเข้า</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="320"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="326"/>
         <source>Fit timeline</source>
         <translation>พอดีกับไทม์ไลน์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="418"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="424"/>
         <source>Expand track</source>
         <translation>ขยายแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="418"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="424"/>
         <source>Collapse track</source>
         <translation>ย่อแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="463"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="469"/>
         <source>Video</source>
         <translation>วิดีโอ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="473"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="479"/>
         <source>Audio</source>
         <translation>เสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="635"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="641"/>
         <source>Drag media here to start editing</source>
         <translation>ลากสื่อมาวางที่นี่เพื่อเริ่มตัดต่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="644"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="650"/>
         <source>or double-click a media item to add it at the playhead.</source>
         <translation>หรือดับเบิลคลิกรายการสื่อเพื่อเพิ่มที่ตำแหน่งเพลย์เฮด</translation>
     </message>
@@ -4663,22 +4673,22 @@
         <translation type="vanished">รีเซ็ตการซูม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="349"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="355"/>
         <source>Tracks</source>
         <translation>แทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="430"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="436"/>
         <source>Toggle track visibility</source>
         <translation>สลับการแสดงแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="430"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="436"/>
         <source>Mute track</source>
         <translation>ปิดเสียงแทร็ก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/editor/TimelinePanel.qml" line="441"/>
+        <location filename="../../src/ui/editor/TimelinePanel.qml" line="447"/>
         <source>Lock track</source>
         <translation>ล็อกแทร็ก</translation>
     </message>
@@ -6062,9 +6072,109 @@
 <context>
     <name>dv::McpServer</name>
     <message>
-        <location filename="../../src/mcp/McpServer.cpp" line="211"/>
+        <location filename="../../src/mcp/McpServer.cpp" line="212"/>
         <source>Port %1 could not be opened: %2</source>
         <translation>เปิดพอร์ต %1 ไม่ได้: %2</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="353"/>
+        <source>Importing %1</source>
+        <translation>กำลังนำเข้า %1</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="356"/>
+        <source>Placing a clip on the timeline</source>
+        <translation>กำลังวางคลิปบนไทม์ไลน์</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="358"/>
+        <source>Moving a clip</source>
+        <translation>กำลังย้ายคลิป</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="360"/>
+        <source>Trimming a clip</source>
+        <translation>กำลังตัดแต่งความยาวคลิป</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="362"/>
+        <source>Cutting at frame %1</source>
+        <translation>กำลังตัดที่เฟรม %1</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="364"/>
+        <source>Deleting clips</source>
+        <translation>กำลังลบคลิป</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="366"/>
+        <source>Adding a subtitle</source>
+        <translation>กำลังเพิ่มคำบรรยาย</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="368"/>
+        <source>Adding a marker</source>
+        <translation>กำลังเพิ่มมาร์กเกอร์</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="370"/>
+        <source>Moving the playhead to frame %1</source>
+        <translation>กำลังย้ายหัวอ่านไปเฟรม %1</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="372"/>
+        <source>Undo</source>
+        <translation>ย้อนกลับ</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="372"/>
+        <source>Redo</source>
+        <translation>ทำซ้ำ</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="375"/>
+        <source>Saving the project</source>
+        <translation>กำลังบันทึกโปรเจกต์</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="379"/>
+        <source>Opening %1</source>
+        <translation>กำลังเปิด %1</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="379"/>
+        <source>Creating project %1</source>
+        <translation>กำลังสร้างโปรเจกต์ %1</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="384"/>
+        <source>Looking for silence</source>
+        <translation>กำลังหาช่วงเงียบ</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="385"/>
+        <source>Cutting the silent parts</source>
+        <translation>กำลังตัดช่วงเงียบ</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="386"/>
+        <source>Writing captions from speech</source>
+        <translation>กำลังถอดเสียงเป็นคำบรรยาย</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="386"/>
+        <source>Adding the captions</source>
+        <translation>กำลังเพิ่มคำบรรยาย</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="389"/>
+        <source>Checking the AI progress</source>
+        <translation>กำลังเช็กความคืบหน้าของ AI</translation>
+    </message>
+    <message>
+        <location filename="../../src/mcp/McpServer.cpp" line="391"/>
+        <source>Reading the project</source>
+        <translation>กำลังอ่านข้อมูลโปรเจกต์</translation>
     </message>
 </context>
 <context>

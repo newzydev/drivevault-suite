@@ -76,6 +76,7 @@ const QList<SettingsManager::Definition>& SettingsManager::definitions()
         def("mcpEnabled", Type::Bool, false),
         def("mcpPort", Type::Int, 38491, 1024, 65535),
         def("mcpToken", Type::String, ""),
+        def("mcpCursor", Type::Bool, true),         // show a virtual mouse cursor with a caption while an AI client works
         // Export
         def("exportFormat", Type::Choice, "mp4", {}, {}, {"mp4", "mov", "mkv", "m4a"}),
         def("exportRange", Type::Choice, "all", {}, {}, {"all", "inout"}),

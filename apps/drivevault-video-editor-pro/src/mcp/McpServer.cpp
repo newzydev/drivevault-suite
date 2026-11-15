@@ -12,6 +12,7 @@
 #include <QHostAddress>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QPointer>
 #include <QRandomGenerator>
 #include <QSet>
 #include <QTcpServer>
@@ -303,11 +304,94 @@ void McpServer::onReadyRead(QTcpSocket* socket)
         respond(socket, 405, R"({"error":"POST only"})", "application/json", "Allow: POST\r\n");
         return;
     }
+    // Show the AI "working" before the edit happens: the cursor moves first, the tool runs when it has arrived.
+    if (m_settings->get(QStringLiteral("mcpCursor")).toBool()) {
+        const QJsonObject request = QJsonDocument::fromJson(body).object();
+        if (request.value("method").toString() == QLatin1String("tools/call") && request.contains("id")) {
+            const QJsonObject params = request.value("params").toObject();
+            const int delay = announce(params.value("name").toString(), params.value("arguments").toObject());
+            if (delay > 0) {
+                m_buffers.remove(socket);
+                QPointer<QTcpSocket> guard(socket);
+                QTimer::singleShot(delay, this, [this, guard, body] {
+                    if (!guard || guard->state() != QAbstractSocket::ConnectedState)
+                        return;
+                    const QByteArray later = handleMessage(body);
+                    respond(guard, 200, later);
+                });
+                return;
+            }
+        }
+    }
     const QByteArray reply = handleMessage(body);
     if (reply.isEmpty())
         respond(socket, 202, {});
     else
         respond(socket, 200, reply);
+}
+
+// Tells the UI what a tool is about to do. Returns how long to wait (ms) so that the cursor can arrive before the edit; 0 = run at once.
+int McpServer::announce(const QString& name, const QJsonObject& args)
+{
+    QString target = QStringLiteral("none");
+    QString label;
+    qint64 frame = -1;
+    int row = -1;
+    int delay = 0;
+    const auto fileName = [&](const char* key) { return QFileInfo(args.value(QLatin1String(key)).toString()).fileName(); };
+    const auto num = [&](const char* key) { return args.contains(QLatin1String(key)) ? qint64(args.value(QLatin1String(key)).toDouble()) : qint64(-1); };
+    const auto edit = [&](const QString& text, qint64 at, int trackRow = -1) {
+        target = QStringLiteral("timeline");
+        label = text;
+        frame = at;
+        row = trackRow;
+        delay = 700;
+    };
+
+    if (name == QLatin1String("import_media")) {
+        target = QStringLiteral("media");
+        label = tr("Importing %1").arg(fileName("path"));
+        delay = 700;
+    } else if (name == QLatin1String("add_clip")) {
+        edit(tr("Placing a clip on the timeline"), num("start_frame"), args.contains("track_index") ? int(num("track_index")) : -1);
+    } else if (name == QLatin1String("move_clip")) {
+        edit(tr("Moving a clip"), num("start_frame"), args.contains("track_index") ? int(num("track_index")) : -1);
+    } else if (name == QLatin1String("trim_clip")) {
+        edit(tr("Trimming a clip"), args.contains("end_frame") ? num("end_frame") : num("start_frame"));
+    } else if (name == QLatin1String("split_at")) {
+        edit(tr("Cutting at frame %1").arg(num("frame")), num("frame"));
+    } else if (name == QLatin1String("delete_clips")) {
+        edit(tr("Deleting clips"), -1);
+    } else if (name == QLatin1String("add_subtitle")) {
+        edit(tr("Adding a subtitle"), num("start_frame"));
+    } else if (name == QLatin1String("add_marker")) {
+        edit(tr("Adding a marker"), num("frame"));
+    } else if (name == QLatin1String("set_playhead")) {
+        edit(tr("Moving the playhead to frame %1").arg(num("frame")), num("frame"));
+    } else if (name == QLatin1String("undo") || name == QLatin1String("redo")) {
+        edit(name == QLatin1String("undo") ? tr("Undo") : tr("Redo"), -1);
+    } else if (name == QLatin1String("save_project")) {
+        target = QStringLiteral("monitor");
+        label = tr("Saving the project");
+        delay = 500;
+    } else if (name == QLatin1String("open_project") || name == QLatin1String("create_project")) {
+        target = QStringLiteral("monitor");
+        label = name == QLatin1String("open_project") ? tr("Opening %1").arg(fileName("path")) : tr("Creating project %1").arg(args.value("name").toString());
+        delay = 700;
+    } else if (name == QLatin1String("detect_silence") || name == QLatin1String("apply_silence_cuts") || name == QLatin1String("transcribe")
+               || name == QLatin1String("apply_captions")) {
+        target = QStringLiteral("ai");
+        label = name == QLatin1String("detect_silence") ? tr("Looking for silence")
+                : name == QLatin1String("apply_silence_cuts") ? tr("Cutting the silent parts")
+                : name == QLatin1String("transcribe") ? tr("Writing captions from speech") : tr("Adding the captions");
+        delay = 700;
+    } else if (name == QLatin1String("get_ai_status")) {
+        label = tr("Checking the AI progress");
+    } else {
+        label = tr("Reading the project");      // get_project_info, list_*: only looks, nothing changes
+    }
+    emit agentAction(target, label, frame, row);
+    return delay;
 }
 
 // ---- JSON-RPC / MCP ---------------------------------------------------------------------------------------------------

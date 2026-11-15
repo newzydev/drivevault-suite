@@ -122,6 +122,15 @@ ColumnLayout {
         }
     }
     SettingRow {
+        title: qsTr("Show the AI cursor")
+        description: qsTr("While an assistant works, a mouse pointer moves to what it edits and says what it is doing. It only shows; it does not click for the assistant.")
+        AppSwitch {
+            objectName: "mcpCursorSwitch"
+            checked: AppSettings.values.mcpCursor
+            onToggled: AppSettings.set("mcpCursor", checked)
+        }
+    }
+    SettingRow {
         visible: Mcp.running
         title: qsTr("Claude Code")
         description: qsTr("Copy this command and run it once in a terminal. It contains your private token.")

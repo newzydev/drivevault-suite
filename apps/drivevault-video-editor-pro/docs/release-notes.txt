@@ -1,6 +1,12 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.16.0 (2026-11-15)
+--------------
+  - New: the AI cursor. While Claude Code / Codex works on the open project over MCP, a mouse pointer with a caption moves to what is being edited (the timeline at the frame and track, the Import or AI tab, the preview) and says what it is doing ("Cutting at frame 120", "Importing clip.mp4"). The tool runs a moment after the pointer has arrived. It only shows what the assistant does: it does not click for it, and reading tools (list_clips ...) only change the caption.
+  - Settings > AI > "Show the AI cursor" switches it off (on by default; it appears only while an MCP client is working).
+  - Note: the installers are not signed yet.
+
 Version 1.15.0 (2026-11-15)
 --------------
   - New: the installer now downloads the AI speech models while it installs the program: OpenThai 2.0 for Thai captions (about 2.6 GB), Whisper tiny and Whisper small, together with Whisper base that is part of the installer. It is a task on the "Ready to install" step (on by default; clear it to skip). Each file comes from a fixed revision and is checked against its SHA-256; a failed or cancelled download, or too little disk space, installs the program without the models and says so. Silent installs (Master Pro, scripts) never download. The models are removed again when the program is uninstalled.

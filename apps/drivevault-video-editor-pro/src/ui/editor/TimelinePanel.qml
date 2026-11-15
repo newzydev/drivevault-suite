@@ -39,6 +39,12 @@ Rectangle {
         }
         return Projects.tracks.count      // below the last track
     }
+    // Window position of a frame on a track row (-1 = not specific: the middle of the lanes); used by the AI cursor.
+    function agentPoint(frame, row) {
+        const x = frame >= 0 ? Math.max(8, Math.min(lanes.width - 8, frame * pxPerFrame - lanes.contentX)) : lanes.width / 2
+        const y = row >= 0 && row < Projects.tracks.count ? topOf(row) + heightOf(row) / 2 - lanes.contentY : lanes.height / 2
+        return lanes.mapToItem(null, x, Math.max(8, Math.min(lanes.height - 8, y)))
+    }
     readonly property int fps: Math.max(1, Projects.nominalFps)
     // the addressable timeline: at least 10 minutes, and a quarter more than the project (the width in pixels stays small enough to be exact)
     readonly property int totalFrames: Math.max(fps * 60 * 10, Math.ceil(tl.durationFrames * 1.25) + fps * 120)

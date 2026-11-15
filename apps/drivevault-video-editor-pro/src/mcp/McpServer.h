@@ -55,6 +55,9 @@ public:
 
 signals:
     void statusChanged();
+    // The AI is about to run a tool: the UI shows a virtual mouse cursor that moves to `target` ("timeline" | "media" | "ai" | "monitor" | "none")
+    // with a caption saying what happens. `frame` / `trackRow` place it on the timeline (-1 = not specific). Only emitted when the setting mcpCursor is on.
+    void agentAction(const QString& target, const QString& label, qint64 frame, int trackRow);
 
 private:
     using ToolFn = std::function<QJsonObject(const QJsonObject&)>;
@@ -70,6 +73,7 @@ private:
     void addTool(const QString& name, const QString& description, const QJsonObject& properties, const QStringList& required, bool readOnly, ToolFn run);
     QJsonObject callTool(const QString& name, const QJsonObject& args);
     QJsonObject handleRequest(const QJsonObject& request, bool* isNotification);
+    int announce(const QString& name, const QJsonObject& args);
 
     void onNewConnection();
     void onReadyRead(QTcpSocket* socket);

@@ -72,6 +72,28 @@ Rectangle {
         applyWorkspaceLayout()
     }
 
+    // Where the AI cursor goes for a tool (window coordinates), or null when it should stay where it is. Opens the tab / panel the tool works in.
+    function agentPoint(target, frame, trackRow) {
+        if (App.workspace === "export")
+            return null
+        if (target === "timeline") {
+            if (!showTimeline)
+                return null
+            if (bottomTab !== "timeline")
+                selectBottomTab("timeline")
+            return timelinePanel.agentPoint(frame, trackRow)
+        }
+        if (target === "media" || target === "ai") {
+            if (!showMedia)
+                return null
+            toolPanel.selectTab(target === "media" ? "import" : "ai")
+            return toolPanel.mapToItem(null, toolPanel.width / 2, Math.min(toolPanel.height / 2, 120))
+        }
+        if (target === "monitor")
+            return monitorPanel.mapToItem(null, monitorPanel.width / 2, monitorPanel.height / 2)
+        return null
+    }
+
     function zoomBy(factor) {
         pxPerFrame = timelinePanel.clampZoom(pxPerFrame * factor)
     }

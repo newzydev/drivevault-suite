@@ -31,6 +31,7 @@ qt_add_qml_module(dv_ui
         components/AppMenuItem.qml
         components/AppMenuSeparator.qml
         components/ToastHost.qml
+        components/AgentCursor.qml
         components/EmptyState.qml
         components/StatusBadge.qml
         components/PanelHeader.qml
