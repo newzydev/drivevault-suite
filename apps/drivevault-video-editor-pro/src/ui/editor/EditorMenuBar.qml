@@ -40,11 +40,8 @@ Rectangle {
         anchors.rightMargin: 10
         spacing: 6
 
-        Logo { size: 24; Layout.alignment: Qt.AlignVCenter }
-
         MenuBar {
             id: menuBar
-            Layout.leftMargin: 6
             implicitHeight: 32
             background: Item {}
 
@@ -252,6 +249,5 @@ Rectangle {
         Item { Layout.fillWidth: true }
 
         IconButton { objectName: "menuSave"; iconName: "save"; tip: qsTr("Save") + "  (Ctrl+S)"; enabled: Projects.dirty; onClicked: root.saveRequested() }
-        IconButton { iconName: "sliders"; tip: qsTr("Settings") + "  (Ctrl+,)"; onClicked: App.settingsOpen = true }
     }
 }

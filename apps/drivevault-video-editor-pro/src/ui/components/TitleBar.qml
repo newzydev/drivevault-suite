@@ -118,6 +118,7 @@ Rectangle {
             onClicked: titleMenu.visible ? titleMenu.close() : titleMenu.popup(width - titleMenu.implicitWidth, height + 6)
             AppMenu {
                 id: titleMenu
+                implicitWidth: 360      // wide enough for the Thai "About DriveVault Video Editor Pro" line (it was cut off at 240)
                 AppMenuItem { objectName: "menuSettings"; text: qsTr("Settings…"); shortcutText: "Ctrl+,"; onTriggered: bar.settingsRequested() }
                 AppMenuItem { objectName: "menuAbout"; text: qsTr("About DriveVault Video Editor Pro"); shortcutText: "F1"; onTriggered: bar.aboutRequested() }
             }
