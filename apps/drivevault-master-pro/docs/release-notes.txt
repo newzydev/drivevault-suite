@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.12.1 (2026-11-15): Gear icon
+  - The menu button in the title bar now shows a gear instead of three dots (the same gear in all DriveVault programs). It opens the same menu.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.12.0 (2026-11-15): Modes of the agent
   - New: the agent page has a Mode menu under the message box: Read only (look and answer), Plan (look, then write a plan of the steps; nothing is changed), Ask first (the default: every file change is shown to you - path, size, a preview of the content - and is made only if you press Allow; "Don't allow" tells the AI so) and Accept edits (changes are made without asking; a file that is replaced is first saved in .drivevault-backup).
   - The page shows "Waiting for your answer" while a change waits; Stop ends it. No mode lets the AI run programs or delete files.

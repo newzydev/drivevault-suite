@@ -62,19 +62,25 @@ Canvas {
             ctx.bezierCurveTo(14, 21, 18, 19, 19.5, 15)
             ctx.stroke()
             break
-        case "settings":
+        case "settings": {
+            // eight teeth between two radii (on the 24 x 24 grid) and a hub
+            const toRad = Math.PI / 180
+            const rIn = 7, rOut = 9.6
+            const at = (r, a) => [12 + r * Math.cos(a * toRad), 12 + r * Math.sin(a * toRad)]
             ctx.beginPath()
-            for (let i = 0; i < 32; ++i) {
-                const angle = i * Math.PI / 16
-                const radius = i % 4 === 0 || i % 4 === 3 ? 7.5 : 9.5
-                const x = 12 + radius * Math.cos(angle), y = 12 + radius * Math.sin(angle)
-                if (i === 0) ctx.moveTo(x, y)
-                else ctx.lineTo(x, y)
+            for (let k = 0; k < 8; ++k) {
+                const a = k * 45 - 90
+                const pts = [at(rIn, a - 13), at(rOut, a - 8), at(rOut, a + 8), at(rIn, a + 13)]
+                if (k === 0) ctx.moveTo(pts[0][0], pts[0][1])
+                else ctx.arc(12, 12, rIn, (a - 45 + 13) * toRad, (a - 13) * toRad, false)
+                ctx.lineTo(pts[0][0], pts[0][1])
+                ctx.lineTo(pts[1][0], pts[1][1]); ctx.lineTo(pts[2][0], pts[2][1]); ctx.lineTo(pts[3][0], pts[3][1])
             }
+            ctx.arc(12, 12, rIn, (-90 - 45 + 13 + 360) * toRad, (-90 - 13 + 360) * toRad, false)
             ctx.closePath(); ctx.stroke()
             ctx.beginPath(); ctx.arc(12, 12, 3, 0, Math.PI * 2); ctx.stroke()
             break
-        case "info":
+        }        case "info":
             ctx.beginPath(); ctx.arc(12, 12, 9, 0, Math.PI * 2); ctx.stroke()
             ctx.beginPath(); ctx.arc(12, 8, 0.9, 0, Math.PI * 2); ctx.fill()
             strokePath([[12, 11], [12, 16]])

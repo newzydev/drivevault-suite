@@ -1,6 +1,11 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.16.1 (2026-11-15)
+--------------
+  - The menu button in the title bar now shows a gear instead of three dots (the same gear in all DriveVault programs). It opens the same menu (Settings, About).
+  - Note: the installer is not code-signed yet, so Windows SmartScreen may warn.
+
 Version 1.16.0 (2026-11-15)
 --------------
   - New: the AI cursor. While Claude Code / Codex works on the open project over MCP, a mouse pointer with a caption moves to what is being edited (the timeline at the frame and track, the Import or AI tab, the preview) and says what it is doing ("Cutting at frame 120", "Importing clip.mp4"). The tool runs a moment after the pointer has arrived. It only shows what the assistant does: it does not click for it, and reading tools (list_clips ...) only change the caption.

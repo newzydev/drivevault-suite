@@ -68,9 +68,8 @@ Rectangle {
             Layout.rightMargin: 4
             leftPadding: 0
             rightPadding: 0
-            labelPixelSize: 18
             cornerRadius: 9
-            text: "⋯"
+            glyph: "settings"
             tip: Tr.s("moreOptions")
             onClicked: titleMenu.visible ? titleMenu.close() : titleMenu.popup(width - titleMenu.width, height + 6)
             PMenu {

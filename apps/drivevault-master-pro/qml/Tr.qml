@@ -19,6 +19,7 @@ QtObject {
         "ai_title_ask": ["What would you like to know?", "อยากรู้อะไร ถามได้เลย"],
         "ai_title_agent": ["What should we work on?", "วันนี้จะทำงานอะไรกัน"],
         "ai_sub_ask": ["Questions and answers, running on your own PC. It can look things up on the web when you allow it.", "ถามตอบด้วยโมเดลที่รันในเครื่องของคุณเอง ค้นเว็บได้เมื่อคุณอนุญาต"],
+        "moreOptions": ["Settings and more", "ตั้งค่าและอื่นๆ"],
         "ai_sub_agent": ["An AI on your PC that reads, searches and (if you allow it) edits the files of a folder, and can look things up on the web.", "เอไอในเครื่องของคุณที่อ่าน ค้นหา และ (ถ้าอนุญาต) แก้ไฟล์ในโฟลเดอร์ และค้นเว็บได้"],
         "mode_label": ["Mode", "โหมด"],
         "mode_read": ["Read only", "อ่านอย่างเดียว"],

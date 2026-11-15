@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import DriveVault.Backend
 
 // The title bar of the window, the same as in DriveVault Master Pro and PDF Pro: the brand at the left (drag it to move the window, double click to
-// maximize / restore), the language switch, one "more" menu, and the window buttons. The window has no Windows frame (Qt.FramelessWindowHint).
+// maximize / restore), the language switch, one gear menu (settings, about), and the window buttons. The window has no Windows frame (Qt.FramelessWindowHint).
 Rectangle {
     id: bar
 
@@ -112,8 +112,7 @@ Rectangle {
             implicitHeight: 32
             leftPadding: 0
             rightPadding: 0
-            text: "⋯"
-            font.pixelSize: 18
+            iconName: "settings"
             tip: qsTr("More options")
             onClicked: titleMenu.visible ? titleMenu.close() : titleMenu.popup(width - titleMenu.implicitWidth, height + 6)
             AppMenu {

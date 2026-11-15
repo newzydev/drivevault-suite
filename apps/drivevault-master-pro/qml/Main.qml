@@ -262,8 +262,8 @@ ApplicationWindow {
                     Layout.preferredWidth: 34
                     Layout.rightMargin: 4
                     leftPadding: 0; rightPadding: 0
-                    text: "⋯"
-                    font.pixelSize: 18
+                    Accessible.name: Tr.s("moreOptions")
+                    GearIcon { anchors.centerIn: parent; size: 18; color: Theme.text }
                     onClicked: topMenu.visible ? topMenu.close() : topMenu.popup(width - topMenu.implicitWidth, height + 6)
                     MMenu {
                         id: topMenu

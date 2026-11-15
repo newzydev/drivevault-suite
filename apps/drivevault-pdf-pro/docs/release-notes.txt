@@ -2,6 +2,10 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.19.1 (2026-11-15): Gear icon
+  - The menu button in the title bar now shows a gear instead of three dots (the same gear in all DriveVault programs). It opens the same menu (theme, settings, about).
+  - Note: the installer is not code-signed yet, so Windows SmartScreen may warn.
+
 v1.19.0 (2026-11-15): AI assistant for questions and summaries
   - New: the "AI" tab of the side panel answers questions about the open document and summarises it with a language model that runs on this computer (llama.cpp Vulkan engine with CPU fallback, Qwen3.5-4B). Answers name the pages they come from; a long document is summarised part by part; the assistant only reads and never changes the document. Nothing leaves the computer.
   - The model (2.7 GB, Apache-2.0) is not in the installer: the setup offers to download it (SHA-256 checked; silent installs never download), or press Download in the panel. Answers can be wrong: check the pages named.
