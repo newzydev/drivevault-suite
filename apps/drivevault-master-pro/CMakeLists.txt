@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultMasterPro
-    VERSION 1.10.0
+    VERSION 1.11.0
     DESCRIPTION "DriveVault Master Pro - installs, launches and updates the DriveVault programs"
     LANGUAGES CXX)
 
@@ -25,15 +25,15 @@ configure_file(src/Version.h.in ${CMAKE_BINARY_DIR}/generated/Version.h @ONLY)
 
 # ---- backend (also used by the tests) ----------------------------------------------------------------------
 add_library(master_core STATIC src/Hub.cpp src/Hub.h src/WinUtil.cpp src/WinUtil.h src/Releases.cpp src/Releases.h
-    src/ai/Streams.cpp src/ai/Streams.h src/ai/HttpChat.cpp src/ai/HttpChat.h src/ai/CliChat.cpp src/ai/CliChat.h
+    src/ai/Streams.cpp src/ai/Streams.h src/ai/HttpChat.cpp src/ai/HttpChat.h
     src/ai/ProcessUtil.cpp src/ai/ProcessUtil.h src/ai/LlamaServer.cpp src/ai/LlamaServer.h
     src/ai/ModelDownloader.cpp src/ai/ModelDownloader.h src/ai/ModelStore.cpp src/ai/ModelStore.h
-    src/ai/SecretStore.cpp src/ai/SecretStore.h src/ai/AiService.cpp src/ai/AiService.h
+    src/ai/AiService.cpp src/ai/AiService.h
     src/ai/AgentTools.cpp src/ai/AgentTools.h src/ai/LocalAgent.cpp src/ai/LocalAgent.h src/ai/WebTools.cpp src/ai/WebTools.h)
 target_include_directories(master_core PUBLIC src src/ai ${CMAKE_BINARY_DIR}/generated)
 target_link_libraries(master_core PUBLIC Qt6::Core Qt6::Gui Qt6::Network Qt6::Qml)
 if(WIN32)
-    target_link_libraries(master_core PUBLIC shell32 version advapi32 user32 crypt32)
+    target_link_libraries(master_core PUBLIC shell32 version advapi32 user32)
 endif()
 
 # ---- application ------------------------------------------------------------------------------------------------

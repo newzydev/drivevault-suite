@@ -20,14 +20,14 @@ private:
     QByteArray m_buffer;
 };
 
-// What one event of a streaming reply means: some text, the end of the answer, or an error.
+// What one event of a streaming reply means: some text, the model thinking (its reasoning is not shown), the end of the answer, or an error.
 struct StreamPiece {
     QString text;
+    bool thinking = false;
     bool done = false;
     QString error;
 };
 
-StreamPiece readOpenAiEvent(const SseEvent& event);       // OpenAI style: choices[0].delta.content, "[DONE]", {"error": {...}}
-StreamPiece readAnthropicEvent(const SseEvent& event);    // Anthropic: content_block_delta / text_delta, message_stop, error
+StreamPiece readOpenAiEvent(const SseEvent& event);       // OpenAI style (llama-server): choices[0].delta.content / reasoning_content, "[DONE]", {"error": {...}}
 
 } // namespace dm::ai

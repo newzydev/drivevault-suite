@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.11.0 (2026-11-15): Only the model on this PC; model and effort in the chat
+  - Changed: the AI pages now use ONLY the model on this PC. The API (OpenAI style, Anthropic), Claude Code and Codex are gone, together with the API keys: nothing of them is left in the program or its settings. A conversation you already had is kept.
+  - New: the message box has a model menu (the models installed on this PC, and "Manage models...") and an effort menu: Quick (no reasoning, short answers, few steps), Normal, Deep (the model reasons before it answers, about 3 times slower, the page says "Thinking..."). The effort is remembered for each page.
+  - A model is chosen for you when none is chosen yet (Qwen3.5 4B first).
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.10.0 (2026-11-15): Local first: the model on this PC does the work, searches the web, and the installer downloads it
   - New: the model on this PC is now the first choice and the default of both AI pages. On the Agentic AI page it works as a real agent in the folder you choose: it looks at the files (list, read, search) and, only if you allow "can edit files", writes files (a file that is replaced is first saved in .drivevault-backup). It cannot run programs or delete anything, and a path can never leave the folder.
   - New: the AI can search the web (DuckDuckGo) and open a page to read it, on both pages, when "Web" is on (switch in the AI settings and a chip under the message box; on by default, switch it off to stay offline). Only the search words and the address of a page go out; your files and conversation do not. Pages on this computer or the local network are never opened.

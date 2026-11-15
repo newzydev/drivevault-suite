@@ -30,6 +30,8 @@ public:
         QString system;
         QList<QPair<QString, QString>> history;            // user / assistant messages, oldest first, the last is the new question
         int maxSteps = 12;
+        bool thinking = false;                             // let the model reason first (slower, better on hard questions)
+        int maxTokens = 0;                                 // 0 = the server default
     };
 
     explicit LocalAgent(QNetworkAccessManager* net, QObject* parent = nullptr);

@@ -31,13 +31,13 @@ the last program is gone it can be uninstalled and removes the suite folder if i
 
 ## AI pages (since version 1.8.0)
 
-The tabs **AI Q&A** and **Agentic AI** talk to a real AI, chosen in the settings of each page (nothing is sent anywhere until you choose one and press Send):
+The tabs **AI Q&A** and **Agentic AI** use a language model that runs **on your own PC** (llama.cpp with a GGUF model from Hugging Face). There is no API key, no account and no other AI. Nothing is sent anywhere unless you turn the web on and the AI searches (see below).
 
-* **Model on this PC** (the first choice and the default; the installer downloads Qwen3.5-4B for you, about 2.7 GB, unless you clear that task) - llama.cpp with a GGUF model from Hugging Face. On the Agentic AI page it works as an agent in a folder you choose (list / read / search files; write files only if you allow it, with a backup of what it replaces) and, with the "Web" switch on, both pages can search the web (DuckDuckGo) and read a page: only the search words and the page address go out. Choose one of the catalogue (Qwen3.5 0.8B / 2B / 4B / 9B, each downloaded only when you press Download, checked against a fixed size and SHA-256) or paste a `huggingface.co` link to a `.gguf` file (Check asks Hugging Face for its size and checksum; nothing is downloaded until you press Download). Everything stays on this computer. The engine (llama.cpp, Vulkan build) is part of the Master Pro installer (`ailama`); the page says so if it is missing.
-* **API** - an OpenAI style service (OpenAI, OpenRouter, Ollama, LM Studio ...) or Anthropic, with your own key (kept encrypted for your Windows user, sent only to the address you set, https or this computer).
-* **Claude Code / Codex** - the easy way: the program you already have and are signed in to (a subscription account cannot be used directly by other programs). Master Pro starts it with fixed options and gives it the question on its standard input; it never sees your password. The agent works in the folder you choose, **read only** unless you allow it to edit files, and cannot run commands.
+* **The model** - the installer downloads Qwen3.5-4B for you (about 2.7 GB; clear that task to skip it). In the AI settings you can download others from the catalogue (Qwen3.5 0.8B / 2B / 4B / 9B and the Thai-focused Typhoon 2.5, each only when you press Download, checked against a fixed size and SHA-256) or paste a `huggingface.co` link to a `.gguf` file (Check asks Hugging Face for its size and checksum; nothing is downloaded until you press Download). The engine (llama.cpp, Vulkan build) is part of the Master Pro installer (`ai\llama`).
 
-Conversations are saved in `%LOCALAPPDATA%\DriveVault\MasterPro\ai`. Known limits: Codex is tested with a stand-in only; the answers are only as good as the model you choose (a 4B model on a laptop is a small model).
+* **In the chat** - under the message box you choose the model and the **effort**: *Quick* (no reasoning, short answers), *Normal*, or *Deep* (the model reasons before it answers, about 3 times slower). On the Agentic AI page the AI works in a folder you choose: it can list, read and search files, and write files only if you allow it (a replaced file is first saved in `.drivevault-backup`); it cannot run programs or delete anything. With the **Web** switch on (the default) it can search the web (DuckDuckGo) and read a page: only the search words and the page address go out, never your files or the conversation.
+
+Conversations are saved in `%LOCALAPPDATA%\DriveVault\MasterPro\ai`. Known limits: the web search uses DuckDuckGo's HTML page, which may change; the answers are only as good as the model you choose (a 4B model on a laptop is a small model); the Thai-focused Typhoon model has not been tested here.
 
 ## Build, run, test
 
@@ -56,6 +56,6 @@ refusal while a program is installed, uninstall, empty-folder clean-up) is teste
 
 ## Status
 
-VERSION 1.10.0 (the installer downloads a model, the local AI can search the web and works in a folder; the llama.cpp engine is in the installer; the AI Q&A and Agentic AI pages work: local model, API key or Claude Code / Codex; tabs at the top; "Check for updates" in the search bar). Not code-signed (`package.ps1 -Sign` uses the shared signing script). Not tested on a separate clean PC / VM,
+VERSION 1.11.0 (the AI pages use only the model on this PC, with a model menu and an effort level in the chat; the installer downloads a model and carries the llama.cpp engine; the local AI can search the web and works in a folder; tabs at the top; "Check for updates" in the search bar). Not code-signed (`package.ps1 -Sign` uses the shared signing script). Not tested on a separate clean PC / VM,
 and the all-users path under `C:\Program Files` needs administrator rights and was not run by the automated tests (the per-user path was). `LICENSE.txt` and the installer licence pages are the drafted EULA generated from `shared/legal`
 (not yet reviewed by a lawyer).

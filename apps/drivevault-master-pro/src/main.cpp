@@ -34,8 +34,8 @@ int main(int argc, char* argv[])
     QCommandLineOption size(QStringLiteral("size"), QStringLiteral("Window size WxH for --screenshot."), QStringLiteral("WxH"));
     QCommandLineOption list(QStringLiteral("list-products"), QStringLiteral("Write the programs found on this PC as JSON to <file> and exit (diagnostics, installer tests)."), QStringLiteral("file"));
     QCommandLineOption tab(QStringLiteral("tab"), QStringLiteral("Tab shown first: programs, ask or agent (diagnostics, --screenshot)."), QStringLiteral("name"));
-    QCommandLineOption aiSettings(QStringLiteral("ai-settings"), QStringLiteral("Open the AI settings of the shown AI tab for this provider: local, openai, anthropic, claude or codex (diagnostics, --screenshot)."), QStringLiteral("provider"));
-    parser.addOptions({dataDir, lang, registry, shot, size, list, tab, aiSettings});
+    QCommandLineOption aiView(QStringLiteral("ai-view"), QStringLiteral("Open a part of the shown AI tab: settings, model (the model menu) or effort (the effort menu) (diagnostics, --screenshot)."), QStringLiteral("part"));
+    parser.addOptions({dataDir, lang, registry, shot, size, list, tab, aiView});
     parser.process(app);
 
     for (const char* font : {":/qt/qml/DriveVault/Master/resources/fonts/Inter-Variable.ttf",
@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
         return listFile.open(QIODevice::WriteOnly) && listFile.write(QJsonDocument(out).toJson()) > 0 ? 0 : 2;
     }
 
-    dm::ai::AiService ai(&hub, nullptr, !parser.isSet(shot));
+    dm::ai::AiService ai(&hub);
     QQmlApplicationEngine engine;
     qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Hub", &hub);
     qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Ai", &ai);
@@ -73,8 +73,8 @@ int main(int argc, char* argv[])
 
     if (parser.isSet(tab) && QStringList{QStringLiteral("programs"), QStringLiteral("ask"), QStringLiteral("agent")}.contains(parser.value(tab)))
         engine.rootObjects().constFirst()->setProperty("tab", parser.value(tab));
-    if (parser.isSet(aiSettings))
-        engine.rootObjects().constFirst()->setProperty("diagnosticProvider", parser.value(aiSettings));
+    if (parser.isSet(aiView))
+        engine.rootObjects().constFirst()->setProperty("diagnosticView", parser.value(aiView));
     if (parser.isSet(shot)) {
         auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst());
         if (parser.isSet(size) && window) {

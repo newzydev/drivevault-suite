@@ -16,6 +16,17 @@ Item {
     signal tabPicked(string key)
 
     function openSettings() { settings.open() }
+    // diagnostics only: show the settings or a menu (for a screenshot)
+    function showDiagnostic(part) {
+        if (part === "settings")
+            settings.open()
+        else if (part === "model")
+            modelMenu.popup(modelChip, 0, -modelMenu.implicitHeight - 6)
+        else if (part === "effort")
+            effortMenu.popup(effortChip, 0, -effortMenu.implicitHeight - 6)
+    }
+    function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : "ai_writing") }
+    readonly property string modelLabel: Ai.localModelName === "" ? Tr.s("ai_model_none") : Ai.localModelName.replace(/\.gguf$/i, "")
     function why(code) { return Tr.s("why_" + code) }
     // the text of an error of a reply: what happened, in words, plus what the service said
     function errorText(code, detail) {
@@ -28,8 +39,6 @@ Item {
             text = Tr.s("err_failed")
         if (detail && detail !== "")
             text += "\n" + detail
-        if (/authenticat|log ?in|sign ?in|expired/i.test(detail || ""))
-            text += "\n" + Tr.s("err_login")
         return text
     }
     function send() {
@@ -44,6 +53,41 @@ Item {
         onAccepted: root.ch.setFolder(selectedFolder.toString())
     }
     AiSettingsDialog { id: settings; channel: root.ch; agent: root.agent }
+
+    // the model of this PC to use
+    MMenu {
+        id: modelMenu
+        implicitWidth: 340
+        Repeater {
+            model: Ai.installedModels
+            delegate: MMenuItem {
+                required property var modelData
+                objectName: "modelItem"
+                text: modelData.name.replace(/\.gguf$/i, "") + "   (" + modelData.sizeText + ")"
+                checkable: true
+                checked: Ai.localModel === modelData.path
+                onTriggered: Ai.selectLocalModel(modelData.path)
+            }
+        }
+        MenuSeparator { padding: 4; contentItem: Rectangle { implicitHeight: 1; color: Theme.border } }
+        MMenuItem { objectName: "modelManage"; text: Tr.s("ai_model_manage"); onTriggered: settings.open() }
+    }
+    // how hard it tries
+    MMenu {
+        id: effortMenu
+        implicitWidth: 520
+        Repeater {
+            model: ["low", "medium", "high"]
+            delegate: MMenuItem {
+                required property string modelData
+                objectName: "effort_" + modelData
+                text: Tr.s("effort_" + modelData) + "  -  " + Tr.s("effort_" + modelData + "_hint")
+                checkable: true
+                checked: root.ch.effort === modelData
+                onTriggered: root.ch.setEffort(modelData)
+            }
+        }
+    }
 
     // small parts
     component Chip: Rectangle {
@@ -166,7 +210,7 @@ Item {
                         Text {
                             objectName: "aiStatus"
                             Layout.fillWidth: true
-                            text: root.ch.provider === "" ? Tr.s("prov_none") : Tr.s("prov_" + root.ch.provider) + (root.ready ? "" : " - " + Tr.s("ai_not_ready"))
+                            text: root.ready ? root.modelLabel : Tr.s("ai_not_ready")
                             font.pixelSize: 13
                             color: Theme.textSecondary
                             elide: Text.ElideRight
@@ -189,7 +233,7 @@ Item {
                     Layout.topMargin: 14
                     spacing: 10
                     Text { text: Tr.s(root.agent ? "ai_new_agent" : "ai_new_ask"); font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.text }
-                    Chip { text: root.ch.provider === "" ? Tr.s("prov_none") : Tr.s("prov_" + root.ch.provider) }
+                    Chip { text: root.modelLabel }
                     Item { Layout.fillWidth: true }
                     MButton { objectName: "aiSettings"; compact: true; text: Tr.s("ai_settings"); onClicked: settings.open() }
                 }
@@ -270,7 +314,7 @@ Item {
                             }
                             Text {
                                 visible: !msg.isUser && msg.modelData.streaming && msg.modelData.text === ""
-                                text: root.ch.status === "starting" ? Tr.s("ai_starting") : Tr.s("ai_writing")
+                                text: root.statusText(root.ch.status)
                                 font.pixelSize: 13
                                 color: Theme.textSecondary
                             }
@@ -447,8 +491,23 @@ Item {
                                 onClicked: folderDialog.open()
                             }
                             Chip {
+                                id: modelChip
+                                objectName: "aiModel"
+                                clickable: true
+                                enabled: !root.ch.busy
+                                text: root.modelLabel + "  ▾"
+                                onClicked: modelMenu.popup(modelChip, 0, -modelMenu.implicitHeight - 6)
+                            }
+                            Chip {
+                                id: effortChip
+                                objectName: "aiEffort"
+                                clickable: true
+                                enabled: !root.ch.busy
+                                text: Tr.s("effort_label") + ": " + Tr.s("effort_" + root.ch.effort) + "  ▾"
+                                onClicked: effortMenu.popup(effortChip, 0, -effortMenu.implicitHeight - 6)
+                            }
+                            Chip {
                                 objectName: "aiWeb"
-                                visible: root.ch.provider === "local"
                                 clickable: true
                                 enabled: !root.ch.busy
                                 text: Tr.s(Ai.webEnabled ? "ai_web_on" : "ai_web_off")
@@ -464,7 +523,7 @@ Item {
                             }
                             Text {
                                 Layout.fillWidth: true
-                                text: root.ch.busy ? (root.ch.status === "starting" ? Tr.s("ai_starting") : Tr.s("ai_writing")) : ""
+                                text: root.ch.busy ? root.statusText(root.ch.status) : ""
                                 font.pixelSize: 12
                                 color: Theme.accent
                                 elide: Text.ElideRight
@@ -495,11 +554,11 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 20
                     spacing: 10
-                    SideTitle { text: Tr.s(root.agent ? "ai_side_folder" : "ai_side_provider") }
+                    SideTitle { text: Tr.s(root.agent ? "ai_side_folder" : "ai_side_model") }
                     Text {
                         Layout.fillWidth: true
                         text: root.agent ? (root.ch.folder === "" ? Tr.s("ai_folder_none") : root.ch.folder)
-                                         : (root.ch.provider === "" ? Tr.s("prov_none") : Tr.s("prov_" + root.ch.provider))
+                                         : root.modelLabel
                         font.pixelSize: 13
                         color: Theme.text
                         wrapMode: Text.WrapAnywhere
@@ -507,7 +566,7 @@ Item {
                     SideTitle { Layout.topMargin: 14; text: Tr.s("ai_side_privacy") }
                     Text {
                         Layout.fillWidth: true
-                        text: Tr.s("privacy_" + (root.ch.provider === "" ? "none" : root.ch.provider === "local" && Ai.webEnabled ? "local_web" : root.ch.provider))
+                        text: Tr.s(Ai.webEnabled ? "privacy_local_web" : "privacy_local")
                         font.pixelSize: 13
                         color: Theme.textSecondary
                         wrapMode: Text.Wrap

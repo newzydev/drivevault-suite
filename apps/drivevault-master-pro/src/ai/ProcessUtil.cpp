@@ -1,7 +1,6 @@
 #include "ProcessUtil.h"
 
 #include <QProcess>
-#include <QStandardPaths>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -50,9 +49,5 @@ void killWithThisProgram(QProcess* process)
 #endif
 }
 
-QString findOnPath(const QString& name)
-{
-    return QStandardPaths::findExecutable(name);
-}
 
 } // namespace dm::ai

@@ -81,7 +81,9 @@ void LocalAgent::step()
         for (const QJsonValue& v : WebTools::specs())
             tools.append(v);
     QJsonObject body{{"model", m_config.model}, {"messages", m_messages}, {"tools", tools}, {"stream", false},
-                     {"chat_template_kwargs", QJsonObject{{"enable_thinking", false}}}};
+                     {"chat_template_kwargs", QJsonObject{{"enable_thinking", m_config.thinking}}}};
+    if (m_config.maxTokens > 0)
+        body["max_tokens"] = m_config.maxTokens;
     QNetworkRequest req{QUrl(m_config.baseUrl + QStringLiteral("/chat/completions"))};
     req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
     if (!m_config.apiKey.isEmpty())

@@ -3,35 +3,19 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import DriveVault.Master.Backend
 
-// The settings of an AI page: which AI it uses (a local model, an API, Claude Code or Codex) and what that AI needs. Everything here is saved on this PC;
-// an API key is stored encrypted for this Windows user. Nothing is downloaded until a Download button is pressed.
+// The settings of the AI pages (both use the model on this PC): the web switch, the engine, the models and their download. Everything here is saved on this
+// PC. Nothing is downloaded until a Download button is pressed.
 Popup {
     id: dlg
 
     property var channel
     property bool agent: false
-    readonly property string provider: channel ? channel.provider : ""
 
-    // the fields start from the saved values each time the window opens
-    property string openaiBase: ""
-    property string openaiModel: ""
-    property string openaiKey: ""
-    property string anthropicModel: ""
-    property string anthropicKey: ""
     property string notice: ""
     property string modelLink: ""
 
-    function load() {
-        openaiBase = Ai.openai.baseUrl
-        openaiModel = Ai.openai.model
-        openaiKey = ""
-        anthropicModel = Ai.anthropic.model
-        anthropicKey = ""
-        notice = ""
-        Ai.detectPrograms()
-    }
+    function load() { notice = "" }
     function say(text) { notice = text; noticeTimer.restart() }
-    function sizeOf(x) { return x }
 
     parent: Overlay.overlay
     anchors.centerIn: parent
@@ -82,45 +66,12 @@ Popup {
                 width: scroll.availableWidth - 18
                 spacing: 8
 
-                // ---- which AI this page uses -----------------------------------------------------------------------------------
-                Heading { text: Tr.s(dlg.agent ? "set_provider_agent" : "set_provider_ask"); Layout.topMargin: 4 }
-                Flow {
-                    Layout.fillWidth: true
-                    spacing: 8
-                    Repeater {
-                        model: dlg.channel ? dlg.channel.providers : []
-                        delegate: AbstractButton {
-                            id: pbtn
-                            required property string modelData
-                            objectName: "provider_" + modelData
-                            readonly property bool picked: dlg.provider === modelData
-                            hoverEnabled: true
-                            implicitHeight: 36
-                            implicitWidth: ptext.implicitWidth + 32
-                            onClicked: dlg.channel.setProvider(modelData)
-                            HoverHandler { cursorShape: Qt.PointingHandCursor }
-                            contentItem: Text {
-                                id: ptext
-                                text: Tr.s("prov_" + pbtn.modelData)
-                                font.pixelSize: 13
-                                font.weight: Font.DemiBold
-                                color: pbtn.picked ? Theme.readableOn(Theme.accent) : Theme.text
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
-                            background: Rectangle { radius: 18; color: pbtn.picked ? Theme.accent : pbtn.hovered ? Theme.surfaceHover : Theme.surface; border.width: 1; border.color: pbtn.picked ? Theme.accent : Theme.border }
-                        }
-                    }
-                }
-                Note { text: Tr.s("set_provider_hint"); visible: dlg.provider === "" }
-                Note { text: Tr.s("privacy_" + (dlg.provider === "local" && Ai.webEnabled ? "local_web" : dlg.provider)); visible: dlg.provider !== "" }
-
                 // ---- a model on this computer ----------------------------------------------------------------------------------------
                 ColumnLayout {
-                    visible: dlg.provider === "local"
                     Layout.fillWidth: true
                     spacing: 8
 
+                    Note { text: Tr.s(Ai.webEnabled ? "privacy_local_web" : "privacy_local") }
                     Heading { text: Tr.s("set_web") }
                     Card {
                         RowLayout {
@@ -242,90 +193,6 @@ Popup {
                         Text { visible: Ai.downloadMessage !== ""; Layout.fillWidth: true; text: Ai.downloadMessage; font.pixelSize: 12; color: Theme.errorSoft; wrapMode: Text.Wrap }
                     }
                     Note { text: Tr.s("set_models_folder") + "  " + Ai.modelsFolder }
-                }
-
-                // ---- an API: OpenAI style ------------------------------------------------------------------------------------------------
-                ColumnLayout {
-                    visible: dlg.provider === "openai"
-                    Layout.fillWidth: true
-                    spacing: 8
-                    Heading { text: Tr.s("set_api_address") }
-                    MField { objectName: "openaiBase"; Layout.fillWidth: true; text: dlg.openaiBase; onTextEdited: dlg.openaiBase = text; placeholderText: "https://api.openai.com/v1" }
-                    Flow {
-                        Layout.fillWidth: true
-                        spacing: 6
-                        Repeater {
-                            model: [ { n: "OpenAI", u: "https://api.openai.com/v1" }, { n: "OpenRouter", u: "https://openrouter.ai/api/v1" },
-                                     { n: "Ollama", u: "http://localhost:11434/v1" }, { n: "LM Studio", u: "http://localhost:1234/v1" } ]
-                            delegate: AbstractButton {
-                                id: preset
-                                required property var modelData
-                                hoverEnabled: true
-                                implicitHeight: 28
-                                implicitWidth: presetText.implicitWidth + 24
-                                onClicked: dlg.openaiBase = modelData.u
-                                HoverHandler { cursorShape: Qt.PointingHandCursor }
-                                contentItem: Text { id: presetText; text: preset.modelData.n; font.pixelSize: 12; color: Theme.textSecondary; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                                background: Rectangle { radius: 14; color: preset.hovered ? Theme.surfaceHover : "transparent"; border.width: 1; border.color: Theme.border }
-                            }
-                        }
-                    }
-                    Heading { text: Tr.s("set_api_model") }
-                    MField { objectName: "openaiModel"; Layout.fillWidth: true; text: dlg.openaiModel; onTextEdited: dlg.openaiModel = text; placeholderText: Tr.s("set_api_model_ph") }
-                    Heading { text: Tr.s("set_api_key") }
-                    MField { objectName: "openaiKey"; Layout.fillWidth: true; secret: true; text: dlg.openaiKey; onTextEdited: dlg.openaiKey = text
-                             placeholderText: Ai.openai.keySet ? Tr.s("set_key_saved") : Tr.s("set_key_ph") }
-                    Note { text: Tr.s("set_key_note") }
-                    RowLayout {
-                        spacing: 8
-                        MButton { objectName: "openaiSave"; variant: "primary"; text: Tr.s("set_save"); onClicked: { Ai.setOpenAi(dlg.openaiBase, dlg.openaiModel, dlg.openaiKey); dlg.openaiKey = ""; dlg.say(Tr.s("set_saved")) } }
-                        MButton { visible: Ai.openai.keySet; text: Tr.s("set_clear_key"); onClicked: { Ai.clearKey("openai"); dlg.say(Tr.s("set_saved")) } }
-                    }
-                }
-
-                // ---- an API: Anthropic ---------------------------------------------------------------------------------------------------
-                ColumnLayout {
-                    visible: dlg.provider === "anthropic"
-                    Layout.fillWidth: true
-                    spacing: 8
-                    Heading { text: Tr.s("set_api_model") }
-                    MField { objectName: "anthropicModel"; Layout.fillWidth: true; text: dlg.anthropicModel; onTextEdited: dlg.anthropicModel = text; placeholderText: "claude-sonnet-5-5" }
-                    Heading { text: Tr.s("set_api_key") }
-                    MField { objectName: "anthropicKey"; Layout.fillWidth: true; secret: true; text: dlg.anthropicKey; onTextEdited: dlg.anthropicKey = text
-                             placeholderText: Ai.anthropic.keySet ? Tr.s("set_key_saved") : "sk-ant-…" }
-                    Note { text: Tr.s("set_key_note") }
-                    RowLayout {
-                        spacing: 8
-                        MButton { objectName: "anthropicSave"; variant: "primary"; text: Tr.s("set_save"); onClicked: { Ai.setAnthropic(dlg.anthropicModel, dlg.anthropicKey); dlg.anthropicKey = ""; dlg.say(Tr.s("set_saved")) } }
-                        MButton { visible: Ai.anthropic.keySet; text: Tr.s("set_clear_key"); onClicked: { Ai.clearKey("anthropic"); dlg.say(Tr.s("set_saved")) } }
-                    }
-                }
-
-                // ---- Claude Code / Codex ---------------------------------------------------------------------------------------------------
-                ColumnLayout {
-                    visible: dlg.provider === "claude" || dlg.provider === "codex"
-                    Layout.fillWidth: true
-                    spacing: 8
-                    Heading { text: Tr.s("set_program") }
-                    Card {
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-                            Rectangle { width: 8; height: 8; radius: 4; color: Ai.cli[dlg.provider] && Ai.cli[dlg.provider].found ? Theme.success : Theme.warning }
-                            Text {
-                                Layout.fillWidth: true
-                                text: Ai.cli[dlg.provider] && Ai.cli[dlg.provider].found
-                                      ? Ai.cli[dlg.provider].path + (Ai.cli[dlg.provider].version !== "" ? "\n" + Ai.cli[dlg.provider].version : "")
-                                      : Tr.s("why_noProgram")
-                                font.pixelSize: 13
-                                color: Theme.text
-                                wrapMode: Text.WrapAnywhere
-                            }
-                            MButton { compact: true; text: Tr.s("set_check_again"); onClicked: Ai.detectPrograms() }
-                        }
-                    }
-                    Note { text: Tr.s("set_signin_" + dlg.provider) }
-                    Note { text: Tr.s("set_program_note") }
                 }
             }
         }

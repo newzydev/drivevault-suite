@@ -40,7 +40,7 @@ QString HttpChat::endpoint(const Request& r)
     QString base = r.baseUrl.trimmed();
     while (base.endsWith(QLatin1Char('/')))
         base.chop(1);
-    return base + (r.kind == Kind::OpenAi ? QStringLiteral("/chat/completions") : QStringLiteral("/v1/messages"));
+    return base + QStringLiteral("/chat/completions");
 }
 
 QByteArray HttpChat::body(const Request& r)
@@ -49,16 +49,11 @@ QByteArray HttpChat::body(const Request& r)
     o["model"] = r.model;
     o["stream"] = true;
     QJsonArray messages;
-    if (r.kind == Kind::OpenAi && !r.system.isEmpty())
+    if (!r.system.isEmpty())
         messages.append(QJsonObject{{"role", "system"}, {"content", r.system}});
     for (const auto& m : r.messages)
         messages.append(QJsonObject{{"role", m.first}, {"content", m.second}});
     o["messages"] = messages;
-    if (r.kind == Kind::Anthropic) {
-        o["max_tokens"] = r.maxTokens;
-        if (!r.system.isEmpty())
-            o["system"] = r.system;
-    }
     for (auto it = r.extraBody.begin(); it != r.extraBody.end(); ++it)
         o[it.key()] = it.value();
     return QJsonDocument(o).toJson(QJsonDocument::Compact);
@@ -73,21 +68,18 @@ QString HttpChat::start(const Request& r)
         return QStringLiteral("badUrl");
     if (!urlAllowed(url))
         return QStringLiteral("insecureUrl");
-    m_kind = r.kind;
     m_parser = SseParser();
     m_errorBody.clear();
     m_streamError.clear();
     m_sawText = false;
     m_done = false;
     m_cancelled = false;
+    m_thinkingSignalled = false;
 
     QNetworkRequest req{QUrl(url)};
     req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
     req.setRawHeader("Accept", "text/event-stream");
-    if (r.kind == Kind::Anthropic) {
-        req.setRawHeader("x-api-key", r.apiKey.toUtf8());
-        req.setRawHeader("anthropic-version", "2023-06-01");
-    } else if (!r.apiKey.isEmpty()) {
+    if (!r.apiKey.isEmpty()) {
         req.setRawHeader("Authorization", "Bearer " + r.apiKey.toUtf8());
     }
     req.setTransferTimeout(120000);          // two minutes without any data
@@ -116,7 +108,11 @@ void HttpChat::onReadyRead()
         return;
     }
     for (const SseEvent& event : m_parser.feed(data)) {
-        const StreamPiece p = m_kind == Kind::OpenAi ? readOpenAiEvent(event) : readAnthropicEvent(event);
+        const StreamPiece p = readOpenAiEvent(event);
+        if (p.thinking && !m_thinkingSignalled) {
+            m_thinkingSignalled = true;
+            emit thinking();
+        }
         if (!p.error.isEmpty())
             m_streamError = p.error;
         if (!p.text.isEmpty()) {

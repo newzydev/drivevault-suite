@@ -13,23 +13,18 @@ class QNetworkReply;
 
 namespace dm::ai {
 
-// One streaming chat request to a model that speaks HTTP: an OpenAI style server (OpenAI, OpenRouter, Ollama, LM Studio, the local llama-server) or the
-// Anthropic API. The text arrives piece by piece. The key travels only in the Authorization / x-api-key header of this one request, and only to https
-// (or to this computer for http): a key is never sent in clear text over a network.
+// One streaming chat request to the local model (llama-server, OpenAI style). The text arrives piece by piece. Only https, or http to this computer, is
+// allowed (`urlAllowed`).
 class HttpChat : public QObject {
     Q_OBJECT
 public:
-    enum class Kind { OpenAi, Anthropic };
-
     struct Request {
-        Kind kind = Kind::OpenAi;
-        QString baseUrl;                                  // OpenAi: ends before /chat/completions (e.g. https://api.openai.com/v1). Anthropic: https://api.anthropic.com
-        QString apiKey;                                   // may be empty (a local server)
+        QString baseUrl;                                  // ends before /chat/completions (e.g. http://127.0.0.1:12345/v1)
+        QString apiKey;                                   // may be empty
         QString model;
         QString system;
         QList<QPair<QString, QString>> messages;          // role (user | assistant), text; oldest first
-        int maxTokens = 4096;
-        QJsonObject extraBody;                            // merged into the body (e.g. chat_template_kwargs for the local server)
+        QJsonObject extraBody;                            // merged into the body (chat_template_kwargs, max_tokens ...)
     };
 
     explicit HttpChat(QNetworkAccessManager* net, QObject* parent = nullptr);
@@ -47,6 +42,7 @@ public:
 
 signals:
     void piece(const QString& text);
+    void thinking();                                      // the model started to reason (its reasoning is not shown)
     void finished(bool ok, const QString& code, const QString& detail);    // code: "" | cancelled | http<status> | network | stream | empty
 
 private:
@@ -55,13 +51,13 @@ private:
 
     QNetworkAccessManager* m_net;
     QNetworkReply* m_reply = nullptr;
-    Kind m_kind = Kind::OpenAi;
     SseParser m_parser;
     QByteArray m_errorBody;
     QString m_streamError;
     bool m_sawText = false;
     bool m_done = false;
     bool m_cancelled = false;
+    bool m_thinkingSignalled = false;
 };
 
 } // namespace dm::ai

@@ -3,13 +3,11 @@
 #include "Hub.h"
 #include "ai/AgentTools.h"
 #include "ai/AiService.h"
-#include "ai/CliChat.h"
 #include "ai/LocalAgent.h"
 #include "ai/WebTools.h"
 #include "ai/HttpChat.h"
 #include "ai/ModelDownloader.h"
 #include "ai/ModelStore.h"
-#include "ai/SecretStore.h"
 #include "ai/Streams.h"
 
 #include <QCryptographicHash>
@@ -156,10 +154,9 @@ private slots:
         QCOMPARE(o.text, QString("Hi"));
         QVERIFY(readOpenAiEvent({QString(), "[DONE]"}).done);
         QCOMPARE(readOpenAiEvent({QString(), R"({"error":{"message":"bad key"}})"}).error, QString("bad key"));
-        auto a = readAnthropicEvent({"content_block_delta", R"({"type":"content_block_delta","delta":{"type":"text_delta","text":"Yo"}})"});
-        QCOMPARE(a.text, QString("Yo"));
-        QVERIFY(readAnthropicEvent({"message_stop", "{}"}).done);
-        QVERIFY(!readAnthropicEvent({"error", R"({"error":{"message":"overloaded"}})"}).error.isEmpty());
+        auto t = readOpenAiEvent({QString(), R"({"choices":[{"delta":{"reasoning_content":"hmm"}}]})"});
+        QVERIFY(t.thinking && t.text.isEmpty());                            // the model is reasoning: nothing to show
+        QVERIFY(!readOpenAiEvent({QString(), R"({"choices":[{"delta":{"content":"Hi"}}]})"}).thinking);
     }
 
     // ---- HTTP chat ----------------------------------------------------------------------------------------------------------------
@@ -183,29 +180,6 @@ private slots:
         QVERIFY(b.value("stream").toBool());
         QCOMPARE(b.value("messages").toArray().size(), 4);               // system + 3
         QCOMPARE(b.value("messages").toArray().first().toObject().value("role").toString(), QString("system"));
-    }
-    void anthropicRequestAndAnswer()
-    {
-        FakeServer server;
-        server.body = "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Bonjour\"}}\n\n"
-                      "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n";
-        HttpChat::Request r;
-        r.kind = HttpChat::Kind::Anthropic;
-        r.baseUrl = server.base();
-        r.apiKey = "ak-test";
-        r.model = "claude-x";
-        r.system = "sys";
-        r.messages = {{"user", "salut"}};
-        const HttpResult res = runHttp(r);
-        QVERIFY2(res.ok, qPrintable(res.code + res.detail));
-        QCOMPARE(res.text, QString("Bonjour"));
-        QVERIFY(server.lastRequest.startsWith("POST /v1/messages"));
-        QVERIFY(server.lastRequest.toLower().contains("x-api-key: ak-test"));
-        QVERIFY(server.lastRequest.toLower().contains("anthropic-version: 2023-06-01"));
-        const QJsonObject b = requestBody(server.lastRequest);
-        QCOMPARE(b.value("system").toString(), QString("sys"));
-        QVERIFY(b.value("max_tokens").toInt() > 0);
-        QCOMPARE(b.value("messages").toArray().size(), 1);               // the system text is not a message
     }
     void httpErrorsAreReported()
     {
@@ -241,155 +215,6 @@ private slots:
     }
 
     // ---- command line programs ------------------------------------------------------------------------------------------------------
-    void cliOptionsAreFixed()
-    {
-        CliChat::Request r;
-        r.tool = CliChat::Tool::Claude;
-        QStringList a = CliChat::arguments(r);
-        QVERIFY(a.contains("-p") && a.contains("--restricted"));
-        QCOMPARE(a.at(a.indexOf("--permission-mode") + 1), QString("plan"));
-        r.allowEdits = true;
-        a = CliChat::arguments(r);
-        QCOMPARE(a.at(a.indexOf("--permission-mode") + 1), QString("acceptEdits"));
-        QVERIFY(!a.contains("--dangerously-skip-permissions"));
-        r.sessionId = "11111111-2222-3333-4444-555555555555";
-        QVERIFY(CliChat::arguments(r).contains("--resume"));
-        r.sessionId = "x & calc.exe";                                     // never goes on a command line
-        QVERIFY(!CliChat::arguments(r).contains("--resume"));
-        r.tool = CliChat::Tool::Codex;
-        r.allowEdits = false;
-        a = CliChat::arguments(r);
-        QCOMPARE(a.first(), QString("exec"));
-        QCOMPARE(a.at(a.indexOf("-s") + 1), QString("read-only"));
-        QCOMPARE(a.last(), QString("-"));                                 // the prompt comes on stdin
-    }
-    void cliEventsAreRead()
-    {
-        bool streamed = false;
-        auto ev = CliChat::readLine(CliChat::Tool::Claude, R"({"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"A"}}})", &streamed);
-        QCOMPARE(ev.size(), 1);
-        QCOMPARE(ev.first().text, QString("A"));
-        QVERIFY(streamed);
-        ev = CliChat::readLine(CliChat::Tool::Claude, R"({"type":"assistant","message":{"content":[{"type":"text","text":"A"},{"type":"tool_use","name":"Read","input":{"file_path":"C:\\x\\a.txt"}}]}})", &streamed);
-        QCOMPARE(ev.size(), 1);                                          // the text was streamed already: only the tool is new
-        QVERIFY(ev.first().activity.startsWith("Read: "));
-        QVERIFY(!streamed);
-        ev = CliChat::readLine(CliChat::Tool::Claude, R"({"type":"result","is_error":true,"result":"Not logged in","session_id":"s"})", &streamed);
-        QCOMPARE(ev.first().error, QString("Not logged in"));
-        QVERIFY(ev.first().done);
-        ev = CliChat::readLine(CliChat::Tool::Codex, R"({"type":"item.completed","item":{"type":"agent_message","text":"Done"}})", &streamed);
-        QCOMPARE(ev.first().text, QString("Done"));
-        QVERIFY(ev.first().textIsWhole);
-        QVERIFY(CliChat::readLine(CliChat::Tool::Codex, "not json", &streamed).isEmpty());
-    }
-    void cliRunsThroughTheStandIn()
-    {
-        const QString exe = QStringLiteral(FAKE_CLI_PATH);
-        const QString argsFile = m_dir.filePath("args.txt");
-        qputenv("DM_FAKE_ARGS", argsFile.toUtf8());
-
-        // the question arrives on stdin, never on the command line
-        qputenv("DM_FAKE_MODE", "echo");
-        {
-            CliChat chat;
-            QString text;
-            connect(&chat, &CliChat::piece, [&](const QString& t) { text += t; });
-            QSignalSpy done(&chat, &CliChat::finished);
-            CliChat::Request r;
-            r.executable = exe;
-            r.workDir = m_dir.path();
-            r.prompt = "hello & echo pwned \"quoted\"\nsecond line";
-            QCOMPARE(chat.start(r), QString());
-            QVERIFY(done.wait(10000));
-            QVERIFY(done.at(0).at(0).toBool());
-            QCOMPARE(text, r.prompt);
-            QFile f(argsFile);
-            QVERIFY(f.open(QIODevice::ReadOnly));
-            QVERIFY(!f.readAll().contains("pwned"));
-        }
-        // a whole turn: pieces, a break between text blocks, the tool as activity, the session id
-        qputenv("DM_FAKE_MODE", "claude-ok");
-        {
-            CliChat chat;
-            QString text, session;
-            QStringList activity;
-            connect(&chat, &CliChat::piece, [&](const QString& t) { text += t; });
-            connect(&chat, &CliChat::activity, [&](const QString& a) { activity << a; });
-            connect(&chat, &CliChat::sessionId, [&](const QString& s) { session = s; });
-            QSignalSpy done(&chat, &CliChat::finished);
-            CliChat::Request r;
-            r.executable = exe;
-            r.workDir = m_dir.path();
-            r.prompt = "go";
-            QCOMPARE(chat.start(r), QString());
-            QVERIFY(done.wait(10000));
-            QVERIFY(done.at(0).at(0).toBool());
-            QCOMPARE(text, QString("Hello\n\nWorld"));
-            QCOMPARE(activity, QStringList{"Read: notes.txt"});
-            QCOMPARE(session, QString("11111111-2222-3333-4444-555555555555"));
-        }
-        // an error of the program (not signed in)
-        qputenv("DM_FAKE_MODE", "claude-error");
-        {
-            CliChat chat;
-            QSignalSpy done(&chat, &CliChat::finished);
-            CliChat::Request r;
-            r.executable = exe;
-            r.workDir = m_dir.path();
-            r.prompt = "go";
-            QCOMPARE(chat.start(r), QString());
-            QVERIFY(done.wait(10000));
-            QVERIFY(!done.at(0).at(0).toBool());
-            QCOMPARE(done.at(0).at(1).toString(), QString("failed"));
-            QCOMPARE(done.at(0).at(2).toString(), QString("Not logged in"));
-        }
-        // Codex events
-        qputenv("DM_FAKE_MODE", "codex-ok");
-        {
-            CliChat chat;
-            QString text;
-            connect(&chat, &CliChat::piece, [&](const QString& t) { text += t; });
-            QSignalSpy done(&chat, &CliChat::finished);
-            CliChat::Request r;
-            r.tool = CliChat::Tool::Codex;
-            r.executable = exe;
-            r.workDir = m_dir.path();
-            r.prompt = "go";
-            QCOMPARE(chat.start(r), QString());
-            QVERIFY(done.wait(10000));
-            QVERIFY(done.at(0).at(0).toBool());
-            QCOMPARE(text, QString("Done."));
-        }
-        // cancel kills the program
-        qputenv("DM_FAKE_MODE", "hang");
-        {
-            CliChat chat;
-            QSignalSpy done(&chat, &CliChat::finished);
-            CliChat::Request r;
-            r.executable = exe;
-            r.workDir = m_dir.path();
-            r.prompt = "go";
-            QCOMPARE(chat.start(r), QString());
-            QTest::qWait(300);
-            QVERIFY(chat.running());
-            chat.cancel();
-            QVERIFY(done.wait(10000));
-            QCOMPARE(done.at(0).at(1).toString(), QString("cancelled"));
-        }
-        // a missing program or folder is refused before anything starts
-        {
-            CliChat chat;
-            CliChat::Request r;
-            r.executable = m_dir.filePath("nothing.exe");
-            r.workDir = m_dir.path();
-            QCOMPARE(chat.start(r), QString("noProgram"));
-            r.executable = exe;
-            r.workDir = m_dir.filePath("no-such-folder");
-            QCOMPARE(chat.start(r), QString("noFolder"));
-        }
-        qunsetenv("DM_FAKE_MODE");
-        qunsetenv("DM_FAKE_ARGS");
-    }
 
     // ---- history ------------------------------------------------------------------------------------------------------------------
     void historyMergesAndCaps()
@@ -404,8 +229,6 @@ private slots:
         h = AiChannel::historyFor(list, 4);                               // only the newest fits; it must be a question
         QCOMPARE(h.size(), 1);
         QCOMPARE(h.first().second, QString("q3"));
-        const QString t = AiChannel::transcriptFor(list);
-        QVERIFY(t.contains("Conversation so far") && t.endsWith("q3"));
     }
 
     // ---- models ------------------------------------------------------------------------------------------------------------------
@@ -541,9 +364,8 @@ private slots:
         o.registryRoot = kRoot;
         o.dataDir = m_dir.filePath("hub-real");
         dm::Hub hub(o);
-        AiService ai(&hub, nullptr, false);
+        AiService ai(&hub);
         auto* ask = qobject_cast<AiChannel*>(ai.ask());
-        ask->setProvider("local");
         ai.selectLocalModel(model);
         QCOMPARE(ask->notReady(), QString());
         QCOMPARE(ask->send("Which programs are in the DriveVault suite? Answer in one short sentence."), QString());
@@ -758,11 +580,8 @@ private slots:
         o.registryRoot = kRoot;
         o.dataDir = m_dir.filePath("hub4");
         dm::Hub hub(o);
-        AiService ai(&hub, nullptr, false);
+        AiService ai(&hub);
         auto* agent = qobject_cast<AiChannel*>(ai.agent());
-        QCOMPARE(agent->provider(), QString("local"));                    // the model on this PC is the default of both pages
-        QCOMPARE(qobject_cast<AiChannel*>(ai.ask())->provider(), QString("local"));
-        QVERIFY(agent->providers().contains("local"));
         ai.selectLocalModel(m_dir.filePath("fake-model.gguf"));
         ai.llama()->useExternalServer(server.base(), "");
         QCOMPARE(agent->notReady(), QString("noFolder"));
@@ -779,6 +598,239 @@ private slots:
         QCOMPARE(reply.value("activity").toStringList(), QStringList({"List"}));
         // the Q&A page without web and folder is a plain chat (no tools in the request)
         QCOMPARE(requestBody(server.log.at(0)).value("tools").toArray().size(), 3);
+    }
+
+    // ---- the pages: model, effort, conversations ---------------------------------------------------------------------------------------
+    void effortLevelsChangeWhatTheModelMayDo()
+    {
+        const Effort low = Effort::of("low"), medium = Effort::of("medium"), high = Effort::of("high");
+        QVERIFY(!low.thinking && !medium.thinking && high.thinking);              // only "high" lets the model reason first
+        QVERIFY(low.maxTokens < medium.maxTokens && medium.maxTokens < high.maxTokens);
+        QVERIFY(low.maxSteps < medium.maxSteps && medium.maxSteps < high.maxSteps);
+        QCOMPARE(Effort::of("nonsense").id, QString("medium"));                  // an unknown name is the normal level
+        QCOMPARE(Effort::ids(), QStringList({"low", "medium", "high"}));
+    }
+    void aChatSendsItsEffortToTheModel()
+    {
+        FakeServer server;
+        server.body = sse({R"({"choices":[{"delta":{"reasoning_content":"let me think"}}]})", R"({"choices":[{"delta":{"content":"42"}}]})", "[DONE]"});
+        QFile model(m_dir.filePath("effort-model.gguf"));
+        QVERIFY(model.open(QIODevice::WriteOnly));
+        model.write("x");
+        model.close();
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hub-effort");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        if (!ai.engineFound())
+            QSKIP("no llama.cpp engine on this PC");
+        auto* ask = qobject_cast<AiChannel*>(ai.ask());
+        QCOMPARE(ask->effort(), QString("medium"));                              // the default
+        ai.selectLocalModel(m_dir.filePath("effort-model.gguf"));
+        ai.llama()->useExternalServer(server.base(), "");
+        ai.setWebEnabled(false);                                                  // a plain chat: one streamed request
+        QStringList statuses;
+        connect(ask, &AiChannel::busyChanged, [&] { statuses << ask->status(); });
+        for (const QString& level : {QString("low"), QString("medium"), QString("high")}) {
+            ask->setEffort(level);
+            QCOMPARE(ask->effort(), level);
+            QCOMPARE(ask->send("question " + level), QString());
+            QTRY_VERIFY_WITH_TIMEOUT(!ask->busy(), 10000);
+            const QJsonObject body = requestBody(server.lastRequest);
+            const Effort e = Effort::of(level);
+            QCOMPARE(body.value("chat_template_kwargs").toObject().value("enable_thinking").toBool(), e.thinking);
+            QCOMPARE(body.value("max_tokens").toInt(), e.maxTokens);
+            QVERIFY(!body.contains("tools"));
+        }
+        QVERIFY2(statuses.contains("thinking"), qPrintable(statuses.join(",")));      // the reasoning was announced, not shown
+        const QVariantList msgs = ask->messages();
+        QCOMPARE(msgs.last().toMap().value("text").toString(), QString("42"));
+        QVERIFY(!msgs.last().toMap().value("text").toString().contains("think"));
+        ask->setEffort("bogus");
+        QCOMPARE(ask->effort(), QString("medium"));
+    }
+    void theModelIsChosenAndRemembered()
+    {
+        const QString dataDir = m_dir.filePath("hub-model");
+        QDir().mkpath(dataDir + "/models");
+        for (const char* name : {"Qwen3.5-4B-Q4_K_M.gguf", "other-model.gguf"}) {
+            QFile f(dataDir + "/models/" + name);
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(QByteArray(1500000, 'm'));
+        }
+        {
+            dm::Hub::Options o;
+            o.registryRoot = kRoot;
+            o.dataDir = dataDir;
+            dm::Hub hub(o);
+            AiService ai(&hub);
+            QCOMPARE(ai.localModelName(), QString("Qwen3.5-4B-Q4_K_M.gguf"));    // nothing chosen yet: the tested default is picked
+            QVERIFY(ai.installedModels().size() >= 2);
+            ai.selectLocalModel(dataDir + "/models/other-model.gguf");
+            QCOMPARE(ai.localModelName(), QString("other-model.gguf"));
+            ai.selectLocalModel(dataDir + "/models/missing.gguf");                // a file that is not there is not chosen
+            ai.selectLocalModel(dataDir + "/models/readme.txt");
+            QCOMPARE(ai.localModelName(), QString("other-model.gguf"));
+            auto* agent = qobject_cast<AiChannel*>(ai.agent());
+            agent->setEffort("high");
+            agent->setFolder(m_dir.path());
+        }
+        {   // a new start: the choice comes back
+            dm::Hub::Options o;
+            o.registryRoot = kRoot;
+            o.dataDir = dataDir;
+            dm::Hub hub(o);
+            AiService ai(&hub);
+            QCOMPARE(ai.localModelName(), QString("other-model.gguf"));
+            auto* agent = qobject_cast<AiChannel*>(ai.agent());
+            QCOMPARE(agent->effort(), QString("high"));
+            QCOMPARE(agent->folder(), QDir::cleanPath(m_dir.path()));
+            QCOMPARE(qobject_cast<AiChannel*>(ai.ask())->effort(), QString("medium"));       // each page has its own level
+        }
+    }
+    void aConversationRunsAndIsSaved()
+    {
+        FakeServer server;
+        server.body = sse({R"({"choices":[{"delta":{"content":"Answer one"}}]})", "[DONE]"});
+        QFile model(m_dir.filePath("conv-model.gguf"));
+        QVERIFY(model.open(QIODevice::WriteOnly));
+        model.write("x");
+        model.close();
+        const QString dataDir = m_dir.filePath("hub-conv");
+        QString firstId;
+        {
+            dm::Hub::Options o;
+            o.registryRoot = kRoot;
+            o.dataDir = dataDir;
+            dm::Hub hub(o);
+            AiService ai(&hub);
+            if (!ai.engineFound())
+                QSKIP("no llama.cpp engine on this PC");
+            auto* ask = qobject_cast<AiChannel*>(ai.ask());
+            const QString first = ask->notReady();                                  // this PC may or may not have a model already
+            QVERIFY(first == "" || first == "noModel");
+            ai.selectLocalModel(m_dir.filePath("conv-model.gguf"));
+            ai.llama()->useExternalServer(server.base(), "");
+            ai.setWebEnabled(false);
+            QCOMPARE(ask->notReady(), QString());
+            QCOMPARE(ask->send("  "), QString("empty"));
+            QCOMPARE(ask->send("What is Master Pro?"), QString());
+            QCOMPARE(ask->send("again"), QString("busy"));
+            QTRY_VERIFY_WITH_TIMEOUT(!ask->busy(), 10000);
+            const QVariantList msgs = ask->messages();
+            QCOMPARE(msgs.size(), 2);
+            QCOMPARE(msgs.at(1).toMap().value("text").toString(), QString("Answer one"));
+            QVERIFY(!msgs.at(1).toMap().value("streaming").toBool());
+            QCOMPARE(msgs.at(1).toMap().value("errorCode").toString(), QString());
+            // the system prompt knows the suite
+            QVERIFY(requestBody(server.lastRequest).value("messages").toArray().first().toObject().value("content").toString().contains("DriveVault"));
+            QCOMPARE(ask->conversations().size(), 1);
+            firstId = ask->currentId();
+            QVERIFY(!firstId.isEmpty());
+            // the agent page has its own conversations
+            QCOMPARE(qobject_cast<AiChannel*>(ai.agent())->conversations().size(), 0);
+            // the settings file has no key or anything of the removed providers
+            QFile f(dataDir + "/ai/settings.json");
+            QVERIFY(f.open(QIODevice::ReadOnly));
+            const QByteArray settings = f.readAll();
+            QVERIFY(!settings.contains("openai") && !settings.contains("anthropic") && !settings.contains("key"));
+        }
+        {   // a new start: the conversation comes back
+            dm::Hub::Options o;
+            o.registryRoot = kRoot;
+            o.dataDir = dataDir;
+            dm::Hub hub(o);
+            AiService ai(&hub);
+            auto* ask = qobject_cast<AiChannel*>(ai.ask());
+            QCOMPARE(ask->conversations().size(), 1);
+            ask->select(firstId);
+            QCOMPARE(ask->messages().size(), 2);
+            ask->remove(firstId);
+            QCOMPARE(ask->conversations().size(), 0);
+        }
+    }
+    void anErrorStaysInTheConversation()
+    {
+        FakeServer server;
+        server.status = 500;
+        server.contentType = "application/json";
+        server.body = R"({"error":{"message":"model crashed"}})";
+        QFile model(m_dir.filePath("err-model.gguf"));
+        QVERIFY(model.open(QIODevice::WriteOnly));
+        model.write("x");
+        model.close();
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hub-err");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        if (!ai.engineFound())
+            QSKIP("no llama.cpp engine on this PC");
+        auto* ask = qobject_cast<AiChannel*>(ai.ask());
+        ai.selectLocalModel(m_dir.filePath("err-model.gguf"));
+        ai.llama()->useExternalServer(server.base(), "");
+        ai.setWebEnabled(false);
+        QCOMPARE(ask->send("hi"), QString());
+        QTRY_VERIFY_WITH_TIMEOUT(!ask->busy(), 10000);
+        const QVariantMap reply = ask->messages().at(1).toMap();
+        QCOMPARE(reply.value("errorCode").toString(), QString("http500"));
+        QCOMPARE(reply.value("errorDetail").toString(), QString("model crashed"));
+    }
+    void theAgentNeedsAFolder()
+    {
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hub3");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        auto* agent = qobject_cast<AiChannel*>(ai.agent());
+        const QString why = agent->notReady();
+        QVERIFY(why == "noEngine" || why == "noModel" || why == "noFolder");
+        agent->setFolder(m_dir.path());
+        QCOMPARE(agent->folder(), QDir::cleanPath(m_dir.path()));
+        QVERIFY(!agent->allowEdits());                                           // read only until the user says otherwise
+        agent->setAllowEdits(true);
+        QVERIFY(agent->allowEdits());
+    }
+
+    // The real model with the three effort levels through the Q&A page (web off): "deep" must announce its thinking and still answer.
+    void realLocalEffortLevels()
+    {
+        if (qEnvironmentVariable("DM_TEST_REAL_LLM") != QLatin1String("1"))
+            QSKIP("set DM_TEST_REAL_LLM=1 to run the real local model");
+        QString model = qEnvironmentVariable("DM_TEST_MODEL");
+        for (QDir d(QCoreApplication::applicationDirPath()); model.isEmpty() && d.exists(); ) {
+            if (QFileInfo::exists(d.filePath(".tools/llm/Qwen3.5-4B-Q4_K_M.gguf")))
+                model = d.filePath(".tools/llm/Qwen3.5-4B-Q4_K_M.gguf");
+            if (!d.cdUp())
+                break;
+        }
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hub-real-effort");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        ai.selectLocalModel(model);
+        ai.setWebEnabled(false);
+        auto* ask = qobject_cast<AiChannel*>(ai.ask());
+        for (const QString& level : {QString("low"), QString("high")}) {
+            ask->newConversation();
+            ask->setEffort(level);
+            QStringList statuses;
+            auto c = connect(ask, &AiChannel::busyChanged, [&] { statuses << ask->status(); });
+            QElapsedTimer timer;
+            timer.start();
+            QCOMPARE(ask->send("A bat and a ball cost 1.10 in total. The bat costs 1.00 more than the ball. How much is the ball? Answer in one sentence."), QString());
+            QTRY_VERIFY_WITH_TIMEOUT(!ask->busy(), 240000);
+            disconnect(c);
+            const QVariantMap reply = ask->messages().last().toMap();
+            fprintf(stderr, "REAL EFFORT %s: %lld ms, statuses=%s, answer=%s\n", qPrintable(level), timer.elapsed(), qPrintable(statuses.join(",")), qPrintable(reply.value("text").toString().left(150)));
+            QCOMPARE(reply.value("errorCode").toString(), QString());
+            QVERIFY(reply.value("text").toString().contains("0.05") || reply.value("text").toString().contains("5 cents"));
+            QCOMPARE(statuses.contains("thinking"), level == "high");
+        }
+        ai.llama()->stop();
     }
 
     // The real local model as an agent: it must call the file tool by itself, and (with DM_TEST_WEB=1) the web tool.
@@ -841,119 +893,8 @@ private slots:
     }
 
     // ---- keys ------------------------------------------------------------------------------------------------------------------
-    void keysAreEncrypted()
-    {
-        const QString stored = SecretStore::protect("sk-very-secret");
-        QVERIFY(!stored.isEmpty());
-        QVERIFY(!stored.contains("secret"));
-        QCOMPARE(SecretStore::unprotect(stored), QString("sk-very-secret"));
-        QVERIFY(SecretStore::unprotect("garbage").isEmpty());
-        QVERIFY(SecretStore::protect("").isEmpty());
-    }
 
     // ---- the two pages ----------------------------------------------------------------------------------------------------------
-    void aConversationRunsAndIsSaved()
-    {
-        FakeServer server;
-        server.body = sse({R"({"choices":[{"delta":{"content":"Answer one"}}]})", "[DONE]"});
-        const QString dataDir = m_dir.filePath("hub");
-        QString firstId;
-        {
-            dm::Hub::Options o;
-            o.registryRoot = kRoot;
-            o.dataDir = dataDir;
-            dm::Hub hub(o);
-            AiService ai(&hub, nullptr, false);
-            auto* ask = qobject_cast<AiChannel*>(ai.ask());
-            QCOMPARE(ask->provider(), QString("local"));                   // the model on this PC is the default
-            const QString first = ask->notReady();
-            QVERIFY(first == "noModel" || first == "noEngine");
-            QCOMPARE(ask->send("hello"), first);
-            ask->setProvider("openai");
-            QCOMPARE(ask->notReady(), QString("noModel"));
-            ai.setOpenAi(server.base() + "/v1", "gpt-test", "");           // this computer: no key needed
-            QCOMPARE(ask->notReady(), QString());
-            QCOMPARE(ask->send("  "), QString("empty"));
-            QCOMPARE(ask->send("What is Master Pro?"), QString());
-            QCOMPARE(ask->send("again"), QString("busy"));
-            QSignalSpy idle(ask, &AiChannel::busyChanged);
-            QTRY_VERIFY_WITH_TIMEOUT(!ask->busy(), 10000);
-            const QVariantList msgs = ask->messages();
-            QCOMPARE(msgs.size(), 2);
-            QCOMPARE(msgs.at(1).toMap().value("text").toString(), QString("Answer one"));
-            QVERIFY(!msgs.at(1).toMap().value("streaming").toBool());
-            QCOMPARE(msgs.at(1).toMap().value("errorCode").toString(), QString());
-            // the system prompt knows the suite
-            QVERIFY(requestBody(server.lastRequest).value("messages").toArray().first().toObject().value("content").toString().contains("DriveVault"));
-            QCOMPARE(ask->conversations().size(), 1);
-            firstId = ask->currentId();
-            QVERIFY(!firstId.isEmpty());
-            // the agent page has its own conversations and only the CLI programs
-            auto* agent = qobject_cast<AiChannel*>(ai.agent());
-            QCOMPARE(agent->conversations().size(), 0);
-            QCOMPARE(agent->providers(), QStringList({"local", "claude", "codex"}));
-            agent->setProvider("openai");                                  // not a provider of this page
-            QCOMPARE(agent->provider(), QString("local"));                 // unchanged: not a provider of this page
-            // the key is not in the settings file in clear text
-            ai.setOpenAi(server.base() + "/v1", "gpt-test", "sk-plain-key");
-            QFile f(dataDir + "/ai/settings.json");
-            QVERIFY(f.open(QIODevice::ReadOnly));
-            QVERIFY(!f.readAll().contains("sk-plain-key"));
-            QVERIFY(ai.openai().value("keySet").toBool());
-        }
-        {   // a new start: the conversation and the settings come back
-            dm::Hub::Options o;
-            o.registryRoot = kRoot;
-            o.dataDir = dataDir;
-            dm::Hub hub(o);
-            AiService ai(&hub, nullptr, false);
-            auto* ask = qobject_cast<AiChannel*>(ai.ask());
-            QCOMPARE(ask->provider(), QString("openai"));
-            QCOMPARE(ask->conversations().size(), 1);
-            ask->select(firstId);
-            QCOMPARE(ask->messages().size(), 2);
-            QCOMPARE(ai.openai().value("model").toString(), QString("gpt-test"));
-            ask->remove(firstId);
-            QCOMPARE(ask->conversations().size(), 0);
-        }
-    }
-    void anErrorStaysInTheConversation()
-    {
-        FakeServer server;
-        server.status = 429;
-        server.contentType = "application/json";
-        server.body = R"({"error":{"message":"rate limited"}})";
-        dm::Hub::Options o;
-        o.registryRoot = kRoot;
-        o.dataDir = m_dir.filePath("hub2");
-        dm::Hub hub(o);
-        AiService ai(&hub, nullptr, false);
-        auto* ask = qobject_cast<AiChannel*>(ai.ask());
-        ask->setProvider("openai");
-        ai.setOpenAi(server.base() + "/v1", "m", "");
-        QCOMPARE(ask->send("hi"), QString());
-        QTRY_VERIFY_WITH_TIMEOUT(!ask->busy(), 10000);
-        const QVariantMap reply = ask->messages().at(1).toMap();
-        QCOMPARE(reply.value("errorCode").toString(), QString("http429"));
-        QCOMPARE(reply.value("errorDetail").toString(), QString("rate limited"));
-    }
-    void theAgentNeedsAFolder()
-    {
-        dm::Hub::Options o;
-        o.registryRoot = kRoot;
-        o.dataDir = m_dir.filePath("hub3");
-        dm::Hub hub(o);
-        AiService ai(&hub, nullptr, false);
-        auto* agent = qobject_cast<AiChannel*>(ai.agent());
-        agent->setProvider("claude");
-        const QString why = agent->notReady();
-        QVERIFY(why == "noProgram" || why == "noFolder");                  // depends on whether claude is installed on this PC
-        agent->setFolder(m_dir.path());
-        QCOMPARE(agent->folder(), QDir::cleanPath(m_dir.path()));
-        QVERIFY(!agent->allowEdits());                                     // read only until the user says otherwise
-        agent->setAllowEdits(true);
-        QVERIFY(agent->allowEdits());
-    }
 };
 
 QTEST_MAIN(TstAi)
