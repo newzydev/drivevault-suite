@@ -1,6 +1,11 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.14.0 (2026-11-15)
+--------------
+  - New: a Download button for the OpenThai speech model in Settings > AI (about 2.6 GB, from huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX). It starts only when you press it, shows progress, can be cancelled, and continues where it stopped after a cancel, a lost connection or a restart.
+  - Every file is fixed to one revision of the model and checked against its SHA-256 before it is used; a damaged or swapped file is deleted and reported. The free disk space is checked first. The files go to the model folder shown on that page (Open folder button).
+
 Version 1.13.0 (2026-11-15)
 --------------
   - New: OpenThai 2.0 ASR Streaming (iApp, OpenMDW-1.1) as the speech recogniser for Thai captions. It runs inside the program on the CPU (ONNX Runtime) - nothing is uploaded - and replaces whisper.cpp for Thai when its model is installed. Other languages still use whisper.cpp. Settings > AI > Speech engine: Automatic (default), OpenThai (Thai only) or whisper.cpp.

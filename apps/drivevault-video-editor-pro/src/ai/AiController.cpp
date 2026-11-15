@@ -46,6 +46,7 @@ AiController::AiController(ProjectManager* project, SettingsManager* settings, Q
     , m_models(settings)
 {
     connect(&m_models, &ModelManager::modelsChanged, this, &AiController::statusChanged);
+    connect(&m_openThaiInstaller, &OpenThaiInstaller::finished, this, &AiController::statusChanged);       // the model folder may be complete now
     connect(m_settings, &SettingsManager::valueChanged, this, [this](const QString& key) {
         if (key == QLatin1String("aiEnabled") || key == QLatin1String("aiModelsLocation") || key == QLatin1String("aiModel")
             || key == QLatin1String("aiSpeechEngine"))

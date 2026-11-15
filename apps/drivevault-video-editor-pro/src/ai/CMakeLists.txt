@@ -5,6 +5,7 @@ add_library(dv_ai STATIC
     Tracker.cpp Tracker.h
     Transcriber.cpp Transcriber.h
     OpenThaiAsr.cpp OpenThaiAsr.h
+    OpenThaiInstaller.cpp OpenThaiInstaller.h
     Assistant.cpp Assistant.h
     ModelManager.cpp ModelManager.h
     AiController.cpp AiController.h)

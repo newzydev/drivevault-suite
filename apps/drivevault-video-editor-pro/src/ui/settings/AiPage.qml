@@ -59,8 +59,36 @@ ColumnLayout {
         title: qsTr("OpenThai 2.0 ASR model")
         description: Ai.openThaiStatus === "notBuilt" ? qsTr("This build has no ONNX Runtime, so the model cannot run.")
                      : Ai.openThaiStatus === "available" ? qsTr("Installed. It runs on this computer; nothing is uploaded.")
-                     : qsTr("Not installed. Download the files from huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt, about 2.6 GB) and put them in %1").arg(Ai.openThaiFolder)
+                     : qsTr("Not installed. Press Download below (%1), or put the files of huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt) in %2").arg(Ai.openThaiInstaller.sizeText).arg(Ai.openThaiFolder)
         StatusBadge { kind: Ai.openThaiStatus === "available" ? "available" : Ai.openThaiStatus === "modelRequired" ? "modelRequired" : "unsupported" }
+    }
+    SettingRow {
+        visible: Ai.openThaiStatus === "modelRequired" || Ai.openThaiInstaller.busy
+        title: qsTr("Download the OpenThai model")
+        description: Ai.openThaiInstaller.busy ? Ai.openThaiInstaller.message
+                     : Ai.openThaiInstaller.message !== "" ? Ai.openThaiInstaller.message
+                     : qsTr("From huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX, %1. It starts only when you press the button; each file is checked with its SHA-256.").arg(Ai.openThaiInstaller.sizeText)
+        RowLayout {
+            spacing: 10
+            Rectangle {
+                visible: Ai.openThaiInstaller.busy
+                Layout.preferredWidth: 120
+                height: 6
+                radius: 3
+                color: Theme.surfaceHover
+                Rectangle { width: parent.width * Ai.openThaiInstaller.progress; height: parent.height; radius: 3; color: Theme.accent }
+            }
+            AppText { visible: Ai.openThaiInstaller.busy; text: Math.round(Ai.openThaiInstaller.progress * 100) + "%"; font.pixelSize: Theme.fontXs; color: Theme.textSecondary }
+            AppButton {
+                objectName: "openThaiDownload"
+                visible: !Ai.openThaiInstaller.busy
+                variant: "primary"
+                iconName: "import"
+                text: qsTr("Download")
+                onClicked: { const e = Ai.openThaiInstaller.download(); if (e !== "") App.toast(e, "warning") }
+            }
+            AppButton { visible: Ai.openThaiInstaller.busy; variant: "ghost"; text: qsTr("Cancel"); onClicked: Ai.openThaiInstaller.cancel() }
+        }
     }
     SettingRow {
         title: qsTr("OpenThai model folder")

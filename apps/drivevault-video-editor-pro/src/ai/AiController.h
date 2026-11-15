@@ -2,6 +2,7 @@
 
 #include "ai/AiTypes.h"
 #include "ai/ModelManager.h"
+#include "ai/OpenThaiInstaller.h"
 #include "ai/Tracker.h"
 
 #include <QObject>
@@ -35,6 +36,7 @@ class AiController : public QObject {
     Q_PROPERTY(QVariantList captions READ captions NOTIFY resultsChanged FINAL)       // [{start, end, text, timecode}]
     Q_PROPERTY(QVariantMap tracking READ tracking NOTIFY resultsChanged FINAL)        // {frames, confidence, clipId} or {}
     Q_PROPERTY(QObject* models READ models CONSTANT FINAL)
+    Q_PROPERTY(QObject* openThaiInstaller READ openThaiInstaller CONSTANT FINAL)       // download of the OpenThai speech model (user pressed the button)
     Q_PROPERTY(bool enabled READ enabled NOTIFY statusChanged FINAL)
     // Region of the picture to track, shown as a rectangle over the monitor: {x, y, w, h} in 0..1, empty = hidden.
     Q_PROPERTY(QVariantMap trackRegion READ trackRegion WRITE setTrackRegion NOTIFY trackRegionChanged FINAL)
@@ -58,6 +60,7 @@ public:
     QVariantList captions() const { return m_captions; }
     QVariantMap tracking() const { return m_tracking; }
     ModelManager* models() { return &m_models; }
+    OpenThaiInstaller* openThaiInstaller() { return &m_openThaiInstaller; }
     QVariantMap trackRegion() const { return m_trackRegion; }
     void setTrackRegion(const QVariantMap& r) { if (r != m_trackRegion) { m_trackRegion = r; emit trackRegionChanged(); } }
 
@@ -110,6 +113,7 @@ private:
     ProjectManager* m_project;
     SettingsManager* m_settings;
     ModelManager m_models;
+    OpenThaiInstaller m_openThaiInstaller;
     QThread* m_thread = nullptr;
     std::atomic_bool m_cancel{false};
     bool m_busy = false;

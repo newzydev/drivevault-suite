@@ -256,112 +256,136 @@
         <translation>ติดตั้งแล้ว ทำงานบนเครื่องนี้ ไม่มีการอัปโหลดอะไร</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="62"/>
         <source>Not installed. Download the files from huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt, about 2.6 GB) and put them in %1</source>
-        <translation>ยังไม่ได้ติดตั้ง ดาวน์โหลดไฟล์จาก huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt ขนาดรวมประมาณ 2.6 GB) แล้ววางไว้ใน %1</translation>
+        <translation type="vanished">ยังไม่ได้ติดตั้ง ดาวน์โหลดไฟล์จาก huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt ขนาดรวมประมาณ 2.6 GB) แล้ววางไว้ใน %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="66"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="62"/>
+        <source>Not installed. Press Download below (%1), or put the files of huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt) in %2</source>
+        <translation>ยังไม่ได้ติดตั้ง กดดาวน์โหลดด้านล่าง (%1) หรือนำไฟล์จาก huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt) ไปวางไว้ใน %2</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="67"/>
+        <source>Download the OpenThai model</source>
+        <translation>ดาวน์โหลดโมเดล OpenThai</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="70"/>
+        <source>From huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX, %1. It starts only when you press the button; each file is checked with its SHA-256.</source>
+        <translation>จาก huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX ขนาด%1 จะเริ่มเมื่อคุณกดปุ่มเท่านั้น และทุกไฟล์ถูกตรวจด้วย SHA-256</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="87"/>
+        <source>Download</source>
+        <translation>ดาวน์โหลด</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="90"/>
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="94"/>
         <source>OpenThai model folder</source>
         <translation>โฟลเดอร์โมเดล OpenThai</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="68"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="96"/>
         <source>Open folder</source>
         <translation>เปิดโฟลเดอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="72"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="100"/>
         <source>Connect Claude Code / Codex (MCP)</source>
         <translation>เชื่อมต่อ Claude Code / Codex (MCP)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="73"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="101"/>
         <source>Lets an AI coding assistant on this computer work on the open project: list media and clips, edit the timeline, run the AI helpers. Every edit is one undo step. It listens on this computer only and needs the private token below.</source>
         <translation>ให้ผู้ช่วย AI ที่เขียนโค้ดบนเครื่องนี้ทำงานกับโปรเจกต์ที่เปิดอยู่ได้ เช่น ดูรายการสื่อและคลิป แก้ไทม์ไลน์ และใช้ตัวช่วย AI ทุกการแก้ไขเป็นหนึ่งขั้นของ Undo เซิร์ฟเวอร์รับเฉพาะการเชื่อมต่อจากเครื่องนี้และต้องใช้โทเคนส่วนตัวด้านล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="77"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="105"/>
         <source>Enable MCP server</source>
         <translation>เปิดเซิร์ฟเวอร์ MCP</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="78"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="106"/>
         <source>Running at %1</source>
         <translation>กำลังทำงานที่ %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="78"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="106"/>
         <source>Off. Nothing is listening.</source>
         <translation>ปิดอยู่ ไม่มีการรับการเชื่อมต่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="86"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="114"/>
         <source>Port</source>
         <translation>พอร์ต</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="87"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="115"/>
         <source>Restart the server (switch it off and on) after changing it.</source>
         <translation>หลังเปลี่ยนพอร์ต ให้ปิดแล้วเปิดเซิร์ฟเวอร์ใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="97"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="125"/>
         <source>Claude Code</source>
         <translation>Claude Code</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="98"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="126"/>
         <source>Copy this command and run it once in a terminal. It contains your private token.</source>
         <translation>คัดลอกคำสั่งนี้ไปรันหนึ่งครั้งในเทอร์มินัล คำสั่งมีโทเคนส่วนตัวของคุณอยู่ด้วย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="99"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="127"/>
         <source>Copy command</source>
         <translation>คัดลอกคำสั่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="103"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="131"/>
         <source>Codex</source>
         <translation>Codex</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="104"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="132"/>
         <source>Copy this block into ~/.codex/config.toml, then set the token variable shown in its last line.</source>
         <translation>คัดลอกบล็อกนี้ไปใส่ใน ~/.codex/config.toml แล้วตั้งค่าตัวแปรโทเคนตามบรรทัดสุดท้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="105"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="133"/>
         <source>Copy config</source>
         <translation>คัดลอกการตั้งค่า</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="109"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="137"/>
         <source>New token</source>
         <translation>โทเคนใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="110"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="138"/>
         <source>The old token stops working at once; connect your assistant again.</source>
         <translation>โทเคนเก่าจะใช้ไม่ได้ทันที ต้องเชื่อมต่อผู้ช่วยของคุณใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="111"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="139"/>
         <source>Create new token</source>
         <translation>สร้างโทเคนใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="114"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="142"/>
         <source>Feature status</source>
         <translation>สถานะฟีเจอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="118"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="146"/>
         <source>Speech to text and auto captions</source>
         <translation>ถอดเสียงเป็นข้อความและสร้างคำบรรยายอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="118"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="146"/>
         <source>OpenThai 2.0 for Thai, whisper.cpp for other languages</source>
         <translation>OpenThai 2.0 สำหรับภาษาไทย whisper.cpp สำหรับภาษาอื่น</translation>
     </message>
@@ -370,32 +394,32 @@
         <translation type="vanished">whisper.cpp — ภาษาไทยและอังกฤษ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="119"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="147"/>
         <source>Silence detection</source>
         <translation>ตรวจจับช่วงเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="119"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="147"/>
         <source>Highlight and remove silent passages</source>
         <translation>ไฮไลต์และตัดช่วงที่ไม่มีเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="120"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="148"/>
         <source>Smart cut suggestions</source>
         <translation>แนะนำจุดตัดอัจฉริยะ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="120"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="148"/>
         <source>Scene changes and audio activity</source>
         <translation>จุดเปลี่ยนฉากและความเคลื่อนไหวของเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="121"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="149"/>
         <source>Audio enhancement</source>
         <translation>ปรับปรุงคุณภาพเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="121"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="149"/>
         <source>Spectral noise reduction (signal processing, no neural model)</source>
         <translation>ลดเสียงรบกวนด้วยสเปกตรัม (การประมวลผลสัญญาณ ไม่ใช้โมเดลเครือข่ายประสาท)</translation>
     </message>
@@ -404,32 +428,32 @@
         <translation type="vanished">ลดเสียงรบกวนและเพิ่มความชัดของเสียงพูด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="122"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="150"/>
         <source>Object tracking</source>
         <translation>ติดตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="122"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="150"/>
         <source>Follow a subject across frames</source>
         <translation>ติดตามวัตถุข้ามเฟรม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="123"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="151"/>
         <source>Natural language assistant</source>
         <translation>ผู้ช่วยภาษาธรรมชาติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="123"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="151"/>
         <source>Typed commands from plain language</source>
         <translation>สั่งงานด้วยภาษาพูดทั่วไปแล้วแปลงเป็นคำสั่งที่ตรวจสอบได้</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="133"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="161"/>
         <source>Engine missing</source>
         <translation>ไม่พบเอนจิน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="138"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="166"/>
         <source>Model manager</source>
         <translation>ตัวจัดการโมเดล</translation>
     </message>
@@ -5429,319 +5453,319 @@
 <context>
     <name>dv::AiController</name>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="95"/>
+        <location filename="../../src/ai/AiController.cpp" line="96"/>
         <source>The OpenThai speech model only understands Thai. Choose another speech engine in Settings &gt; AI for English.</source>
         <translation>โมเดลเสียง OpenThai เข้าใจเฉพาะภาษาไทย สำหรับภาษาอังกฤษให้เลือกเอนจินอื่นใน ตั้งค่า &gt; AI</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="99"/>
+        <location filename="../../src/ai/AiController.cpp" line="100"/>
         <source>This build has no ONNX Runtime, so the OpenThai speech model cannot run.</source>
         <translation>โปรแกรมรุ่นนี้ไม่มี ONNX Runtime จึงรันโมเดลเสียง OpenThai ไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="103"/>
+        <location filename="../../src/ai/AiController.cpp" line="104"/>
         <source>The OpenThai speech model is not installed. Put its files in %1 (see Settings &gt; AI).</source>
         <translation>ยังไม่ได้ติดตั้งโมเดลเสียง OpenThai ให้วางไฟล์ของโมเดลไว้ใน %1 (ดู ตั้งค่า &gt; AI)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="130"/>
+        <location filename="../../src/ai/AiController.cpp" line="131"/>
         <source>A speech model is required. Download or import one in the model manager below.</source>
         <translation>ต้องมีโมเดลเสียง กรุณาดาวน์โหลดหรือนำเข้าในตัวจัดการโมเดลด้านล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="132"/>
+        <location filename="../../src/ai/AiController.cpp" line="133"/>
         <source>The speech engine (whisper.cpp) was not found next to the application.</source>
         <translation>ไม่พบเอนจินถอดเสียง (whisper.cpp) ข้างโปรแกรม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="134"/>
+        <location filename="../../src/ai/AiController.cpp" line="135"/>
         <source>For better Thai captions install the OpenThai speech model: put its files in %1 (see Settings &gt; AI).</source>
         <translation>ถ้าต้องการคำบรรยายภาษาไทยที่แม่นขึ้น ให้ติดตั้งโมเดลเสียง OpenThai: วางไฟล์ของโมเดลไว้ใน %1 (ดู ตั้งค่า &gt; AI)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="164"/>
+        <location filename="../../src/ai/AiController.cpp" line="165"/>
         <source>Another AI task is running. Wait for it or cancel it.</source>
         <translation>มีงาน AI อื่นกำลังทำงานอยู่ กรุณารอหรือยกเลิก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="208"/>
-        <location filename="../../src/ai/AiController.cpp" line="392"/>
+        <location filename="../../src/ai/AiController.cpp" line="209"/>
+        <location filename="../../src/ai/AiController.cpp" line="393"/>
         <source>Cancelled.</source>
         <translation>ยกเลิกแล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="241"/>
-        <location filename="../../src/ai/AiController.cpp" line="289"/>
-        <location filename="../../src/ai/AiController.cpp" line="362"/>
+        <location filename="../../src/ai/AiController.cpp" line="242"/>
+        <location filename="../../src/ai/AiController.cpp" line="290"/>
+        <location filename="../../src/ai/AiController.cpp" line="363"/>
         <source>The timeline is empty.</source>
         <translation>ไทม์ไลน์ว่างเปล่า</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="243"/>
+        <location filename="../../src/ai/AiController.cpp" line="244"/>
         <source>The timeline has no audio to analyse.</source>
         <translation>ไทม์ไลน์ไม่มีเสียงให้วิเคราะห์</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="248"/>
+        <location filename="../../src/ai/AiController.cpp" line="249"/>
         <source>Looking for silent passages…</source>
         <translation>กำลังหาช่วงที่เงียบ…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="260"/>
+        <location filename="../../src/ai/AiController.cpp" line="261"/>
         <source>No silent passages found with these settings.</source>
         <translation>ไม่พบช่วงเงียบด้วยค่าที่ตั้งไว้</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="261"/>
+        <location filename="../../src/ai/AiController.cpp" line="262"/>
         <source>%n silent passage(s), %1 s in total. Review them in the timeline, then apply.</source>
         <translation>
             <numerusform>พบช่วงเงียบ %n ช่วง รวม %1 วินาที ตรวจดูในไทม์ไลน์แล้วจึงนำไปใช้</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="270"/>
+        <location filename="../../src/ai/AiController.cpp" line="271"/>
         <source>There are no silent passages to remove.</source>
         <translation>ไม่มีช่วงเงียบให้ลบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="273"/>
+        <location filename="../../src/ai/AiController.cpp" line="274"/>
         <source>Silent passages removed. Use Undo to bring them back.</source>
         <translation>ลบช่วงเงียบแล้ว ใช้เลิกทำเพื่อนำกลับมา</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="296"/>
+        <location filename="../../src/ai/AiController.cpp" line="297"/>
         <source>Analysing scenes and pauses…</source>
         <translation>กำลังวิเคราะห์ฉากและช่วงหยุด…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="307"/>
+        <location filename="../../src/ai/AiController.cpp" line="308"/>
         <source>Scene change</source>
         <translation>เปลี่ยนฉาก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="309"/>
+        <location filename="../../src/ai/AiController.cpp" line="310"/>
         <source>Silence starts</source>
         <translation>เริ่มเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="310"/>
+        <location filename="../../src/ai/AiController.cpp" line="311"/>
         <source>Silence ends</source>
         <translation>สิ้นสุดความเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="317"/>
+        <location filename="../../src/ai/AiController.cpp" line="318"/>
         <source>No cut points found with these settings.</source>
         <translation>ไม่พบจุดตัดด้วยค่าที่ตั้งไว้</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="318"/>
+        <location filename="../../src/ai/AiController.cpp" line="319"/>
         <source>%n suggested cut point(s). Nothing was cut yet.</source>
         <translation>
             <numerusform>แนะนำจุดตัด %n จุด ยังไม่มีอะไรถูกตัด</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="326"/>
+        <location filename="../../src/ai/AiController.cpp" line="327"/>
         <source>There is no such suggestion.</source>
         <translation>ไม่มีข้อเสนอนี้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="335"/>
+        <location filename="../../src/ai/AiController.cpp" line="336"/>
         <source>There are no suggestions to apply.</source>
         <translation>ไม่มีข้อเสนอให้ใช้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="337"/>
+        <location filename="../../src/ai/AiController.cpp" line="338"/>
         <source>Apply suggested cuts</source>
         <translation>ใช้จุดตัดที่แนะนำ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="364"/>
+        <location filename="../../src/ai/AiController.cpp" line="365"/>
         <source>The timeline has no audio to transcribe.</source>
         <translation>ไทม์ไลน์ไม่มีเสียงให้ถอด</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="374"/>
+        <location filename="../../src/ai/AiController.cpp" line="375"/>
         <source>The speech engine (whisper.cpp) was not found.</source>
         <translation>ไม่พบเอนจินถอดเสียง (whisper.cpp)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="377"/>
+        <location filename="../../src/ai/AiController.cpp" line="378"/>
         <source>A speech model is required. Download or import one in the model manager.</source>
         <translation>ต้องมีโมเดลเสียง กรุณาดาวน์โหลดหรือนำเข้าในตัวจัดการโมเดล</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="386"/>
+        <location filename="../../src/ai/AiController.cpp" line="387"/>
         <source>Transcribing speech…</source>
         <translation>กำลังถอดเสียง…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="404"/>
+        <location filename="../../src/ai/AiController.cpp" line="405"/>
         <source>No speech was recognised.</source>
         <translation>ไม่พบเสียงพูด</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="405"/>
+        <location filename="../../src/ai/AiController.cpp" line="406"/>
         <source>%n phrase(s) recognised. Automatic captions are not always accurate - check and correct the text.</source>
         <translation>
             <numerusform>จดจำได้ %n ประโยค ซับอัตโนมัติอาจไม่แม่นยำเสมอไป - กรุณาตรวจและแก้ข้อความ</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="413"/>
+        <location filename="../../src/ai/AiController.cpp" line="414"/>
         <source>There are no captions to add.</source>
         <translation>ไม่มีซับให้เพิ่ม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="426"/>
+        <location filename="../../src/ai/AiController.cpp" line="427"/>
         <source>Captions added to the subtitle track. Select a subtitle to edit its text.</source>
         <translation>เพิ่มซับลงแทร็กซับไตเติลแล้ว เลือกซับเพื่อแก้ข้อความ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="445"/>
+        <location filename="../../src/ai/AiController.cpp" line="446"/>
         <source>Select an audio clip on the timeline first.</source>
         <translation>กรุณาเลือกคลิปเสียงในไทม์ไลน์ก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="449"/>
+        <location filename="../../src/ai/AiController.cpp" line="450"/>
         <source>The selected clip has no audio.</source>
         <translation>คลิปที่เลือกไม่มีเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="452"/>
-        <location filename="../../src/ai/AiController.cpp" line="517"/>
+        <location filename="../../src/ai/AiController.cpp" line="453"/>
+        <location filename="../../src/ai/AiController.cpp" line="518"/>
         <source>The media file is missing.</source>
         <translation>ไม่พบไฟล์สื่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="463"/>
+        <location filename="../../src/ai/AiController.cpp" line="464"/>
         <source>Enhancing audio…</source>
         <translation>กำลังปรับปรุงเสียง…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="475"/>
+        <location filename="../../src/ai/AiController.cpp" line="476"/>
         <source>The enhanced file could not be imported.</source>
         <translation>นำเข้าไฟล์ที่ปรับปรุงแล้วไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="487"/>
+        <location filename="../../src/ai/AiController.cpp" line="488"/>
         <source>The clip now uses the enhanced audio. Undo restores the original.</source>
         <translation>คลิปใช้เสียงที่ปรับปรุงแล้ว เลิกทำจะคืนต้นฉบับ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="491"/>
+        <location filename="../../src/ai/AiController.cpp" line="492"/>
         <source>The enhanced file was created but could not be prepared.</source>
         <translation>สร้างไฟล์ที่ปรับปรุงแล้วแต่เตรียมใช้งานไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="505"/>
+        <location filename="../../src/ai/AiController.cpp" line="506"/>
         <source>Select a video clip on the timeline first.</source>
         <translation>กรุณาเลือกคลิปวิดีโอในไทม์ไลน์ก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="508"/>
+        <location filename="../../src/ai/AiController.cpp" line="509"/>
         <source>Titles cannot be tracked.</source>
         <translation>ติดตามชื่อเรื่องไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="513"/>
+        <location filename="../../src/ai/AiController.cpp" line="514"/>
         <source>Move the playhead onto the clip, at the frame where the subject is visible.</source>
         <translation>เลื่อนเพลย์เฮดไปบนคลิป ที่เฟรมที่เห็นวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="523"/>
+        <location filename="../../src/ai/AiController.cpp" line="524"/>
         <source>Tracking…</source>
         <translation>กำลังติดตาม…</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="529"/>
+        <location filename="../../src/ai/AiController.cpp" line="530"/>
         <source>Tracking failed.</source>
         <translation>ติดตามไม่สำเร็จ</translation>
     </message>
     <message numerus="yes">
-        <location filename="../../src/ai/AiController.cpp" line="540"/>
+        <location filename="../../src/ai/AiController.cpp" line="541"/>
         <source>Tracked %n frame(s). Choose how to use the motion.</source>
         <translation>
             <numerusform>ติดตามแล้ว %n เฟรม เลือกวิธีใช้การเคลื่อนไหว</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="548"/>
+        <location filename="../../src/ai/AiController.cpp" line="549"/>
         <source>There is no tracking data.</source>
         <translation>ไม่มีข้อมูลการติดตาม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="553"/>
+        <location filename="../../src/ai/AiController.cpp" line="554"/>
         <source>Select the clip that should follow the subject.</source>
         <translation>เลือกคลิปที่ต้องการให้ตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="556"/>
+        <location filename="../../src/ai/AiController.cpp" line="557"/>
         <source>The clip no longer exists.</source>
         <translation>ไม่มีคลิปนี้แล้ว</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="558"/>
+        <location filename="../../src/ai/AiController.cpp" line="559"/>
         <source>Titles cannot be keyframed yet. Use a video or image clip.</source>
         <translation>ยังใส่คีย์เฟรมให้ชื่อเรื่องไม่ได้ ใช้คลิปวิดีโอหรือภาพแทน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="560"/>
+        <location filename="../../src/ai/AiController.cpp" line="561"/>
         <source>Choose a clip on a video track.</source>
         <translation>เลือกคลิปบนแทร็กวิดีโอ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="587"/>
+        <location filename="../../src/ai/AiController.cpp" line="588"/>
         <source>Stabilize</source>
         <translation>ทำให้นิ่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="587"/>
+        <location filename="../../src/ai/AiController.cpp" line="588"/>
         <source>Follow tracked subject</source>
         <translation>ตามวัตถุที่ติดตาม</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="593"/>
+        <location filename="../../src/ai/AiController.cpp" line="594"/>
         <source>Stabilization keyframes added to the clip (Position X / Y).</source>
         <translation>เพิ่มคีย์เฟรมทำให้นิ่งลงในคลิปแล้ว (ตำแหน่ง X / Y)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="594"/>
+        <location filename="../../src/ai/AiController.cpp" line="595"/>
         <source>Position keyframes added: the clip follows the subject.</source>
         <translation>เพิ่มคีย์เฟรมตำแหน่งแล้ว: คลิปตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="612"/>
+        <location filename="../../src/ai/AiController.cpp" line="613"/>
         <source>Transcribe the timeline audio into subtitles</source>
         <translation>ถอดเสียงของไทม์ไลน์เป็นซับไตเติล</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="613"/>
+        <location filename="../../src/ai/AiController.cpp" line="614"/>
         <source>Find silent passages</source>
         <translation>หาช่วงที่เงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="614"/>
+        <location filename="../../src/ai/AiController.cpp" line="615"/>
         <source>Suggest cut points at scene changes and pauses</source>
         <translation>แนะนำจุดตัดที่การเปลี่ยนฉากและช่วงหยุด</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="615"/>
+        <location filename="../../src/ai/AiController.cpp" line="616"/>
         <source>Reduce noise and even out the audio of the selected clip</source>
         <translation>ลดเสียงรบกวนและปรับระดับเสียงของคลิปที่เลือก</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="616"/>
+        <location filename="../../src/ai/AiController.cpp" line="617"/>
         <source>Track a region of the selected clip (choose the region in the Tracking section)</source>
         <translation>ติดตามพื้นที่ของคลิปที่เลือก (เลือกพื้นที่ในส่วนติดตามวัตถุ)</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="618"/>
+        <location filename="../../src/ai/AiController.cpp" line="619"/>
         <source>I can: create subtitles, find silent passages, suggest cut points, clean up speech audio. Try: &quot;create Thai subtitles&quot;.</source>
         <translation>ฉันทำได้: สร้างซับไตเติล หาช่วงเงียบ แนะนำจุดตัด ทำเสียงพูดให้ชัด ลองพิมพ์: &quot;สร้างซับไทย&quot;</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="620"/>
+        <location filename="../../src/ai/AiController.cpp" line="621"/>
         <source>I did not understand that. Try: &quot;create Thai subtitles&quot;, &quot;find the silent parts&quot;, &quot;suggest cut points&quot; or &quot;make the speech clearer&quot;.</source>
         <translation>ไม่เข้าใจคำสั่งนี้ ลองพิมพ์: &quot;สร้างซับไทย&quot;, &quot;หาช่วงที่เงียบ&quot;, &quot;แนะนำจุดตัด&quot; หรือ &quot;ปรับเสียงพูดให้ชัดขึ้น&quot;</translation>
     </message>
@@ -5822,12 +5846,12 @@
         <translation type="vanished">ไม่มีคลิปวิดีโอให้ใช้</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="633"/>
+        <location filename="../../src/ai/AiController.cpp" line="634"/>
         <source>Choose the region to track in the Tracking section first.</source>
         <translation>กรุณาเลือกพื้นที่ที่จะติดตามในส่วนติดตามวัตถุก่อน</translation>
     </message>
     <message>
-        <location filename="../../src/ai/AiController.cpp" line="635"/>
+        <location filename="../../src/ai/AiController.cpp" line="636"/>
         <source>I did not understand that request.</source>
         <translation>ไม่เข้าใจคำขอนี้</translation>
     </message>
@@ -6176,6 +6200,136 @@
         <location filename="../../src/ai/ModelManager.cpp" line="254"/>
         <source>Cannot save the model file.</source>
         <translation>บันทึกไฟล์โมเดลไม่ได้</translation>
+    </message>
+</context>
+<context>
+    <name>dv::OpenThaiInstaller</name>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="50"/>
+        <source>about 2.6 GB</source>
+        <translation>ประมาณ 2.6 GB</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="107"/>
+        <source>A download is already running.</source>
+        <translation>มีการดาวน์โหลดกำลังทำงานอยู่</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="111"/>
+        <source>The folder %1 cannot be created.</source>
+        <translation>สร้างโฟลเดอร์ %1 ไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="125"/>
+        <source>There is not enough free disk space: %1 MB needed, %2 MB free.</source>
+        <translation>พื้นที่ดิสก์ว่างไม่พอ: ต้องการ %1 MB เหลือ %2 MB</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="135"/>
+        <source>Starting…</source>
+        <translation>กำลังเริ่ม…</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="167"/>
+        <source>Only https downloads are allowed.</source>
+        <translation>อนุญาตเฉพาะการดาวน์โหลดผ่าน https</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="182"/>
+        <source>The file %1 cannot be written: %2</source>
+        <translation>เขียนไฟล์ %1 ไม่ได้: %2</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="199"/>
+        <source>Downloading %1…</source>
+        <translation>กำลังดาวน์โหลด %1…</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="227"/>
+        <source>Writing the file failed (is the disk full?): %1</source>
+        <translation>เขียนไฟล์ไม่สำเร็จ (ดิสก์เต็มหรือไม่?): %1</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="251"/>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="305"/>
+        <source>Cancelled. What was downloaded is kept; press Download to continue.</source>
+        <translation>ยกเลิกแล้ว ส่วนที่ดาวน์โหลดไปแล้วยังอยู่ กดดาวน์โหลดเพื่อทำต่อ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="256"/>
+        <source>The download failed: %1. What was downloaded is kept; press Download to continue.</source>
+        <translation>ดาวน์โหลดไม่สำเร็จ: %1 ส่วนที่ดาวน์โหลดไปแล้วยังอยู่ กดดาวน์โหลดเพื่อทำต่อ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="260"/>
+        <source>The download ended early (%1 of %2 MB). Press Download to continue.</source>
+        <translation>การดาวน์โหลดจบก่อนครบ (%1 จาก %2 MB) กดดาวน์โหลดเพื่อทำต่อ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="271"/>
+        <source>Checking %1…</source>
+        <translation>กำลังตรวจ %1…</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="285"/>
+        <source>%1 is damaged or is not the expected file (checksum). It was deleted; press Download to try again.</source>
+        <translation>%1 เสียหายหรือไม่ใช่ไฟล์ที่คาดไว้ (checksum ไม่ตรง) ลบไฟล์แล้ว กดดาวน์โหลดเพื่อลองใหม่</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="295"/>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="434"/>
+        <source>%1 could not be moved into place.</source>
+        <translation>ย้าย %1 เข้าที่ไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="330"/>
+        <source>The model files are incomplete.</source>
+        <translation>ไฟล์โมเดลไม่ครบ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="336"/>
+        <source>The OpenThai speech model is installed.</source>
+        <translation>ติดตั้งโมเดลเสียง OpenThai แล้ว</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="365"/>
+        <source>The archive cannot be read.</source>
+        <translation>อ่านไฟล์ที่บีบอัดไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="380"/>
+        <source>The archive is not a zip file.</source>
+        <translation>ไฟล์ที่บีบอัดไม่ใช่ zip</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="385"/>
+        <source>The archive layout is not supported.</source>
+        <translation>รูปแบบของไฟล์ที่บีบอัดไม่รองรับ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="401"/>
+        <source>%1 in the archive is not stored as expected.</source>
+        <translation>%1 ในไฟล์ที่บีบอัดไม่ได้เก็บตามที่คาดไว้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="407"/>
+        <source>The archive is damaged.</source>
+        <translation>ไฟล์ที่บีบอัดเสียหาย</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="414"/>
+        <source>%1 cannot be written.</source>
+        <translation>เขียน %1 ไม่ได้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="424"/>
+        <source>%1 could not be unpacked (disk full?).</source>
+        <translation>แตก %1 ไม่สำเร็จ (ดิสก์เต็มหรือไม่?)</translation>
+    </message>
+    <message>
+        <location filename="../../src/ai/OpenThaiInstaller.cpp" line="441"/>
+        <source>%1 is missing in the archive.</source>
+        <translation>ไม่พบ %1 ในไฟล์ที่บีบอัด</translation>
     </message>
 </context>
 <context>
