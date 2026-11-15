@@ -76,12 +76,36 @@ thai.InstallingMaster=กำลังติดตั้ง DriveVault Master Pro
 thai.DesktopTask=สร้างทางลัดบน&เดสก์ท็อป
 thai.KeepDataPrompt=ต้องการลบการตั้งค่า ไฟล์บันทึก สำเนาบันทึกอัตโนมัติ และแคช ด้วยหรือไม่?%n%nโปรเจกต์และวิดีโอที่ส่งออกของคุณจะไม่ถูกลบเด็ดขาด%n%nเลือก "No/ไม่" เพื่อเก็บไว้ (แนะนำหากจะติดตั้งใหม่)
 
+english.AiModelsTask=Download the AI speech models now (about 3.2 GB: OpenThai for Thai captions, Whisper tiny and small). Needs an Internet connection; skip it to download them later in Settings > AI.
+english.AiModelsGroup=AI features:
+english.DownloadingModels=Downloading the AI speech models...
+english.ModelsNoSpace=The AI speech models were not downloaded: there is not enough free disk space (about %1 MB are needed).%n%nThe program is installed without them. You can download them later in Settings > AI.
+english.ModelsFailed=The AI speech models could not be downloaded:%n%n%1%n%nThe program is installed without them. You can download them later in Settings > AI.
+english.ModelsCancelled=the download was cancelled
+english.ModelsUnpackFailed=The OpenThai model could not be unpacked, so it was not installed. You can download it again in Settings > AI.
+thai.AiModelsTask=ดาวน์โหลดโมเดลเสียง AI ตอนนี้ (ประมาณ 3.2 GB: OpenThai สำหรับคำบรรยายภาษาไทย, Whisper tiny และ small) ต้องต่ออินเทอร์เน็ต ถ้าข้ามไปจะดาวน์โหลดทีหลังได้ที่ ตั้งค่า > AI
+thai.AiModelsGroup=ฟีเจอร์ AI:
+thai.DownloadingModels=กำลังดาวน์โหลดโมเดลเสียง AI...
+thai.ModelsNoSpace=ไม่ได้ดาวน์โหลดโมเดลเสียง AI เพราะพื้นที่ดิสก์ว่างไม่พอ (ต้องการประมาณ %1 MB)%n%nติดตั้งโปรแกรมโดยไม่มีโมเดลเหล่านี้ ดาวน์โหลดทีหลังได้ที่ ตั้งค่า > AI
+thai.ModelsFailed=ดาวน์โหลดโมเดลเสียง AI ไม่สำเร็จ:%n%n%1%n%nติดตั้งโปรแกรมโดยไม่มีโมเดลเหล่านี้ ดาวน์โหลดทีหลังได้ที่ ตั้งค่า > AI
+thai.ModelsCancelled=ยกเลิกการดาวน์โหลดแล้ว
+thai.ModelsUnpackFailed=แตกไฟล์โมเดล OpenThai ไม่สำเร็จ จึงไม่ได้ติดตั้ง ดาวน์โหลดใหม่ได้ที่ ตั้งค่า > AI
+
 [Components]
 Name: "main"; Description: "{#AppName}"; Types: full compact custom; Flags: fixed
 Name: "assoc"; Description: "{cm:AssocComponent}"; Types: full
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:DesktopTask}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+; The AI speech models are too big for the installer (the OpenThai model alone is 2.6 GB, and a GitHub release file is limited to 2 GB): the wizard downloads
+; them while installing, checks every file against its SHA-256 and puts them in {app}\ai. Silent installs (the hub, tests) never download.
+Name: "aimodels"; Description: "{cm:AiModelsTask}"; GroupDescription: "{cm:AiModelsGroup}"
+
+[UninstallDelete]
+; the downloaded models are not tracked as installed files
+Type: filesandordirs; Name: "{app}\ai\openthai"
+Type: files; Name: "{app}\ai\models\ggml-tiny.bin"
+Type: files; Name: "{app}\ai\models\ggml-small.bin"
 
 [Files]
 ; Everything produced by windeployqt, the executable and the license folder.
@@ -201,6 +225,173 @@ begin
 #else
   Result := False;
 #endif
+end;
+
+// ---- AI speech models (downloaded while installing) ------------------------------------------------------------------------------
+// One pinned revision per repository, fixed sizes and SHA-256 (the same values as src\ai\OpenThaiInstaller.cpp for OpenThai: change both together).
+const
+  WhisperBase = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/';
+  OpenThaiBase = 'https://huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX/resolve/9f142a43e4d35a422c1c7dac40772ef707387ebc/';
+  TinyName = 'ggml-tiny.bin';
+  TinySize = 77691713;
+  TinySha = 'be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21';
+  SmallName = 'ggml-small.bin';
+  SmallSize = 487601967;
+  SmallSha = '1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b';
+  OtLicName = 'LICENSE';
+  OtLicSize = 2619;
+  OtLicSha = '116493ed1369502b5e29cc559a8fa009a371bae926e769038ebb09885b091221';
+  OtZipName = 'openthai2.0-asr-streaming-fp32.asr.zip';
+  OtZipSize = 149365631;
+  OtZipSha = 'd4161d14e1c61c779ae01cf02356a99d2752f7931ce2d04be8098c57270d463f';
+  OtDataName = 'encoder.onnx.data';
+  OtDataSize = 2454405120;
+  OtDataSha = 'a139201333ab89d5e965bc12abb1c534aa285d82e40051c2dda605365c74f18b';
+
+var
+  ModelPage: TDownloadWizardPage;
+  ModelsNote: String;      // why something was not installed ('' when all is well)
+
+function OnModelProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
+begin
+  Result := True;
+end;
+
+procedure InitializeWizard();
+begin
+  ModelPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), CustomMessage('DownloadingModels'), @OnModelProgress);
+end;
+
+function AppFile(const Rel: String): String;
+begin
+  Result := AddBackslash(ExpandConstant('{app}')) + Rel;
+end;
+
+function HaveFile(const Path: String; Size: Int64): Boolean;
+var
+  S: Int64;
+begin
+  Result := FileExists(Path) and FileSize64(Path, S) and (S = Size);
+end;
+
+// Everything that is missing is downloaded into {tmp} (checked against its SHA-256 by the download itself) and placed in {app}\ai afterwards.
+procedure DownloadModels();
+var
+  Missing, FreeTmp, TotalTmp, FreeApp, TotalApp, Needed: Int64;
+  NeedOpenThai: Boolean;
+begin
+  ModelsNote := '';
+  Missing := 0;
+  ModelPage.Clear;
+  if not HaveFile(AppFile('ai\models\' + TinyName), TinySize) then
+  begin
+    ModelPage.Add(WhisperBase + TinyName, TinyName, TinySha);
+    Missing := Missing + TinySize;
+  end;
+  if not HaveFile(AppFile('ai\models\' + SmallName), SmallSize) then
+  begin
+    ModelPage.Add(WhisperBase + SmallName, SmallName, SmallSha);
+    Missing := Missing + SmallSize;
+  end;
+  NeedOpenThai := not (HaveFile(AppFile('ai\openthai\encoder.onnx.data'), OtDataSize) and FileExists(AppFile('ai\openthai\encoder.onnx')) and
+                       FileExists(AppFile('ai\openthai\decoder_joint.onnx')) and FileExists(AppFile('ai\openthai\tokens.txt')));
+  if NeedOpenThai then
+  begin
+    ModelPage.Add(OpenThaiBase + OtLicName, OtLicName, OtLicSha);
+    ModelPage.Add(OpenThaiBase + OtZipName, OtZipName, OtZipSha);
+    ModelPage.Add(OpenThaiBase + OtDataName, OtDataName, OtDataSha);
+    Missing := Missing + OtLicSize + OtZipSize + OtDataSize;
+  end;
+  if Missing = 0 then
+    Exit;
+
+  // disk space: the files are downloaded into {tmp} and moved into {app}; the program itself needs about 0.6 GB
+  Needed := Missing + 700 * 1024 * 1024;
+  if GetSpaceOnDisk64(ExtractFileDrive(ExpandConstant('{tmp}')), FreeTmp, TotalTmp) and
+     GetSpaceOnDisk64(ExtractFileDrive(ExpandConstant('{app}')), FreeApp, TotalApp) then
+  begin
+    if CompareText(ExtractFileDrive(ExpandConstant('{tmp}')), ExtractFileDrive(ExpandConstant('{app}'))) = 0 then
+    begin
+      if FreeApp < Needed then
+      begin
+        ModelsNote := FmtMessage(CustomMessage('ModelsNoSpace'), [IntToStr(Needed div (1024 * 1024))]);
+        Exit;
+      end;
+    end
+    else if (FreeTmp < Missing + 200 * 1024 * 1024) or (FreeApp < Needed) then
+    begin
+      ModelsNote := FmtMessage(CustomMessage('ModelsNoSpace'), [IntToStr(Needed div (1024 * 1024))]);
+      Exit;
+    end;
+  end;
+
+  ModelPage.Show;
+  try
+    try
+      ModelPage.Download;
+    except
+      if ModelPage.AbortedByUser then
+        ModelsNote := FmtMessage(CustomMessage('ModelsFailed'), [CustomMessage('ModelsCancelled')])
+      else
+        ModelsNote := FmtMessage(CustomMessage('ModelsFailed'), [GetExceptionMessage]);
+    end;
+  finally
+    ModelPage.Hide;
+  end;
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := True;
+  // Silent installs (the hub, tests) never download; the page "Settings > AI" can download the models later.
+  if (CurPageID = wpReady) and (not WizardSilent()) and WizardIsTaskSelected('aimodels') then
+    DownloadModels();
+end;
+
+procedure PlaceModelFile(const Name, DestDir: String);
+var
+  Src, Dst: String;
+begin
+  Src := ExpandConstant('{tmp}\') + Name;
+  if not FileExists(Src) then
+    Exit;
+  ForceDirectories(DestDir);
+  Dst := AddBackslash(DestDir) + Name;
+  DeleteFile(Dst);
+  if not RenameFile(Src, Dst) then
+    if CopyFile(Src, Dst, False) then
+      DeleteFile(Src);
+end;
+
+// The program files are installed: put the downloaded models next to them.
+procedure PlaceModels();
+var
+  Zip, OtDir: String;
+  Code: Integer;
+begin
+  OtDir := AppFile('ai\openthai');
+  PlaceModelFile(TinyName, AppFile('ai\models'));
+  PlaceModelFile(SmallName, AppFile('ai\models'));
+  PlaceModelFile(OtLicName, OtDir);
+  PlaceModelFile(OtDataName, OtDir);
+  Zip := ExpandConstant('{tmp}\') + OtZipName;
+  if FileExists(Zip) then
+  begin
+    // the archive is stored without compression and was checked against its SHA-256; Windows 10 and later have tar.exe
+    ForceDirectories(OtDir);
+    if (not Exec(ExpandConstant('{sys}\tar.exe'), '-xf "' + Zip + '" -C "' + OtDir + '"', '', SW_HIDE, ewWaitUntilTerminated, Code)) or (Code <> 0) or
+       (not FileExists(OtDir + '\encoder.onnx')) or (not FileExists(OtDir + '\decoder_joint.onnx')) or (not FileExists(OtDir + '\tokens.txt')) then
+      ModelsNote := CustomMessage('ModelsUnpackFailed');
+    DeleteFile(Zip);
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    PlaceModels();
+  if (CurStep = ssDone) and (ModelsNote <> '') then
+    SuppressibleMsgBox(ModelsNote, mbInformation, MB_OK, IDOK);
 end;
 
 // Uninstall: program files, shortcuts and the registry entries above are removed automatically.

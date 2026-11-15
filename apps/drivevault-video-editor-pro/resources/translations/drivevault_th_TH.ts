@@ -201,7 +201,6 @@
     </message>
     <message>
         <location filename="../../src/ui/settings/AiPage.qml" line="28"/>
-        <location filename="../../src/ui/settings/AiPage.qml" line="54"/>
         <source>Automatic</source>
         <translation>อัตโนมัติ</translation>
     </message>
@@ -226,32 +225,29 @@
         <translation>ถอดเสียงเป็นข้อความ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="49"/>
         <source>Speech engine</source>
-        <translation>เอนจินถอดเสียง</translation>
+        <translation type="vanished">เอนจินถอดเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="50"/>
         <source>Automatic uses the OpenThai model for Thai (when it is installed) and whisper.cpp for every other language.</source>
-        <translation>อัตโนมัติจะใช้โมเดล OpenThai สำหรับภาษาไทย (เมื่อติดตั้งแล้ว) และใช้ whisper.cpp กับภาษาอื่นทั้งหมด</translation>
+        <translation type="vanished">อัตโนมัติจะใช้โมเดล OpenThai สำหรับภาษาไทย (เมื่อติดตั้งแล้ว) และใช้ whisper.cpp กับภาษาอื่นทั้งหมด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="54"/>
         <source>OpenThai (Thai only)</source>
-        <translation>OpenThai (ภาษาไทยเท่านั้น)</translation>
+        <translation type="vanished">OpenThai (ภาษาไทยเท่านั้น)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="59"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="60"/>
         <source>OpenThai 2.0 ASR model</source>
         <translation>โมเดล OpenThai 2.0 ASR</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="60"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="61"/>
         <source>This build has no ONNX Runtime, so the model cannot run.</source>
         <translation>โปรแกรมรุ่นนี้ไม่มี ONNX Runtime จึงรันโมเดลไม่ได้</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="61"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="62"/>
         <source>Installed. It runs on this computer; nothing is uploaded.</source>
         <translation>ติดตั้งแล้ว ทำงานบนเครื่องนี้ ไม่มีการอัปโหลดอะไร</translation>
     </message>
@@ -260,132 +256,146 @@
         <translation type="vanished">ยังไม่ได้ติดตั้ง ดาวน์โหลดไฟล์จาก huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt ขนาดรวมประมาณ 2.6 GB) แล้ววางไว้ใน %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="62"/>
         <source>Not installed. Press Download below (%1), or put the files of huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt) in %2</source>
-        <translation>ยังไม่ได้ติดตั้ง กดดาวน์โหลดด้านล่าง (%1) หรือนำไฟล์จาก huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt) ไปวางไว้ใน %2</translation>
+        <translation type="vanished">ยังไม่ได้ติดตั้ง กดดาวน์โหลดด้านล่าง (%1) หรือนำไฟล์จาก huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt) ไปวางไว้ใน %2</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="67"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="49"/>
+        <source>Use OpenThai for Thai speech</source>
+        <translation>ใช้ OpenThai กับเสียงภาษาไทย</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="50"/>
+        <source>Thai captions use the OpenThai 2.0 model. Other languages always use whisper.cpp, and so does Thai when this is off.</source>
+        <translation>คำบรรยายภาษาไทยใช้โมเดล OpenThai 2.0 ภาษาอื่นใช้ whisper.cpp เสมอ และภาษาไทยก็ใช้ whisper.cpp เมื่อปิดตัวนี้</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="63"/>
+        <source>Not installed (the setup normally installs it; it was skipped or could not be downloaded). Press Download below (%1), or put the files of huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt) in %2</source>
+        <translation>ยังไม่ได้ติดตั้ง (ตัวติดตั้งโปรแกรมปกติจะติดตั้งให้ แต่ถูกข้ามหรือดาวน์โหลดไม่สำเร็จ) กดดาวน์โหลดด้านล่าง (%1) หรือนำไฟล์จาก huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt) ไปวางไว้ใน %2</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/settings/AiPage.qml" line="68"/>
         <source>Download the OpenThai model</source>
         <translation>ดาวน์โหลดโมเดล OpenThai</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="70"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="71"/>
         <source>From huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX, %1. It starts only when you press the button; each file is checked with its SHA-256.</source>
         <translation>จาก huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX ขนาด%1 จะเริ่มเมื่อคุณกดปุ่มเท่านั้น และทุกไฟล์ถูกตรวจด้วย SHA-256</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="87"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="88"/>
         <source>Download</source>
         <translation>ดาวน์โหลด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="90"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="91"/>
         <source>Cancel</source>
         <translation>ยกเลิก</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="94"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="95"/>
         <source>OpenThai model folder</source>
         <translation>โฟลเดอร์โมเดล OpenThai</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="96"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="97"/>
         <source>Open folder</source>
         <translation>เปิดโฟลเดอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="100"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="101"/>
         <source>Connect Claude Code / Codex (MCP)</source>
         <translation>เชื่อมต่อ Claude Code / Codex (MCP)</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="101"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="102"/>
         <source>Lets an AI coding assistant on this computer work on the open project: list media and clips, edit the timeline, run the AI helpers. Every edit is one undo step. It listens on this computer only and needs the private token below.</source>
         <translation>ให้ผู้ช่วย AI ที่เขียนโค้ดบนเครื่องนี้ทำงานกับโปรเจกต์ที่เปิดอยู่ได้ เช่น ดูรายการสื่อและคลิป แก้ไทม์ไลน์ และใช้ตัวช่วย AI ทุกการแก้ไขเป็นหนึ่งขั้นของ Undo เซิร์ฟเวอร์รับเฉพาะการเชื่อมต่อจากเครื่องนี้และต้องใช้โทเคนส่วนตัวด้านล่าง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="105"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="106"/>
         <source>Enable MCP server</source>
         <translation>เปิดเซิร์ฟเวอร์ MCP</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="106"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="107"/>
         <source>Running at %1</source>
         <translation>กำลังทำงานที่ %1</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="106"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="107"/>
         <source>Off. Nothing is listening.</source>
         <translation>ปิดอยู่ ไม่มีการรับการเชื่อมต่อ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="114"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="115"/>
         <source>Port</source>
         <translation>พอร์ต</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="115"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="116"/>
         <source>Restart the server (switch it off and on) after changing it.</source>
         <translation>หลังเปลี่ยนพอร์ต ให้ปิดแล้วเปิดเซิร์ฟเวอร์ใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="125"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="126"/>
         <source>Claude Code</source>
         <translation>Claude Code</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="126"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="127"/>
         <source>Copy this command and run it once in a terminal. It contains your private token.</source>
         <translation>คัดลอกคำสั่งนี้ไปรันหนึ่งครั้งในเทอร์มินัล คำสั่งมีโทเคนส่วนตัวของคุณอยู่ด้วย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="127"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="128"/>
         <source>Copy command</source>
         <translation>คัดลอกคำสั่ง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="131"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="132"/>
         <source>Codex</source>
         <translation>Codex</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="132"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="133"/>
         <source>Copy this block into ~/.codex/config.toml, then set the token variable shown in its last line.</source>
         <translation>คัดลอกบล็อกนี้ไปใส่ใน ~/.codex/config.toml แล้วตั้งค่าตัวแปรโทเคนตามบรรทัดสุดท้าย</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="133"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="134"/>
         <source>Copy config</source>
         <translation>คัดลอกการตั้งค่า</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="137"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="138"/>
         <source>New token</source>
         <translation>โทเคนใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="138"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="139"/>
         <source>The old token stops working at once; connect your assistant again.</source>
         <translation>โทเคนเก่าจะใช้ไม่ได้ทันที ต้องเชื่อมต่อผู้ช่วยของคุณใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="139"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="140"/>
         <source>Create new token</source>
         <translation>สร้างโทเคนใหม่</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="142"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="143"/>
         <source>Feature status</source>
         <translation>สถานะฟีเจอร์</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="146"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="147"/>
         <source>Speech to text and auto captions</source>
         <translation>ถอดเสียงเป็นข้อความและสร้างคำบรรยายอัตโนมัติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="146"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="147"/>
         <source>OpenThai 2.0 for Thai, whisper.cpp for other languages</source>
         <translation>OpenThai 2.0 สำหรับภาษาไทย whisper.cpp สำหรับภาษาอื่น</translation>
     </message>
@@ -394,32 +404,32 @@
         <translation type="vanished">whisper.cpp — ภาษาไทยและอังกฤษ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="147"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="148"/>
         <source>Silence detection</source>
         <translation>ตรวจจับช่วงเงียบ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="147"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="148"/>
         <source>Highlight and remove silent passages</source>
         <translation>ไฮไลต์และตัดช่วงที่ไม่มีเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="148"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="149"/>
         <source>Smart cut suggestions</source>
         <translation>แนะนำจุดตัดอัจฉริยะ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="148"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="149"/>
         <source>Scene changes and audio activity</source>
         <translation>จุดเปลี่ยนฉากและความเคลื่อนไหวของเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="149"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="150"/>
         <source>Audio enhancement</source>
         <translation>ปรับปรุงคุณภาพเสียง</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="149"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="150"/>
         <source>Spectral noise reduction (signal processing, no neural model)</source>
         <translation>ลดเสียงรบกวนด้วยสเปกตรัม (การประมวลผลสัญญาณ ไม่ใช้โมเดลเครือข่ายประสาท)</translation>
     </message>
@@ -428,32 +438,32 @@
         <translation type="vanished">ลดเสียงรบกวนและเพิ่มความชัดของเสียงพูด</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="150"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="151"/>
         <source>Object tracking</source>
         <translation>ติดตามวัตถุ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="150"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="151"/>
         <source>Follow a subject across frames</source>
         <translation>ติดตามวัตถุข้ามเฟรม</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="151"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="152"/>
         <source>Natural language assistant</source>
         <translation>ผู้ช่วยภาษาธรรมชาติ</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="151"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="152"/>
         <source>Typed commands from plain language</source>
         <translation>สั่งงานด้วยภาษาพูดทั่วไปแล้วแปลงเป็นคำสั่งที่ตรวจสอบได้</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="161"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="162"/>
         <source>Engine missing</source>
         <translation>ไม่พบเอนจิน</translation>
     </message>
     <message>
-        <location filename="../../src/ui/settings/AiPage.qml" line="166"/>
+        <location filename="../../src/ui/settings/AiPage.qml" line="167"/>
         <source>Model manager</source>
         <translation>ตัวจัดการโมเดล</translation>
     </message>

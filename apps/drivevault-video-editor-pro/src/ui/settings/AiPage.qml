@@ -46,20 +46,21 @@ ColumnLayout {
 
     Section { title: qsTr("Speech to text"); Layout.topMargin: 22 }
     SettingRow {
-        title: qsTr("Speech engine")
-        description: qsTr("Automatic uses the OpenThai model for Thai (when it is installed) and whisper.cpp for every other language.")
-        AppComboBox {
+        title: qsTr("Use OpenThai for Thai speech")
+        description: qsTr("Thai captions use the OpenThai 2.0 model. Other languages always use whisper.cpp, and so does Thai when this is off.")
+        dimmed: Ai.openThaiStatus !== "available"
+        AppSwitch {
             objectName: "speechEngine"
-            current: AppSettings.values.aiSpeechEngine
-            options: [ { value: "auto", label: qsTr("Automatic") }, { value: "openthai", label: qsTr("OpenThai (Thai only)") }, { value: "whisper", label: "whisper.cpp" } ]
-            onPicked: value => AppSettings.set("aiSpeechEngine", value)
+            enabled: Ai.openThaiStatus === "available"
+            checked: Ai.openThaiStatus === "available" && AppSettings.values.aiSpeechEngine !== "whisper"
+            onToggled: AppSettings.set("aiSpeechEngine", checked ? "auto" : "whisper")
         }
     }
     SettingRow {
         title: qsTr("OpenThai 2.0 ASR model")
         description: Ai.openThaiStatus === "notBuilt" ? qsTr("This build has no ONNX Runtime, so the model cannot run.")
                      : Ai.openThaiStatus === "available" ? qsTr("Installed. It runs on this computer; nothing is uploaded.")
-                     : qsTr("Not installed. Press Download below (%1), or put the files of huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt) in %2").arg(Ai.openThaiInstaller.sizeText).arg(Ai.openThaiFolder)
+                     : qsTr("Not installed (the setup normally installs it; it was skipped or could not be downloaded). Press Download below (%1), or put the files of huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX (encoder.onnx, encoder.onnx.data, decoder_joint.onnx, tokens.txt) in %2").arg(Ai.openThaiInstaller.sizeText).arg(Ai.openThaiFolder)
         StatusBadge { kind: Ai.openThaiStatus === "available" ? "available" : Ai.openThaiStatus === "modelRequired" ? "modelRequired" : "unsupported" }
     }
     SettingRow {

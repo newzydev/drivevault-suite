@@ -1,6 +1,11 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.15.0 (2026-11-15)
+--------------
+  - New: the installer now downloads the AI speech models while it installs the program: OpenThai 2.0 for Thai captions (about 2.6 GB), Whisper tiny and Whisper small, together with Whisper base that is part of the installer. It is a task on the "Ready to install" step (on by default; clear it to skip). Each file comes from a fixed revision and is checked against its SHA-256; a failed or cancelled download, or too little disk space, installs the program without the models and says so. Silent installs (Master Pro, scripts) never download. The models are removed again when the program is uninstalled.
+  - Settings > AI is now just a switch: "Use OpenThai for Thai speech" (on when the model is installed). The Download button there only shows when the OpenThai model is missing, as a way to get it later. The Whisper models of the model manager are installed already; pick one with "Use".
+
 Version 1.14.0 (2026-11-15)
 --------------
   - New: a Download button for the OpenThai speech model in Settings > AI (about 2.6 GB, from huggingface.co/iapp/OpenThai2.0-ASR-Streaming-ONNX). It starts only when you press it, shows progress, can be cancelled, and continues where it stopped after a cancel, a lost connection or a restart.
