@@ -26,7 +26,7 @@ class TstWindow : public QObject {
     Q_OBJECT
     QTemporaryDir m_dir;
 
-    QImage render(const QString& lang, const QString& name)
+    QImage render(const QString& lang, const QString& name, const QString& tab = QStringLiteral("programs"))
     {
         const QString png = m_dir.filePath(name);
         QProcess p;
@@ -35,7 +35,7 @@ class TstWindow : public QObject {
         env.insert("QT_QUICK_BACKEND", "software");
         p.setProcessEnvironment(env);
         p.start(QStringLiteral(MASTER_EXE_PATH), {"--registry-root", kRoot, "--data-dir", m_dir.filePath("data"), "--lang", lang,
-                                                   "--screenshot", png, "--size", "1120x740"});
+                                                   "--screenshot", png, "--size", "1120x740", "--tab", tab});
         if (!p.waitForFinished(60000))
             return {};
         if (p.exitCode() != 0)
@@ -66,6 +66,19 @@ private slots:
         QVERIFY2(countNear(img, qRgb(0x2F, 0x6E, 0xCF), 34) > 1500, "Image Editor card (blue, dimmed: coming soon)");
         QVERIFY2(countNear(img, qRgb(0x14, 0x9A, 0x6E), 34) > 1500, "Audio Editor card (emerald, dimmed: coming soon)");
         QVERIFY2(countNear(img, qRgb(0xF5, 0x9E, 0x0B), 14) > 100, "the hub's own amber accent");
+    }
+
+    // The tabs at the top: Programs shows the cards; AI Q&A and Agentic AI are "coming soon" pages (no program cards, so no violet card colour).
+    void tabsSwitchThePage()
+    {
+        const QImage programs = render("en", "tab-programs.png", "programs");
+        const QImage ask = render("en", "tab-ask.png", "ask");
+        const QImage agent = render("en", "tab-agent.png", "agent");
+        QVERIFY(!programs.isNull() && !ask.isNull() && !agent.isNull());
+        QVERIFY2(ask != programs && agent != programs && ask != agent, "each tab shows its own page");
+        QVERIFY(countNear(programs, qRgb(0x8B, 0x5C, 0xF6), 14) > 1500);
+        QVERIFY2(countNear(ask, qRgb(0x8B, 0x5C, 0xF6), 14) < 300, "no program cards on the AI Q&A tab");
+        QVERIFY2(countNear(agent, qRgb(0x8B, 0x5C, 0xF6), 14) < 300, "no program cards on the Agentic AI tab");
     }
 
     void thaiRendersToo()

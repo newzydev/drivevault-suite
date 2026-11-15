@@ -85,6 +85,8 @@ ApplicationWindow {
     }
     readonly property var sections: [ { key: "multimedia" }, { key: "office" }, { key: "other" } ]
     property string category: ""          // "" = all categories, otherwise a section key
+    property string tab: "programs"       // the tab at the top of the page: programs | ask | agent (ask and agent are not available yet)
+    readonly property var tabs: [ { key: "programs" }, { key: "ask" }, { key: "agent" } ]
     function matches(p) {
         if (category !== "" && p.section !== category)
             return false
@@ -247,13 +249,6 @@ ApplicationWindow {
                         }
                     }
                 }
-                MButton {
-                    objectName: "checkUpdates"
-                    compact: true
-                    text: Hub.checking ? Tr.s("checking") : Tr.s("checkUpdates")
-                    enabled: !Hub.busy && !Hub.checking
-                    onClicked: { const e = Hub.checkForUpdates(); if (e !== "") win.showNotice(e) }
-                }
                 // everything else (rarely needed) is in this menu
                 MButton {
                     objectName: "moreMenu"
@@ -346,7 +341,7 @@ ApplicationWindow {
                     id: hero
                     objectName: "hero"
                     Layout.fillWidth: true
-                    implicitHeight: 290
+                    implicitHeight: 350
                     clip: true
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: "#2A1D0A" }
@@ -364,9 +359,55 @@ ApplicationWindow {
                         anchors.leftMargin: 40
                         anchors.rightMargin: 40
                         spacing: 10
+
+                        // tabs: Programs | AI Q&A | Agentic AI
+                        Rectangle {
+                            id: tabBar
+                            objectName: "tabBar"
+                            Layout.alignment: Qt.AlignHCenter
+                            implicitHeight: 40
+                            implicitWidth: tabRow.implicitWidth + 8
+                            radius: 20
+                            color: "#E61B1D24"
+                            border.width: 1
+                            border.color: Theme.border
+                            Row {
+                                id: tabRow
+                                anchors.centerIn: parent
+                                spacing: 2
+                                Repeater {
+                                    model: win.tabs
+                                    delegate: AbstractButton {
+                                        id: tabButton
+                                        required property var modelData
+                                        objectName: "tab_" + modelData.key
+                                        readonly property bool current: win.tab === modelData.key
+                                        implicitWidth: Math.max(96, tabLabel.implicitWidth + 40)
+                                        implicitHeight: 32
+                                        hoverEnabled: true
+                                        onClicked: win.tab = modelData.key
+                                        HoverHandler { cursorShape: Qt.PointingHandCursor }
+                                        Accessible.role: Accessible.PageTab
+                                        Accessible.name: Tr.s("tab_" + modelData.key)
+                                        contentItem: Text {
+                                            id: tabLabel
+                                            text: Tr.s("tab_" + tabButton.modelData.key)
+                                            font.pixelSize: 14
+                                            font.weight: Font.DemiBold
+                                            color: tabButton.current ? Theme.readableOn(Theme.accent) : tabButton.hovered ? Theme.text : Theme.textSecondary
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+                                        background: Rectangle { radius: 16; color: tabButton.current ? Theme.accent : tabButton.hovered ? Theme.surfaceHover : "transparent" }
+                                    }
+                                }
+                            }
+                        }
+                        Item { Layout.preferredHeight: 6 }
+
                         Text {
                             Layout.fillWidth: true
-                            text: Tr.s("heroTitle")
+                            text: win.tab === "programs" ? Tr.s("heroTitle") : Tr.s("tab_" + win.tab)
                             font.pixelSize: 34
                             font.weight: Font.Bold
                             color: Theme.text
@@ -378,7 +419,7 @@ ApplicationWindow {
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: Tr.s("subtitle")
+                            text: win.tab === "programs" ? Tr.s("subtitle") : Tr.s("soonSubtitle")
                             font.pixelSize: 15
                             color: Theme.textSecondary
                             horizontalAlignment: Text.AlignHCenter
@@ -393,6 +434,8 @@ ApplicationWindow {
                         Rectangle {
                             id: searchBar
                             objectName: "searchBar"
+                            opacity: win.tab === "programs" ? 1 : 0          // keeps its place, so the tabs do not jump when the tab changes
+                            enabled: win.tab === "programs"
                             Layout.alignment: Qt.AlignHCenter
                             Layout.fillWidth: true
                             Layout.maximumWidth: 700
@@ -503,8 +546,8 @@ ApplicationWindow {
                                 objectName: "searchField"
                                 anchors.left: magnifier.right
                                 anchors.leftMargin: 6
-                                anchors.right: parent.right
-                                anchors.rightMargin: 44
+                                anchors.right: updateButton.left
+                                anchors.rightMargin: 40
                                 anchors.verticalCenter: parent.verticalCenter
                                 height: parent.height - 8
                                 placeholderText: Tr.s("searchPlaceholder")
@@ -520,20 +563,64 @@ ApplicationWindow {
                             }
                             Text {                                         // clear
                                 visible: searchField.text !== ""
-                                anchors.right: parent.right
-                                anchors.rightMargin: 20
+                                anchors.right: updateButton.left
+                                anchors.rightMargin: 14
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "✕"
                                 font.pixelSize: 14
                                 color: Theme.textSecondary
                                 MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor; onClicked: searchField.clear() }
                             }
+                            // Check for updates: at the right end of the search bar (it was in the top bar)
+                            MButton {
+                                id: updateButton
+                                objectName: "checkUpdates"
+                                compact: true
+                                anchors.right: parent.right
+                                anchors.rightMargin: 10
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: Hub.checking ? Tr.s("checking") : Tr.s("checkUpdates")
+                                enabled: !Hub.busy && !Hub.checking
+                                onClicked: { const e = Hub.checkForUpdates(); if (e !== "") win.showNotice(e) }
+                            }
                         }
+                    }
+                }
+
+                // AI Q&A / Agentic AI: not built yet, so the page says so (no mock-up)
+                ColumnLayout {
+                    objectName: "soonPage"
+                    visible: win.tab !== "programs"
+                    Layout.fillWidth: true
+                    Layout.topMargin: 48
+                    Layout.bottomMargin: 60
+                    spacing: 14
+                    Rectangle {
+                        Layout.alignment: Qt.AlignHCenter
+                        height: 26
+                        width: soonBadge.implicitWidth + 24
+                        radius: 13
+                        color: Theme.surface
+                        border.width: 1
+                        border.color: Theme.border
+                        Text { id: soonBadge; anchors.centerIn: parent; text: Tr.s("comingSoon"); font.pixelSize: 13; font.weight: Font.Medium; color: Theme.textSecondary }
+                    }
+                    Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 40
+                        Layout.rightMargin: 40
+                        text: Tr.s(win.tab === "ask" ? "soonAsk" : "soonAgent")
+                        font.pixelSize: 15
+                        color: Theme.textSecondary
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.Wrap
                     }
                 }
 
                 // the sections
                 ColumnLayout {
+                    visible: win.tab === "programs"
                     Layout.fillWidth: true
                     Layout.leftMargin: 40
                     Layout.rightMargin: 40

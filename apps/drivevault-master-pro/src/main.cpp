@@ -32,7 +32,8 @@ int main(int argc, char* argv[])
     QCommandLineOption shot(QStringLiteral("screenshot"), QStringLiteral("Render the window to <file> (PNG) and exit (diagnostics)."), QStringLiteral("file"));
     QCommandLineOption size(QStringLiteral("size"), QStringLiteral("Window size WxH for --screenshot."), QStringLiteral("WxH"));
     QCommandLineOption list(QStringLiteral("list-products"), QStringLiteral("Write the programs found on this PC as JSON to <file> and exit (diagnostics, installer tests)."), QStringLiteral("file"));
-    parser.addOptions({dataDir, lang, registry, shot, size, list});
+    QCommandLineOption tab(QStringLiteral("tab"), QStringLiteral("Tab shown first: programs, ask or agent (diagnostics, --screenshot)."), QStringLiteral("name"));
+    parser.addOptions({dataDir, lang, registry, shot, size, list, tab});
     parser.process(app);
 
     for (const char* font : {":/qt/qml/DriveVault/Master/resources/fonts/Inter-Variable.ttf",
@@ -66,6 +67,8 @@ int main(int argc, char* argv[])
     if (engine.rootObjects().isEmpty())
         return 1;
 
+    if (parser.isSet(tab) && QStringList{QStringLiteral("programs"), QStringLiteral("ask"), QStringLiteral("agent")}.contains(parser.value(tab)))
+        engine.rootObjects().constFirst()->setProperty("tab", parser.value(tab));
     if (parser.isSet(shot)) {
         auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst());
         if (parser.isSet(size) && window) {

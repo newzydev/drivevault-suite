@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.6.0 (2026-11-15): Tabs at the top, "Check for updates" in the search bar
+  - New: three tabs above the headline - Programs, AI Q&A and Agentic AI (โปรแกรม / เอไอถามตอบ / เอเจนติกเอไอ). Programs is the page you know. AI Q&A and Agentic AI are not built yet: their tabs show a "Coming soon" page that says so; nothing there works yet.
+  - The "Check for updates" button moved from the top bar into the search bar (at its right end). It does the same as before.
+  - Diagnostics: the exe accepts --tab programs|ask|agent together with --screenshot.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.5.6 (2026-11-12): PDF Pro card text and a longer release feed
   - The PDF Pro card describes what the program does today (read, search, edit, fill forms, merge, split, compress, protect, sign, Thai OCR; everything on your PC), in Thai and English.
   - "Check for updates" now asks GitHub for up to 100 releases instead of 30. With 30, the newest program versions could fall out of the answer once enough releases exist, and a program would show no online version.
