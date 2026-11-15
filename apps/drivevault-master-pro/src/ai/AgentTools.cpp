@@ -196,6 +196,37 @@ AgentTools::Result AgentTools::searchText(const QJsonObject& args) const
     return {hits.join(QLatin1Char('\n')), false};
 }
 
+AgentTools::WriteInfo AgentTools::inspectWrite(const QJsonObject& args) const
+{
+    WriteInfo w;
+    if (!m_edits) {
+        w.error = QStringLiteral("editing is not allowed in this mode");
+        return w;
+    }
+    const QString content = args.value(QLatin1String("content")).toString();
+    w.bytes = content.toUtf8().size();
+    if (w.bytes > kMaxWrite) {
+        w.error = QStringLiteral("the content is too long (limit %1 bytes)").arg(kMaxWrite);
+        return w;
+    }
+    QString err;
+    const QString path = resolve(args.value(QLatin1String("path")).toString(), false, &err);
+    if (path.isEmpty()) {
+        w.error = err;
+        return w;
+    }
+    const QFileInfo info(path);
+    if (info.isDir() || info.fileName().isEmpty() || skippedFolder(info.fileName())) {
+        w.error = QStringLiteral("that name is not allowed");
+        return w;
+    }
+    w.ok = true;
+    w.path = QDir(m_root).relativeFilePath(path);
+    w.exists = info.exists();
+    w.preview = content.left(800);
+    return w;
+}
+
 AgentTools::Result AgentTools::writeFile(const QJsonObject& args) const
 {
     if (!m_edits)

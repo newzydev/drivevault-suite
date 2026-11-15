@@ -22,10 +22,12 @@ Item {
             settings.open()
         else if (part === "model")
             modelMenu.popup(modelChip, 0, -modelMenu.implicitHeight - 6)
+        else if (part === "mode")
+            modeMenu.popup(modeChip, 0, -modeMenu.implicitHeight - 6)
         else if (part === "effort")
             effortMenu.popup(effortChip, 0, -effortMenu.implicitHeight - 6)
     }
-    function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : "ai_writing") }
+    function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : status === "waiting" ? "ai_waiting" : status === "working" ? "ai_working" : "ai_writing") }
     readonly property string modelLabel: Ai.localModelName === "" ? Tr.s("ai_model_none") : Ai.localModelName.replace(/\.gguf$/i, "")
     function why(code) { return Tr.s("why_" + code) }
     // the text of an error of a reply: what happened, in words, plus what the service said
@@ -71,6 +73,22 @@ Item {
         }
         MenuSeparator { padding: 4; contentItem: Rectangle { implicitHeight: 1; color: Theme.border } }
         MMenuItem { objectName: "modelManage"; text: Tr.s("ai_model_manage"); onTriggered: settings.open() }
+    }
+    // what the agent may do with the files (the mode)
+    MMenu {
+        id: modeMenu
+        implicitWidth: 520
+        Repeater {
+            model: ["read", "plan", "ask", "edit"]
+            delegate: MMenuItem {
+                required property string modelData
+                objectName: "mode_" + modelData
+                text: Tr.s("mode_" + modelData) + "  -  " + Tr.s("mode_" + modelData + "_hint")
+                checkable: true
+                checked: root.ch.permission === modelData
+                onTriggered: root.ch.setPermission(modelData)
+            }
+        }
     }
     // how hard it tries
     MMenu {
@@ -326,6 +344,54 @@ Item {
                                 color: Theme.textDisabled
                             }
                             Rectangle {
+                                objectName: "aiApproval"
+                                visible: !msg.isUser && msg.modelData.approval && msg.modelData.approval.path !== undefined
+                                Layout.fillWidth: true
+                                implicitHeight: approvalColumn.implicitHeight + 24
+                                radius: 12
+                                color: Qt.alpha(Theme.warning, 0.1)
+                                border.width: 1
+                                border.color: Qt.alpha(Theme.warning, 0.5)
+                                ColumnLayout {
+                                    id: approvalColumn
+                                    anchors.fill: parent
+                                    anchors.margins: 12
+                                    spacing: 8
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: msg.isUser || !msg.modelData.approval || msg.modelData.approval.path === undefined ? ""
+                                              : Tr.s(msg.modelData.approval.replaces ? "appr_replace" : "appr_new").replace("%1", msg.modelData.approval.path).replace("%2", Math.round(msg.modelData.approval.bytes))
+                                        font.pixelSize: 13
+                                        font.weight: Font.DemiBold
+                                        color: Theme.text
+                                        wrapMode: Text.Wrap
+                                    }
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        implicitHeight: Math.min(previewText.implicitHeight + 16, 180)
+                                        radius: 8
+                                        color: Theme.background
+                                        clip: true
+                                        Text {
+                                            id: previewText
+                                            anchors.fill: parent
+                                            anchors.margins: 8
+                                            text: msg.isUser || !msg.modelData.approval || msg.modelData.approval.preview === undefined ? "" : msg.modelData.approval.preview
+                                            font.family: "Consolas"
+                                            font.pixelSize: 12
+                                            color: Theme.textSecondary
+                                            wrapMode: Text.WrapAnywhere
+                                        }
+                                    }
+                                    Text { visible: msg.modelData.approval && msg.modelData.approval.replaces === true; Layout.fillWidth: true; text: Tr.s("appr_backup"); font.pixelSize: 12; color: Theme.textSecondary; wrapMode: Text.Wrap }
+                                    RowLayout {
+                                        spacing: 8
+                                        MButton { objectName: "approvalAllow"; variant: "primary"; text: Tr.s("appr_allow"); onClicked: root.ch.answerApproval(true) }
+                                        MButton { objectName: "approvalDeny"; text: Tr.s("appr_deny"); onClicked: root.ch.answerApproval(false) }
+                                    }
+                                }
+                            }
+                            Rectangle {
                                 visible: !msg.isUser && msg.modelData.errorCode !== ""
                                 Layout.fillWidth: true
                                 implicitHeight: errText.implicitHeight + 20
@@ -514,12 +580,13 @@ Item {
                                 onClicked: Ai.webEnabled = !Ai.webEnabled
                             }
                             Chip {
-                                objectName: "aiPermission"
+                                id: modeChip
+                                objectName: "aiMode"
                                 visible: root.agent
                                 clickable: true
                                 enabled: !root.ch.busy
-                                text: Tr.s(root.ch.allowEdits ? "perm_edit" : "perm_read")
-                                onClicked: root.ch.setAllowEdits(!root.ch.allowEdits)
+                                text: Tr.s("mode_label") + ": " + Tr.s("mode_" + root.ch.permission) + "  ▾"
+                                onClicked: modeMenu.popup(modeChip, 0, -modeMenu.implicitHeight - 6)
                             }
                             Text {
                                 Layout.fillWidth: true
@@ -575,7 +642,7 @@ Item {
                     Text {
                         visible: root.agent
                         Layout.fillWidth: true
-                        text: Tr.s(root.ch.allowEdits ? "ai_mode_edit" : "ai_mode_read")
+                        text: Tr.s("ai_mode_" + root.ch.permission)
                         font.pixelSize: 13
                         color: Theme.textSecondary
                         wrapMode: Text.Wrap

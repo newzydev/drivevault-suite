@@ -59,6 +59,7 @@ void LocalAgent::cancel()
     if (!m_running)
         return;
     m_cancelled = true;
+    m_waiting = false;
     m_web->cancel();
     if (m_reply)
         m_reply->abort();
@@ -191,12 +192,40 @@ void LocalAgent::runNextCall()
         return;
     }
     emit activity(AgentTools::describe(name, args));
+    if (name == QLatin1String("write_file") && m_files && m_config.approveWrites) {
+        const AgentTools::WriteInfo info = m_files->inspectWrite(args);
+        if (!info.ok) {
+            result(info.error, true);
+            return;
+        }
+        m_waiting = true;                                  // the user decides: answerApproval() goes on
+        m_waitName = name;
+        m_waitArgs = args;
+        m_waitResult = result;
+        emit approvalNeeded(info.path, info.exists, info.bytes, info.preview);
+        return;
+    }
     if (!m_files) {
         result(QStringLiteral("no folder is chosen, so there are no file tools"), true);
         return;
     }
     const AgentTools::Result r = m_files->run(name, args);
     result(r.text, r.error);
+}
+
+void LocalAgent::answerApproval(bool allow)
+{
+    if (!m_waiting)
+        return;
+    m_waiting = false;
+    auto done = std::move(m_waitResult);
+    m_waitResult = nullptr;
+    if (!allow) {
+        done(QStringLiteral("the user declined this change; do not try again, say what you would have done"), true);
+        return;
+    }
+    const AgentTools::Result r = m_files->run(m_waitName, m_waitArgs);
+    done(r.text, r.error);
 }
 
 void LocalAgent::end(bool ok, const QString& code, const QString& detail)

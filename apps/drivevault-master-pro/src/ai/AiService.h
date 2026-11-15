@@ -49,7 +49,7 @@ class AiChannel : public QObject {
     Q_PROPERTY(QVariantList conversations READ conversations NOTIFY conversationsChanged FINAL)   // [{id, title}]
     Q_PROPERTY(QString currentId READ currentId NOTIFY conversationsChanged FINAL)
     Q_PROPERTY(QString folder READ folder NOTIFY settingsChanged FINAL)               // agent: the working folder
-    Q_PROPERTY(bool allowEdits READ allowEdits NOTIFY settingsChanged FINAL)          // agent: may edit files in the folder (false: read only)
+    Q_PROPERTY(QString permission READ permission NOTIFY settingsChanged FINAL)       // agent mode: read | plan | ask | edit (see Permission below)
     Q_PROPERTY(QString effort READ effort NOTIFY settingsChanged FINAL)               // low | medium | high
 
 public:
@@ -60,6 +60,7 @@ public:
         QString errorCode, errorDetail;
         bool streaming = false;
         bool stopped = false;
+        QVariantMap approval;              // {path, replaces, bytes, preview}: a write waits for the user's answer (not saved)
     };
     struct Conversation {
         QString id, title;
@@ -79,7 +80,9 @@ public:
     QVariantList conversations() const;
     QString currentId() const { return m_currentId; }
     QString folder() const { return m_folder; }
-    bool allowEdits() const { return m_allowEdits; }
+    QString permission() const { return m_permission; }
+    static QStringList permissions() { return {QStringLiteral("read"), QStringLiteral("plan"), QStringLiteral("ask"), QStringLiteral("edit")}; }
+    bool canWrite() const { return m_permission == QLatin1String("ask") || m_permission == QLatin1String("edit"); }
     QString effort() const { return m_effort; }
 
     Q_INVOKABLE QString send(const QString& text);        // "" = started, otherwise why not (notReady code, busy, empty)
@@ -88,7 +91,10 @@ public:
     Q_INVOKABLE void select(const QString& id);
     Q_INVOKABLE void remove(const QString& id);
     Q_INVOKABLE void setFolder(const QString& folder);
-    Q_INVOKABLE void setAllowEdits(bool allow);
+    // The agent's mode: read (look at the files and answer), plan (look, then write a plan; change nothing), ask (every file change waits for the user's
+    // answer), edit (file changes are accepted without asking). Edits only ever happen inside the chosen folder.
+    Q_INVOKABLE void setPermission(const QString& permission);
+    Q_INVOKABLE void answerApproval(bool allow);               // the user's answer to a waiting file change
     Q_INVOKABLE void setEffort(const QString& effort);
 
     void load();                                          // conversations of this page
@@ -128,7 +134,7 @@ private:
     AiService* m_service;
     QString m_folder;
     QString m_effort = QStringLiteral("medium");
-    bool m_allowEdits = false;
+    QString m_permission = QStringLiteral("ask");
     QList<Conversation> m_conversations;
     QString m_currentId;
     QString m_runId;                                       // the conversation the running request writes into

@@ -586,6 +586,7 @@ private slots:
         ai.llama()->useExternalServer(server.base(), "");
         QCOMPARE(agent->notReady(), QString("noFolder"));
         agent->setFolder(m_dir.filePath("pagework"));
+        agent->setPermission("read");                                            // read only: three tools
         ai.setWebEnabled(false);
         if (!ai.engineFound())
             QSKIP("no llama.cpp engine on this PC");
@@ -789,9 +790,9 @@ private slots:
         QVERIFY(why == "noEngine" || why == "noModel" || why == "noFolder");
         agent->setFolder(m_dir.path());
         QCOMPARE(agent->folder(), QDir::cleanPath(m_dir.path()));
-        QVERIFY(!agent->allowEdits());                                           // read only until the user says otherwise
-        agent->setAllowEdits(true);
-        QVERIFY(agent->allowEdits());
+        QCOMPARE(agent->permission(), QString("ask"));                          // every file change asks first until the user says otherwise
+        agent->setPermission("edit");
+        QCOMPARE(agent->permission(), QString("edit"));
     }
 
     // The real model with the three effort levels through the Q&A page (web off): "deep" must announce its thinking and still answer.
@@ -831,6 +832,204 @@ private slots:
             QCOMPARE(statuses.contains("thinking"), level == "high");
         }
         ai.llama()->stop();
+    }
+
+    // ---- the agent's mode (permission) and the question before a file is changed ---------------------------------------------------------
+    void aWriteCanBeInspectedBeforeItHappens()
+    {
+        QDir().mkpath(m_dir.filePath("inspect"));
+        QFile f(m_dir.filePath("inspect/a.txt"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("old");
+        f.close();
+        AgentTools rw(m_dir.filePath("inspect"), true);
+        auto info = rw.inspectWrite({{"path", "a.txt"}, {"content", "new content"}});
+        QVERIFY(info.ok && info.exists);
+        QCOMPARE(info.bytes, qint64(11));
+        QCOMPARE(info.preview, QString("new content"));
+        QVERIFY(!rw.inspectWrite({{"path", "b.txt"}, {"content", "x"}}).exists);
+        QVERIFY(!rw.inspectWrite({{"path", "../b.txt"}, {"content", "x"}}).ok);                 // the same folder rule as the write itself
+        QVERIFY(!AgentTools(m_dir.filePath("inspect"), false).inspectWrite({{"path", "a.txt"}, {"content", "x"}}).ok);
+        QCOMPARE(QFile(m_dir.filePath("inspect/a.txt")).size(), qint64(3));                    // looking changed nothing
+    }
+    void theAgentWaitsForTheUserBeforeWriting()
+    {
+        QDir().mkpath(m_dir.filePath("askwork"));
+        for (const bool allow : {false, true}) {
+            const QString name = allow ? "allowed.txt" : "declined.txt";
+            FakeServer server;
+            server.contentType = "application/json";
+            server.queue << agentReply({agentCall("w1", "write_file", {{"path", name}, {"content", "hello"}})}, QString())
+                         << agentReply({}, QStringLiteral("Done."));
+            QNetworkAccessManager net;
+            LocalAgent agent(&net);
+            QSignalSpy asked(&agent, &LocalAgent::approvalNeeded);
+            QSignalSpy done(&agent, &LocalAgent::finished);
+            LocalAgent::Config c;
+            c.baseUrl = server.base() + "/v1";
+            c.folder = m_dir.filePath("askwork");
+            c.allowEdits = true;
+            c.approveWrites = true;
+            c.history = {{"user", "write a file"}};
+            QCOMPARE(agent.start(c), QString());
+            QVERIFY(asked.wait(15000));
+            QCOMPARE(asked.at(0).at(0).toString(), name);
+            QVERIFY(agent.waitingForApproval());
+            QVERIFY(!QFileInfo::exists(m_dir.filePath("askwork/" + name)));              // nothing is written while the user decides
+            QCOMPARE(server.requests, 1);                                                // and the model is not asked again
+            agent.answerApproval(allow);
+            QVERIFY(done.wait(15000));
+            QVERIFY(done.at(0).at(0).toBool());
+            QCOMPARE(QFileInfo::exists(m_dir.filePath("askwork/" + name)), allow);
+            const QJsonArray msgs = requestBody(server.log.at(1)).value("messages").toArray();
+            const QString toolText = msgs.last().toObject().value("content").toString();
+            QCOMPARE(toolText.contains("declined"), !allow);                             // the model is told what happened
+        }
+    }
+    void aWriteCanBeStoppedWhileItWaits()
+    {
+        FakeServer server;
+        server.contentType = "application/json";
+        server.body = agentReply({agentCall("w1", "write_file", {{"path", "never.txt"}, {"content", "x"}})}, QString());
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy asked(&agent, &LocalAgent::approvalNeeded);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.path();
+        c.allowEdits = true;
+        c.approveWrites = true;
+        c.history = {{"user", "go"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(asked.wait(15000));
+        agent.cancel();
+        QVERIFY(done.count() == 1 || done.wait(5000));
+        QCOMPARE(done.at(0).at(1).toString(), QString("cancelled"));
+        QVERIFY(!QFileInfo::exists(m_dir.filePath("never.txt")));
+    }
+    void theModesGiveTheAgentItsTools()
+    {
+        QFile model(m_dir.filePath("mode-model.gguf"));
+        QVERIFY(model.open(QIODevice::WriteOnly));
+        model.write("x");
+        model.close();
+        QDir().mkpath(m_dir.filePath("modework"));
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hub-modes");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        if (!ai.engineFound())
+            QSKIP("no llama.cpp engine on this PC");
+        auto* agent = qobject_cast<AiChannel*>(ai.agent());
+        QCOMPARE(agent->permission(), QString("ask"));                                      // the default: ask before every change
+        agent->setPermission("bogus");
+        QCOMPARE(agent->permission(), QString("ask"));
+        ai.selectLocalModel(m_dir.filePath("mode-model.gguf"));
+        agent->setFolder(m_dir.filePath("modework"));
+        ai.setWebEnabled(false);
+        struct Case { const char* mode; int tools; bool plan; };
+        for (const Case& k : {Case{"read", 3, false}, Case{"plan", 3, true}, Case{"ask", 4, false}, Case{"edit", 4, false}}) {
+            FakeServer server;
+            server.contentType = "application/json";
+            server.body = agentReply({}, QStringLiteral("ok"));
+            ai.llama()->useExternalServer(server.base(), "");
+            agent->newConversation();
+            agent->setPermission(k.mode);
+            QCOMPARE(agent->permission(), QString(k.mode));
+            QCOMPARE(agent->send("hello"), QString());
+            QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 10000);
+            const QJsonObject body = requestBody(server.lastRequest);
+            QCOMPARE(body.value("tools").toArray().size(), k.tools);                       // write_file only in ask and edit
+            const QString system = body.value("messages").toArray().first().toObject().value("content").toString();
+            QCOMPARE(system.contains("PLAN"), k.plan);
+        }
+    }
+    void theChannelAsksAndWritesOnAllow()
+    {
+        QFile model(m_dir.filePath("ask-model.gguf"));
+        QVERIFY(model.open(QIODevice::WriteOnly));
+        model.write("x");
+        model.close();
+        QDir().mkpath(m_dir.filePath("askpage"));
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("w1", "write_file", {{"path", "note.txt"}, {"content", "from the AI"}})}, QString())
+                     << agentReply({}, QStringLiteral("Saved the note."));
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hub-askpage");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        if (!ai.engineFound())
+            QSKIP("no llama.cpp engine on this PC");
+        auto* agent = qobject_cast<AiChannel*>(ai.agent());
+        ai.selectLocalModel(m_dir.filePath("ask-model.gguf"));
+        ai.llama()->useExternalServer(server.base(), "");
+        ai.setWebEnabled(false);
+        agent->setFolder(m_dir.filePath("askpage"));
+        QCOMPARE(agent->send("write a note"), QString());
+        QTRY_VERIFY_WITH_TIMEOUT(agent->status() == "waiting", 10000);
+        const QVariantMap approval = agent->messages().at(1).toMap().value("approval").toMap();
+        QCOMPARE(approval.value("path").toString(), QString("note.txt"));
+        QCOMPARE(approval.value("replaces").toBool(), false);
+        QVERIFY(agent->busy());
+        QVERIFY(!QFileInfo::exists(m_dir.filePath("askpage/note.txt")));
+        agent->answerApproval(true);
+        QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 10000);
+        QFile written(m_dir.filePath("askpage/note.txt"));
+        QVERIFY(written.open(QIODevice::ReadOnly));
+        QCOMPARE(written.readAll(), QByteArray("from the AI"));
+        const QVariantMap reply = agent->messages().at(1).toMap();
+        QCOMPARE(reply.value("text").toString(), QString("Saved the note."));
+        QVERIFY(reply.value("approval").toMap().isEmpty());
+    }
+
+    // The real model in "ask first" mode: it must ask before it writes, and the file appears only after the user allows it.
+    void realLocalAgentAsksBeforeWriting()
+    {
+        if (qEnvironmentVariable("DM_TEST_REAL_LLM") != QLatin1String("1"))
+            QSKIP("set DM_TEST_REAL_LLM=1 to run the real local model");
+        QString model = qEnvironmentVariable("DM_TEST_MODEL");
+        for (QDir d(QCoreApplication::applicationDirPath()); model.isEmpty() && d.exists(); ) {
+            if (QFileInfo::exists(d.filePath(".tools/llm/Qwen3.5-4B-Q4_K_M.gguf")))
+                model = d.filePath(".tools/llm/Qwen3.5-4B-Q4_K_M.gguf");
+            if (!d.cdUp())
+                break;
+        }
+        QDir().mkpath(m_dir.filePath("realwrite"));
+        QNetworkAccessManager net;
+        LlamaServer server(&net);
+        server.start(model);
+        QTRY_VERIFY_WITH_TIMEOUT(server.state() == LlamaServer::State::Ready || server.state() == LlamaServer::State::Failed, 240000);
+        QVERIFY2(server.state() == LlamaServer::State::Ready, qPrintable(server.error()));
+        LocalAgent agent(&net);
+        QSignalSpy asked(&agent, &LocalAgent::approvalNeeded);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        QString text;
+        connect(&agent, &LocalAgent::piece, [&](const QString& t) { text += t; });
+        LocalAgent::Config c;
+        c.baseUrl = server.baseUrl() + "/v1";
+        c.apiKey = server.apiKey();
+        c.folder = m_dir.filePath("realwrite");
+        c.allowEdits = true;
+        c.approveWrites = true;
+        c.system = "You work inside the folder the user chose, with tools. Do what the user asks with the tools, then say briefly what you did.";
+        c.history = {{"user", "Create a file named greeting.txt that contains exactly: Hello from the agent"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY2(asked.wait(240000), "the model never asked to write");
+        fprintf(stderr, "REAL ASK: wants to write %s (%lld bytes)\n", qPrintable(asked.at(0).at(0).toString()), asked.at(0).at(2).toLongLong());
+        QVERIFY(!QFileInfo::exists(m_dir.filePath("realwrite/greeting.txt")));                // not yet
+        agent.answerApproval(true);
+        QVERIFY(done.wait(240000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QFile f(m_dir.filePath("realwrite/greeting.txt"));
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        const QString content = QString::fromUtf8(f.readAll());
+        fprintf(stderr, "REAL ASK: file content=[%s] answer=%s\n", qPrintable(content.trimmed()), qPrintable(text.left(120)));
+        QVERIFY(content.contains("Hello from the agent"));
+        server.stop();
     }
 
     // The real local model as an agent: it must call the file tool by itself, and (with DM_TEST_WEB=1) the web tool.

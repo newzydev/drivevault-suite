@@ -9,6 +9,8 @@
 #include <QPair>
 #include <QString>
 
+#include <functional>
+
 class QNetworkAccessManager;
 class QNetworkReply;
 
@@ -25,7 +27,8 @@ public:
         QString apiKey;
         QString model = QStringLiteral("local");
         QString folder;                                    // "" = no file tools
-        bool allowEdits = false;
+        bool allowEdits = false;                           // write_file is offered
+        bool approveWrites = false;                        // ...but every write waits for the user (approvalNeeded / answerApproval)
         bool web = false;                                  // web_search and fetch_page
         QString system;
         QList<QPair<QString, QString>> history;            // user / assistant messages, oldest first, the last is the new question
@@ -41,9 +44,12 @@ public:
     QString start(const Config& config);
     void cancel();
     bool running() const { return m_running; }
+    bool waitingForApproval() const { return m_waiting; }
+    void answerApproval(bool allow);                       // the user's answer to approvalNeeded
 
 signals:
     void piece(const QString& text);                       // text of the model (the answer, or what it says between tool calls)
+    void approvalNeeded(const QString& path, bool replaces, qint64 bytes, const QString& preview);   // a write waits: call answerApproval
     void activity(const QString& text);                    // "Read: notes.txt", "Web search: ..."
     void finished(bool ok, const QString& code, const QString& detail);   // code: "" | cancelled | tooManySteps | http<status> | network | badReply | empty
 
@@ -65,6 +71,10 @@ private:
     bool m_running = false;
     bool m_cancelled = false;
     bool m_wroteText = false;
+    bool m_waiting = false;                                // a write waits for the user
+    QString m_waitName;
+    QJsonObject m_waitArgs;
+    std::function<void(const QString&, bool)> m_waitResult;
 };
 
 } // namespace dm::ai

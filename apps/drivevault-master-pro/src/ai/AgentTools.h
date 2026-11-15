@@ -18,6 +18,17 @@ public:
         bool error = false;
     };
 
+    // What a write_file call would do, without doing it (the user is asked before it happens in the "ask" mode).
+    struct WriteInfo {
+        bool ok = false;
+        QString error;
+        QString path;                 // relative to the folder
+        bool exists = false;          // it would replace a file
+        qint64 bytes = 0;
+        QString preview;              // the beginning of the new content
+    };
+    WriteInfo inspectWrite(const QJsonObject& args) const;
+
     QJsonArray specs() const;                                         // the tools in the OpenAI "tools" format (write_file only when edits are allowed)
     Result run(const QString& name, const QJsonObject& args) const;
     static QString describe(const QString& name, const QJsonObject& args);   // "Read: notes.txt" for the activity line

@@ -124,7 +124,7 @@ QVariantList AiChannel::messages() const
             continue;
         for (const Message& m : c.messages) {
             out.append(QVariantMap{{"role", m.role}, {"text", m.text}, {"streaming", m.streaming}, {"stopped", m.stopped}, {"errorCode", m.errorCode},
-                                   {"errorDetail", m.errorDetail}, {"activity", m.activity}});
+                                   {"errorDetail", m.errorDetail}, {"activity", m.activity}, {"approval", m.approval}});
         }
     }
     return out;
@@ -316,7 +316,8 @@ void AiChannel::sendTools()
         c.baseUrl = server->baseUrl() + QStringLiteral("/v1");
         c.apiKey = server->apiKey();
         c.folder = isAgent() ? m_folder : QString();
-        c.allowEdits = isAgent() && m_allowEdits;
+        c.allowEdits = isAgent() && canWrite();
+        c.approveWrites = isAgent() && m_permission == QLatin1String("ask");
         c.web = m_service->webEnabled();
         c.thinking = effort.thinking;
         c.maxTokens = effort.maxTokens;
@@ -326,7 +327,9 @@ void AiChannel::sendTools()
                                   : QString();
         if (isAgent()) {
             c.system = QStringLiteral("You are an assistant that works inside the folder the user chose, with tools: list_files, read_file, search_text")
-                       + (m_allowEdits ? QStringLiteral(" and write_file. ") : QStringLiteral(". You can only read; you cannot change anything. "))
+                       + (canWrite() ? QStringLiteral(" and write_file. ") : QStringLiteral(". You can only read; you cannot change anything. "))
+                       + (m_permission == QLatin1String("plan") ? QStringLiteral("The user wants a PLAN: look at what you need, then answer with a short numbered list of the steps you would take and the files you would change. Do not change anything and do not claim that you did. ") : QString())
+                       + (m_permission == QLatin1String("ask") ? QStringLiteral("Every file change is shown to the user, who may decline it. ") : QString())
                        + QStringLiteral("Look at the files before you answer or change anything, and never invent what a file contains. Make only the changes the user asked "
                                         "for, then say briefly what you did. You cannot run programs. Answer in the language of the user's message (Thai or English).")
                        + web;
@@ -341,6 +344,13 @@ void AiChannel::sendTools()
             connect(m_localAgent, &LocalAgent::piece, this, &AiChannel::appendPiece);
             connect(m_localAgent, &LocalAgent::activity, this, &AiChannel::appendActivity);
             connect(m_localAgent, &LocalAgent::finished, this, &AiChannel::finish);
+            connect(m_localAgent, &LocalAgent::approvalNeeded, this, [this](const QString& path, bool replaces, qint64 bytes, const QString& preview) {
+                if (Conversation* conv = find(m_runId); conv && !conv->messages.isEmpty()) {
+                    conv->messages.last().approval = QVariantMap{{"path", path}, {"replaces", replaces}, {"bytes", double(bytes)}, {"preview", preview}};
+                    setBusy(true, QStringLiteral("waiting"));
+                    emit messagesChanged();
+                }
+            });
         }
         const QString err = m_localAgent->start(c);
         if (!err.isEmpty())
@@ -381,6 +391,7 @@ void AiChannel::finish(bool ok, const QString& code, const QString& detail)
     if (Conversation* c = find(m_runId); c && !c->messages.isEmpty()) {
         Message& m = c->messages.last();
         m.streaming = false;
+        m.approval.clear();
         if (code == QLatin1String("cancelled"))
             m.stopped = true;
         else if (!ok) {
@@ -470,22 +481,34 @@ void AiChannel::setFolder(const QString& folder)
     emit changed();
 }
 
-void AiChannel::setAllowEdits(bool allow)
+void AiChannel::setPermission(const QString& permission)
 {
-    if (m_busy || allow == m_allowEdits)
+    if (m_busy || !permissions().contains(permission) || permission == m_permission)
         return;
-    m_allowEdits = allow;
+    m_permission = permission;
     emit settingsChanged();
     emit changed();
 }
 
-QVariantMap AiChannel::settingsValues() const { return {{"folder", m_folder}, {"allowEdits", m_allowEdits}, {"effort", m_effort}}; }
+void AiChannel::answerApproval(bool allow)
+{
+    if (!m_localAgent || !m_localAgent->waitingForApproval())
+        return;
+    if (Conversation* conv = find(m_runId); conv && !conv->messages.isEmpty())
+        conv->messages.last().approval.clear();
+    setBusy(true, QStringLiteral("working"));
+    emit messagesChanged();
+    m_localAgent->answerApproval(allow);
+}
+QVariantMap AiChannel::settingsValues() const { return {{"folder", m_folder}, {"permission", m_permission}, {"effort", m_effort}}; }
 
 void AiChannel::applySettings(const QVariantMap& v)
 {
     m_effort = Effort::of(v.value(QStringLiteral("effort")).toString()).id;
     m_folder = v.value(QStringLiteral("folder")).toString();
-    m_allowEdits = v.value(QStringLiteral("allowEdits")).toBool();
+    m_permission = v.value(QStringLiteral("permission")).toString();
+    if (!permissions().contains(m_permission))
+        m_permission = v.value(QStringLiteral("allowEdits")).toBool() ? QStringLiteral("edit") : QStringLiteral("ask");     // an older settings file: the old switch
     emit settingsChanged();
 }
 
