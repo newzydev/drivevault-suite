@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.9.1 (2026-11-15): AI settings: buttons on the right
+  - The Download button (and "Installed") of every model in the AI settings now sits at the right edge of its row.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.9.0 (2026-11-15): The local AI engine is in the installer
   - New: the installer now carries the llama.cpp engine (Vulkan build b12170, MIT; about 100 MB) in the "ai\llama" folder, so a model on this PC works without installing PDF Pro. Every file is checked against its audited SHA-256 when the installer is built. No model is included: you still download one in the AI settings, only when you press Download.
   - The licences of llama.cpp, its OpenMP runtime and the Qwen3.5 models are in the "licenses" folder.

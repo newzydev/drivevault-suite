@@ -56,6 +56,6 @@ refusal while a program is installed, uninstall, empty-folder clean-up) is teste
 
 ## Status
 
-VERSION 1.9.0 (the llama.cpp engine is in the installer; the AI Q&A and Agentic AI pages work: local model, API key or Claude Code / Codex; tabs at the top; "Check for updates" in the search bar). Not code-signed (`package.ps1 -Sign` uses the shared signing script). Not tested on a separate clean PC / VM,
+VERSION 1.9.1 (the llama.cpp engine is in the installer; the AI Q&A and Agentic AI pages work: local model, API key or Claude Code / Codex; tabs at the top; "Check for updates" in the search bar). Not code-signed (`package.ps1 -Sign` uses the shared signing script). Not tested on a separate clean PC / VM,
 and the all-users path under `C:\Program Files` needs administrator rights and was not run by the automated tests (the per-user path was). `LICENSE.txt` and the installer licence pages are the drafted EULA generated from `shared/legal`
 (not yet reviewed by a lawyer).

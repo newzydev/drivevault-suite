@@ -79,7 +79,7 @@ Popup {
             contentWidth: availableWidth
             clip: true
             ColumnLayout {
-                width: scroll.availableWidth - 8
+                width: scroll.availableWidth - 18
                 spacing: 8
 
                 // ---- which AI this page uses -----------------------------------------------------------------------------------
@@ -146,7 +146,7 @@ Popup {
                                     Layout.fillWidth: true
                                     spacing: 2
                                     Text { text: installedCard.modelData.name; font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text; elide: Text.ElideMiddle; Layout.fillWidth: true }
-                                    Text { text: installedCard.modelData.sizeText; font.pixelSize: 12; color: Theme.textSecondary }
+                                    Text { Layout.fillWidth: true; text: installedCard.modelData.sizeText; font.pixelSize: 12; color: Theme.textSecondary }
                                 }
                                 MButton {
                                     objectName: "useModel"
@@ -173,8 +173,8 @@ Popup {
                                 ColumnLayout {
                                     Layout.fillWidth: true
                                     spacing: 2
-                                    Text { text: catalogCard.modelData.title; font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
-                                    Text { text: catalogCard.modelData.sizeText + "  -  " + Tr.s("level_" + catalogCard.modelData.level); font.pixelSize: 12; color: Theme.textSecondary }
+                                    Text { Layout.fillWidth: true; text: catalogCard.modelData.title; font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
+                                    Text { Layout.fillWidth: true; text: catalogCard.modelData.sizeText + "  -  " + Tr.s("level_" + catalogCard.modelData.level); font.pixelSize: 12; color: Theme.textSecondary }
                                 }
                                 Text { visible: catalogCard.modelData.installed; text: Tr.s("set_installed"); font.pixelSize: 13; color: Theme.success }
                                 MButton {
