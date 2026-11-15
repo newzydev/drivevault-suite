@@ -210,6 +210,75 @@ private slots:
         QVERIFY2(cer < 0.02, qPrintable(QString::number(cer)));
     }
 
+    // Form lines: a label, then a long dotted leader (and sometimes a second label and leader). The labels must be read and the dots must not turn into digits.
+    void readsTheLabelsInFrontOfDottedLeaders()
+    {
+        if (!dp::thaiOcrAvailable())
+            QSKIP("Local ONNX Runtime and OCR models are absent");
+        QTemporaryDir dir;
+        const int fontId = QFontDatabase::addApplicationFont(DP_TEST_FONT_THAI);
+        QVERIFY(fontId >= 0);
+        const QString family = QFontDatabase::applicationFontFamilies(fontId).first();
+        struct Form { QString left, right; int dots1, dots2; int weight; int pixels; };
+        const QList<Form> forms = {
+            {QStringLiteral("ประจำเดือน"), QStringLiteral("ปี"), 44, 15, QFont::Bold, 40},
+            {QStringLiteral("ผู้ปฏิบัติงาน"), QString(), 70, 0, QFont::Bold, 40},
+            {QStringLiteral("ชื่อและนามสกุล"), QStringLiteral("ตำแหน่ง"), 40, 28, QFont::Normal, 36},
+            {QStringLiteral("วันที่ได้รับเอกสาร"), QString(), 55, 0, QFont::Normal, 34},
+            {QStringLiteral("หมายเลขโทรศัพท์"), QStringLiteral("อีเมล"), 30, 34, QFont::Normal, 44},
+        };
+        const QString source = dir.filePath(QStringLiteral("forms.pdf"));
+        {
+            QPdfWriter writer(source);
+            writer.setPageSize(QPageSize(QPageSize::A4));
+            writer.setPageMargins({}, QPageLayout::Point);
+            writer.setResolution(200);
+            QPainter page(&writer);
+            for (int n = 0; n < forms.size(); ++n) {
+                if (n > 0)
+                    QVERIFY(writer.newPage());
+                QImage image(1654, 2339, QImage::Format_RGB32);
+                image.fill(Qt::white);
+                QPainter ink(&image);
+                ink.setRenderHint(QPainter::TextAntialiasing);
+                QFont font(family);
+                font.setPixelSize(forms[n].pixels);
+                font.setWeight(QFont::Weight(forms[n].weight));
+                ink.setFont(font);
+                ink.setPen(QColor(20, 20, 20));
+                // the label line, then a plain text line below it (a form has both)
+                QString line = forms[n].left + QLatin1Char(' ') + QString(forms[n].dots1, QLatin1Char('.'));
+                if (!forms[n].right.isEmpty())
+                    line += QLatin1Char(' ') + forms[n].right + QLatin1Char(' ') + QString(forms[n].dots2, QLatin1Char('.'));
+                ink.drawText(160, 300, line);
+                ink.drawText(160, 420, QStringLiteral("ตามที่ได้รับมอบหมายให้ปฏิบัติงานตามคำสั่งมหาวิทยาลัย"));
+                ink.end();
+                page.drawImage(0, 0, image);
+            }
+            QVERIFY(page.end());
+        }
+        const auto input = dp::pdf::PdfDocument::open(source, {}, nullptr);
+        QVERIFY(input);
+        QList<int> pages;
+        for (int i = 0; i < input->pageCount(); ++i)
+            pages.append(i);
+        const QString output = dir.filePath(QStringLiteral("searchable.pdf"));
+        std::atomic_bool cancel = false;
+        QCOMPARE(dp::saveSearchableCopy(*input, pages, output, cancel, {}, nullptr), QString());
+        const auto copy = dp::pdf::PdfDocument::open(output, {}, nullptr);
+        QVERIFY(copy);
+        for (int n = 0; n < forms.size(); ++n) {
+            const QString got = compact(copy->pageText(n));
+            fprintf(stderr, "LEADER form %d: %s\n", n + 1, copy->pageText(n).replace(QLatin1Char('\n'), QLatin1Char('|')).toUtf8().constData());
+            QVERIFY2(got.contains(compact(forms[n].left)), qPrintable(QStringLiteral("form %1: label '%2' missing").arg(n + 1).arg(forms[n].left)));
+            if (!forms[n].right.isEmpty())
+                QVERIFY2(got.contains(compact(forms[n].right)), qPrintable(QStringLiteral("form %1: label '%2' missing").arg(n + 1).arg(forms[n].right)));
+            QVERIFY2(got.contains(compact(QStringLiteral("ตามที่ได้รับมอบหมายให้ปฏิบัติงานตามคำสั่งมหาวิทยาลัย"))), "the plain line is lost");
+            // the dots are not letters: no run of Thai digits (the old reading of a leader)
+            QVERIFY2(!got.contains(QRegularExpression(QStringLiteral("[\\x{0E50}-\\x{0E59}]{3,}"))), qPrintable(QStringLiteral("form %1: dots read as digits").arg(n + 1)));
+        }
+    }
+
     // The same text in the Thai fonts that come with Windows (printed only: a PC without them skips the font).
     void measuresCharacterErrorRateInWindowsThaiFonts()
     {

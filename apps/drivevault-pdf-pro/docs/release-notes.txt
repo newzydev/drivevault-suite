@@ -2,11 +2,18 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.18.1 (2026-11-15): dotted lines and table rulings in OCR
+  - Fixed: in a scanned form, the label in front of a dotted line ("name ...........") is read again. The dots used to be read as a string of digits and the label was lost. The dotted line is now cut out before the label is read, and a string of nothing but Thai zeros, ones and punctuation is never written to the text layer.
+  - Fixed: the ruling of a table or form that the box of a line touches (the line under a heading, the top of a table), and ink from the line above or below, is wiped from the line before it is read; these used to turn into extra characters or hide the label.
+  - Measured on a real 8-page Thai timesheet and report (9,732 characters): the labels in front of dotted lines are read, and no digits are made up from dots any more (precision 99.6 % instead of 99.4 %); the characters found stay at 97.6 %. The invisible numbers in the form's text layer are not on the page and cannot be read by any OCR.
+  - The installer is not signed (Windows SmartScreen may warn).
+
+
 v1.18.0 (2026-11-15): Thai OCR with OpenThai 2.0 OCR Text
   - Changed: OCR (All tools > Convert > OCR, Thai) now uses the OpenThai 2.0 OCR Text model of iApp Technology (Apache-2.0, built on PaddlePaddle PP-OCRv6-tiny) instead of the PaddleOCR models. It runs on this computer on the CPU; nothing is uploaded. The model is 4 MB and is part of the installer.
   - Measured against the previous PaddleOCR models: on a real 8-page Thai office document (9,732 characters, read from its own text layer as the answer) the new model found 97.4 % of the characters and the old one 97.5 %, so the accuracy is the same, and it reads a page in 0.48 s instead of 1.53 s (3 times faster). On generated test pages (Thai document text in several sizes, weights, noise levels and small tilts) it was 0.33 % character errors instead of 0.73 %, and a little less exact in some Windows Thai fonts at 9 pt with heavy noise (0.97 % against 0.62 %). The model card reports clearly better results than PaddleOCR on harder printed documents (old books, tables); this program has not measured those.
   - Better handling of the scan: lines that follow a small tilt of the page are cut along their own direction; coloured, grey or light-on-dark text is flattened before it is read; the text is written in one standard Thai spelling (for example sara am as one character); a lone W glued to Thai letters becomes pho phan; very unsure and ill-spelled lines (stamps, signatures) are left out.
-  - Not changed: printed Thai and English only (handwriting, photographs of scenes and heavily stylised fonts are weak), pages turned sideways or upside down are not turned, text in columns is read row by row, and long dotted lines of a form ("name ............") can be read as odd digits instead of the label in front of them. The page-to-Markdown model (OpenThai 2.0 OCR Markdown) needs a GPU and is not included.
+  - Not changed: printed Thai and English only (handwriting, photographs of scenes and heavily stylised fonts are weak), pages turned sideways or upside down are not turned, text in columns is read row by row. The page-to-Markdown model (OpenThai 2.0 OCR Markdown) needs a GPU and is not included.
   - The installer is not signed (Windows SmartScreen may warn).
 
 

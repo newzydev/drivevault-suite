@@ -254,6 +254,100 @@ QImage cutLine(const QImage& image, const Detected& line)
     return out;
 }
 
+// A line's box often reaches the ruling of a table or a form (the border of the cell, the line under a heading): a line of ink across the whole crop at its
+// top or bottom edge, or a bar at its left or right edge. Letters do not do that (their ink never fills a row or a column across the crop), but the
+// recogniser reads a ruling as digits and the dots of a leader merge with it. The ruling and everything between it and the edge are made white.
+void eraseRulings(QImage& flat)
+{
+    const int width = flat.width(), height = flat.height();
+    const auto dark = [&](int x, int y) { return flat.constScanLine(y)[3 * x] < 128; };
+    const auto whiten = [&](int x0, int y0, int x1, int y1) {
+        for (int y = y0; y < y1; ++y)
+            for (int x = x0; x < x1; ++x)
+                flat.scanLine(y)[3 * x] = flat.scanLine(y)[3 * x + 1] = flat.scanLine(y)[3 * x + 2] = 255;
+    };
+    const auto rowFill = [&](int y) { int n = 0; for (int x = 0; x < width; ++x) n += dark(x, y); return double(n) / width; };
+    const auto columnFill = [&](int x) { int n = 0; for (int y = 0; y < height; ++y) n += dark(x, y); return double(n) / height; };
+    // horizontal: scan the outer quarter of the rows from the edge inwards; the innermost ruling row decides how far to whiten
+    int cutTop = 0, cutBottom = height;
+    for (int y = 0; y < height / 4; ++y)
+        if (rowFill(y) >= 0.8)
+            cutTop = y + 1;
+    for (int y = height - 1; y >= height - height / 4; --y)
+        if (rowFill(y) >= 0.8)
+            cutBottom = y;
+    // the soft rows next to a ruling belong to it
+    while (cutTop > 0 && cutTop < height / 3 && rowFill(cutTop) >= 0.4)
+        ++cutTop;
+    while (cutBottom < height && cutBottom > 2 * height / 3 && rowFill(cutBottom - 1) >= 0.4)
+        --cutBottom;
+    if (cutTop > 0)
+        whiten(0, 0, width, cutTop);
+    if (cutBottom < height)
+        whiten(0, cutBottom, width, height);
+    // vertical bars at the left and right edge of the crop
+    int cutLeft = 0, cutRight = width;
+    for (int x = 0; x < std::min(width / 12, 12); ++x)
+        if (columnFill(x) >= 0.9)
+            cutLeft = x + 1;
+    for (int x = width - 1; x >= width - std::min(width / 12, 12); --x)
+        if (columnFill(x) >= 0.9)
+            cutRight = x;
+    if (cutLeft > 0)
+        whiten(0, 0, cutLeft, height);
+    if (cutRight < width)
+        whiten(cutRight, 0, width, height);
+}
+
+// The box of a line often reaches into the line above or below it (the top of the next heading, the feet of the line above): ink in the outer part of
+// the crop that is cut off from the main text band by a few empty rows and is small next to it. It is made white.
+void eraseNeighbourInk(QImage& flat)
+{
+    const int width = flat.width(), height = flat.height();
+    std::vector<int> ink(static_cast<size_t>(height), 0);
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+            ink[size_t(y)] += flat.constScanLine(y)[3 * x] < 128 ? 1 : 0;
+    struct Band { int from, to; long long total; };
+    std::vector<Band> bands;
+    const int gap = std::max(3, height / 12);
+    for (int y = 0; y < height;) {
+        if (ink[size_t(y)] == 0) {
+            ++y;
+            continue;
+        }
+        Band band{y, y, 0};
+        int empty = 0;
+        for (int k = y; k < height; ++k) {
+            if (ink[size_t(k)] == 0) {
+                if (++empty >= gap)
+                    break;
+            } else {
+                empty = 0;
+                band.to = k;
+                band.total += ink[size_t(k)];
+            }
+        }
+        bands.push_back(band);
+        y = band.to + 1;
+    }
+    if (bands.size() < 2)
+        return;
+    const Band* main = &bands.front();
+    for (const Band& band : bands)
+        if (band.total > main->total)
+            main = &band;
+    for (const Band& band : bands) {
+        if (&band == main || band.total * 100 >= main->total * 35)
+            continue;
+        const bool above = band.to < main->from && band.to < height * 3 / 10;
+        const bool below = band.from > main->to && band.from >= height * 7 / 10;
+        if (above || below)
+            for (int y = band.from; y <= band.to; ++y)
+                for (int x = 0; x < width; ++x)
+                    flat.scanLine(y)[3 * x] = flat.scanLine(y)[3 * x + 1] = flat.scanLine(y)[3 * x + 2] = 255;
+    }
+}
 // Dark text on white from any line crop (light on dark, coloured, gradients): each column's background is the median of the crop's top and bottom
 // margin rows, smoothed along the line, and text is whatever differs from it, light or dark. The recogniser was trained on grey lines only.
 QImage flattenCrop(const QImage& source, int width, int height)
@@ -305,9 +399,117 @@ QImage flattenCrop(const QImage& source, int width, int height)
             row[3 * x] = row[3 * x + 1] = row[3 * x + 2] = uchar(value);
         }
     }
+    eraseRulings(out);
+    eraseNeighbourInk(out);
     return out;
 }
 
+// Dotted leaders ("name ............") are cut out of a line before it is read: the recogniser turns a long run of dots into digits and loses the
+// label in front of it. Returns the pieces of the line between the leaders as [from, to) pixel columns of `cut`; the whole line when there is no leader.
+// A leader is a run of at least 5 dots, one and a half line heights long or more, with gaps of at most 0.4 line heights; a dot is a separate blob of ink
+// that is narrow and low (a letter, even a small one or a mark under it, is a blob with taller ink, so the curl at the foot of a letter is no dot).
+QList<std::pair<int, int>> splitAtLeaders(const QImage& cut)
+{
+    const QList<std::pair<int, int>> whole{{0, cut.width()}};
+    constexpr int height = 48;
+    const int width = std::clamp(qRound(double(cut.width()) * height / std::max(1, cut.height())), 16, 3200);
+    if (width < 2 * height)                       // too short to hold a leader
+        return whole;
+    const QImage flat = flattenCrop(cut, width, height);
+    std::vector<int> top(static_cast<size_t>(width), -1), bottom(static_cast<size_t>(width), -1);
+    for (int y = 0; y < height; ++y) {
+        const uchar* row = flat.constScanLine(y);
+        for (int x = 0; x < width; ++x) {
+            if (row[3 * x] >= 128)
+                continue;
+            if (top[size_t(x)] < 0)
+                top[size_t(x)] = y;
+            bottom[size_t(x)] = y;
+        }
+    }
+    struct Blob { int from, to; bool low, dot; };      // low: thin ink near the line's foot (a dot, or dots run together); dot: also narrow
+    std::vector<Blob> blobs;
+    for (int x = 0; x < width;) {
+        if (top[size_t(x)] < 0) {
+            ++x;
+            continue;
+        }
+        int end = x;
+        bool low = true;
+        while (end < width && top[size_t(end)] >= 0) {
+            low = low && bottom[size_t(end)] - top[size_t(end)] + 1 <= 0.22 * height && 0.5 * (top[size_t(end)] + bottom[size_t(end)]) >= 0.55 * height;
+            ++end;
+        }
+        blobs.push_back({x, end - 1, low, low && end - x <= 0.3 * height});
+        x = end;
+    }
+    QList<std::pair<int, int>> leaders;
+    for (size_t i = 0; i < blobs.size();) {
+        if (!blobs[i].low) {
+            ++i;
+            continue;
+        }
+        size_t last = i;
+        while (last + 1 < blobs.size() && blobs[last + 1].low && blobs[last + 1].from - blobs[last].to - 1 <= 0.4 * height)
+            ++last;
+        // the dots of a leader are evenly spaced: a narrow mark at either end that is not (a stray speck) is no dot; dots that ran together into
+        // a dash count by their length
+        size_t first = i, end = last;
+        while (end - first + 1 >= 5) {
+            std::vector<double> pitch;
+            for (size_t k = first; k < end; ++k)
+                if (blobs[k].dot && blobs[k + 1].dot)
+                    pitch.push_back(0.5 * (blobs[k + 1].from + blobs[k + 1].to) - 0.5 * (blobs[k].from + blobs[k].to));
+            if (pitch.size() < 3)
+                break;
+            std::vector<double> sorted = pitch;
+            std::nth_element(sorted.begin(), sorted.begin() + sorted.size() / 2, sorted.end());
+            const double median = sorted[sorted.size() / 2];
+            const auto step = [&](size_t a, size_t b) { return 0.5 * (blobs[b].from + blobs[b].to) - 0.5 * (blobs[a].from + blobs[a].to); };
+            if (blobs[first].dot && blobs[first + 1].dot && std::abs(step(first, first + 1) - median) > 0.45 * median)
+                ++first;
+            else if (blobs[end].dot && blobs[end - 1].dot && std::abs(step(end - 1, end) - median) > 0.45 * median)
+                --end;
+            else
+                break;
+        }
+        double pitchGuess = 0.16 * height;
+        {
+            std::vector<double> pitch;
+            for (size_t k = first; k < end; ++k)
+                if (blobs[k].dot && blobs[k + 1].dot)
+                    pitch.push_back(0.5 * (blobs[k + 1].from + blobs[k + 1].to) - 0.5 * (blobs[k].from + blobs[k].to));
+            if (!pitch.empty()) {
+                std::nth_element(pitch.begin(), pitch.begin() + pitch.size() / 2, pitch.end());
+                pitchGuess = std::max(2.0, pitch[pitch.size() / 2]);
+            }
+        }
+        int dotCount = 0;
+        for (size_t k = first; k <= end; ++k)
+            dotCount += blobs[k].dot ? 1 : std::max(1, int(std::lround((blobs[k].to - blobs[k].from + 1) / pitchGuess)));
+        if (dotCount >= 5 && blobs[end].to - blobs[first].from + 1 >= height)
+            leaders.append({blobs[first].from, blobs[end].to});
+        i = last + 1;
+    }    if (leaders.isEmpty())
+        return whole;
+    // the pieces between the leaders (a piece needs some ink: a lone stray mark is not a line)
+    const double toCut = double(cut.width()) / width;
+    QList<std::pair<int, int>> pieces;
+    int from = 0;
+    const auto addPiece = [&](int a, int b) {
+        int inkColumns = 0;
+        for (int x = a; x < b; ++x)
+            inkColumns += top[size_t(x)] >= 0 ? 1 : 0;
+        if (b - a >= height / 3 && inkColumns >= 3)
+            pieces.append({int(a * toCut), std::min(cut.width(), int(std::ceil(b * toCut)))});
+    };
+    for (const auto& leader : std::as_const(leaders)) {
+        addPiece(from, leader.first);
+        from = leader.second + 1;
+    }
+    addPiece(from, width);
+    return pieces;
+}
 struct Reading {
     QString text;
     double confidence = 0;       // mean probability of the characters that were read
@@ -355,13 +557,18 @@ tools::TextRuns readPage(Model& detector, Model& reader, const QStringList& alph
         if (cancel.load(std::memory_order_relaxed))
             break;
         const QRect box = line.bounds;
-        const Reading reading = recognize(reader, cutLine(image, line), alphabet);
-        const QString text = fixThaiScripts(canonicalThai(reading.text));
-        if (text.isEmpty() || !keepOcrLine(text, reading.confidence))
-            continue;
+        const QImage cut = cutLine(image, line);
         const double sx = size.width() / image.width(), sy = size.height() / image.height();
-        const QPointF baseline(box.left() * sx, (box.top() + box.height() * 0.78) * sy);
-        runs.append({text, baseline, baseline, 0, box.height() * sy * 0.72, box.width() * sx, true});
+        for (const auto& [from, to] : splitAtLeaders(cut)) {
+            const Reading reading = recognize(reader, from == 0 && to == cut.width() ? cut : cut.copy(from, 0, to - from, cut.height()), alphabet);
+            const QString text = fixThaiScripts(canonicalThai(reading.text));
+            if (text.isEmpty() || !keepOcrLine(text, reading.confidence))
+                continue;
+            // where the piece sits on the page: its share of the line's width
+            const double left = box.left() + double(from) / cut.width() * box.width(), width = double(to - from) / cut.width() * box.width();
+            const QPointF baseline(left * sx, (box.top() + box.height() * 0.78) * sy);
+            runs.append({text, baseline, baseline, 0, box.height() * sy * 0.72, width * sx, true});
+        }
     }
     return runs;
 }
@@ -475,6 +682,11 @@ bool keepOcrLine(const QString& text, double confidence)
     QString compact = text;
     compact.remove(QLatin1Char(' '));
     if (compact.isEmpty() || confidence < dropBelow || compact.size() < minChars)
+        return false;
+    // a string of nothing but Thai zeros / ones and punctuation is a dotted line or a ruled line misread as digits
+    if (compact.size() >= 5 && std::all_of(compact.begin(), compact.end(), [](QChar c) {
+            return c == QChar(0x0E50) || c == QChar(0x0E51) || c.isPunct() || c.isSymbol();
+        }))
         return false;
     return !(confidence < junkBelow && invalidThaiShare(text) > junkInvalid);
 }
