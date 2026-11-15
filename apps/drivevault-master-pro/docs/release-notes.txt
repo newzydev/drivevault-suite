@@ -1,6 +1,15 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.8.0 (2026-11-15): The AI pages work
+  - New: the AI Q&A and Agentic AI pages talk to a real AI. Each page has its own settings (button "AI settings") where you choose one of:
+    * a model on this PC: llama.cpp with a GGUF model. Download one of the catalogue (Qwen3.5 0.8B / 2B / 4B / 9B from Hugging Face) or paste a huggingface.co link to a .gguf file. Downloads start only when you press Download and are checked against a fixed size and SHA-256; Check on a pasted link only asks Hugging Face for its size and checksum. Everything stays on this computer.
+    * an API: OpenAI style (OpenAI, OpenRouter, Ollama, LM Studio ...) or Anthropic, with your own key. The key is kept encrypted for your Windows user and is sent only to the address you set (https, or this computer).
+    * Claude Code or Codex: the easy way - the program you already have and are signed in to. Master Pro starts it with fixed options and gives it the question on its standard input; it never sees your password. The agent page works in the folder you choose: read only, or "can edit files" if you allow it; it cannot run commands.
+  - Answers stream in as they are written, can be stopped, and are kept as conversations (list on the left, saved in %LOCALAPPDATA%\DriveVault\MasterPro\ai). A failure is shown in the conversation in words, with what the service said.
+  - Limits: the llama.cpp engine is found in the PDF Pro folder (it is not part of the Master Pro installer yet); Codex is tested with a stand-in only; a signed-in Claude Code session must be valid (the program says "Failed to authenticate" otherwise: sign in again with /login).
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.7.0 (2026-11-15): The AI Q&A and Agentic AI pages
   - New: the pages of the AI Q&A and Agentic AI tabs: a list of conversations / tasks on the left, the conversation with the message box in the middle, and a side panel on the right (sources, or plan and changes). Example prompts fill the message box.
   - **No AI is connected yet.** The pages say "Not connected": the message box only keeps what you type in the window (nothing is sent anywhere), and the buttons that need an AI (New conversation / New task, Send) are switched off. There are no made-up answers.

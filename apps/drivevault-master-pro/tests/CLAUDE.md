@@ -1,5 +1,6 @@
 # drivevault-master-pro/tests - rules (adds to the parent files)
 
+- `tst_ai` covers the AI without any real AI: stream parsers, `HttpChat` against a fake HTTP server on this computer (OpenAI style, Anthropic, errors, key rules), `CliChat` against `fake_cli.exe` (`DM_FAKE_MODE`: stdin, events, error, cancel), history, model links / headers / catalogue / downloader with a loopback server, DPAPI keys and the two pages with saved conversations. `realLocalModelAnswers` / `realLocalPage` need `DM_TEST_REAL_LLM=1`. The real Claude Code / Codex programs are never called by a test.
 - `tst_hub` (logic, fake registry key `Software\DriveVaultMasterTest`, temp folders, `fake_setup.exe`) and `tst_window` (runs the real exe offscreen with `--registry-root` and `--screenshot`, then checks product colours in the picture).
 - `fake_setup.exe` has a DriveVault version resource (ProductName "DriveVault Video Editor Pro", version 2.0.0), appends its command line to the file named by `DM_FAKE_MARKER` and exits with `DM_FAKE_EXIT`. Use it for any "run a setup / uninstaller" test.
 - Tests write registry keys only below their own `...Test` root and remove them in `cleanup`. Never write to `Software\DriveVault`.

@@ -1,29 +1,64 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
+import DriveVault.Master.Backend
 
-// The page of the AI Q&A tab and of the Agentic AI tab: list of conversations / tasks on the left, the conversation in the middle with the message box at the
-// bottom, and a side panel (sources, or plan and changes) on the right. NO AI IS CONNECTED YET: the page says so, the message box only keeps what is typed
-// (nothing is sent anywhere) and the buttons that need an AI are disabled. Nothing here pretends to answer.
+// The page of the AI Q&A tab and of the Agentic AI tab: the conversations on the left, the conversation with the message box in the middle and a side panel on
+// the right. The AI behind it is chosen in the settings of the page (a local model, an API, or Claude Code / Codex); until one is ready the page says why.
 Item {
     id: root
 
     property string mode: "ask"                       // ask | agent
     readonly property bool agent: mode === "agent"
-    readonly property bool connected: false           // becomes real when an AI backend exists
+    readonly property var ch: agent ? Ai.agent : Ai.ask          // the AiChannel of this page
+    readonly property bool ready: ch.notReady === ""
     signal tabPicked(string key)
 
-    // ---- small parts ---------------------------------------------------------------------------------------------------------
+    function openSettings() { settings.open() }
+    function why(code) { return Tr.s("why_" + code) }
+    // the text of an error of a reply: what happened, in words, plus what the service said
+    function errorText(code, detail) {
+        let text
+        if (Tr.s("err_" + code) !== "err_" + code)
+            text = Tr.s("err_" + code)
+        else if (code.indexOf("http") === 0)
+            text = Tr.s("err_http").replace("%1", code.substring(4))
+        else
+            text = Tr.s("err_failed")
+        if (detail && detail !== "")
+            text += "\n" + detail
+        if (/authenticat|log ?in|sign ?in|expired/i.test(detail || ""))
+            text += "\n" + Tr.s("err_login")
+        return text
+    }
+    function send() {
+        const e = ch.send(input.text)
+        if (e === "")
+            input.clear()
+    }
+
+    FolderDialog {
+        id: folderDialog
+        title: Tr.s("ai_folder_choose")
+        onAccepted: root.ch.setFolder(selectedFolder.toString())
+    }
+    AiSettingsDialog { id: settings; channel: root.ch; agent: root.agent }
+
+    // small parts
     component Chip: Rectangle {
+        id: chip
         property alias text: chipText.text
-        property bool muted: true
+        property bool clickable: false
+        signal clicked()
         implicitHeight: 28
         implicitWidth: chipText.implicitWidth + 22
         radius: 14
-        color: "transparent"
+        color: clickable && chipMouse.containsMouse ? Theme.surfaceHover : "transparent"
         border.width: 1
         border.color: Theme.border
-        Text { id: chipText; anchors.centerIn: parent; font.pixelSize: 12; font.weight: Font.Medium; color: parent.muted ? Theme.textDisabled : Theme.textSecondary }
+        Text { id: chipText; anchors.centerIn: parent; font.pixelSize: 12; font.weight: Font.Medium; color: Theme.textSecondary }
+        MouseArea { id: chipMouse; anchors.fill: parent; enabled: chip.clickable; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: chip.clicked() }
     }
     component SideTitle: Text {
         font.pixelSize: 12
@@ -67,27 +102,75 @@ Item {
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 16
-                    spacing: 14
+                    spacing: 12
                     MButton {
                         objectName: "aiNew"
                         Layout.fillWidth: true
                         variant: "primary"
-                        enabled: root.connected
                         text: "+  " + Tr.s(root.agent ? "ai_new_agent" : "ai_new_ask")
+                        onClicked: { root.ch.newConversation(); input.forceActiveFocus() }
                     }
                     SideTitle { text: Tr.s(root.agent ? "ai_list_agent" : "ai_list_ask") }
                     Text {
+                        visible: root.ch.conversations.length === 0
                         Layout.fillWidth: true
                         text: Tr.s("ai_list_empty")
                         font.pixelSize: 13
                         color: Theme.textDisabled
                         wrapMode: Text.Wrap
                     }
-                    Item { Layout.fillHeight: true }
+                    ListView {
+                        id: convList
+                        objectName: "aiConversations"
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+                        spacing: 2
+                        model: root.ch.conversations
+                        delegate: Rectangle {
+                            id: row
+                            required property var modelData
+                            readonly property bool current: modelData.id === root.ch.currentId
+                            width: convList.width
+                            height: 38
+                            radius: 9
+                            color: current ? Qt.alpha(Theme.accent, 0.16) : rowMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                            Text {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 12
+                                anchors.right: removeText.left
+                                anchors.rightMargin: 6
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: row.modelData.title
+                                font.pixelSize: 13
+                                color: row.current ? Theme.text : Theme.textSecondary
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                id: removeText
+                                anchors.right: parent.right
+                                anchors.rightMargin: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: rowMouse.containsMouse
+                                text: "✕"
+                                font.pixelSize: 12
+                                color: removeMouse.containsMouse ? Theme.error : Theme.textDisabled
+                                MouseArea { id: removeMouse; anchors.fill: parent; anchors.margins: -8; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.ch.remove(row.modelData.id) }
+                            }
+                            MouseArea { id: rowMouse; anchors.fill: parent; z: -1; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.ch.select(row.modelData.id) }
+                        }
+                    }
                     RowLayout {
                         spacing: 8
-                        Rectangle { width: 8; height: 8; radius: 4; color: root.connected ? Theme.success : Theme.textDisabled }
-                        Text { objectName: "aiStatus"; text: Tr.s("ai_status_off"); font.pixelSize: 13; color: Theme.textSecondary }
+                        Rectangle { width: 8; height: 8; radius: 4; color: root.ready ? Theme.success : Theme.textDisabled }
+                        Text {
+                            objectName: "aiStatus"
+                            Layout.fillWidth: true
+                            text: root.ch.provider === "" ? Tr.s("prov_none") : Tr.s("prov_" + root.ch.provider) + (root.ready ? "" : " - " + Tr.s("ai_not_ready"))
+                            font.pixelSize: 13
+                            color: Theme.textSecondary
+                            elide: Text.ElideRight
+                        }
                     }
                 }
             }
@@ -103,22 +186,129 @@ Item {
                     Layout.fillWidth: true
                     Layout.leftMargin: 28
                     Layout.rightMargin: 28
-                    Layout.topMargin: 16
+                    Layout.topMargin: 14
                     spacing: 10
                     Text { text: Tr.s(root.agent ? "ai_new_agent" : "ai_new_ask"); font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.text }
-                    Chip { text: Tr.s("ai_status_off") }
+                    Chip { text: root.ch.provider === "" ? Tr.s("prov_none") : Tr.s("prov_" + root.ch.provider) }
                     Item { Layout.fillWidth: true }
+                    MButton { objectName: "aiSettings"; compact: true; text: Tr.s("ai_settings"); onClicked: settings.open() }
                 }
 
-                // empty conversation: what this page is for, and a few examples that only fill the message box
+                // the conversation (or the welcome when it is empty)
                 Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+
+                    ListView {
+                        id: list
+                        objectName: "aiMessages"
+                        anchors.fill: parent
+                        anchors.leftMargin: 28
+                        anchors.rightMargin: 28
+                        anchors.topMargin: 12
+                        visible: root.ch.messages.length > 0
+                        clip: true
+                        spacing: 20
+                        model: root.ch.messages
+                        property bool follow: true
+                        onMovementEnded: follow = atYEnd
+                        onModelChanged: if (follow) Qt.callLater(positionViewAtEnd)
+                        onCountChanged: { follow = true; Qt.callLater(positionViewAtEnd) }
+                        ScrollBar.vertical: ScrollBar {}
+                        delegate: ColumnLayout {
+                            id: msg
+                            required property var modelData
+                            readonly property bool isUser: modelData.role === "user"
+                            width: list.width - 14
+                            spacing: 6
+
+                            // the question
+                            Rectangle {
+                                visible: msg.isUser
+                                Layout.alignment: Qt.AlignRight
+                                Layout.maximumWidth: msg.width * 0.82
+                                implicitWidth: Math.min(userText.implicitWidth + 28, msg.width * 0.82)
+                                implicitHeight: userText.implicitHeight + 20
+                                radius: 14
+                                color: Qt.alpha(Theme.accent, 0.16)
+                                TextEdit {
+                                    id: userText
+                                    anchors.fill: parent
+                                    anchors.margins: 12
+                                    text: msg.isUser ? msg.modelData.text : ""
+                                    readOnly: true
+                                    selectByMouse: true
+                                    wrapMode: TextEdit.Wrap
+                                    font.pixelSize: 14
+                                    color: Theme.text
+                                }
+                            }
+
+                            // the answer: what the agent did, the text, how it ended
+                            Repeater {
+                                model: msg.isUser ? [] : msg.modelData.activity
+                                delegate: Text {
+                                    required property string modelData
+                                    Layout.fillWidth: true
+                                    text: "›  " + modelData
+                                    font.pixelSize: 12
+                                    color: Theme.textSecondary
+                                    elide: Text.ElideRight
+                                }
+                            }
+                            TextEdit {
+                                visible: !msg.isUser && msg.modelData.text !== ""
+                                Layout.fillWidth: true
+                                text: msg.isUser ? "" : msg.modelData.text
+                                readOnly: true
+                                selectByMouse: true
+                                wrapMode: TextEdit.Wrap
+                                textFormat: TextEdit.MarkdownText
+                                font.pixelSize: 14
+                                color: Theme.text
+                                onLinkActivated: link => { if (link.indexOf("https://") === 0) Qt.openUrlExternally(link) }
+                            }
+                            Text {
+                                visible: !msg.isUser && msg.modelData.streaming && msg.modelData.text === ""
+                                text: root.ch.status === "starting" ? Tr.s("ai_starting") : Tr.s("ai_writing")
+                                font.pixelSize: 13
+                                color: Theme.textSecondary
+                            }
+                            Text {
+                                visible: !msg.isUser && msg.modelData.stopped
+                                text: Tr.s("ai_stopped")
+                                font.pixelSize: 12
+                                font.italic: true
+                                color: Theme.textDisabled
+                            }
+                            Rectangle {
+                                visible: !msg.isUser && msg.modelData.errorCode !== ""
+                                Layout.fillWidth: true
+                                implicitHeight: errText.implicitHeight + 20
+                                radius: 10
+                                color: Qt.alpha(Theme.error, 0.1)
+                                border.width: 1
+                                border.color: Qt.alpha(Theme.error, 0.4)
+                                Text {
+                                    id: errText
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    text: msg.isUser || msg.modelData.errorCode === "" ? "" : root.errorText(msg.modelData.errorCode, msg.modelData.errorDetail)
+                                    font.pixelSize: 13
+                                    color: Theme.text
+                                    wrapMode: Text.Wrap
+                                }
+                            }
+                        }
+                    }
+
+                    // welcome: what this page is for, and a few examples that only fill the message box
                     ColumnLayout {
+                        visible: root.ch.messages.length === 0
                         anchors.centerIn: parent
                         width: Math.min(parent.width - 56, 640)
                         spacing: 14
-                        Item {                                                  // a small diamond mark, drawn
+                        Item {
                             Layout.alignment: Qt.AlignHCenter
                             width: 44; height: 44
                             Rectangle { anchors.centerIn: parent; width: 26; height: 26; radius: 6; rotation: 45; color: Qt.alpha(Theme.accent, 0.18); border.width: 2; border.color: Theme.accent }
@@ -177,26 +367,31 @@ Item {
                     }
                 }
 
-                // not connected: said plainly above the message box
+                // no AI yet: said plainly above the message box, with the way out
                 Rectangle {
                     objectName: "aiBanner"
+                    visible: !root.ready
                     Layout.fillWidth: true
                     Layout.leftMargin: 28
                     Layout.rightMargin: 28
-                    implicitHeight: bannerText.implicitHeight + 20
+                    implicitHeight: bannerRow.implicitHeight + 20
                     radius: 10
                     color: Qt.alpha(Theme.warning, 0.1)
                     border.width: 1
                     border.color: Qt.alpha(Theme.warning, 0.35)
-                    Text {
-                        id: bannerText
+                    RowLayout {
+                        id: bannerRow
                         anchors.fill: parent
                         anchors.margins: 10
-                        text: Tr.s("ai_banner")
-                        font.pixelSize: 13
-                        color: Theme.text
-                        wrapMode: Text.Wrap
-                        verticalAlignment: Text.AlignVCenter
+                        spacing: 12
+                        Text {
+                            Layout.fillWidth: true
+                            text: root.why(root.ch.notReady)
+                            font.pixelSize: 13
+                            color: Theme.text
+                            wrapMode: Text.Wrap
+                        }
+                        MButton { compact: true; text: Tr.s("ai_settings"); onClicked: settings.open() }
                     }
                 }
 
@@ -231,29 +426,55 @@ Item {
                                 background: null
                                 leftPadding: 6
                                 topPadding: 4
+                                Keys.onPressed: event => {
+                                    if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && !(event.modifiers & Qt.ShiftModifier)) {
+                                        event.accepted = true
+                                        if (!root.ch.busy)
+                                            root.send()
+                                    }
+                                }
                             }
                         }
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 8
-                            MButton { objectName: "aiAttach"; compact: true; variant: "ghost"; enabled: false; text: "+"; Layout.preferredWidth: 32; leftPadding: 0; rightPadding: 0 }
-                            Chip { visible: root.agent; text: Tr.s("ai_folder") }
-                            Chip { visible: root.agent; text: Tr.s("ai_perm") }
-                            Item { Layout.fillWidth: true }
-                            Chip { text: Tr.s("ai_model") }
+                            Chip {
+                                objectName: "aiFolder"
+                                visible: root.agent
+                                clickable: true
+                                enabled: !root.ch.busy
+                                text: root.ch.folder === "" ? Tr.s("ai_folder_none") : root.ch.folder.replace(/^.*[\\/]/, "")
+                                onClicked: folderDialog.open()
+                            }
+                            Chip {
+                                objectName: "aiPermission"
+                                visible: root.agent
+                                clickable: true
+                                enabled: !root.ch.busy
+                                text: Tr.s(root.ch.allowEdits ? "perm_edit" : "perm_read")
+                                onClicked: root.ch.setAllowEdits(!root.ch.allowEdits)
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.ch.busy ? (root.ch.status === "starting" ? Tr.s("ai_starting") : Tr.s("ai_writing")) : ""
+                                font.pixelSize: 12
+                                color: Theme.accent
+                                elide: Text.ElideRight
+                            }
                             MButton {
                                 objectName: "aiSend"
                                 compact: true
                                 variant: "primary"
-                                enabled: root.connected && input.text.trim() !== ""
-                                text: Tr.s("ai_send")
+                                enabled: root.ch.busy || (root.ready && input.text.trim() !== "")
+                                text: root.ch.busy ? Tr.s("ai_stop") : Tr.s("ai_send")
+                                onClicked: root.ch.busy ? root.ch.stop() : root.send()
                             }
                         }
                     }
                 }
             }
 
-            // ---- right: sources (Q&A) or plan and changes (agent); hidden when the window is narrow -----------------------------------
+            // ---- right: what this page knows about the work (sources, or plan and changes); hidden when the window is narrow ---------------
             Rectangle {
                 id: panel
                 objectName: "aiPanel"
@@ -266,10 +487,32 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 20
                     spacing: 10
-                    SideTitle { text: Tr.s(root.agent ? "ai_side_plan" : "ai_side_sources") }
-                    Text { Layout.fillWidth: true; text: Tr.s(root.agent ? "ai_side_plan_empty" : "ai_side_sources_empty"); font.pixelSize: 13; color: Theme.textDisabled; wrapMode: Text.Wrap }
-                    SideTitle { visible: root.agent; Layout.topMargin: 14; text: Tr.s("ai_side_changes") }
-                    Text { visible: root.agent; Layout.fillWidth: true; text: Tr.s("ai_side_changes_empty"); font.pixelSize: 13; color: Theme.textDisabled; wrapMode: Text.Wrap }
+                    SideTitle { text: Tr.s(root.agent ? "ai_side_folder" : "ai_side_provider") }
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.agent ? (root.ch.folder === "" ? Tr.s("ai_folder_none") : root.ch.folder)
+                                         : (root.ch.provider === "" ? Tr.s("prov_none") : Tr.s("prov_" + root.ch.provider))
+                        font.pixelSize: 13
+                        color: Theme.text
+                        wrapMode: Text.WrapAnywhere
+                    }
+                    SideTitle { Layout.topMargin: 14; text: Tr.s("ai_side_privacy") }
+                    Text {
+                        Layout.fillWidth: true
+                        text: Tr.s("privacy_" + (root.ch.provider === "" ? "none" : root.ch.provider))
+                        font.pixelSize: 13
+                        color: Theme.textSecondary
+                        wrapMode: Text.Wrap
+                    }
+                    SideTitle { visible: root.agent; Layout.topMargin: 14; text: Tr.s("ai_side_mode") }
+                    Text {
+                        visible: root.agent
+                        Layout.fillWidth: true
+                        text: Tr.s(root.ch.allowEdits ? "ai_mode_edit" : "ai_mode_read")
+                        font.pixelSize: 13
+                        color: Theme.textSecondary
+                        wrapMode: Text.Wrap
+                    }
                     Item { Layout.fillHeight: true }
                 }
             }

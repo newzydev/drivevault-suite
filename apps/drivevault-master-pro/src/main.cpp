@@ -1,4 +1,5 @@
 #include "Hub.h"
+#include "ai/AiService.h"
 
 #include <QCommandLineParser>
 #include <QFontDatabase>
@@ -33,7 +34,8 @@ int main(int argc, char* argv[])
     QCommandLineOption size(QStringLiteral("size"), QStringLiteral("Window size WxH for --screenshot."), QStringLiteral("WxH"));
     QCommandLineOption list(QStringLiteral("list-products"), QStringLiteral("Write the programs found on this PC as JSON to <file> and exit (diagnostics, installer tests)."), QStringLiteral("file"));
     QCommandLineOption tab(QStringLiteral("tab"), QStringLiteral("Tab shown first: programs, ask or agent (diagnostics, --screenshot)."), QStringLiteral("name"));
-    parser.addOptions({dataDir, lang, registry, shot, size, list, tab});
+    QCommandLineOption aiSettings(QStringLiteral("ai-settings"), QStringLiteral("Open the AI settings of the shown AI tab for this provider: local, openai, anthropic, claude or codex (diagnostics, --screenshot)."), QStringLiteral("provider"));
+    parser.addOptions({dataDir, lang, registry, shot, size, list, tab, aiSettings});
     parser.process(app);
 
     for (const char* font : {":/qt/qml/DriveVault/Master/resources/fonts/Inter-Variable.ttf",
@@ -61,14 +63,18 @@ int main(int argc, char* argv[])
         return listFile.open(QIODevice::WriteOnly) && listFile.write(QJsonDocument(out).toJson()) > 0 ? 0 : 2;
     }
 
+    dm::ai::AiService ai(&hub, nullptr, !parser.isSet(shot));
     QQmlApplicationEngine engine;
     qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Hub", &hub);
+    qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Ai", &ai);
     engine.loadFromModule("DriveVault.Master", "Main");
     if (engine.rootObjects().isEmpty())
         return 1;
 
     if (parser.isSet(tab) && QStringList{QStringLiteral("programs"), QStringLiteral("ask"), QStringLiteral("agent")}.contains(parser.value(tab)))
         engine.rootObjects().constFirst()->setProperty("tab", parser.value(tab));
+    if (parser.isSet(aiSettings))
+        engine.rootObjects().constFirst()->setProperty("diagnosticProvider", parser.value(aiSettings));
     if (parser.isSet(shot)) {
         auto* window = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst());
         if (parser.isSet(size) && window) {

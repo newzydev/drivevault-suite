@@ -87,6 +87,14 @@ ApplicationWindow {
     property string category: ""          // "" = all categories, otherwise a section key
     property string tab: "programs"       // the tab at the top of the page: programs | ask | agent (ask and agent are not available yet)
     readonly property var tabs: [ { key: "programs" }, { key: "ask" }, { key: "agent" } ]
+    // diagnostics only (--ai-settings): pick this provider for the shown AI page and open its settings
+    property string diagnosticProvider: ""
+    onDiagnosticProviderChanged: {
+        if (diagnosticProvider === "" || tab === "programs")
+            return
+        (tab === "agent" ? Ai.agent : Ai.ask).setProvider(diagnosticProvider)
+        aiWorkspace.openSettings()
+    }
     function matches(p) {
         if (category !== "" && p.section !== category)
             return false

@@ -8,6 +8,15 @@ add_dependencies(tst_hub fake_setup)
 add_test(NAME tst_hub COMMAND tst_hub)
 set_tests_properties(tst_hub PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 120)
 
+# The AI: parsers, chat requests against a fake server on this computer, the command line programs through a stand-in, models, keys and the two pages.
+add_executable(fake_cli fake_cli.cpp)
+add_executable(tst_ai tst_ai.cpp)
+target_link_libraries(tst_ai PRIVATE master_core Qt6::Test)
+target_compile_definitions(tst_ai PRIVATE FAKE_CLI_PATH="$<TARGET_FILE:fake_cli>")
+add_dependencies(tst_ai fake_cli)
+add_test(NAME tst_ai COMMAND tst_ai)
+set_tests_properties(tst_ai PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 180)
+
 # The real window, offscreen: a fake registry with the Video Editor installed, rendered to a picture and checked for the product colours.
 add_executable(tst_window tst_window.cpp)
 target_link_libraries(tst_window PRIVATE master_core Qt6::Test)

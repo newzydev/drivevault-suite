@@ -56,6 +56,7 @@ public:
     bool busy() const { return m_busy; }
     QString message() const { return m_message; }
     QString language() const { return m_language; }
+    QString dataDir() const { return m_dataDir; }
     void setLanguage(const QString& language);
     QStringList installerFolders() const;
     QString version() const;
