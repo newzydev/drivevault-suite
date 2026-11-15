@@ -16,4 +16,13 @@ DriveVault Master Pro itself is proprietary software (see LICENSE.txt). It inclu
 
 4. Inno Setup - used to create the installer; the installer carries Inno Setup's runtime (https://jrsoftware.org/files/is/license.txt).
 
+5. llama.cpp (build b12170, Vulkan) and ggml - Copyright the ggml authors, MIT                          licenses\llama.cpp-LICENSE.txt
+   The engine of the AI models that run on this computer. It runs as a separate program (ai\llama\llama-server.exe) in its own folder.
+   Its OpenMP runtime: LLVM Project, Apache-2.0 with LLVM exceptions                                    licenses\LLVM-OpenMP-LICENSE.txt
+   Source: https://github.com/ggml-org/llama.cpp/releases/tag/b12170
+
+6. Qwen3.5 language models (NOT part of the installer) - Copyright Alibaba Cloud / Qwen team, Apache License 2.0   licenses\Apache-2.0.txt, licenses\Qwen3.5-NOTICE.txt
+   Downloaded only when the user presses Download in the AI settings, from the unsloth GGUF conversions on https://huggingface.co (a fixed revision, checked
+   by size and SHA-256). Other models the user chooses to download have their own licences.
+
 Trademarks belong to their owners. Qt is a registered trademark of The Qt Company Ltd.

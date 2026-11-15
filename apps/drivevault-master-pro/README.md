@@ -29,15 +29,15 @@ the last program is gone it can be uninstalled and removes the suite folder if i
   shows "Update available".
 * Image Editor and Audio Editor are shown as **Coming soon** - they do not exist yet. Programs are installed from setup files on this PC. Since 1.1.0 the **Check for updates** button asks the GitHub Releases of `newzydev/drivevault-suite` which versions exist (only when you press it - once when the program opens too, unless switched off) and offers **Download and update / install**: the setup file comes from the official release address only, its SHA-256 is compared with the release's `.sha256` file, its version resource must be DriveVault + the right program + the released version, and then it runs like any other setup file (and is deleted after a successful run). There is no online store and no automatic update.
 
-## AI pages (version 1.8.0)
+## AI pages (since version 1.8.0)
 
 The tabs **AI Q&A** and **Agentic AI** talk to a real AI, chosen in the settings of each page (nothing is sent anywhere until you choose one and press Send):
 
-* **Model on this PC** - llama.cpp with a GGUF model from Hugging Face. Choose one of the catalogue (Qwen3.5 0.8B / 2B / 4B / 9B, each downloaded only when you press Download, checked against a fixed size and SHA-256) or paste a `huggingface.co` link to a `.gguf` file (Check asks Hugging Face for its size and checksum; nothing is downloaded until you press Download). Everything stays on this computer. The engine (llama.cpp) comes with DriveVault PDF Pro; without it the page says so.
+* **Model on this PC** - llama.cpp with a GGUF model from Hugging Face. Choose one of the catalogue (Qwen3.5 0.8B / 2B / 4B / 9B, each downloaded only when you press Download, checked against a fixed size and SHA-256) or paste a `huggingface.co` link to a `.gguf` file (Check asks Hugging Face for its size and checksum; nothing is downloaded until you press Download). Everything stays on this computer. The engine (llama.cpp, Vulkan build) is part of the Master Pro installer (`ailama`); the page says so if it is missing.
 * **API** - an OpenAI style service (OpenAI, OpenRouter, Ollama, LM Studio ...) or Anthropic, with your own key (kept encrypted for your Windows user, sent only to the address you set, https or this computer).
 * **Claude Code / Codex** - the easy way: the program you already have and are signed in to (a subscription account cannot be used directly by other programs). Master Pro starts it with fixed options and gives it the question on its standard input; it never sees your password. The agent works in the folder you choose, **read only** unless you allow it to edit files, and cannot run commands.
 
-Conversations are saved in `%LOCALAPPDATA%\DriveVault\MasterPro\ai`. Known limits: the engine is not part of the Master Pro installer yet; Codex is tested with a stand-in only; the answers are only as good as the model you choose (a 4B model on a laptop is a small model).
+Conversations are saved in `%LOCALAPPDATA%\DriveVault\MasterPro\ai`. Known limits: Codex is tested with a stand-in only; the answers are only as good as the model you choose (a 4B model on a laptop is a small model).
 
 ## Build, run, test
 
@@ -56,6 +56,6 @@ refusal while a program is installed, uninstall, empty-folder clean-up) is teste
 
 ## Status
 
-VERSION 1.8.0 (the AI Q&A and Agentic AI pages work: local model, API key or Claude Code / Codex; tabs at the top; "Check for updates" in the search bar). Not code-signed (`package.ps1 -Sign` uses the shared signing script). Not tested on a separate clean PC / VM,
+VERSION 1.9.0 (the llama.cpp engine is in the installer; the AI Q&A and Agentic AI pages work: local model, API key or Claude Code / Codex; tabs at the top; "Check for updates" in the search bar). Not code-signed (`package.ps1 -Sign` uses the shared signing script). Not tested on a separate clean PC / VM,
 and the all-users path under `C:\Program Files` needs administrator rights and was not run by the automated tests (the per-user path was). `LICENSE.txt` and the installer licence pages are the drafted EULA generated from `shared/legal`
 (not yet reviewed by a lawyer).

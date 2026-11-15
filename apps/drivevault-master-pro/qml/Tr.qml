@@ -60,7 +60,7 @@ QtObject {
         "privacy_claude": ["Claude Code sends your messages to Anthropic, signed in with your own account. Master Pro never sees your password.", "Claude Code ส่งข้อความของคุณไปยัง Anthropic ด้วยบัญชีของคุณเอง Master Pro ไม่เห็นรหัสผ่านของคุณ"],
         "privacy_codex": ["Codex sends your messages to OpenAI, signed in with your own account. Master Pro never sees your password.", "Codex ส่งข้อความของคุณไปยัง OpenAI ด้วยบัญชีของคุณเอง Master Pro ไม่เห็นรหัสผ่านของคุณ"],
         "why_noProvider": ["Choose which AI to use in the settings of this page.", "เลือก AI ที่จะใช้ในหน้านี้ที่ปุ่มตั้งค่า AI"],
-        "why_noEngine": ["The local engine (llama.cpp) is not on this PC. It comes with DriveVault PDF Pro: install that program, or choose another AI.", "ไม่พบตัวรันโมเดล (llama.cpp) ในเครื่องนี้ ซึ่งมาพร้อม DriveVault PDF Pro: ติดตั้งโปรแกรมนั้น หรือเลือก AI แบบอื่น"],
+        "why_noEngine": ["The local engine (llama.cpp) is missing from this installation. Install DriveVault Master Pro again, or choose another AI.", "ไม่พบตัวรันโมเดล (llama.cpp) ในการติดตั้งนี้ ติดตั้ง DriveVault Master Pro ใหม่ หรือเลือก AI แบบอื่น"],
         "why_noModel": ["Choose a model (or type the model name) in the settings.", "เลือกโมเดล (หรือพิมพ์ชื่อโมเดล) ในตั้งค่า"],
         "why_noKey": ["Enter your API key in the settings.", "ใส่ API key ของคุณในตั้งค่า"],
         "why_noProgram": ["The program was not found on this PC. Install it and sign in, then check again.", "ไม่พบโปรแกรมนี้ในเครื่อง ติดตั้งและล็อกอินก่อน แล้วกดตรวจอีกครั้ง"],
