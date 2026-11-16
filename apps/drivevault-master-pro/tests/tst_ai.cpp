@@ -58,8 +58,8 @@ public:
                     ++requests;
                     QByteArray answer = queue.isEmpty() ? body : queue.takeFirst();
                     int code = status;
-                    if (answer.startsWith("500|")) {                // one answer with its own status
-                        code = 500;
+                    if (answer.size() > 4 && answer.at(3) == '|' && QByteArray(answer.left(3)).toInt() >= 200) {     // "400|{...}": one answer with its own status
+                        code = answer.left(3).toInt();
                         answer = answer.mid(4);
                     }
                     QByteArray out = "HTTP/1.1 " + QByteArray::number(code) + " X\r\nContent-Type: " + contentType + "\r\nContent-Length: " + QByteArray::number(answer.size())
@@ -101,6 +101,62 @@ QByteArray agentReply(const QJsonArray& calls, const QString& content)
     if (!calls.isEmpty())
         message["tool_calls"] = calls;
     return QJsonDocument(QJsonObject{{"choices", QJsonArray{QJsonObject{{"message", message}}}}}).toJson(QJsonDocument::Compact);
+}
+
+QByteArray replyWithReason(const QString& content, const QString& reason)
+{
+    QJsonObject message{{"role", "assistant"}, {"content", content}};
+    return QJsonDocument(QJsonObject{{"choices", QJsonArray{QJsonObject{{"message", message}, {"finish_reason", reason}}}}}).toJson(QJsonDocument::Compact);
+}
+
+QByteArray errorBody(int status, const QString& message)
+{
+    return QByteArray::number(status) + "|" + QJsonDocument(QJsonObject{{"error", QJsonObject{{"message", message}}}}).toJson(QJsonDocument::Compact);
+}
+
+QString lastMessage(const QByteArray& request)
+{
+    return requestBody(request).value("messages").toArray().last().toObject().value("content").toString();
+}
+
+// runs the agent against a queue of answers (then `repeat` for ever) and returns how it ended, what it wrote and every request
+struct RunResult {
+    bool ok = false;
+    QString code;
+    QString text;
+    QStringList activity;
+    int requests = 0;
+    QList<QByteArray> log;
+};
+
+RunResult runAgent(const QString& folder, const QList<QByteArray>& answers, const QByteArray& repeat, const std::function<void(LocalAgent::Config&)>& tweak = nullptr)
+{
+    FakeServer server;
+    server.contentType = "application/json";
+    server.queue = answers;
+    server.body = repeat;
+    QNetworkAccessManager net;
+    LocalAgent agent(&net);
+    RunResult r;
+    QObject::connect(&agent, &LocalAgent::piece, [&](const QString& t) { r.text += t; });
+    QObject::connect(&agent, &LocalAgent::activity, [&](const QString& a) { r.activity << a; });
+    QSignalSpy done(&agent, &LocalAgent::finished);
+    LocalAgent::Config c;
+    c.baseUrl = server.base() + "/v1";
+    c.folder = folder;
+    c.maxSteps = 100;
+    c.history = {{"user", "the task"}};
+    if (tweak)
+        tweak(c);
+    if (!agent.start(c).isEmpty())
+        return r;
+    if (!done.wait(60000))
+        return r;
+    r.ok = done.at(0).at(0).toBool();
+    r.code = done.at(0).at(1).toString();
+    r.requests = server.requests;
+    r.log = server.log;
+    return r;
 }
 
 } // namespace
@@ -668,6 +724,103 @@ private slots:
         QVERIFY(done3.wait(15000));
         QCOMPARE(done3.at(0).at(1).toString(), QString("http500"));
         QCOMPARE(endless.requests, 3);                                                       // the first + two more
+    }
+    // ---- a job that goes on until it is done ---------------------------------------------------------------------------------------------
+    void aLongFileIsReadInParts()
+    {
+        QDir().mkpath(m_dir.filePath("parts"));
+        QFile f(m_dir.filePath("parts/long.txt"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        for (int i = 1; i <= 1000; ++i)
+            f.write(QByteArray("line ") + QByteArray::number(i) + "\n");
+        f.close();
+        QFile small(m_dir.filePath("parts/small.txt"));
+        QVERIFY(small.open(QIODevice::WriteOnly));
+        small.write("a\nb\n");
+        small.close();
+        AgentTools tools(m_dir.filePath("parts"), false);
+        const QString first = tools.run("read_file", {{"path", "long.txt"}}).text;
+        QVERIFY(first.startsWith("[lines 1-600 of 1000] Read on with start_line=601."));
+        QVERIFY(first.contains("line 600\n") && !first.contains("line 601\n"));
+        const QString second = tools.run("read_file", {{"path", "long.txt"}, {"start_line", 601}}).text;
+        QVERIFY(second.startsWith("[lines 601-1000 of 1000]") && !second.contains("Read on"));
+        QVERIFY(second.contains("line 1000\n"));
+        const QString middle = tools.run("read_file", {{"path", "long.txt"}, {"start_line", 10}, {"max_lines", 3}}).text;
+        QVERIFY(middle.startsWith("[lines 10-12 of 1000]") && middle.contains("line 11\n"));
+        QCOMPARE(tools.run("read_file", {{"path", "small.txt"}}).text, QString("a\nb\n"));      // a short file comes back exactly as it is
+    }
+    void aModelThatRepeatsItselfIsToldAndThenStopped()
+    {
+        const QByteArray repeat = agentReply({agentCall("c", "list_files", {})}, QString());
+        const RunResult r = runAgent(m_dir.path(), {}, repeat);
+        QVERIFY(!r.ok);
+        QCOMPARE(r.code, QString("stuck"));
+        QCOMPARE(r.requests, 8);                                                                // 2 real calls, 5 refused, the 8th ends the job
+        QVERIFY(lastMessage(r.log.at(3)).contains("times in a row"));
+        QVERIFY(!lastMessage(r.log.at(1)).contains("times in a row"));                         // the second call is still run
+    }
+    void anAnswerCutByTheLengthLimitGoesOn()
+    {
+        const RunResult r = runAgent(m_dir.path(), {replyWithReason("part one ", "length"), replyWithReason("part two", "stop")}, {});
+        QVERIFY2(r.ok, qPrintable(r.code));
+        QCOMPARE(r.text, QString("part onepart two"));                                          // one text, no blank line between the pieces
+        QCOMPARE(r.requests, 2);
+        QVERIFY(lastMessage(r.log.at(1)).contains("Go on"));
+    }
+    void aSilentAnswerIsAskedAgain()
+    {
+        const RunResult r = runAgent(m_dir.path(), {replyWithReason("", "stop"), replyWithReason("Done.", "stop")}, {});
+        QVERIFY2(r.ok, qPrintable(r.code));
+        QCOMPARE(r.text, QString("Done."));
+        QCOMPARE(r.requests, 2);
+        const RunResult never = runAgent(m_dir.path(), {}, replyWithReason("", "stop"));                      // a model that stays silent: an error in the end
+        QVERIFY(!never.ok);
+        QCOMPARE(never.code, QString("empty"));
+    }
+    void theJobIsNotDoneWhileTheTaskListIsOpen()
+    {
+        const QJsonArray open{QJsonObject{{"content", "write page"}, {"status", "in_progress"}}};
+        const QJsonArray closed{QJsonObject{{"content", "write page"}, {"status", "completed"}}};
+        const RunResult r = runAgent(m_dir.path(), {agentReply({agentCall("t1", "todo_write", {{"todos", open}})}, QString()), agentReply({}, QStringLiteral("I think that is all.")),
+                                      agentReply({agentCall("t2", "todo_write", {{"todos", closed}})}, QString()), agentReply({}, QStringLiteral("All done."))}, {});
+        QVERIFY2(r.ok, qPrintable(r.code));
+        QCOMPARE(r.requests, 4);
+        QVERIFY(lastMessage(r.log.at(2)).contains("unfinished") && lastMessage(r.log.at(2)).contains("write page"));
+        QVERIFY(r.text.endsWith("All done."));
+    }
+    void aLongJobStaysInsideTheWindow()
+    {
+        QDir().mkpath(m_dir.filePath("win"));
+        QFile f(m_dir.filePath("win/big.txt"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        for (int i = 1; i <= 3000; ++i)
+            f.write(QByteArray(40, 'x') + QByteArray::number(i) + "\n");
+        f.close();
+        QList<QByteArray> answers;
+        for (int i = 0; i < 12; ++i)                                                            // twelve different 100 line pieces of the file
+            answers << agentReply({agentCall("r", "read_file", {{"path", "big.txt"}, {"start_line", 1 + i * 100}, {"max_lines", 100}})}, QString());
+        answers << agentReply({}, QStringLiteral("Read it all."));
+        const RunResult r = runAgent(m_dir.filePath("win"), answers, {}, [&](LocalAgent::Config& c) {
+            c.contextTokens = 3000;                                                            // a small window: about 5000 characters are left for the conversation
+        });
+        QVERIFY2(r.ok, qPrintable(r.code));
+        QCOMPARE(r.requests, 13);
+        QVERIFY(r.activity.join("\n").contains("Made room"));
+        const QByteArray last = r.log.last();
+        const QJsonArray msgs = requestBody(last).value("messages").toArray();
+        QCOMPARE(msgs.first().toObject().value("content").toString(), QString("the task"));    // the task is never dropped
+        QVERIFY2(last.size() < 16000, qPrintable(QString::number(last.size())));              // twelve whole 4000 character answers would be about 50000
+        QVERIFY(msgs.size() <= 12);
+    }
+    void aPromptThatDoesNotFitIsShortenedAndAskedAgain()
+    {
+        const RunResult r = runAgent(m_dir.path(), {errorBody(400, "request (9000 tokens) exceeds the available context size (8192 tokens)"), replyWithReason("Fits now.", "stop")}, {});
+        QVERIFY2(r.ok, qPrintable(r.code));
+        QCOMPARE(r.requests, 2);
+        QVERIFY(r.activity.join("\n").contains("too long"));
+        const RunResult other = runAgent(m_dir.path(), {errorBody(400, "bad request")}, {});                  // another 400 is still an error
+        QVERIFY(!other.ok);
+        QCOMPARE(other.code, QString("http400"));
     }
     void theAgentPageUsesTheLocalModel()
     {

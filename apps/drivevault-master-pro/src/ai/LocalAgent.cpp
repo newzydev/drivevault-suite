@@ -93,7 +93,13 @@ QString LocalAgent::start(const Config& c)
         m_messages.append(QJsonObject{{"role", m.first}, {"content", m.second}});
     m_steps = 0;
     m_webCalls = 0;
-    m_parseRetries = 0;
+    m_parseRetries = m_emptyNudges = m_todoNudges = m_continues = m_contextRetries = 0;
+    m_budgetFactor = 1.0;
+    m_compacted = false;
+    m_todoList.clear();
+    m_lastCall.clear();
+    m_sameCall = 0;
+    m_taskIndex = int(m_messages.size()) - 1;                   // the user's new message: the task
     m_webSeen.clear();
     ++m_generation;
     m_waiting = false;
@@ -140,6 +146,16 @@ void LocalAgent::step()
     if (m_files)
         for (const QJsonValue& v : controlSpecs(m_config.allowCommands, m_config.planMode))
             tools.append(v);
+    // keep the conversation inside the window of the server (a long job reads many files and writes many pieces)
+    m_toolTokens = qint64(QJsonDocument(tools).toJson(QJsonDocument::Compact).size()) * 2 / 5;
+    const qint64 room = m_config.contextTokens - (m_config.maxTokens > 0 ? m_config.maxTokens : 2048) - 1024;
+    const int before = int(m_messages.size());
+    const qint64 sizeBefore = estimateTokens();
+    compact(qint64(double(qMax<qint64>(room, 2048)) * m_budgetFactor));
+    if (!m_compacted && (before != m_messages.size() || estimateTokens() < sizeBefore)) {
+        m_compacted = true;
+        emit activity(QStringLiteral("Made room: older results were shortened (read a file again if you need it)"));
+    }
     QJsonObject body{{"model", m_config.model}, {"messages", m_messages}, {"tools", tools}, {"stream", false},
                      {"chat_template_kwargs", QJsonObject{{"enable_thinking", m_config.thinking}}}};
     if (m_config.maxTokens > 0)
@@ -183,6 +199,16 @@ void LocalAgent::onReply()
             step();
             return;
         }
+        // the prompt does not fit in the window (my estimate was too low): shorten harder and ask again
+        if ((status == 400 || status == 500) && m_contextRetries < 3
+            && (message.contains(QLatin1String("context"), Qt::CaseInsensitive) || message.contains(QLatin1String("exceed"), Qt::CaseInsensitive)
+                || message.contains(QLatin1String("too large"), Qt::CaseInsensitive))) {
+            ++m_contextRetries;
+            m_budgetFactor *= 0.55;
+            emit activity(QStringLiteral("The conversation was too long for the model: shortening it and trying again"));
+            step();
+            return;
+        }
         end(false, QStringLiteral("http%1").arg(status), message);
         return;
     }
@@ -190,24 +216,53 @@ void LocalAgent::onReply()
         end(false, QStringLiteral("network"), errorString);
         return;
     }
-    const QJsonObject message = root.value(QLatin1String("choices")).toArray().first().toObject().value(QLatin1String("message")).toObject();
+    const QJsonObject choice = root.value(QLatin1String("choices")).toArray().first().toObject();
+    const QJsonObject message = choice.value(QLatin1String("message")).toObject();
     if (message.isEmpty()) {
         end(false, QStringLiteral("badReply"), {});
         return;
     }
     const QString content = message.value(QLatin1String("content")).toString().trimmed();
     const QJsonArray calls = message.value(QLatin1String("tool_calls")).toArray();
+    const bool cutByLength = choice.value(QLatin1String("finish_reason")).toString() == QLatin1String("length");
     if (!content.isEmpty()) {
-        if (m_wroteText)
+        if (m_wroteText && !m_joinNext)
             emit piece(QStringLiteral("\n\n"));
         emit piece(content);
         m_wroteText = true;
+        m_joinNext = false;
     }
     if (calls.isEmpty()) {
-        if (!m_wroteText)
+        // ---- finishing: the job is done only when the model says so AND nothing it promised is left ----
+        if (cutByLength && m_continues < 8) {                  // a long answer hit max_tokens: let it go on where it stopped
+            ++m_continues;
+            m_joinNext = true;                                 // the next piece goes on in the same text
+            if (!content.isEmpty())
+                m_messages.append(QJsonObject{{"role", "assistant"}, {"content", content}});
+            if (nudge(QStringLiteral("The answer was long: going on"), QStringLiteral("Go on exactly where you stopped. Do not repeat what you already wrote.")))
+                return;
+        }
+        if (content.isEmpty() && !m_wroteText) {
+            if (m_emptyNudges++ < 3 && nudge(QStringLiteral("The model sent nothing: asking again"),
+                                              QStringLiteral("You sent no answer. Continue the task with a tool call, or give the final answer now.")))
+                return;
             end(false, QStringLiteral("empty"), {});
-        else
-            end(true, {}, {});
+            return;
+        }
+        QStringList open;
+        for (const QVariant& v : std::as_const(m_todoList))
+            if (v.toMap().value("status").toString() != QLatin1String("completed"))
+                open << v.toMap().value("content").toString();
+        if (!open.isEmpty() && m_todoNudges < 3) {
+            ++m_todoNudges;
+            if (!content.isEmpty())
+                m_messages.append(QJsonObject{{"role", "assistant"}, {"content", content}});
+            if (nudge(QStringLiteral("The task list is not finished: going on"),
+                      QStringLiteral("Your task list still has unfinished items:\n- %1\nIf they are really done, mark them completed with todo_write and give the final summary. "
+                                     "Otherwise carry on with the next item now with a tool call.").arg(open.join(QStringLiteral("\n- ")))))
+                return;
+        }
+        end(true, {}, {});
         return;
     }
     // the model asks for tools: run them one after the other, hand the results back, ask again
@@ -276,6 +331,23 @@ void LocalAgent::runNextCall()
         m_web->run(name, args, result);
         return;
     }
+    // A model that makes the very same call again and again (and gets the very same answer) is stuck. Third time in a row: it is told so and the call is not run;
+    // eighth time: the job stops with a message instead of burning the time for ever.
+    if (name != QLatin1String("todo_write") && name != QLatin1String("exit_plan_mode")) {
+        const QString signature = name + QLatin1Char(' ') + QString::fromUtf8(QJsonDocument(args).toJson(QJsonDocument::Compact));
+        m_sameCall = signature == m_lastCall ? m_sameCall + 1 : 1;
+        m_lastCall = signature;
+        if (m_sameCall >= 8) {
+            end(false, QStringLiteral("stuck"), {});
+            return;
+        }
+        if (m_sameCall >= 3) {
+            emit activity(AgentTools::describe(name, args) + QStringLiteral(" (repeated)"));
+            result(QStringLiteral("you have made exactly this call %1 times in a row with the same result. Do something different (another file, another approach) or, if the job "
+                                  "is done, finish and tell the user what you did").arg(m_sameCall), true);
+            return;
+        }
+    }
     if (name == QLatin1String("todo_write") || name == QLatin1String("run_command") || name == QLatin1String("exit_plan_mode")) {
         if (!m_files) {
             result(QStringLiteral("no folder is chosen, so this tool is not available"), true);
@@ -329,6 +401,7 @@ void LocalAgent::runControlCall(const QString& name, const QJsonObject& args, co
                 break;
         }
         emit activity(QStringLiteral("Task list: %1 items").arg(todos.size()));
+        m_todoList = todos;
         emit todosChanged(todos);
         result(QStringLiteral("The task list is saved. Go on with the next item and set items to completed when they are done."), false);
         return;
@@ -391,6 +464,105 @@ void LocalAgent::runControlCall(const QString& name, const QJsonObject& args, co
         result(QStringLiteral("The user approved the plan. Carry it out now: you may change files and run commands (the user is asked before each one). Keep the task list up to date."), false);
     };
     emit planApprovalNeeded(plan);
+}
+
+// ---- keeping a long job inside the window ---------------------------------------------------------------------------------------------
+namespace {
+
+qint64 charsOf(const QJsonObject& m)
+{
+    qint64 n = 16;
+    const QJsonValue c = m.value(QLatin1String("content"));
+    if (c.isString())
+        n += c.toString().size();
+    for (const QJsonValue& t : m.value(QLatin1String("tool_calls")).toArray()) {
+        const QJsonObject f = t.toObject().value(QLatin1String("function")).toObject();
+        n += 30 + f.value(QLatin1String("name")).toString().size() + f.value(QLatin1String("arguments")).toString().size();
+    }
+    return n;
+}
+
+QString shorten(const QString& text, int keep)
+{
+    return text.size() <= keep + 60 ? text : text.left(keep) + QStringLiteral(" ...(%1 characters left out)").arg(text.size() - keep);
+}
+
+} // namespace
+
+// a rough size: about 2.5 characters to a token (Thai and code are denser than English)
+qint64 LocalAgent::estimateTokens() const
+{
+    qint64 chars = 0;
+    for (const QJsonValue& v : m_messages)
+        chars += charsOf(v.toObject());
+    return chars * 2 / 5 + m_toolTokens;
+}
+
+void LocalAgent::shortenMessage(int index)
+{
+    QJsonObject m = m_messages.at(index).toObject();
+    const QString role = m.value(QLatin1String("role")).toString();
+    if (role == QLatin1String("tool")) {
+        const QString text = m.value(QLatin1String("content")).toString();
+        if (text.size() > 360)
+            m["content"] = text.left(300) + QStringLiteral("\n... (%1 characters left out to save room; read it again if you need it)").arg(text.size() - 300);
+    } else if (role == QLatin1String("assistant")) {
+        const QJsonValue c = m.value(QLatin1String("content"));
+        if (c.isString() && c.toString().size() > 700)
+            m["content"] = shorten(c.toString(), 400);
+        QJsonArray calls = m.value(QLatin1String("tool_calls")).toArray();
+        for (int i = 0; i < calls.size(); ++i) {                      // the text of an old write_file / edit_file is long and already done
+            QJsonObject call = calls.at(i).toObject();
+            QJsonObject fn = call.value(QLatin1String("function")).toObject();
+            const QJsonObject args = QJsonDocument::fromJson(fn.value(QLatin1String("arguments")).toString().toUtf8()).object();
+            QJsonObject out;
+            for (auto it = args.begin(); it != args.end(); ++it)
+                out[it.key()] = it.value().isString() ? QJsonValue(shorten(it.value().toString(), 120)) : it.value();
+            fn["arguments"] = QString::fromUtf8(QJsonDocument(out).toJson(QJsonDocument::Compact));
+            call["function"] = fn;
+            calls[i] = call;
+        }
+        if (!calls.isEmpty())
+            m["tool_calls"] = calls;
+    }
+    m_messages[index] = m;
+}
+
+// Over the budget: first the long pieces of the old messages are shortened (the newest six stay whole), then the oldest messages are dropped (a call with its
+// results together). The system message and the user's task always stay.
+void LocalAgent::compact(qint64 budgetTokens)
+{
+    if (estimateTokens() <= budgetTokens)
+        return;
+    const int firstOld = qMax(m_taskIndex + 1, 1);
+    for (int i = firstOld; i < int(m_messages.size()) - 6 && estimateTokens() > budgetTokens; ++i)
+        shortenMessage(i);
+    const bool hasSystem = !m_messages.isEmpty() && m_messages.at(0).toObject().value(QLatin1String("role")).toString() == QLatin1String("system");
+    while (estimateTokens() > budgetTokens && m_messages.size() > 4) {
+        int i;
+        if ((hasSystem ? 1 : 0) < m_taskIndex)
+            i = hasSystem ? 1 : 0;                                     // older conversation before the task
+        else if (m_taskIndex + 1 < int(m_messages.size()) - 4)
+            i = m_taskIndex + 1;                                       // the oldest step of this job
+        else
+            break;
+        int count = 1;
+        if (m_messages.at(i).toObject().contains(QLatin1String("tool_calls")))
+            while (i + count < int(m_messages.size()) && m_messages.at(i + count).toObject().value(QLatin1String("role")).toString() == QLatin1String("tool"))
+                ++count;
+        for (int k = 0; k < count; ++k)
+            m_messages.removeAt(i);
+        if (i < m_taskIndex)
+            m_taskIndex -= count;
+    }
+}
+
+bool LocalAgent::nudge(const QString& activityText, const QString& text)
+{
+    emit activity(activityText);
+    m_messages.append(QJsonObject{{"role", "user"}, {"content", text}});
+    step();
+    return true;
 }
 
 void LocalAgent::answerApproval(bool allow)

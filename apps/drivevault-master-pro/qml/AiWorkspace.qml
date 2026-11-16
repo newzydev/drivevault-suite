@@ -48,6 +48,40 @@ Item {
         if (e === "")
             input.clear()
     }
+    // ---- time: a clock that runs while the AI works, and the time a finished answer took ------------------------------------------------
+    property real nowMs: Date.now()
+    Timer { interval: 500; repeat: true; running: root.ch.busy; onTriggered: root.nowMs = Date.now() }
+    function fmtDuration(ms) {
+        const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60
+        const two = n => (n < 10 ? "0" : "") + n
+        return h > 0 ? h + ":" + two(m) + ":" + two(r) : m + ":" + two(r)
+    }
+    readonly property real runStartedMs: { const m = root.ch.messages; return root.ch.busy && m.length > 0 ? m[m.length - 1].startedMs : 0 }
+    readonly property string runClock: runStartedMs > 0 ? fmtDuration(nowMs - runStartedMs) : ""
+    readonly property int todosDone: root.ch.todos.filter(t => t.status === "completed").length
+
+    // three dots that breathe one after the other: "the AI is working"
+    component Dots: Row {
+        spacing: 4
+        Repeater {
+            model: 3
+            delegate: Rectangle {
+                required property int index
+                width: 6; height: 6; radius: 3
+                color: Theme.accent
+                opacity: 0.25
+                SequentialAnimation on opacity {
+                    loops: Animation.Infinite
+                    running: true
+                    PauseAnimation { duration: index * 170 }
+                    NumberAnimation { to: 1; duration: 320; easing.type: Easing.InOutSine }
+                    NumberAnimation { to: 0.25; duration: 320; easing.type: Easing.InOutSine }
+                    PauseAnimation { duration: (2 - index) * 170 }
+                }
+            }
+        }
+    }
+
     // the diff of an edit_file: lines "- old" in red, "+ new" in green (the text is escaped)
     function diffHtml(text) {
         const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -130,6 +164,7 @@ Item {
         implicitWidth: chipText.implicitWidth + 22
         radius: 14
         color: clickable && chipMouse.containsMouse ? Theme.surfaceHover : "transparent"
+        Behavior on color { ColorAnimation { duration: 140 } }
         border.width: 1
         border.color: Theme.border
         Text { id: chipText; anchors.centerIn: parent; font.pixelSize: 12; font.weight: Font.Medium; color: Theme.textSecondary }
@@ -210,6 +245,7 @@ Item {
                             height: 38
                             radius: 9
                             color: current ? Qt.alpha(Theme.accent, 0.16) : rowMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                            Behavior on color { ColorAnimation { duration: 140 } }
                             Text {
                                 anchors.left: parent.left
                                 anchors.leftMargin: 12
@@ -265,6 +301,13 @@ Item {
                     spacing: 10
                     Text { text: Tr.s(root.agent ? "ai_new_agent" : "ai_new_ask"); font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.text }
                     Chip { text: root.modelLabel }
+                    Chip {                                    // the clock of the running job, fades in and out
+                        objectName: "aiClock"
+                        text: "⏱  " + root.runClock
+                        opacity: root.ch.busy && root.runClock !== "" ? 1 : 0
+                        visible: opacity > 0
+                        Behavior on opacity { NumberAnimation { duration: 250 } }
+                    }
                     Item { Layout.fillWidth: true }
                     MButton { objectName: "aiSettings"; compact: true; text: Tr.s("ai_settings"); onClicked: settings.open() }
                 }
@@ -286,6 +329,7 @@ Item {
                         spacing: 20
                         model: root.ch.messages
                         property bool follow: true
+                        property int seen: 0                       // messages that already had their entrance (the model is rebuilt on every change: only a new one animates)
                         onMovementEnded: follow = atYEnd
                         onModelChanged: if (follow) Qt.callLater(positionViewAtEnd)
                         onCountChanged: { follow = true; Qt.callLater(positionViewAtEnd) }
@@ -293,9 +337,23 @@ Item {
                         delegate: ColumnLayout {
                             id: msg
                             required property var modelData
+                            required property int index
                             readonly property bool isUser: modelData.role === "user"
                             width: list.width - 14
                             spacing: 6
+                            // a new message fades in and slides up; an old one that is only rebuilt stays as it is
+                            transform: Translate { id: msgShift }
+                            Component.onCompleted: {
+                                if (index >= list.seen) {
+                                    list.seen = index + 1
+                                    enter.start()
+                                }
+                            }
+                            ParallelAnimation {
+                                id: enter
+                                NumberAnimation { target: msg; property: "opacity"; from: 0; to: 1; duration: 280; easing.type: Easing.OutCubic }
+                                NumberAnimation { target: msgShift; property: "y"; from: 16; to: 0; duration: 320; easing.type: Easing.OutCubic }
+                            }
 
                             // the question
                             Rectangle {
@@ -343,11 +401,29 @@ Item {
                                 color: Theme.text
                                 onLinkActivated: link => { if (link.indexOf("https://") === 0) Qt.openUrlExternally(link) }
                             }
-                            Text {
+                            RowLayout {
                                 visible: !msg.isUser && msg.modelData.streaming && msg.modelData.text === ""
-                                text: root.statusText(root.ch.status)
-                                font.pixelSize: 13
-                                color: Theme.textSecondary
+                                spacing: 10
+                                Dots {}
+                                Text {
+                                    text: root.statusText(root.ch.status) + (msg.modelData.startedMs > 0 ? "   " + root.fmtDuration(root.nowMs - msg.modelData.startedMs) : "")
+                                    font.pixelSize: 13
+                                    color: Theme.textSecondary
+                                }
+                            }
+                            // how long it took: live while it works, final when it is done
+                            RowLayout {
+                                objectName: "aiTimeLine"
+                                visible: !msg.isUser && (msg.modelData.streaming ? msg.modelData.startedMs > 0 && msg.modelData.text !== "" : msg.modelData.durationMs > 0)
+                                spacing: 8
+                                Dots { visible: msg.modelData.streaming }
+                                Text {
+                                    text: (msg.modelData.streaming ? Tr.s("ai_time_running").replace("%1", root.fmtDuration(root.nowMs - msg.modelData.startedMs))
+                                                                   : Tr.s("ai_time_used").replace("%1", root.fmtDuration(msg.modelData.durationMs)))
+                                          + (msg.modelData.steps > 0 ? "   ·   " + Tr.s("ai_steps").replace("%1", msg.modelData.steps) : "")
+                                    font.pixelSize: 12
+                                    color: Theme.textDisabled
+                                }
                             }
                             Text {
                                 visible: !msg.isUser && msg.modelData.stopped
@@ -364,6 +440,14 @@ Item {
                                 readonly property string kind: appr && appr.kind !== undefined ? appr.kind : ""
                                 readonly property bool isDiff: kind === "change" && appr.diff === true
                                 visible: kind !== ""
+                                onVisibleChanged: if (visible) pop.restart()
+                                Component.onCompleted: if (visible) pop.start()
+                                transformOrigin: Item.Top
+                                ParallelAnimation {
+                                    id: pop
+                                    NumberAnimation { target: approvalCard; property: "scale"; from: 0.96; to: 1; duration: 240; easing.type: Easing.OutBack }
+                                    NumberAnimation { target: approvalCard; property: "opacity"; from: 0; to: 1; duration: 200 }
+                                }
                                 Layout.fillWidth: true
                                 implicitHeight: approvalColumn.implicitHeight + 24
                                 radius: 12
@@ -446,14 +530,29 @@ Item {
 
                     // welcome: what this page is for, and a few examples that only fill the message box
                     ColumnLayout {
+                        id: welcome
                         visible: root.ch.messages.length === 0
                         anchors.centerIn: parent
                         width: Math.min(parent.width - 56, 640)
                         spacing: 14
+                        onVisibleChanged: if (visible) welcomeIn.restart()
+                        Component.onCompleted: if (visible) welcomeIn.start()
+                        NumberAnimation { id: welcomeIn; target: welcome; property: "opacity"; from: 0; to: 1; duration: 520; easing.type: Easing.OutCubic }
                         Item {
                             Layout.alignment: Qt.AlignHCenter
                             width: 44; height: 44
-                            Rectangle { anchors.centerIn: parent; width: 26; height: 26; radius: 6; rotation: 45; color: Qt.alpha(Theme.accent, 0.18); border.width: 2; border.color: Theme.accent }
+                            Rectangle {
+                                id: diamond
+                                anchors.centerIn: parent
+                                width: 26; height: 26; radius: 6; rotation: 45
+                                color: Qt.alpha(Theme.accent, 0.18); border.width: 2; border.color: Theme.accent
+                                SequentialAnimation on scale {                    // it breathes while the page waits for a task
+                                    running: root.ch.messages.length === 0
+                                    loops: Animation.Infinite
+                                    NumberAnimation { to: 1.14; duration: 1500; easing.type: Easing.InOutSine }
+                                    NumberAnimation { to: 1; duration: 1500; easing.type: Easing.InOutSine }
+                                }
+                            }
                         }
                         Text {
                             Layout.fillWidth: true
@@ -537,18 +636,62 @@ Item {
                     }
                 }
 
-                // message box
-                Rectangle {
+                // a light that runs along the top of the message box while the AI works
+                Item {
+                    objectName: "aiProgress"
                     Layout.fillWidth: true
                     Layout.leftMargin: 28
                     Layout.rightMargin: 28
-                    Layout.topMargin: 10
+                    Layout.topMargin: 6
+                    implicitHeight: 3
+                    clip: true
+                    opacity: root.ch.busy ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 300 } }
+                    Rectangle { anchors.fill: parent; radius: 1.5; color: Qt.alpha(Theme.accent, 0.14) }
+                    Rectangle {
+                        id: shimmer
+                        width: parent.width * 0.28
+                        height: parent.height
+                        radius: 1.5
+                        color: Theme.accent
+                        SequentialAnimation on x {
+                            loops: Animation.Infinite
+                            running: root.ch.busy
+                            NumberAnimation { from: -shimmer.width; to: shimmer.parent.width; duration: 1400; easing.type: Easing.InOutQuad }
+                        }
+                    }
+                }
+
+                // message box
+                Rectangle {
+                    id: inputBox
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 28
+                    Layout.rightMargin: 28
+                    Layout.topMargin: 6
                     Layout.bottomMargin: 22
                     implicitHeight: 132
                     radius: 18
                     color: Theme.backgroundAlt
                     border.width: input.activeFocus ? 2 : 1
                     border.color: input.activeFocus ? Theme.accent : Theme.border
+                    Behavior on border.color { ColorAnimation { duration: 160 } }
+                    // while it works the edge of the box breathes
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: inputBox.radius
+                        color: "transparent"
+                        border.width: 2
+                        border.color: Theme.accent
+                        visible: root.ch.busy
+                        opacity: 0.15
+                        SequentialAnimation on opacity {
+                            loops: Animation.Infinite
+                            running: root.ch.busy
+                            NumberAnimation { to: 0.7; duration: 950; easing.type: Easing.InOutSine }
+                            NumberAnimation { to: 0.15; duration: 950; easing.type: Easing.InOutSine }
+                        }
+                    }
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 12
@@ -628,7 +771,7 @@ Item {
                             }
                             Text {
                                 Layout.fillWidth: true
-                                text: root.ch.busy ? root.statusText(root.ch.status) : ""
+                                text: root.ch.busy ? root.statusText(root.ch.status) + (root.runClock !== "" ? "   ⏱ " + root.runClock : "") : ""
                                 font.pixelSize: 12
                                 color: Theme.accent
                                 elide: Text.ElideRight
@@ -695,18 +838,60 @@ Item {
                         color: Theme.textDisabled
                         wrapMode: Text.Wrap
                     }
+                    // how far the list is: 3 / 7 and a bar that grows
+                    RowLayout {
+                        objectName: "aiTodoProgress"
+                        visible: root.agent && root.ch.todos.length > 0
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Text { text: root.todosDone + " / " + root.ch.todos.length; font.pixelSize: 12; font.weight: Font.DemiBold; color: Theme.textSecondary }
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 5
+                            radius: 2.5
+                            color: Theme.border
+                            Rectangle {
+                                height: parent.height
+                                radius: parent.radius
+                                color: root.todosDone === root.ch.todos.length ? Theme.success : Theme.accent
+                                width: root.ch.todos.length > 0 ? parent.width * root.todosDone / root.ch.todos.length : 0
+                                Behavior on width { NumberAnimation { duration: 450; easing.type: Easing.OutCubic } }
+                                Behavior on color { ColorAnimation { duration: 300 } }
+                            }
+                        }
+                    }
                     Repeater {
                         objectName: "aiTodos"
                         model: root.agent ? root.ch.todos : []
                         delegate: RowLayout {
+                            id: todoRow
                             required property var modelData
+                            required property int index
                             Layout.fillWidth: true
                             spacing: 8
+                            opacity: 0
+                            transform: Translate { id: todoShift; x: -10 }
+                            Component.onCompleted: todoEnter.start()
+                            SequentialAnimation {
+                                id: todoEnter
+                                PauseAnimation { duration: Math.min(todoRow.index, 8) * 45 }
+                                ParallelAnimation {
+                                    NumberAnimation { target: todoRow; property: "opacity"; to: 1; duration: 260; easing.type: Easing.OutCubic }
+                                    NumberAnimation { target: todoShift; property: "x"; to: 0; duration: 300; easing.type: Easing.OutCubic }
+                                }
+                            }
                             Text {
+                                id: todoMark
                                 Layout.alignment: Qt.AlignTop
                                 text: modelData.status === "completed" ? "✓" : modelData.status === "in_progress" ? "●" : "○"
                                 font.pixelSize: 13
                                 color: modelData.status === "completed" ? Theme.success : modelData.status === "in_progress" ? Theme.accent : Theme.textDisabled
+                                SequentialAnimation on opacity {                 // the item that is being worked on pulses
+                                    running: modelData.status === "in_progress"
+                                    loops: Animation.Infinite
+                                    NumberAnimation { to: 0.3; duration: 700; easing.type: Easing.InOutSine }
+                                    NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
+                                }
                             }
                             Text {
                                 Layout.fillWidth: true

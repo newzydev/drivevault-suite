@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.14.0 (2026-11-16): The agent works until the job is done; clock and animations
+  - Agent: no limit on the number of steps any more (a safety net of 60 / 400 / 1000 remains). A job ends when the model is done, when you press Stop, or when it is stuck (the same call 8 times in a row). The model window is now 32768 tokens (was 8192) and the answer limit 8192 (was 3000), so a whole page fits in one answer; the conversation is kept inside the window (old results are shortened, then dropped; the task stays); a long answer goes on where it was cut; a long file is read in parts (start_line); a silent answer is asked again; an answer while the task list still has open items is not accepted. Every such step shows a line in the activity list. The model may use more memory because of the larger window.
+  - The instructions to the model are rewritten: small request = just do it; big job = look, task list, do the items, check the result, summary; read errors and take another way.
+  - Page: a clock that runs while the AI works (title bar of the page, status line and the answer) and "Took m:ss - n steps" under every answer; a light runs above the message box and its edge breathes while the AI works; new messages fade in; the task list shows 3 / 7 with a growing bar and animated items; the approval card pops in; three dots show the AI is working.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.13.1 (2026-11-16): A long file no longer ends in "error 500"
   - Fixed: when the model wrote a long file in one go, its answer was cut off by the length limit and the page showed "the local model answered with error 500" with the whole file in the message. Now the agent tells the model that the answer was cut off and asks again for a shorter one (twice at most), the instructions tell the model to write big files in parts (write_file, then edit_file), and a long error message is cut to 600 characters.
   - Not code-signed (Windows SmartScreen may warn).

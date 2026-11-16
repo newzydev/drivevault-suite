@@ -61,6 +61,9 @@ public:
         QString errorCode, errorDetail;
         bool streaming = false;
         bool stopped = false;
+        qint64 startedMs = 0;              // when the request began (epoch ms; 0 = a local answer of a slash command)
+        qint64 durationMs = 0;             // how long it took (0 while it runs)
+        int steps = 0;                     // tool steps of the request (the activity list keeps only the newest 300)
         QVariantMap approval;              // waits for the user's answer (not saved): {kind: "change", path, replaces, bytes, preview, diff} | {kind: "command", command} | {kind: "plan", plan}
     };
     struct Conversation {

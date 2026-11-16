@@ -118,6 +118,7 @@ void LlamaServer::start(const QString& modelPath)
         fail(QStringLiteral("noModel"), {});
         return;
     }
+    m_ctx = kContextTokens;
     setState(State::Starting);
     launch(true);
 }
@@ -157,7 +158,7 @@ void LlamaServer::launch(bool gpu)
     m_process->setProgram(serverExecutable());
     m_process->setWorkingDirectory(QFileInfo(serverExecutable()).absolutePath());
     m_process->setArguments({QStringLiteral("-m"), m_model, QStringLiteral("--host"), QStringLiteral("127.0.0.1"), QStringLiteral("--port"),
-                             QString::number(port), QStringLiteral("-c"), QStringLiteral("8192"), QStringLiteral("-ngl"),
+                             QString::number(port), QStringLiteral("-c"), QString::number(m_ctx), QStringLiteral("-ngl"),
                              gpu ? QStringLiteral("99") : QStringLiteral("0"), QStringLiteral("--no-webui"), QStringLiteral("--parallel"),
                              QStringLiteral("1"), QStringLiteral("--api-key"), m_apiKey, QStringLiteral("-t"),
                              QString::number(std::max(2, QThread::idealThreadCount() / 2))});
@@ -173,7 +174,10 @@ void LlamaServer::launch(bool gpu)
         const QString detail = QString::fromUtf8(m_log.right(600)).trimmed();
         if (m_gpu)
             launch(false);                               // the graphics card could not be used: try the processor
-        else
+        else if (m_ctx > kSmallContextTokens) {
+            m_ctx = kSmallContextTokens;                 // not enough memory for the big window: start again with the small one (the graphics card first)
+            launch(true);
+        } else
             fail(QStringLiteral("startFailed"), detail);
     });
     connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError e) {

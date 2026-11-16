@@ -38,7 +38,9 @@ public:
     Result run(const QString& name, const QJsonObject& args) const;
     static QString describe(const QString& name, const QJsonObject& args);   // "Read: notes.txt" for the activity line
 
-    static constexpr qint64 kMaxRead = 60000;                          // bytes of one file shown to the model
+    static constexpr qint64 kMaxRead = 24000;                          // characters of one read_file answer (a long file is read in parts)
+    static constexpr int kMaxLines = 600;                              // lines of one read_file answer
+    static constexpr qint64 kMaxFile = 3000000;                        // a bigger file is not read at all
     static constexpr qint64 kMaxWrite = 1000000;
 
 private:

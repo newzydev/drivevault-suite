@@ -37,8 +37,9 @@ public:
         bool planMode = false;                             // exit_plan_mode is offered; nothing is changed until the user approves the plan (planApprovalNeeded)
         QString system;
         QList<QPair<QString, QString>> history;            // user / assistant messages, oldest first, the last is the new question
-        int maxSteps = 12;
-        bool thinking = false;                             // let the model reason first (slower, better on hard questions)
+        int maxSteps = 12;                                 // a safety net, not a plan: a real job ends when the model is done (see "finishing" in the .cpp)
+        int contextTokens = 8192;                          // the window of the server: older tool results are shortened / dropped to stay inside it
+        bool thinking = false;                            // let the model reason first (slower, better on hard questions)
         int maxTokens = 0;                                 // 0 = the server default
     };
 
@@ -67,6 +68,10 @@ private:
     void onReply();
     void runNextCall();
     void runControlCall(const QString& name, const QJsonObject& args, const std::function<void(const QString&, bool)>& result);
+    void compact(qint64 budgetTokens);                     // keeps the conversation inside the window: shortens old results, then drops the oldest
+    void shortenMessage(int index);
+    qint64 estimateTokens() const;
+    bool nudge(const QString& activityText, const QString& text);   // appends a user message, shows an activity line and asks the model again (always true)
     void end(bool ok, const QString& code, const QString& detail);
 
     QNetworkAccessManager* m_net;
@@ -79,6 +84,18 @@ private:
     int m_callIndex = 0;
     int m_steps = 0;
     int m_parseRetries = 0;                                // answers cut off inside a tool call, asked again
+    int m_emptyNudges = 0;                                 // "you sent no answer"
+    int m_todoNudges = 0;                                  // "the task list is not finished"
+    int m_continues = 0;                                   // answers cut by the length limit, continued
+    int m_contextRetries = 0;                              // "the prompt does not fit": shortened harder and asked again
+    double m_budgetFactor = 1.0;                           // 1 = use the whole window; lowered after the server said it does not fit
+    int m_taskIndex = 0;                                   // the message with the user's task: never dropped
+    qint64 m_toolTokens = 0;                               // the size of the tool list of this run, in tokens
+    bool m_compacted = false;
+    bool m_joinNext = false;                               // the next piece of text continues a cut answer (no blank line between)
+    QVariantList m_todoList;                               // the last list of todo_write
+    QString m_lastCall;                                    // "name args" of the last file / command call and how often in a row
+    int m_sameCall = 0;
     int m_webCalls = 0;                                   // web tool calls of this task: a small model can search for ever
     QStringList m_webSeen;                                 // "name + arguments" of the web calls already made
     bool m_running = false;

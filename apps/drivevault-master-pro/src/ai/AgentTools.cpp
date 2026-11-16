@@ -47,8 +47,12 @@ QJsonArray AgentTools::specs() const
     QJsonArray a;
     a.append(tool("list_files", QStringLiteral("Lists the files and folders in a folder (relative to the working folder, \".\" is the working folder)."),
                   QJsonObject{{"path", prop("string", QStringLiteral("relative folder, default \".\""))}}, {}));
-    a.append(tool("read_file", QStringLiteral("Reads a text file (relative path). Long files are cut."),
-                  QJsonObject{{"path", prop("string", QStringLiteral("relative path of the file"))}}, {QStringLiteral("path")}));
+    a.append(tool("read_file", QStringLiteral("Reads a text file (relative path). A long file is returned in parts (about 600 lines): the answer says which lines you got and the "
+                                              "start_line to continue with. Use start_line / max_lines to read the part you need."),
+                  QJsonObject{{"path", prop("string", QStringLiteral("relative path of the file"))},
+                              {"start_line", prop("integer", QStringLiteral("first line to read, 1 based (default 1)"))},
+                              {"max_lines", prop("integer", QStringLiteral("how many lines (default and most 600)"))}},
+                  {QStringLiteral("path")}));
     a.append(tool("search_text", QStringLiteral("Finds a text (not case sensitive) in the text files of a folder and its sub folders; shows file, line and the line."),
                   QJsonObject{{"query", prop("string", QStringLiteral("the text to find"))}, {"path", prop("string", QStringLiteral("relative folder, default \".\""))}},
                   {QStringLiteral("query")}));
@@ -166,13 +170,30 @@ AgentTools::Result AgentTools::readFile(const QJsonObject& args) const
     QFile f(path);
     if (!QFileInfo(path).isFile() || !f.open(QIODevice::ReadOnly))
         return {QStringLiteral("cannot read: %1").arg(QFileInfo(path).fileName()), true};
-    const QByteArray data = f.read(kMaxRead + 1);
+    if (f.size() > kMaxFile)
+        return {QStringLiteral("%1 is too big to read (%2 bytes); use search_text to find the part you need").arg(QFileInfo(path).fileName()).arg(f.size()), true};
+    const QByteArray data = f.readAll();
     if (looksBinary(data.left(4096)))
         return {QStringLiteral("%1 is not a text file").arg(QFileInfo(path).fileName()), true};
-    QString text = QString::fromUtf8(data.left(kMaxRead));
-    if (data.size() > kMaxRead)
-        text += QStringLiteral("\n... (the file is longer; only the first %1 bytes are shown)").arg(kMaxRead);
-    return {text, false};
+    // a part of a long file: start_line (1 based) and max_lines; the answer says where to go on
+    QStringList lines = QString::fromUtf8(data).split(QLatin1Char('\n'));
+    if (data.endsWith('\n') && !lines.isEmpty())
+        lines.removeLast();                                            // the empty piece after the last line break
+    const int total = qMax(1, int(lines.size()));
+    const int start = qBound(1, args.value(QLatin1String("start_line")).toInt(1), total);
+    const int most = qBound(1, args.value(QLatin1String("max_lines")).toInt(kMaxLines), kMaxLines);
+    QString text;
+    int end = start - 1;
+    while (end < lines.size() && end - start + 1 < most && text.size() < kMaxRead) {
+        text += lines.at(end) + QLatin1Char('\n');
+        ++end;
+    }
+    if (start == 1 && end >= lines.size())
+        return {QString::fromUtf8(data), false};                       // the whole file, as it is
+    QString note = QStringLiteral("[lines %1-%2 of %3]").arg(start).arg(end).arg(total);
+    if (end < total)
+        note += QStringLiteral(" Read on with start_line=%1.").arg(end + 1);
+    return {note + QLatin1Char('\n') + text, false};
 }
 
 AgentTools::Result AgentTools::searchText(const QJsonObject& args) const

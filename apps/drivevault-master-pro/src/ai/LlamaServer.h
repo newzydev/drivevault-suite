@@ -24,6 +24,9 @@ public:
     // Folders that may hold `llama-server.exe` besides the built-in ones: $DM_LLAMA_DIR, <app>\ai\llama, a development .tools\llm\llama-vulkan, and
     // <install dir>\ai\llama of the installed programs that ship the engine (PDF Pro). Empty when there is none.
     static void setExtraEngineDirs(const QStringList& installDirs);
+    static constexpr int kContextTokens = 32768;          // the window of the server (-c): the prompt + the answer of one request; the agent keeps its conversation inside it
+    static constexpr int kSmallContextTokens = 8192;     // used when the big window does not fit in memory
+    int contextTokens() const { return m_ctx; }          // the window of the running server
     static QString serverExecutable();
 
     State state() const { return m_state; }
@@ -57,6 +60,7 @@ private:
     State m_state = State::Stopped;
     QString m_baseUrl, m_apiKey, m_model, m_error, m_detail;
     bool m_gpu = true;
+    int m_ctx = kContextTokens;
     bool m_external = false;
     bool m_probing = false;
     int m_waited = 0;

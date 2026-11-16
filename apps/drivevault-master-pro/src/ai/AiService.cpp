@@ -56,22 +56,24 @@ Effort Effort::of(const QString& id)
 {
     Effort e;
     e.id = id;
-    if (id == QLatin1String("low")) {                          // quick: no reasoning, short answers, few tool rounds
+    // The server window is LlamaServer::kContextTokens (32768). maxSteps is only a safety net against a model that never stops (the agent also notices a model that
+    // repeats itself): a real job ends when the model says it is done, the user presses Stop, or the model is stuck.
+    if (id == QLatin1String("low")) {                          // quick: no reasoning, short answers
         e.thinking = false;
-        e.maxTokens = 1024;
-        e.maxSteps = 6;
-        e.historyChars = 8000;
-    } else if (id == QLatin1String("high")) {                  // deep: the model reasons first (about 3 times slower), longer answers, more tool rounds
+        e.maxTokens = 2048;
+        e.maxSteps = 60;
+        e.historyChars = 16000;
+    } else if (id == QLatin1String("high")) {                  // deep: the model reasons first (about 3 times slower), long answers
         e.thinking = true;
-        e.maxTokens = 4096;
-        e.maxSteps = 20;
-        e.historyChars = 9000;                                 // the reasoning needs room in the 8192 token window
+        e.maxTokens = 12288;                                   // the reasoning counts too
+        e.maxSteps = 1000;
+        e.historyChars = 40000;
     } else {
         e.id = QStringLiteral("medium");
         e.thinking = false;
-        e.maxTokens = 3000;
-        e.maxSteps = 12;
-        e.historyChars = 14000;
+        e.maxTokens = 8192;                                    // a whole page of a few hundred lines fits in one answer
+        e.maxSteps = 400;
+        e.historyChars = 40000;
     }
     return e;
 }
@@ -135,7 +137,8 @@ QVariantList AiChannel::messages() const
             continue;
         for (const Message& m : c.messages) {
             out.append(QVariantMap{{"role", m.role}, {"text", m.text}, {"streaming", m.streaming}, {"stopped", m.stopped}, {"errorCode", m.errorCode},
-                                   {"errorDetail", m.errorDetail}, {"activity", m.activity}, {"approval", m.approval}});
+                                   {"errorDetail", m.errorDetail}, {"activity", m.activity}, {"approval", m.approval},
+                                   {"startedMs", double(m.startedMs)}, {"durationMs", double(m.durationMs)}, {"steps", m.steps}});
         }
     }
     return out;
@@ -214,6 +217,7 @@ void AiChannel::beginRequest(const QString& userText)
     Message reply;
     reply.role = QStringLiteral("assistant");
     reply.streaming = true;
+    reply.startedMs = QDateTime::currentMSecsSinceEpoch();
     c.messages << user << reply;
     c.updated = QDateTime::currentMSecsSinceEpoch();
     m_runId = c.id;
@@ -343,6 +347,9 @@ void AiChannel::sendTools()
         c.thinking = effort.thinking;
         c.maxTokens = effort.maxTokens;
         c.maxSteps = effort.maxSteps;
+        c.contextTokens = server->contextTokens();                // the window the running server really has (it falls back to the small one when memory is short)
+        if (server->isExternal())                                 // a server that was not started here (the tests): its window is unknown, assume the small one
+            c.contextTokens = LlamaServer::kSmallContextTokens;
         const QString web = c.web ? QStringLiteral("\n\nYou can look things up on the Internet with web_search and fetch_page. Search when the answer needs current or unknown "
                                                    "facts (not for what you already know), open a page to read it, and say which pages you used (title and address).")
                                   : QString();
@@ -364,14 +371,20 @@ void AiChannel::sendTools()
                 modeText = QStringLiteral("Every file change and every command is shown to the user, who may decline it. ");
             else
                 modeText = QStringLiteral("File changes are applied at once (the old version is kept in .drivevault-backup); every command still waits for the user's OK. ");
-            c.system = QStringLiteral("You are a coding and file assistant that works inside the folder the user chose, with tools: ") + tools + QStringLiteral(". ") + modeText
-                       + QStringLiteral("Look at the files before you answer or change anything, and never invent what a file contains. To change an existing file prefer edit_file "
-                                        "(a small exact replacement) and use write_file for a new file. Your answer has a length limit: keep every write_file under about 100 lines and build a big "
-                                        "file in parts (a first small version with write_file, then edit_file for each further part); a longer answer is cut off and lost. "
-                                        "For a job with three or more steps keep a task list with todo_write. ")
+            c.system = QStringLiteral("You are a careful coding and file assistant that works inside the folder the user chose, with tools: ") + tools + QStringLiteral(". ") + modeText
+                       + QStringLiteral("How you work: (1) A small request (a question, one small change) you simply do. (2) A bigger job: first look around (list_files, glob_files, "
+                                        "read the files that matter), then write a task list with todo_write, then do the items one by one and set each to completed when it is done. "
+                                        "(3) Never invent what a file contains: read it first. To change an existing file prefer edit_file (a small exact replacement); use write_file for "
+                                        "a new file. (4) After you change something, check it: read the file back")
+                       + (c.allowCommands ? QStringLiteral(" or run the build or test") : QString())
+                       + QStringLiteral(". (5) Do not stop and do not ask the user questions unless you are really blocked: go on until the whole job is done, then give a short summary of "
+                                        "what you did and what you checked. (6) A tool error is information: read it, fix the cause and take another way; never repeat a call that failed. "
+                                        "(7) Your answer has a length limit and a longer one is cut off and lost: keep every write_file under about 150 lines and build a big file in parts "
+                                        "(a first small version with write_file, then edit_file for each further part). A long file is read in parts (start_line). "
+                                        "(8) To save room, old tool results in this conversation may be shortened: read the file again when you need its text. ")
                        + (c.allowCommands ? QStringLiteral("run_command runs on the user's PC with the user's permissions: use it only for what the job needs (build, test, git status, dir) "
                                                            "and never to delete, install or reinstall anything that was not asked for. ") : QString())
-                       + QStringLiteral("Make only the changes the user asked for, then say briefly what you did. Answer in the language of the user's message (Thai or English).")
+                       + QStringLiteral("Make only the changes the user asked for. Answer in the language of the user's message (Thai or English).")
                        + web;
             QString notesFile;
             const QString notes = projectNotes(&notesFile);
@@ -424,7 +437,11 @@ void AiChannel::sendTools()
 void AiChannel::appendActivity(const QString& text)
 {
     if (Conversation* conv = find(m_runId); conv && !conv->messages.isEmpty()) {
-        conv->messages.last().activity << text;
+        Message& m = conv->messages.last();
+        m.activity << text;
+        ++m.steps;
+        while (m.activity.size() > 300)                           // a long job: the newest 300 lines are kept
+            m.activity.removeFirst();
         scheduleView();
     }
 }
@@ -452,6 +469,8 @@ void AiChannel::finish(bool ok, const QString& code, const QString& detail)
         Message& m = c->messages.last();
         m.streaming = false;
         m.approval.clear();
+        if (m.startedMs > 0)
+            m.durationMs = qMax<qint64>(1, QDateTime::currentMSecsSinceEpoch() - m.startedMs);
         if (code == QLatin1String("cancelled"))
             m.stopped = true;
         else if (!ok) {
@@ -717,6 +736,10 @@ void AiChannel::saveConversations()
             }
             if (m.stopped)
                 o["stopped"] = true;
+            if (m.durationMs > 0) {
+                o["durationMs"] = double(m.durationMs);
+                o["steps"] = m.steps;
+            }
             msgs.append(o);
         }
         list.append(QJsonObject{{"id", c.id}, {"title", c.title}, {"updated", double(c.updated)}, {"messages", msgs}});
@@ -744,6 +767,8 @@ void AiChannel::load()
             m.errorCode = mo.value(QLatin1String("errorCode")).toString();
             m.errorDetail = mo.value(QLatin1String("errorDetail")).toString();
             m.stopped = mo.value(QLatin1String("stopped")).toBool();
+            m.durationMs = qint64(mo.value(QLatin1String("durationMs")).toDouble());
+            m.steps = mo.value(QLatin1String("steps")).toInt();
             c.messages << m;
         }
         if (!c.id.isEmpty())
