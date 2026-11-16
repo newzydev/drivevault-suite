@@ -377,6 +377,25 @@ private slots:
         ai.llama()->stop();
     }
 
+    // ---- the folder dialog gives a file: address; the page must accept it (1.12.0 did not: Send stayed disabled) ---------------------------
+    void folderFromTheDialogIsAPath()
+    {
+        const QString dir = m_dir.filePath("dialog folder");                  // a space, like "C:\My Project"
+        QDir().mkpath(dir);
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hubdialog");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        auto* agent = qobject_cast<AiChannel*>(ai.agent());
+        agent->setFolder(QUrl::fromLocalFile(dir).toString());                // file:///C:/.../dialog%20folder
+        QCOMPARE(QDir::cleanPath(agent->folder()), QDir::cleanPath(dir));
+        agent->setFolder(QString());
+        agent->setFolder(QStringLiteral("file:/") + QDir::cleanPath(dir));    // what 1.12.0 saved
+        QCOMPARE(QDir::cleanPath(agent->folder()), QDir::cleanPath(dir));
+        QVERIFY(QFileInfo(agent->folder()).isDir());
+    }
+
     // ---- agent tools: only inside the folder ------------------------------------------------------------------------------------------
     void agentToolsStayInTheFolder()
     {

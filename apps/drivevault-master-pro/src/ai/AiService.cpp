@@ -94,6 +94,15 @@ AiChannel::~AiChannel()
     cancelRunning();
 }
 
+// The folder dialog gives a file: address; the agent needs a path. (QDir::cleanPath would first squeeze "file:///" to "file:/", so convert before cleaning.)
+static QString localFolder(const QString& folder)
+{
+    QString f = folder.trimmed();
+    if (f.startsWith(QLatin1String("file:"), Qt::CaseInsensitive))   // file:///C:/x and the squeezed file:/C:/x that 1.12.0 saved
+        f = QUrl(f).toLocalFile();
+    return f.isEmpty() ? f : QDir::cleanPath(f);
+}
+
 QString AiChannel::notReady() const
 {
     if (!m_service->engineFound())
@@ -471,9 +480,7 @@ void AiChannel::setEffort(const QString& effort)
 
 void AiChannel::setFolder(const QString& folder)
 {
-    QString f = QDir::cleanPath(folder);
-    if (f.startsWith(QLatin1String("file:///")))
-        f = QUrl(folder).toLocalFile();
+    const QString f = localFolder(folder);
     if (m_busy || f == m_folder)
         return;
     m_folder = f;
@@ -505,7 +512,7 @@ QVariantMap AiChannel::settingsValues() const { return {{"folder", m_folder}, {"
 void AiChannel::applySettings(const QVariantMap& v)
 {
     m_effort = Effort::of(v.value(QStringLiteral("effort")).toString()).id;
-    m_folder = v.value(QStringLiteral("folder")).toString();
+    m_folder = localFolder(v.value(QStringLiteral("folder")).toString());      // 1.12.0 saved the dialog's file: address
     m_permission = v.value(QStringLiteral("permission")).toString();
     if (!permissions().contains(m_permission))
         m_permission = v.value(QStringLiteral("allowEdits")).toBool() ? QStringLiteral("edit") : QStringLiteral("ask");     // an older settings file: the old switch
