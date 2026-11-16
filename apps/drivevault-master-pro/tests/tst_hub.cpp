@@ -218,6 +218,7 @@ private slots:
         QVERIFY(marker.open(QIODevice::ReadOnly));
         const QString args = QString::fromLocal8Bit(marker.readAll());
         QVERIFY2(args.contains("/VERYSILENT") && args.contains("/NORESTART"), qPrintable(args));
+        QVERIFY2(args.contains("/LANG=english") && !args.contains("/UPDATE"), qPrintable(args));        // the hub's language; a new install is not an update
         marker.close();
 
         // now it "is installed" in version 1.0.0 -> the 2.0.0 setup is an update
@@ -228,6 +229,14 @@ private slots:
         QVERIFY(video.value("installed").toBool());
         QVERIFY(video.value("updateAvailable").toBool());
         QVERIFY(!video.value("canInstall").toBool());
+        // running the setup of an installed program: the setup is told that it is an update (it closes the program, skips the questions, reopens it)
+        QFile::remove(p("marker.txt"));
+        QVERIFY(hub.installProduct("drivevault.videoeditor").isEmpty());
+        hub.waitForIdle();
+        QVERIFY(marker.open(QIODevice::ReadOnly));
+        const QString updateArgs = QString::fromLocal8Bit(marker.readAll());
+        marker.close();
+        QVERIFY2(updateArgs.contains("/UPDATE") && updateArgs.contains("/LANG=english"), qPrintable(updateArgs));
         writeProduct("VideoEditorPro", {{"Version", "2.0.0"}});
         hub.refresh();
         QVERIFY(!find(hub, "drivevault.videoeditor").value("updateAvailable").toBool());      // same version: nothing to update
@@ -397,7 +406,8 @@ private slots:
         QCOMPARE(finished.first().first().toInt(), 0);
         QFile marker(p("online-marker.txt"));
         QVERIFY(marker.open(QIODevice::ReadOnly));
-        QVERIFY(QString::fromLocal8Bit(marker.readAll()).contains("/VERYSILENT"));
+        const QString onlineArgs = QString::fromLocal8Bit(marker.readAll());
+        QVERIFY(onlineArgs.contains("/VERYSILENT") && onlineArgs.contains("/UPDATE"));          // a downloaded update of a program is an update
         marker.close();
         QVERIFY(!QFileInfo::exists(p("data/installers/" + name)));
 

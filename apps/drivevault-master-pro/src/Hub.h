@@ -76,7 +76,9 @@ public:
     Q_INVOKABLE QString openFolder(const QString& productId);
     Q_INVOKABLE QString uninstall(const QString& productId);                       // runs the product's own uninstaller
     Q_INVOKABLE QString installProduct(const QString& productId);                  // setup file found in an installer folder
-    Q_INVOKABLE QString installFromFile(const QString& fileOrUrl);                 // setup file picked by the user
+    // setup file picked by the user; `update` = it replaces an installed version (the setup then closes the running program, shows its wizard without the
+    // questions and starts the program again after "Finish"; see the installer rules in CLAUDE.md)
+    Q_INVOKABLE QString installFromFile(const QString& fileOrUrl, bool update = false);
     // Online (only when the user presses the button): asks GitHub Releases which versions exist, then downloads one setup file,
     // checks its SHA-256 against the release's .sha256 file and its version resource, and runs it like any other setup file.
     Q_INVOKABLE QString checkForUpdates();
@@ -117,6 +119,7 @@ signals:
 private:
     struct Catalog;
     QVariantMap productById(const QString& id) const;
+    QString setupArguments(bool update) const;             // the command line of a setup that the hub starts
     QString run(const QString& file, const QString& arguments, const QString& workDir, const QString& startMessage, const QString& doneMessage);
     void setMessage(const QString& m);
     QStringList userFolders() const;

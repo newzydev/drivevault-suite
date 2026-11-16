@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.14.1 (2026-11-16): Updates close the program, show the installer and open the program again
+  - When Master Pro updates itself or another program, the installer now appears at once: it closes the running program by itself (no question), skips the questions (welcome, licence, options, ready page), installs, and when you press Finish the program starts again as before. If the update of Video Editor Pro or PDF Pro also had to update Master Pro (which closes it), Master Pro opens again after Finish too.
+  - The same behaviour applies when you double-click a newer setup file over an installed version. A first install is unchanged.
+  - Built, not run: the real installer wizard was not tried (the installer test is yours).
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.14.0 (2026-11-16): The agent works until the job is done; clock and animations
   - Agent: no limit on the number of steps any more (a safety net of 60 / 400 / 1000 remains). A job ends when the model is done, when you press Stop, or when it is stuck (the same call 8 times in a row). The model window is now 32768 tokens (was 8192) and the answer limit 8192 (was 3000), so a whole page fits in one answer; the conversation is kept inside the window (old results are shortened, then dropped; the task stays); a long answer goes on where it was cut; a long file is read in parts (start_line); a silent answer is asked again; an answer while the task list still has open items is not accepted. Every such step shows a line in the activity list. The model may use more memory because of the larger window.
   - The instructions to the model are rewritten: small request = just do it; big job = look, task list, do the items, check the result, summary; read errors and take another way.

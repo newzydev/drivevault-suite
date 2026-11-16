@@ -38,7 +38,8 @@ PrivilegesRequiredOverridesAllowed=dialog commandline
 ShowLanguageDialog=yes
 UsePreviousLanguage=no
 LanguageDetectionMethod=uilanguage
-CloseApplications=yes
+; An update closes the running program by itself (no question), see "updating" in [Code]. The program is started again by the Finish page.
+CloseApplications=force
 RestartApplications=no
 ChangesAssociations=yes
 WizardImageFile={#ArtworkDir}\wizard-large.bmp
@@ -108,6 +109,40 @@ Root: HKA; Subkey: "Software\Classes\DriveVault.PdfPro\shell\open\command"; Valu
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
+// ---- updating -------------------------------------------------------------------------------------------------------------------------
+// An update (an older version is installed, or the hub started this setup with /UPDATE): Setup closes the running program itself (CloseApplications=force),
+// the wizard skips the questions (welcome, licence that was accepted before, tasks as before, ready page), shows the installing page at once, and on the
+// Finish page "Launch ..." is ticked: pressing Finish opens the program again. When the hub started the update and this setup had to replace the hub too
+// (which closes it), the hub is opened again after Finish as well.
+const
+  UninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{9835145C-1C5A-48CB-A1CE-3F29EC3037BA}_is1';
+
+var
+  HubReplaced: Boolean;      // this setup installed a newer Master Pro (the running hub, if any, was closed by that)
+
+function CmdSwitch(const Name: String): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 1 to ParamCount do
+    if CompareText(ParamStr(I), Name) = 0 then
+    begin
+      Result := True;
+      Exit;
+    end;
+end;
+
+function IsUpdate(): Boolean;
+begin
+  Result := CmdSwitch('/UPDATE') or RegKeyExists(HKLM64, UninstallKey) or RegKeyExists(HKCU64, UninstallKey);
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := IsUpdate() and ((PageID = wpWelcome) or (PageID = wpLicense) or (PageID = wpSelectComponents) or (PageID = wpSelectTasks) or (PageID = wpReady));
+end;
+
 function HasCurrentHub(Root: Cardinal): Boolean;
 var
   Exe: String;
@@ -136,6 +171,7 @@ begin
   ExtractTemporaryFile('MasterProSetup.exe');
   Args := '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART ' + Scope + ' /DIR="' + Target + '" /LANG=' +
     ExpandConstant('{language}');
+  HubReplaced := True;
   if not Exec(ExpandConstant('{tmp}\MasterProSetup.exe'), Args, '', SW_HIDE, ewWaitUntilTerminated, Code) or (Code <> 0) then
     Result := FmtMessage(CustomMessage('HubFailure'), [IntToStr(Code)]);
 end;
@@ -238,10 +274,28 @@ begin
       DeleteFile(Src);
 end;
 
+// The path of the installed hub (all users or current user); '' when there is none.
+function MasterExe(): String;
+begin
+  if not RegQueryStringValue(HKLM64, 'Software\DriveVault\MasterPro', 'Executable', Result) then
+    if not RegQueryStringValue(HKCU64, 'Software\DriveVault\MasterPro', 'Executable', Result) then
+      Result := '';
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
+var
+  Hub: String;
+  Code: Integer;
 begin
   if CurStep = ssPostInstall then
     PlaceModel();
   if (CurStep = ssDone) and (ModelsNote <> '') then
     SuppressibleMsgBox(ModelsNote, mbInformation, MB_OK, IDOK);
+  // after "Finish": the hub that was closed by its own update is opened again, as the user had it
+  if (CurStep = ssDone) and HubReplaced and CmdSwitch('/UPDATE') then
+  begin
+    Hub := MasterExe();
+    if (Hub <> '') and FileExists(Hub) then
+      ExecAsOriginalUser(Hub, '', ExtractFileDir(Hub), SW_SHOWNORMAL, ewNoWait, Code);
+  end;
 end;

@@ -54,6 +54,22 @@ DriveVault-Video-Editor-Pro-Setup-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTA
 "<InstallDir>\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART                                     (keeps settings, never deletes projects)
 ```
 
+### Updating (what the hub runs for an update, and what every setup does)
+
+The hub starts a setup that replaces an installed version **with its wizard (not silent)**, so the user sees the installer at once:
+
+```
+<Setup>.exe /NORESTART /CLOSEAPPLICATIONS /LANG=thai|english /UPDATE [/ALLUSERS|/CURRENTUSER]
+```
+
+An update is recognised by `/UPDATE` **or** by an existing `Software\Microsoft\Windows\CurrentVersion\Uninstall\{AppId}_is1` key (so a double click on a newer setup behaves the same). Every setup then:
+1. closes the running program by itself (`CloseApplications=force`: Windows Restart Manager, no question - a program with unsaved work asks the user itself when it is closed);
+2. skips the questions: welcome, licence (accepted at the first install), components, tasks (as chosen before), ready page - the installing page appears at once, no model download;
+3. ends on the Finish page where "Launch ..." is ticked, so pressing Finish opens the program again;
+4. (Video Editor Pro, PDF Pro) when `/UPDATE` was given and this setup also replaced Master Pro (which closes the running hub), opens Master Pro again after Finish.
+
+Silent switches (`/VERYSILENT`, tests, the other products' nested hub setup) are unchanged and never relaunch anything. Not tested by an agent: the real wizard flow (the installer is built, not run; `test-installer.ps1` is the owner's).
+
 Exit code 0 = success. Installing a newer version over an old one upgrades in place (same `AppId`); `Version` in the registry tells the hub which version is installed.
 `AppId` of Video Editor Pro: `{6E1B7A52-4C3D-4F7E-9A3B-D17E5A0C2F11}` - never change it.
 

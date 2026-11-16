@@ -394,7 +394,18 @@ QString Hub::uninstall(const QString& id)
                tr2(QStringLiteral("%1 was uninstalled."), QStringLiteral("ถอนการติดตั้ง %1 แล้ว")).arg(p.value("name").toString()));
 }
 
-QString Hub::installFromFile(const QString& fileOrUrl)
+// The command line of a setup the hub starts: the language of the hub (no language dialog), no restart of Windows, and for the wizard (not silent) the
+// applications that use the files are closed by Setup itself. `/UPDATE` tells the setup that the hub started it to replace an installed version.
+QString Hub::setupArguments(bool update) const
+{
+    QString args = m_silent ? QStringLiteral("/VERYSILENT /SUPPRESSMSGBOXES /NORESTART") : QStringLiteral("/NORESTART /CLOSEAPPLICATIONS");
+    args += QStringLiteral(" /LANG=") + (m_language == QLatin1String("th") ? QStringLiteral("thai") : QStringLiteral("english"));
+    if (update)
+        args += QStringLiteral(" /UPDATE");
+    return args;
+}
+
+QString Hub::installFromFile(const QString& fileOrUrl, bool update)
 {
     const QString path = toLocal(fileOrUrl);
     const QFileInfo fi(path);
@@ -405,7 +416,7 @@ QString Hub::installFromFile(const QString& fileOrUrl)
     if (win::versionInfo(path, QStringLiteral("CompanyName")).compare(QLatin1String("DriveVault"), Qt::CaseInsensitive) != 0)
         return tr2(QStringLiteral("This file is not a DriveVault setup program."), QStringLiteral("ไฟล์นี้ไม่ใช่ตัวติดตั้งของ DriveVault"));
     const QString product = win::versionInfo(path, QStringLiteral("ProductName"));
-    return run(path, m_silent ? QStringLiteral("/VERYSILENT /SUPPRESSMSGBOXES /NORESTART") : QString(), fi.absolutePath(),
+    return run(path, setupArguments(update), fi.absolutePath(),
                tr2(QStringLiteral("Installing %1…"), QStringLiteral("กำลังติดตั้ง %1…")).arg(product),
                tr2(QStringLiteral("%1 is installed."), QStringLiteral("ติดตั้ง %1 แล้ว")).arg(product));
 }
@@ -417,7 +428,7 @@ QString Hub::installProduct(const QString& id)
     if (setup.isEmpty())
         return tr2(QStringLiteral("No setup file for this program was found in the installer folders."),
                    QStringLiteral("ไม่พบไฟล์ติดตั้งของโปรแกรมนี้ในโฟลเดอร์ติดตั้ง"));
-    return installFromFile(setup);
+    return installFromFile(setup, p.value("installed").toBool());
 }
 
 QNetworkAccessManager* Hub::net()
@@ -691,17 +702,18 @@ void Hub::startAssetDownload(const releases::Release& rel, const QString& produc
         m_cleanupFile = target;
         QString error;
         if (self) {
-            // Master Pro replaces itself: the setup closes this program (Restart Manager), installs over the same folder and starts it again.
+            // Master Pro replaces itself: its setup appears at once, closes this program itself (Setup's own close of applications), installs over the same
+            // folder without asking questions, and the program is started again when the user presses "Finish". (Tests run it silent.)
             const bool allUsers = QSettings(QStringLiteral("HKEY_LOCAL_MACHINE\\%1\\MasterPro").arg(m_options.registryRoot), QSettings::NativeFormat)
                                       .contains(QStringLiteral("Version"));
             error = run(target,
-                        QStringLiteral("/SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS %1")
-                            .arg(allUsers ? QStringLiteral("/ALLUSERS") : QStringLiteral("/CURRENTUSER")),
+                        setupArguments(true) + QLatin1Char(' ') + (allUsers ? QStringLiteral("/ALLUSERS") : QStringLiteral("/CURRENTUSER")),
                         QFileInfo(target).absolutePath(),
-                        tr2(QStringLiteral("Updating Master Pro to %1… the program restarts."), QStringLiteral("กำลังอัปเดต Master Pro เป็น %1… โปรแกรมจะเปิดใหม่")).arg(rel.version),
+                        tr2(QStringLiteral("Updating Master Pro to %1… the installer opens and this program closes; press Finish to open it again."),
+                            QStringLiteral("กำลังอัปเดต Master Pro เป็น %1… ตัวติดตั้งจะเปิดขึ้นและโปรแกรมนี้จะปิดเอง กดเสร็จสิ้นเพื่อเปิดโปรแกรมอีกครั้ง")).arg(rel.version),
                         tr2(QStringLiteral("Master Pro was updated."), QStringLiteral("อัปเดต Master Pro แล้ว")));
         } else {
-            error = installFromFile(target);
+            error = installFromFile(target, true);                  // an update of an installed program
         }
         if (!error.isEmpty()) {
             m_cleanupFile.clear();
