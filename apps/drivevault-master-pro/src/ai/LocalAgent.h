@@ -78,7 +78,8 @@ private:
     QJsonArray m_calls;                                    // the tool calls of the last reply, run one after the other
     int m_callIndex = 0;
     int m_steps = 0;
-    int m_webCalls = 0;                                    // web tool calls of this task: a small model can search for ever
+    int m_parseRetries = 0;                                // answers cut off inside a tool call, asked again
+    int m_webCalls = 0;                                   // web tool calls of this task: a small model can search for ever
     QStringList m_webSeen;                                 // "name + arguments" of the web calls already made
     bool m_running = false;
     bool m_cancelled = false;

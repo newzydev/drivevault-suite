@@ -366,7 +366,9 @@ void AiChannel::sendTools()
                 modeText = QStringLiteral("File changes are applied at once (the old version is kept in .drivevault-backup); every command still waits for the user's OK. ");
             c.system = QStringLiteral("You are a coding and file assistant that works inside the folder the user chose, with tools: ") + tools + QStringLiteral(". ") + modeText
                        + QStringLiteral("Look at the files before you answer or change anything, and never invent what a file contains. To change an existing file prefer edit_file "
-                                        "(a small exact replacement) and use write_file for a new file. For a job with three or more steps keep a task list with todo_write. ")
+                                        "(a small exact replacement) and use write_file for a new file. Your answer has a length limit: keep every write_file under about 100 lines and build a big "
+                                        "file in parts (a first small version with write_file, then edit_file for each further part); a longer answer is cut off and lost. "
+                                        "For a job with three or more steps keep a task list with todo_write. ")
                        + (c.allowCommands ? QStringLiteral("run_command runs on the user's PC with the user's permissions: use it only for what the job needs (build, test, git status, dir) "
                                                            "and never to delete, install or reinstall anything that was not asked for. ") : QString())
                        + QStringLiteral("Make only the changes the user asked for, then say briefly what you did. Answer in the language of the user's message (Thai or English).")
@@ -454,7 +456,7 @@ void AiChannel::finish(bool ok, const QString& code, const QString& detail)
             m.stopped = true;
         else if (!ok) {
             m.errorCode = code.isEmpty() ? QStringLiteral("failed") : code;
-            m.errorDetail = detail;
+            m.errorDetail = detail.size() > 600 ? detail.left(600) + QStringLiteral("…") : detail;      // a server may repeat a whole file in its message
         }
         c->updated = QDateTime::currentMSecsSinceEpoch();
     }

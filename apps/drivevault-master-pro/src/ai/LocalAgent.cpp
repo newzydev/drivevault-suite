@@ -93,6 +93,7 @@ QString LocalAgent::start(const Config& c)
         m_messages.append(QJsonObject{{"role", m.first}, {"content", m.second}});
     m_steps = 0;
     m_webCalls = 0;
+    m_parseRetries = 0;
     m_webSeen.clear();
     ++m_generation;
     m_waiting = false;
@@ -169,7 +170,20 @@ void LocalAgent::onReply()
     }
     const QJsonObject root = QJsonDocument::fromJson(data).object();
     if (status >= 400) {
-        end(false, QStringLiteral("http%1").arg(status), root.value(QLatin1String("error")).toObject().value(QLatin1String("message")).toString());
+        const QString message = root.value(QLatin1String("error")).toObject().value(QLatin1String("message")).toString();
+        // The model's answer was cut off in the middle of a tool call (a long file does not fit in max_tokens), so the server could not read
+        // the arguments and answered 500. Nothing was done: tell the model to make it shorter and ask again (twice at most).
+        if (status == 500 && message.contains(QLatin1String("tool call"), Qt::CaseInsensitive) && m_parseRetries < 2) {
+            ++m_parseRetries;
+            emit activity(QStringLiteral("The answer was too long and was cut off: asking again for a shorter one"));
+            m_messages.append(QJsonObject{{"role", "user"},
+                                          {"content", QStringLiteral("Your last tool call was cut off because it was too long, so nothing was done. Make it much shorter: write "
+                                                                     "a big file in parts - first create a small file with write_file (under about 80 lines, no long comments), then "
+                                                                     "add each further part with edit_file. Do not repeat the long text.")}});
+            step();
+            return;
+        }
+        end(false, QStringLiteral("http%1").arg(status), message);
         return;
     }
     if (error != QNetworkReply::NoError) {

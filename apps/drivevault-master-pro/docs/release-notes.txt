@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.13.1 (2026-11-16): A long file no longer ends in "error 500"
+  - Fixed: when the model wrote a long file in one go, its answer was cut off by the length limit and the page showed "the local model answered with error 500" with the whole file in the message. Now the agent tells the model that the answer was cut off and asks again for a shorter one (twice at most), the instructions tell the model to write big files in parts (write_file, then edit_file), and a long error message is cut to 600 characters.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.13.0 (2026-11-16): The agent works like Claude Code
   - New tools: edit_file (one exact piece of text replaced; the approval card shows a red / green diff), glob_files (find files by name), a task list (todo_write; shown in the right panel).
   - New: plan mode is real. The AI explores, then shows its plan; nothing is changed or run until you press "Approve and start" (then the page goes to "Ask first"), or you ask it to keep planning.

@@ -56,8 +56,13 @@ public:
                     lastRequest = data;
                     log << data;
                     ++requests;
-                    const QByteArray answer = queue.isEmpty() ? body : queue.takeFirst();
-                    QByteArray out = "HTTP/1.1 " + QByteArray::number(status) + " X\r\nContent-Type: " + contentType + "\r\nContent-Length: " + QByteArray::number(answer.size())
+                    QByteArray answer = queue.isEmpty() ? body : queue.takeFirst();
+                    int code = status;
+                    if (answer.startsWith("500|")) {                // one answer with its own status
+                        code = 500;
+                        answer = answer.mid(4);
+                    }
+                    QByteArray out = "HTTP/1.1 " + QByteArray::number(code) + " X\r\nContent-Type: " + contentType + "\r\nContent-Length: " + QByteArray::number(answer.size())
                                      + "\r\nConnection: close\r\n\r\n" + answer;
                     s->write(out);
                     s->disconnectFromHost();
@@ -619,6 +624,50 @@ private slots:
         QVERIFY(results.at(1).contains("do not repeat it"));        // the second call of "a"
         QVERIFY(results.at(5).contains("web limit"));               // the fifth different call
         QVERIFY(!results.at(4).contains("web limit"));              // the fourth different call still ran
+    }
+    // the answer was cut off inside a tool call (a long file): the server says 500, the agent asks again for a shorter one instead of failing
+    void aCutOffToolCallIsAskedAgain()
+    {
+        FakeServer server;
+        server.contentType = "application/json";
+        const QByteArray cutOff = "500|" + QJsonDocument(QJsonObject{{"error", QJsonObject{{"message", "Failed to parse tool call arguments as JSON: missing closing quote"}}}}).toJson(QJsonDocument::Compact);
+        server.queue << cutOff << agentReply({}, QStringLiteral("Made it shorter."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.path();
+        c.history = {{"user", "write a big page"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QCOMPARE(server.requests, 2);
+        const QJsonArray msgs = requestBody(server.log.at(1)).value("messages").toArray();
+        QVERIFY(msgs.last().toObject().value("content").toString().contains("cut off"));
+        // an ordinary 500 is still an error, and three cut-offs in a row stop
+        FakeServer bad;
+        bad.contentType = "application/json";
+        bad.status = 500;
+        bad.body = QJsonDocument(QJsonObject{{"error", QJsonObject{{"message", "out of memory"}}}}).toJson(QJsonDocument::Compact);
+        LocalAgent agent2(&net);
+        QSignalSpy done2(&agent2, &LocalAgent::finished);
+        c.baseUrl = bad.base() + "/v1";
+        QCOMPARE(agent2.start(c), QString());
+        QVERIFY(done2.wait(15000));
+        QCOMPARE(done2.at(0).at(1).toString(), QString("http500"));
+        QCOMPARE(bad.requests, 1);
+        FakeServer endless;
+        endless.contentType = "application/json";
+        endless.status = 500;
+        endless.body = cutOff.mid(4);
+        LocalAgent agent3(&net);
+        QSignalSpy done3(&agent3, &LocalAgent::finished);
+        c.baseUrl = endless.base() + "/v1";
+        QCOMPARE(agent3.start(c), QString());
+        QVERIFY(done3.wait(15000));
+        QCOMPARE(done3.at(0).at(1).toString(), QString("http500"));
+        QCOMPARE(endless.requests, 3);                                                       // the first + two more
     }
     void theAgentPageUsesTheLocalModel()
     {
