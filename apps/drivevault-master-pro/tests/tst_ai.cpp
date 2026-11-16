@@ -584,6 +584,41 @@ private slots:
         QCOMPARE(done.at(0).at(1).toString(), QString("tooManySteps"));
         QCOMPARE(server.requests, 3);
     }
+    // a small model that searches for ever: the same call twice and more than four web calls get a "go on" message instead of the web
+    void webCallsAreLimited()
+    {
+        FakeServer server;
+        server.contentType = "application/json";
+        auto fetch = [](const char* path) {                        // built with QJson: moc cannot read a raw string with escaped quotes
+            const QString arguments = QString::fromUtf8(QJsonDocument(QJsonObject{{"url", QStringLiteral("http://127.0.0.1:1/") + QLatin1String(path)}}).toJson(QJsonDocument::Compact));
+            const QJsonObject call{{"id", "c"}, {"type", "function"}, {"function", QJsonObject{{"name", "fetch_page"}, {"arguments", arguments}}}};
+            const QJsonObject message{{"role", "assistant"}, {"content", QJsonValue()}, {"tool_calls", QJsonArray{call}}};
+            return QJsonDocument(QJsonObject{{"choices", QJsonArray{QJsonObject{{"message", message}}}}}).toJson(QJsonDocument::Compact);
+        };
+        server.queue << fetch("a") << fetch("a") << fetch("b") << fetch("c") << fetch("d") << fetch("e")
+                     << R"({"choices":[{"message":{"role":"assistant","content":"Done without more searching."}}]})";
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.path();
+        c.web = true;
+        c.history = {{"user", "search"}};
+        c.maxSteps = 12;
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(30000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QCOMPARE(server.requests, 7);
+        QStringList results;
+        for (const QJsonValue& m : requestBody(server.log.at(6)).value("messages").toArray())
+            if (m.toObject().value("role").toString() == QLatin1String("tool"))
+                results << m.toObject().value("content").toString();
+        QCOMPARE(results.size(), 6);
+        QVERIFY(results.at(1).contains("do not repeat it"));        // the second call of "a"
+        QVERIFY(results.at(5).contains("web limit"));               // the fifth different call
+        QVERIFY(!results.at(4).contains("web limit"));              // the fourth different call still ran
+    }
     void theAgentPageUsesTheLocalModel()
     {
         FakeServer server;

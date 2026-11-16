@@ -11,6 +11,8 @@
 
 namespace dm::ai {
 
+static constexpr int kMaxWebCalls = 4;                     // web_search + fetch_page calls in one task
+
 LocalAgent::LocalAgent(QNetworkAccessManager* net, QObject* parent)
     : QObject(parent)
     , m_net(net)
@@ -47,6 +49,8 @@ QString LocalAgent::start(const Config& c)
     for (const auto& m : c.history)
         m_messages.append(QJsonObject{{"role", m.first}, {"content", m.second}});
     m_steps = 0;
+    m_webCalls = 0;
+    m_webSeen.clear();
     m_cancelled = false;
     m_wroteText = false;
     m_running = true;
@@ -188,6 +192,19 @@ void LocalAgent::runNextCall()
             result(QStringLiteral("web access is switched off by the user"), true);
             return;
         }
+        // A small model may search again and again and never do the work (seen: 12 searches in a row, then the step limit).
+        // The same call twice, or more than kMaxWebCalls in one task, gets a message that tells it to go on with what it has.
+        const QString key = name + QLatin1Char(' ') + QString::fromUtf8(QJsonDocument(args).toJson(QJsonDocument::Compact));
+        if (m_webSeen.contains(key)) {
+            result(QStringLiteral("you already made exactly this call and have its result above; do not repeat it. Use it and continue the task"), true);
+            return;
+        }
+        if (m_webCalls >= kMaxWebCalls) {
+            result(QStringLiteral("the web limit for this task is reached (%1 calls); do not search again. Do the task now with what you have").arg(kMaxWebCalls), true);
+            return;
+        }
+        m_webSeen.append(key);
+        ++m_webCalls;
         m_web->run(name, args, result);
         return;
     }

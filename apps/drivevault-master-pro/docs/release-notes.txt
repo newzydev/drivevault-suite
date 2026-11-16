@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.12.3 (2026-11-16): The agent no longer searches the web for ever
+  - Fixed: a small model could call web_search again and again (12 times in a row) and then stop with "used the tools too many times". Now the same web call is not run twice and a task may make at most 4 web calls (search + open page); after that the model is told to do the task with what it has.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.12.2 (2026-11-16): Agent folder fix
   - Fixed: after choosing a folder on the Agentic AI page the Send button stayed disabled and the page still asked for a folder (the folder address from the dialog was kept as "file:/C:/..." instead of a path). A folder saved this way by 1.12.0 / 1.12.1 is repaired when the program starts.
   - Not code-signed (Windows SmartScreen may warn).
