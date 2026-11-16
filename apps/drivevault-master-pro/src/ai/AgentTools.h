@@ -6,12 +6,14 @@
 
 namespace dm::ai {
 
-// The tools of the local agent. They work ONLY inside the folder the user chose: a path is relative to it, may not leave it (no "..", no drive, no ":" stream
-// names, no link that points outside), and there is no tool that runs a program, deletes, renames or reaches the network. Reading is always possible; writing
-// only when the user allowed edits, and a file that is overwritten is first copied to <folder>\.drivevault-backup.
+// The file tools of the local agent. They work ONLY inside the folder the user chose: a path is relative to it, may not leave it (no "..", no drive, no ":" stream
+// names, no link that points outside), and none of them deletes, renames or reaches the network (running a program is a separate tool, see CommandRunner, and
+// always waits for the user). Reading and finding files is always possible; write_file / edit_file only when the user allowed edits, and a file that is
+// changed is first copied to <folder>\.drivevault-backup.
 class AgentTools {
 public:
     AgentTools(const QString& folder, bool allowEdits);
+    void setAllowEdits(bool allow) { m_edits = allow; }               // a plan the user approved turns editing on
 
     struct Result {
         QString text;                 // what the model sees
@@ -28,8 +30,11 @@ public:
         QString preview;              // the beginning of the new content
     };
     WriteInfo inspectWrite(const QJsonObject& args) const;
+    // The same for edit_file: `preview` is a small diff ("- old line" / "+ new line"), `bytes` the size the file would have.
+    WriteInfo inspectEdit(const QJsonObject& args) const;
+    static bool changesFiles(const QString& tool) { return tool == QLatin1String("write_file") || tool == QLatin1String("edit_file"); }
 
-    QJsonArray specs() const;                                         // the tools in the OpenAI "tools" format (write_file only when edits are allowed)
+    QJsonArray specs() const;                                         // the tools in the OpenAI "tools" format (write_file / edit_file only when edits are allowed)
     Result run(const QString& name, const QJsonObject& args) const;
     static QString describe(const QString& name, const QJsonObject& args);   // "Read: notes.txt" for the activity line
 
@@ -42,6 +47,11 @@ private:
     Result readFile(const QJsonObject& args) const;
     Result searchText(const QJsonObject& args) const;
     Result writeFile(const QJsonObject& args) const;
+    Result editFile(const QJsonObject& args) const;
+    Result globFiles(const QJsonObject& args) const;
+    Result save(const QString& fullPath, const QString& content) const;      // backup of the old file, then an atomic write
+    // the edit applied to the file: the new content, or an error text
+    bool applyEdit(const QJsonObject& args, QString* fullPath, QString* oldContent, QString* newContent, QString* error) const;
 
     QString m_root;                   // canonical path of the folder
     bool m_edits;

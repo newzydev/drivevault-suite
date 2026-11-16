@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -14,6 +15,7 @@
 #include <QNetworkRequest>
 #include <QProcess>
 #include <QRandomGenerator>
+#include <QRegularExpression>
 #include <QSaveFile>
 #include <QTimer>
 #include <QUrl>
@@ -183,11 +185,19 @@ AiChannel::Conversation& AiChannel::ensureConversation(const QString& firstText)
 
 QString AiChannel::send(const QString& text)
 {
-    const QString t = text.trimmed();
+    QString t = text.trimmed();
     if (t.isEmpty())
         return QStringLiteral("empty");
     if (m_busy)
         return QStringLiteral("busy");
+    if (t.startsWith(QLatin1Char('/'))) {
+        QString prompt;
+        if (slashCommand(t, &prompt)) {
+            if (prompt.isEmpty())
+                return {};                                         // done here: nothing goes to the model
+            t = prompt;
+        }
+    }
     const QString nr = notReady();
     if (!nr.isEmpty())
         return nr;
@@ -327,6 +337,8 @@ void AiChannel::sendTools()
         c.folder = isAgent() ? m_folder : QString();
         c.allowEdits = isAgent() && canWrite();
         c.approveWrites = isAgent() && m_permission == QLatin1String("ask");
+        c.allowCommands = isAgent() && canWrite();                 // ask and edit: a command always waits for the user
+        c.planMode = isAgent() && m_permission == QLatin1String("plan");
         c.web = m_service->webEnabled();
         c.thinking = effort.thinking;
         c.maxTokens = effort.maxTokens;
@@ -335,13 +347,36 @@ void AiChannel::sendTools()
                                                    "facts (not for what you already know), open a page to read it, and say which pages you used (title and address).")
                                   : QString();
         if (isAgent()) {
-            c.system = QStringLiteral("You are an assistant that works inside the folder the user chose, with tools: list_files, read_file, search_text")
-                       + (canWrite() ? QStringLiteral(" and write_file. ") : QStringLiteral(". You can only read; you cannot change anything. "))
-                       + (m_permission == QLatin1String("plan") ? QStringLiteral("The user wants a PLAN: look at what you need, then answer with a short numbered list of the steps you would take and the files you would change. Do not change anything and do not claim that you did. ") : QString())
-                       + (m_permission == QLatin1String("ask") ? QStringLiteral("Every file change is shown to the user, who may decline it. ") : QString())
-                       + QStringLiteral("Look at the files before you answer or change anything, and never invent what a file contains. Make only the changes the user asked "
-                                        "for, then say briefly what you did. You cannot run programs. Answer in the language of the user's message (Thai or English).")
+            QString tools = QStringLiteral("list_files, read_file, search_text, glob_files, todo_write");
+            if (c.allowEdits)
+                tools += QStringLiteral(", edit_file, write_file");
+            if (c.allowCommands)
+                tools += QStringLiteral(", run_command");
+            if (c.planMode)
+                tools += QStringLiteral(", exit_plan_mode");
+            QString modeText;
+            if (m_permission == QLatin1String("read"))
+                modeText = QStringLiteral("You can only read; you cannot change anything or run anything. ");
+            else if (c.planMode)
+                modeText = QStringLiteral("PLAN MODE: look at what you need with the read tools, then call exit_plan_mode with a short numbered plan (the steps and the files you will change). "
+                                          "You cannot change anything or run anything until the user approves the plan. For a plain question just answer. ");
+            else if (m_permission == QLatin1String("ask"))
+                modeText = QStringLiteral("Every file change and every command is shown to the user, who may decline it. ");
+            else
+                modeText = QStringLiteral("File changes are applied at once (the old version is kept in .drivevault-backup); every command still waits for the user's OK. ");
+            c.system = QStringLiteral("You are a coding and file assistant that works inside the folder the user chose, with tools: ") + tools + QStringLiteral(". ") + modeText
+                       + QStringLiteral("Look at the files before you answer or change anything, and never invent what a file contains. To change an existing file prefer edit_file "
+                                        "(a small exact replacement) and use write_file for a new file. For a job with three or more steps keep a task list with todo_write. ")
+                       + (c.allowCommands ? QStringLiteral("run_command runs on the user's PC with the user's permissions: use it only for what the job needs (build, test, git status, dir) "
+                                                           "and never to delete, install or reinstall anything that was not asked for. ") : QString())
+                       + QStringLiteral("Make only the changes the user asked for, then say briefly what you did. Answer in the language of the user's message (Thai or English).")
                        + web;
+            QString notesFile;
+            const QString notes = projectNotes(&notesFile);
+            if (!notes.isEmpty()) {
+                c.system += QStringLiteral("\n\nProject instructions from %1 in this folder (follow them):\n").arg(notesFile) + notes;
+                appendActivity(QStringLiteral("Project instructions: ") + notesFile);
+            }
         } else {
             c.system = systemPrompt() + web;
         }
@@ -353,12 +388,26 @@ void AiChannel::sendTools()
             connect(m_localAgent, &LocalAgent::piece, this, &AiChannel::appendPiece);
             connect(m_localAgent, &LocalAgent::activity, this, &AiChannel::appendActivity);
             connect(m_localAgent, &LocalAgent::finished, this, &AiChannel::finish);
-            connect(m_localAgent, &LocalAgent::approvalNeeded, this, [this](const QString& path, bool replaces, qint64 bytes, const QString& preview) {
+            auto ask = [this](const QVariantMap& approval) {
                 if (Conversation* conv = find(m_runId); conv && !conv->messages.isEmpty()) {
-                    conv->messages.last().approval = QVariantMap{{"path", path}, {"replaces", replaces}, {"bytes", double(bytes)}, {"preview", preview}};
+                    conv->messages.last().approval = approval;
                     setBusy(true, QStringLiteral("waiting"));
                     emit messagesChanged();
                 }
+            };
+            connect(m_localAgent, &LocalAgent::approvalNeeded, this, [ask](const QString& path, bool replaces, qint64 bytes, const QString& preview, bool diff) {
+                ask(QVariantMap{{"kind", "change"}, {"path", path}, {"replaces", replaces}, {"bytes", double(bytes)}, {"preview", preview}, {"diff", diff}});
+            });
+            connect(m_localAgent, &LocalAgent::commandApprovalNeeded, this, [ask](const QString& command) { ask(QVariantMap{{"kind", "command"}, {"command", command}}); });
+            connect(m_localAgent, &LocalAgent::planApprovalNeeded, this, [ask](const QString& plan) { ask(QVariantMap{{"kind", "plan"}, {"plan", plan}}); });
+            connect(m_localAgent, &LocalAgent::planApproved, this, [this] {          // the work starts: the page goes to "ask" (every change and command is shown)
+                m_permission = QStringLiteral("ask");
+                emit settingsChanged();
+                emit changed();
+            });
+            connect(m_localAgent, &LocalAgent::todosChanged, this, [this](const QVariantList& todos) {
+                m_todos = todos;
+                emit todosChanged();
             });
         }
         const QString err = m_localAgent->start(c);
@@ -435,8 +484,134 @@ void AiChannel::stop()
         finish(false, QStringLiteral("cancelled"), {});      // still starting the model: nothing is running yet
 }
 
+void AiChannel::clearTodos()
+{
+    if (m_todos.isEmpty())
+        return;
+    m_todos.clear();
+    emit todosChanged();
+}
+
+// ---- slash commands ----------------------------------------------------------------------------------------------------------------------
+void AiChannel::localExchange(const QString& userText, const QString& reply)
+{
+    Conversation& c = ensureConversation(userText);
+    Message user;
+    user.role = QStringLiteral("user");
+    user.text = userText;
+    Message answer;
+    answer.role = QStringLiteral("assistant");
+    answer.text = reply;
+    c.messages << user << answer;
+    c.updated = QDateTime::currentMSecsSinceEpoch();
+    emit messagesChanged();
+    emit conversationsChanged();
+    saveConversations();
+}
+
+bool AiChannel::slashCommand(const QString& text, QString* prompt)
+{
+    prompt->clear();
+    const QStringList parts = text.split(QRegularExpression(QStringLiteral("\\s+")), Qt::SkipEmptyParts);
+    const QString cmd = parts.value(0).toLower();
+    const QString arg = parts.value(1).toLower();
+    Hub* hub = m_service->hub();
+    auto tr = [hub](const QString& en, const QString& th) { return hub->tr2(en, th); };
+    const bool agent = isAgent();
+
+    if (cmd == QLatin1String("/help")) {
+        QString en = QStringLiteral("Commands:\n- /help  this list\n- /clear (or /new)  start a new conversation\n- /effort low|medium|high  how much the model works\n- /web on|off  let the AI search the web");
+        QString th = QString::fromUtf8("คำสั่ง:\n- /help  รายการนี้\n- /clear (หรือ /new)  เริ่มบทสนทนาใหม่\n- /effort low|medium|high  ระดับความพยายามของโมเดล\n- /web on|off  ให้ AI ค้นเว็บหรือไม่");
+        if (agent) {
+            en += QStringLiteral("\n- /mode read|plan|ask|edit  how the agent may work (Shift+Tab changes it)\n- /todos  show the task list\n- /init  write a CLAUDE.md for this folder\n\nEsc stops the work.");
+            th += QString::fromUtf8("\n- /mode read|plan|ask|edit  เอเจนต์ทำอะไรได้บ้าง (กด Shift+Tab เพื่อสลับ)\n- /todos  แสดงรายการงาน\n- /init  สร้างไฟล์ CLAUDE.md ของโฟลเดอร์นี้\n\nกด Esc เพื่อหยุดงาน");
+        }
+        localExchange(text, tr(en, th));
+        return true;
+    }
+    if (cmd == QLatin1String("/clear") || cmd == QLatin1String("/new")) {
+        newConversation();
+        return true;
+    }
+    if (cmd == QLatin1String("/effort")) {
+        if (!Effort::ids().contains(arg)) {
+            localExchange(text, tr(QStringLiteral("Effort now: %1. Use /effort low, medium or high.").arg(m_effort),
+                                   QString::fromUtf8("ระดับตอนนี้: %1 ใช้ /effort low, medium หรือ high").arg(m_effort)));
+            return true;
+        }
+        setEffort(arg);
+        localExchange(text, tr(QStringLiteral("Effort: %1.").arg(m_effort), QString::fromUtf8("ตั้งระดับเป็น %1 แล้ว").arg(m_effort)));
+        return true;
+    }
+    if (cmd == QLatin1String("/web")) {
+        if (arg != QLatin1String("on") && arg != QLatin1String("off")) {
+            localExchange(text, tr(QStringLiteral("Web is %1. Use /web on or /web off.").arg(m_service->webEnabled() ? QStringLiteral("on") : QStringLiteral("off")),
+                                   QString::fromUtf8("เว็บ%1อยู่ ใช้ /web on หรือ /web off").arg(m_service->webEnabled() ? QString::fromUtf8("เปิด") : QString::fromUtf8("ปิด"))));
+            return true;
+        }
+        m_service->setWebEnabled(arg == QLatin1String("on"));
+        localExchange(text, tr(QStringLiteral("Web: %1.").arg(arg), QString::fromUtf8("เว็บ: %1").arg(arg == QLatin1String("on") ? QString::fromUtf8("เปิด") : QString::fromUtf8("ปิด"))));
+        return true;
+    }
+    if (!agent)
+        return false;
+    if (cmd == QLatin1String("/mode")) {
+        QString want = arg;
+        if (want == QLatin1String("default"))
+            want = QStringLiteral("ask");
+        else if (want == QLatin1String("accept") || want == QLatin1String("acceptedits"))
+            want = QStringLiteral("edit");
+        else if (want == QLatin1String("readonly"))
+            want = QStringLiteral("read");
+        if (!permissions().contains(want)) {
+            localExchange(text, tr(QStringLiteral("Mode now: %1. Use /mode read, plan, ask or edit.").arg(m_permission),
+                                   QString::fromUtf8("โหมดตอนนี้: %1 ใช้ /mode read, plan, ask หรือ edit").arg(m_permission)));
+            return true;
+        }
+        setPermission(want);
+        localExchange(text, tr(QStringLiteral("Mode: %1.").arg(m_permission), QString::fromUtf8("เปลี่ยนโหมดเป็น %1 แล้ว").arg(m_permission)));
+        return true;
+    }
+    if (cmd == QLatin1String("/todos")) {
+        QStringList lines;
+        for (const QVariant& v : std::as_const(m_todos)) {
+            const QVariantMap t = v.toMap();
+            const QString s = t.value("status").toString();
+            lines << QStringLiteral("%1 %2").arg(s == QLatin1String("completed") ? QStringLiteral("[x]") : s == QLatin1String("in_progress") ? QStringLiteral("[>]") : QStringLiteral("[ ]"),
+                                                 t.value("content").toString());
+        }
+        localExchange(text, lines.isEmpty() ? tr(QStringLiteral("There is no task list yet."), QString::fromUtf8("ยังไม่มีรายการงาน")) : lines.join(QLatin1Char('\n')));
+        return true;
+    }
+    if (cmd == QLatin1String("/init")) {
+        *prompt = QStringLiteral("Look at the files in this folder (list them, read the main ones) and write a file CLAUDE.md in this folder for future work here: what the project is, "
+                                 "how it is built, run and tested, the folder layout, and the rules that someone working here must follow. Keep it short and only write what you saw in the files.");
+        return true;
+    }
+    return false;
+}
+
+// CLAUDE.md (or AGENTS.md) of the working folder: the project's own instructions for the agent
+QString AiChannel::projectNotes(QString* fileName) const
+{
+    if (m_folder.isEmpty())
+        return {};
+    for (const QString& name : {QStringLiteral("CLAUDE.md"), QStringLiteral("AGENTS.md")}) {
+        QFile f(QDir(m_folder).filePath(name));
+        if (!QFileInfo(f).isFile() || !f.open(QIODevice::ReadOnly))
+            continue;
+        const QString text = QString::fromUtf8(f.read(6000)).trimmed();
+        if (text.isEmpty())
+            continue;
+        *fileName = name;
+        return f.size() > 6000 ? text + QStringLiteral("\n... (cut)") : text;
+    }
+    return {};
+}
+
 void AiChannel::newConversation()
 {
+    clearTodos();
     m_currentId.clear();
     emit messagesChanged();
     emit conversationsChanged();
@@ -446,6 +621,7 @@ void AiChannel::select(const QString& id)
 {
     if (!find(id) || id == m_currentId)
         return;
+    clearTodos();
     m_currentId = id;
     emit messagesChanged();
     emit conversationsChanged();

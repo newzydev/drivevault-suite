@@ -48,6 +48,19 @@ Item {
         if (e === "")
             input.clear()
     }
+    // the diff of an edit_file: lines "- old" in red, "+ new" in green (the text is escaped)
+    function diffHtml(text) {
+        const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        return "<div style='white-space:pre-wrap'>" + text.split("\n").map(line => {
+            const color = line.indexOf("- ") === 0 ? Theme.error : line.indexOf("+ ") === 0 ? Theme.success : Theme.textSecondary
+            return "<span style='color:" + color + "'>" + esc(line) + "</span>"
+        }).join("<br/>") + "</div>"
+    }
+    // Shift+Tab: the next mode of the agent (ask first, accept edits, plan, read only)
+    function nextMode() {
+        const order = ["ask", "edit", "plan", "read"]
+        ch.setPermission(order[(order.indexOf(ch.permission) + 1) % order.length])
+    }
 
     FolderDialog {
         id: folderDialog
@@ -343,9 +356,14 @@ Item {
                                 font.italic: true
                                 color: Theme.textDisabled
                             }
+                            // something waits for the user: a file change (with a diff for edit_file), a command, or a plan
                             Rectangle {
+                                id: approvalCard
                                 objectName: "aiApproval"
-                                visible: !msg.isUser && msg.modelData.approval && msg.modelData.approval.path !== undefined
+                                readonly property var appr: msg.isUser ? null : msg.modelData.approval
+                                readonly property string kind: appr && appr.kind !== undefined ? appr.kind : ""
+                                readonly property bool isDiff: kind === "change" && appr.diff === true
+                                visible: kind !== ""
                                 Layout.fillWidth: true
                                 implicitHeight: approvalColumn.implicitHeight + 24
                                 radius: 12
@@ -359,8 +377,10 @@ Item {
                                     spacing: 8
                                     Text {
                                         Layout.fillWidth: true
-                                        text: msg.isUser || !msg.modelData.approval || msg.modelData.approval.path === undefined ? ""
-                                              : Tr.s(msg.modelData.approval.replaces ? "appr_replace" : "appr_new").replace("%1", msg.modelData.approval.path).replace("%2", Math.round(msg.modelData.approval.bytes))
+                                        text: approvalCard.kind === "change"
+                                              ? Tr.s(approvalCard.isDiff ? "appr_edit" : approvalCard.appr.replaces ? "appr_replace" : "appr_new").replace("%1", approvalCard.appr.path).replace("%2", Math.round(approvalCard.appr.bytes))
+                                              : approvalCard.kind === "command" ? Tr.s("appr_cmd")
+                                              : approvalCard.kind === "plan" ? Tr.s("appr_plan") : ""
                                         font.pixelSize: 13
                                         font.weight: Font.DemiBold
                                         color: Theme.text
@@ -368,26 +388,38 @@ Item {
                                     }
                                     Rectangle {
                                         Layout.fillWidth: true
-                                        implicitHeight: Math.min(previewText.implicitHeight + 16, 180)
+                                        implicitHeight: Math.min(previewText.implicitHeight + 16, approvalCard.kind === "plan" ? 320 : 200)
                                         radius: 8
                                         color: Theme.background
                                         clip: true
-                                        Text {
-                                            id: previewText
+                                        Flickable {
                                             anchors.fill: parent
-                                            anchors.margins: 8
-                                            text: msg.isUser || !msg.modelData.approval || msg.modelData.approval.preview === undefined ? "" : msg.modelData.approval.preview
-                                            font.family: "Consolas"
-                                            font.pixelSize: 12
-                                            color: Theme.textSecondary
-                                            wrapMode: Text.WrapAnywhere
+                                            contentHeight: previewText.implicitHeight + 16
+                                            boundsBehavior: Flickable.StopAtBounds
+                                            clip: true
+                                            ScrollBar.vertical: ScrollBar {}
+                                            Text {
+                                                id: previewText
+                                                x: 8
+                                                y: 8
+                                                width: parent.width - 16
+                                                textFormat: approvalCard.isDiff ? Text.RichText : Text.PlainText
+                                                text: approvalCard.kind === "change" ? (approvalCard.isDiff ? root.diffHtml(approvalCard.appr.preview) : approvalCard.appr.preview)
+                                                      : approvalCard.kind === "command" ? approvalCard.appr.command
+                                                      : approvalCard.kind === "plan" ? approvalCard.appr.plan : ""
+                                                font.family: approvalCard.kind === "plan" ? Qt.application.font.family : "Consolas"
+                                                font.pixelSize: approvalCard.kind === "plan" ? 13 : 12
+                                                color: approvalCard.kind === "plan" ? Theme.text : Theme.textSecondary
+                                                wrapMode: approvalCard.kind === "plan" ? Text.Wrap : Text.WrapAnywhere
+                                            }
                                         }
                                     }
-                                    Text { visible: msg.modelData.approval && msg.modelData.approval.replaces === true; Layout.fillWidth: true; text: Tr.s("appr_backup"); font.pixelSize: 12; color: Theme.textSecondary; wrapMode: Text.Wrap }
+                                    Text { visible: approvalCard.kind === "change" && approvalCard.appr.replaces === true; Layout.fillWidth: true; text: Tr.s("appr_backup"); font.pixelSize: 12; color: Theme.textSecondary; wrapMode: Text.Wrap }
+                                    Text { visible: approvalCard.kind === "command"; Layout.fillWidth: true; text: Tr.s("appr_cmd_warn"); font.pixelSize: 12; color: Theme.warning; wrapMode: Text.Wrap }
                                     RowLayout {
                                         spacing: 8
-                                        MButton { objectName: "approvalAllow"; variant: "primary"; text: Tr.s("appr_allow"); onClicked: root.ch.answerApproval(true) }
-                                        MButton { objectName: "approvalDeny"; text: Tr.s("appr_deny"); onClicked: root.ch.answerApproval(false) }
+                                        MButton { objectName: "approvalAllow"; variant: "primary"; text: Tr.s(approvalCard.kind === "plan" ? "appr_plan_allow" : "appr_allow"); onClicked: root.ch.answerApproval(true) }
+                                        MButton { objectName: "approvalDeny"; text: Tr.s(approvalCard.kind === "plan" ? "appr_plan_deny" : "appr_deny"); onClicked: root.ch.answerApproval(false) }
                                     }
                                 }
                             }
@@ -541,6 +573,12 @@ Item {
                                         event.accepted = true
                                         if (!root.ch.busy)
                                             root.send()
+                                    } else if (event.key === Qt.Key_Escape && root.ch.busy) {            // like Claude Code: Esc stops the work
+                                        event.accepted = true
+                                        root.ch.stop()
+                                    } else if (event.key === Qt.Key_Backtab && root.agent && !root.ch.busy) {   // Shift+Tab: the next mode
+                                        event.accepted = true
+                                        root.nextMode()
                                     }
                                 }
                             }
@@ -646,6 +684,39 @@ Item {
                         font.pixelSize: 13
                         color: Theme.textSecondary
                         wrapMode: Text.Wrap
+                    }
+                    // the task list the AI keeps for a bigger job (todo_write)
+                    SideTitle { visible: root.agent; Layout.topMargin: 14; text: Tr.s("ai_side_todos") }
+                    Text {
+                        visible: root.agent && root.ch.todos.length === 0
+                        Layout.fillWidth: true
+                        text: Tr.s("ai_todos_none")
+                        font.pixelSize: 13
+                        color: Theme.textDisabled
+                        wrapMode: Text.Wrap
+                    }
+                    Repeater {
+                        objectName: "aiTodos"
+                        model: root.agent ? root.ch.todos : []
+                        delegate: RowLayout {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            spacing: 8
+                            Text {
+                                Layout.alignment: Qt.AlignTop
+                                text: modelData.status === "completed" ? "✓" : modelData.status === "in_progress" ? "●" : "○"
+                                font.pixelSize: 13
+                                color: modelData.status === "completed" ? Theme.success : modelData.status === "in_progress" ? Theme.accent : Theme.textDisabled
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.content
+                                font.pixelSize: 13
+                                font.strikeout: modelData.status === "completed"
+                                color: modelData.status === "completed" ? Theme.textDisabled : Theme.text
+                                wrapMode: Text.Wrap
+                            }
+                        }
                     }
                     Item { Layout.fillHeight: true }
                 }

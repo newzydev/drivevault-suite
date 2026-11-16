@@ -5,6 +5,7 @@
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
+#include <QRegularExpression>
 #include <QSaveFile>
 
 namespace dm::ai {
@@ -51,10 +52,21 @@ QJsonArray AgentTools::specs() const
     a.append(tool("search_text", QStringLiteral("Finds a text (not case sensitive) in the text files of a folder and its sub folders; shows file, line and the line."),
                   QJsonObject{{"query", prop("string", QStringLiteral("the text to find"))}, {"path", prop("string", QStringLiteral("relative folder, default \".\""))}},
                   {QStringLiteral("query")}));
-    if (m_edits)
+    a.append(tool("glob_files", QStringLiteral("Finds files by name pattern in the working folder and its sub folders, e.g. \"*.html\" (any folder) or \"src/**/*.cpp\"."),
+                  QJsonObject{{"pattern", prop("string", QStringLiteral("the name pattern, * and ? are wildcards"))}}, {QStringLiteral("pattern")}));
+    if (m_edits) {
+        a.append(tool("edit_file", QStringLiteral("Changes a text file by replacing one exact piece of text with another (relative path). Prefer this to write_file for a change to an existing "
+                                                  "file. old_string must match the file exactly, including spaces and line breaks, and must be unique in the file unless replace_all is true. "
+                                                  "Read the file first. The old version is saved to .drivevault-backup."),
+                      QJsonObject{{"path", prop("string", QStringLiteral("relative path of the file"))},
+                                  {"old_string", prop("string", QStringLiteral("the exact text to replace"))},
+                                  {"new_string", prop("string", QStringLiteral("the text that replaces it"))},
+                                  {"replace_all", prop("boolean", QStringLiteral("replace every occurrence (default false)"))}},
+                      {QStringLiteral("path"), QStringLiteral("old_string"), QStringLiteral("new_string")}));
         a.append(tool("write_file", QStringLiteral("Creates a text file or replaces its whole content (relative path). A replaced file is saved to .drivevault-backup first."),
                       QJsonObject{{"path", prop("string", QStringLiteral("relative path of the file"))}, {"content", prop("string", QStringLiteral("the whole new content"))}},
                       {QStringLiteral("path"), QStringLiteral("content")}));
+    }
     return a;
 }
 
@@ -63,10 +75,14 @@ QString AgentTools::describe(const QString& name, const QJsonObject& args)
     QString detail = args.value(QLatin1String("path")).toString();
     if (name == QLatin1String("search_text"))
         detail = args.value(QLatin1String("query")).toString();
+    else if (name == QLatin1String("glob_files"))
+        detail = args.value(QLatin1String("pattern")).toString();
     detail = detail.simplified().left(100);
     const QString label = name == QLatin1String("list_files") ? QStringLiteral("List")
                           : name == QLatin1String("read_file") ? QStringLiteral("Read")
                           : name == QLatin1String("search_text") ? QStringLiteral("Search")
+                          : name == QLatin1String("glob_files") ? QStringLiteral("Find files")
+                          : name == QLatin1String("edit_file") ? QStringLiteral("Edit")
                           : name == QLatin1String("write_file") ? QStringLiteral("Write") : name;
     return detail.isEmpty() ? label : label + QStringLiteral(": ") + detail;
 }
@@ -109,8 +125,12 @@ AgentTools::Result AgentTools::run(const QString& name, const QJsonObject& args)
         return readFile(args);
     if (name == QLatin1String("search_text"))
         return searchText(args);
+    if (name == QLatin1String("glob_files"))
+        return globFiles(args);
     if (name == QLatin1String("write_file"))
         return writeFile(args);
+    if (name == QLatin1String("edit_file"))
+        return editFile(args);
     return {QStringLiteral("unknown tool: %1").arg(name), true};
 }
 
@@ -243,6 +263,12 @@ AgentTools::Result AgentTools::writeFile(const QJsonObject& args) const
         return {QStringLiteral("that path is a folder"), true};
     if (info.fileName().isEmpty() || skippedFolder(info.fileName()))
         return {QStringLiteral("that name is not allowed"), true};
+    return save(path, content);
+}
+
+AgentTools::Result AgentTools::save(const QString& path, const QString& content) const
+{
+    const QFileInfo info(path);
     QString note;
     if (info.exists()) {
         const QString rel = QDir(m_root).relativeFilePath(path);
@@ -250,7 +276,7 @@ AgentTools::Result AgentTools::writeFile(const QJsonObject& args) const
         flat.replace(QLatin1Char('/'), QLatin1Char('_'));
         const QString backupDir = m_root + QStringLiteral("/.drivevault-backup");
         QDir().mkpath(backupDir);
-        const QString backup = QStringLiteral("%1/%2.%3.bak").arg(backupDir, flat, QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss")));
+        const QString backup = QStringLiteral("%1/%2.%3.bak").arg(backupDir, flat, QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss-zzz")));
         if (!QFile::copy(path, backup))
             return {QStringLiteral("the old version could not be saved, so the file was not changed"), true};
         note = QStringLiteral(" The old version is saved in .drivevault-backup.");
@@ -259,6 +285,140 @@ AgentTools::Result AgentTools::writeFile(const QJsonObject& args) const
     if (!out.open(QIODevice::WriteOnly) || out.write(content.toUtf8()) < 0 || !out.commit())
         return {QStringLiteral("the file could not be written"), true};
     return {QStringLiteral("Wrote %1 bytes to %2.%3").arg(content.toUtf8().size()).arg(QDir(m_root).relativeFilePath(path), note), false};
+}
+
+// ---- edit_file: one exact piece of text replaced ----------------------------------------------------------------------------------------
+bool AgentTools::applyEdit(const QJsonObject& args, QString* fullPath, QString* oldContent, QString* newContent, QString* error) const
+{
+    if (!m_edits) {
+        *error = QStringLiteral("editing is not allowed in this mode");
+        return false;
+    }
+    const QString oldText = args.value(QLatin1String("old_string")).toString();
+    const QString newText = args.value(QLatin1String("new_string")).toString();
+    if (oldText.isEmpty()) {
+        *error = QStringLiteral("old_string is empty (to create a file use write_file)");
+        return false;
+    }
+    if (oldText == newText) {
+        *error = QStringLiteral("old_string and new_string are the same");
+        return false;
+    }
+    QString err;
+    const QString path = resolve(args.value(QLatin1String("path")).toString(), true, &err);
+    if (path.isEmpty()) {
+        *error = err;
+        return false;
+    }
+    const QFileInfo info(path);
+    if (!info.isFile() || skippedFolder(info.fileName())) {
+        *error = QStringLiteral("that is not a file you may change");
+        return false;
+    }
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) {
+        *error = QStringLiteral("cannot read: %1").arg(info.fileName());
+        return false;
+    }
+    const QByteArray data = f.readAll();
+    f.close();
+    if (data.size() > kMaxWrite || looksBinary(data.left(4096))) {
+        *error = QStringLiteral("%1 is too long or not a text file").arg(info.fileName());
+        return false;
+    }
+    const QString content = QString::fromUtf8(data);
+    const qsizetype count = content.count(oldText);
+    if (count == 0) {
+        *error = QStringLiteral("old_string was not found in %1. Read the file again and copy the text exactly (spaces and line breaks too)").arg(info.fileName());
+        return false;
+    }
+    const bool all = args.value(QLatin1String("replace_all")).toBool();
+    if (count > 1 && !all) {
+        *error = QStringLiteral("old_string appears %1 times in %2. Add more text around it so that it is unique, or set replace_all to true").arg(count).arg(info.fileName());
+        return false;
+    }
+    QString out = content;
+    if (all)
+        out.replace(oldText, newText);
+    else
+        out.replace(content.indexOf(oldText), oldText.size(), newText);
+    if (out.toUtf8().size() > kMaxWrite) {
+        *error = QStringLiteral("the result would be too long (limit %1 bytes)").arg(kMaxWrite);
+        return false;
+    }
+    *fullPath = path;
+    *oldContent = content;
+    *newContent = out;
+    return true;
+}
+
+AgentTools::WriteInfo AgentTools::inspectEdit(const QJsonObject& args) const
+{
+    WriteInfo w;
+    QString path, before, after;
+    if (!applyEdit(args, &path, &before, &after, &w.error))
+        return w;
+    auto lines = [](const QString& text, const QString& mark) {
+        QStringList out;
+        for (const QString& l : text.split(QLatin1Char('\n')))
+            out << mark + l;
+        return out.join(QLatin1Char('\n'));
+    };
+    w.ok = true;
+    w.path = QDir(m_root).relativeFilePath(path);
+    w.exists = true;
+    w.bytes = after.toUtf8().size();
+    w.preview = (lines(args.value(QLatin1String("old_string")).toString(), QStringLiteral("- ")) + QLatin1Char('\n')
+                 + lines(args.value(QLatin1String("new_string")).toString(), QStringLiteral("+ "))).left(1600);
+    return w;
+}
+
+AgentTools::Result AgentTools::editFile(const QJsonObject& args) const
+{
+    QString path, before, after, err;
+    if (!applyEdit(args, &path, &before, &after, &err))
+        return {err, true};
+    const Result r = save(path, after);
+    if (r.error)
+        return r;
+    const bool all = args.value(QLatin1String("replace_all")).toBool();
+    return {QStringLiteral("Edited %1 (%2).%3").arg(QDir(m_root).relativeFilePath(path), all ? QStringLiteral("every occurrence") : QStringLiteral("1 place"),
+                                                    QStringLiteral(" The old version is saved in .drivevault-backup.")), false};
+}
+
+// ---- glob_files --------------------------------------------------------------------------------------------------------------------------
+AgentTools::Result AgentTools::globFiles(const QJsonObject& args) const
+{
+    QString pattern = args.value(QLatin1String("pattern")).toString().trimmed();
+    pattern.replace(QLatin1Char('\\'), QLatin1Char('/'));
+    if (pattern.isEmpty())
+        return {QStringLiteral("pattern is empty"), true};
+    if (pattern.startsWith(QLatin1String("**/")))
+        pattern = pattern.mid(3);
+    if (m_root.isEmpty())
+        return {QStringLiteral("the working folder does not exist"), true};
+    const bool byName = !pattern.contains(QLatin1Char('/'));                         // "*.html": the file name, in any folder
+    const QRegularExpression re(QRegularExpression::wildcardToRegularExpression(pattern, QRegularExpression::NonPathWildcardConversion),
+                                QRegularExpression::CaseInsensitiveOption);
+    QStringList hits;
+    int scanned = 0;
+    QDirIterator it(m_root, QDir::Files | QDir::NoSymLinks, QDirIterator::Subdirectories);
+    while (it.hasNext() && hits.size() < 200 && scanned < 20000) {
+        const QString file = it.next();
+        const QString rel = QDir(m_root).relativeFilePath(file);
+        bool skip = false;
+        for (const QString& part : rel.split(QLatin1Char('/')))
+            skip = skip || skippedFolder(part);
+        if (skip)
+            continue;
+        ++scanned;
+        if (re.match(byName ? it.fileInfo().fileName() : rel).hasMatch())
+            hits << rel;
+    }
+    if (hits.isEmpty())
+        return {QStringLiteral("no file matches"), false};
+    hits.sort();
+    return {hits.join(QLatin1Char('\n')), false};
 }
 
 } // namespace dm::ai

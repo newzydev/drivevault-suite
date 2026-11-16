@@ -51,6 +51,7 @@ class AiChannel : public QObject {
     Q_PROPERTY(QString folder READ folder NOTIFY settingsChanged FINAL)               // agent: the working folder
     Q_PROPERTY(QString permission READ permission NOTIFY settingsChanged FINAL)       // agent mode: read | plan | ask | edit (see Permission below)
     Q_PROPERTY(QString effort READ effort NOTIFY settingsChanged FINAL)               // low | medium | high
+    Q_PROPERTY(QVariantList todos READ todos NOTIFY todosChanged FINAL)               // agent: the task list the model keeps (todo_write): [{content, status}]
 
 public:
     struct Message {
@@ -60,7 +61,7 @@ public:
         QString errorCode, errorDetail;
         bool streaming = false;
         bool stopped = false;
-        QVariantMap approval;              // {path, replaces, bytes, preview}: a write waits for the user's answer (not saved)
+        QVariantMap approval;              // waits for the user's answer (not saved): {kind: "change", path, replaces, bytes, preview, diff} | {kind: "command", command} | {kind: "plan", plan}
     };
     struct Conversation {
         QString id, title;
@@ -84,6 +85,11 @@ public:
     static QStringList permissions() { return {QStringLiteral("read"), QStringLiteral("plan"), QStringLiteral("ask"), QStringLiteral("edit")}; }
     bool canWrite() const { return m_permission == QLatin1String("ask") || m_permission == QLatin1String("edit"); }
     QString effort() const { return m_effort; }
+    QVariantList todos() const { return m_todos; }
+
+    // A message that starts with "/" is a command of the page (agent page: /help /clear /new /mode /effort /web /todos /init). Returns true when it was handled
+    // here; `prompt` is then empty (nothing goes to the model) - or, for /init, the text to send instead.
+    bool slashCommand(const QString& text, QString* prompt);
 
     Q_INVOKABLE QString send(const QString& text);        // "" = started, otherwise why not (notReady code, busy, empty)
     Q_INVOKABLE void stop();
@@ -111,8 +117,12 @@ signals:
     void messagesChanged();
     void conversationsChanged();
     void changed();                                        // anything worth saving to the settings file
+    void todosChanged();
 
 private:
+    void localExchange(const QString& userText, const QString& reply);        // a question and an answer that never reach the model (slash commands)
+    QString projectNotes(QString* fileName) const;         // the start of CLAUDE.md / AGENTS.md of the working folder ("" when there is none)
+    void clearTodos();
     Conversation* current();
     Conversation* find(const QString& id);
     Conversation& ensureConversation(const QString& firstText);
@@ -135,6 +145,7 @@ private:
     QString m_folder;
     QString m_effort = QStringLiteral("medium");
     QString m_permission = QStringLiteral("ask");
+    QVariantList m_todos;
     QList<Conversation> m_conversations;
     QString m_currentId;
     QString m_runId;                                       // the conversation the running request writes into

@@ -1,6 +1,13 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.13.0 (2026-11-16): The agent works like Claude Code
+  - New tools: edit_file (one exact piece of text replaced; the approval card shows a red / green diff), glob_files (find files by name), a task list (todo_write; shown in the right panel).
+  - New: plan mode is real. The AI explores, then shows its plan; nothing is changed or run until you press "Approve and start" (then the page goes to "Ask first"), or you ask it to keep planning.
+  - New: the AI can run a command (cmd.exe, in the working folder) in the "Ask first" and "Accept edits" modes. EVERY command is shown to you first and runs only after you press Allow. It runs with your permissions and is not limited to the folder; it has no input, a 60 second limit (300 at most) and Stop kills it. This replaces the earlier rule that the agent could not run programs.
+  - New: slash commands /help /clear /new /mode /effort /web /todos /init; Esc stops the work; Shift+Tab changes the mode; the CLAUDE.md (or AGENTS.md) of the working folder is given to the model.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.12.3 (2026-11-16): The agent no longer searches the web for ever
   - Fixed: a small model could call web_search again and again (12 times in a row) and then stop with "used the tools too many times". Now the same web call is not run twice and a task may make at most 4 web calls (search + open page); after that the model is told to do the task with what it has.
   - Not code-signed (Windows SmartScreen may warn).

@@ -3,6 +3,7 @@
 #include "Hub.h"
 #include "ai/AgentTools.h"
 #include "ai/AiService.h"
+#include "ai/CommandRunner.h"
 #include "ai/LocalAgent.h"
 #include "ai/WebTools.h"
 #include "ai/HttpChat.h"
@@ -414,7 +415,7 @@ private slots:
         outside.close();
 
         AgentTools ro(m_dir.filePath("work"), false);
-        QCOMPARE(ro.specs().size(), 3);                                    // no write_file when edits are not allowed
+        QCOMPARE(ro.specs().size(), 4);                                    // list, read, search, glob: no write_file / edit_file when edits are not allowed
         auto list = ro.run("list_files", {});
         QVERIFY(!list.error && list.text.contains("notes.txt") && list.text.contains("sub/"));
         QVERIFY(ro.run("read_file", {{"path", "notes.txt"}}).text.contains("Beta line"));
@@ -433,7 +434,7 @@ private slots:
         QVERIFY(!QFileInfo::exists(m_dir.filePath("work/x.txt")));
 
         AgentTools rw(m_dir.filePath("work"), true);
-        QCOMPARE(rw.specs().size(), 4);
+        QCOMPARE(rw.specs().size(), 6);
         auto w = rw.run("write_file", {{"path", "sub/new.txt"}, {"content", "hello"}});
         QVERIFY2(!w.error, qPrintable(w.text));
         QCOMPARE(rw.run("read_file", {{"path", "sub/new.txt"}}).text, QString("hello"));
@@ -556,7 +557,7 @@ private slots:
         QVERIFY(msgs.at(msgs.size() - 2).toObject().value("content").toString().contains("todo.txt"));
         // the request offers the tools; read only = no write_file
         const QJsonArray tools = requestBody(server.log.at(0)).value("tools").toArray();
-        QCOMPARE(tools.size(), 3);
+        QCOMPARE(tools.size(), 5);                                         // the four read tools + todo_write
         // a refusal: it needs a folder or the web, and only this computer's server
         LocalAgent other(&net);
         c.folder.clear();
@@ -652,7 +653,7 @@ private slots:
         QCOMPARE(reply.value("text").toString(), QString("There is one file."));
         QCOMPARE(reply.value("activity").toStringList(), QStringList({"List"}));
         // the Q&A page without web and folder is a plain chat (no tools in the request)
-        QCOMPARE(requestBody(server.log.at(0)).value("tools").toArray().size(), 3);
+        QCOMPARE(requestBody(server.log.at(0)).value("tools").toArray().size(), 5);
     }
 
     // ---- the pages: model, effort, conversations ---------------------------------------------------------------------------------------
@@ -940,6 +941,264 @@ private slots:
             QCOMPARE(toolText.contains("declined"), !allow);                             // the model is told what happened
         }
     }
+    // ---- edit_file, glob_files ------------------------------------------------------------------------------------------------------------
+    void editReplacesOneExactPiece()
+    {
+        QDir().mkpath(m_dir.filePath("editwork/sub"));
+        auto put = [&](const QString& rel, const QByteArray& data) {
+            QFile f(m_dir.filePath("editwork/" + rel));
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(data);
+        };
+        put("a.txt", "one two\nthree two\n");
+        put("sub/page.html", "<p>x</p>");
+        AgentTools rw(m_dir.filePath("editwork"), true);
+        // not unique / not found / same text / empty: refused, nothing changes
+        QVERIFY(rw.run("edit_file", {{"path", "a.txt"}, {"old_string", "two"}, {"new_string", "2"}}).error);
+        QVERIFY(rw.run("edit_file", {{"path", "a.txt"}, {"old_string", "nine"}, {"new_string", "9"}}).error);
+        QVERIFY(rw.run("edit_file", {{"path", "a.txt"}, {"old_string", "one"}, {"new_string", "one"}}).error);
+        QVERIFY(rw.run("edit_file", {{"path", "a.txt"}, {"old_string", ""}, {"new_string", "x"}}).error);
+        QVERIFY(rw.run("edit_file", {{"path", "../a.txt"}, {"old_string", "one"}, {"new_string", "1"}}).error);
+        QCOMPARE(QFile(m_dir.filePath("editwork/a.txt")).size(), qint64(18));
+        // the diff the user sees before it happens
+        const AgentTools::WriteInfo info = rw.inspectEdit({{"path", "a.txt"}, {"old_string", "one two"}, {"new_string", "uno"}});
+        QVERIFY(info.ok && info.exists);
+        QVERIFY(info.preview.contains("- one two") && info.preview.contains("+ uno"));
+        QCOMPARE(QFile(m_dir.filePath("editwork/a.txt")).size(), qint64(18));                  // looking changed nothing
+        // a unique piece, then every occurrence
+        QVERIFY(!rw.run("edit_file", {{"path", "a.txt"}, {"old_string", "one"}, {"new_string", "1"}}).error);
+        QVERIFY(!rw.run("edit_file", {{"path", "a.txt"}, {"old_string", "two"}, {"new_string", "2"}, {"replace_all", true}}).error);
+        QFile f(m_dir.filePath("editwork/a.txt"));
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        QCOMPARE(QString::fromUtf8(f.readAll()), QString("1 2\nthree 2\n"));
+        QVERIFY(!QDir(m_dir.filePath("editwork/.drivevault-backup")).entryList(QDir::Files).isEmpty());   // the old versions are kept
+        // read only: no edit
+        QVERIFY(AgentTools(m_dir.filePath("editwork"), false).run("edit_file", {{"path", "a.txt"}, {"old_string", "1"}, {"new_string", "x"}}).error);
+        // glob: a name in any folder, or a path pattern
+        const QString byName = rw.run("glob_files", {{"pattern", "*.html"}}).text;
+        QCOMPARE(byName, QString("sub/page.html"));
+        QCOMPARE(rw.run("glob_files", {{"pattern", "sub/*.html"}}).text, QString("sub/page.html"));
+        QCOMPARE(rw.run("glob_files", {{"pattern", "**/*.txt"}}).text, QString("a.txt"));
+        QCOMPARE(rw.run("glob_files", {{"pattern", "*.zip"}}).text, QString("no file matches"));
+    }
+
+    // ---- run_command ---------------------------------------------------------------------------------------------------------------------
+    void aCommandRunsInTheFolderAndReports()
+    {
+        QDir().mkpath(m_dir.filePath("cmdwork"));
+        CommandRunner runner;
+        auto runIt = [&](const QString& command, int seconds, QString* text, bool* error) {
+            bool finished = false;
+            QVERIFY(runner.run(m_dir.filePath("cmdwork"), command, seconds, [&](const QString& t, bool e) { *text = t; *error = e; finished = true; }));
+            QVERIFY(!runner.run(m_dir.filePath("cmdwork"), "echo second", 5, nullptr));          // one at a time
+            QTRY_VERIFY_WITH_TIMEOUT(finished, 20000);
+        };
+        QString text;
+        bool error = false;
+        runIt("echo hello& cd", 20, &text, &error);
+        QVERIFY(!error);
+        QVERIFY(text.startsWith("exit code 0"));
+        QVERIFY(text.contains("hello"));
+        QVERIFY(text.contains("cmdwork"));                                                       // it starts in the working folder
+        runIt("exit 3", 20, &text, &error);
+        QVERIFY(error);
+        QVERIFY(text.startsWith("exit code 3"));
+        runIt("ping -n 30 127.0.0.1 > nul", 1, &text, &error);                                   // stopped after the time limit
+        QVERIFY(error);
+        QVERIFY(text.contains("time limit"));
+        // stopped by the user
+        bool finished = false;
+        QVERIFY(runner.run(m_dir.filePath("cmdwork"), "ping -n 30 127.0.0.1 > nul", 60, [&](const QString& t, bool e) { text = t; error = e; finished = true; }));
+        runner.cancel();
+        QTRY_VERIFY_WITH_TIMEOUT(finished, 20000);
+        QVERIFY(error && text.contains("stopped by the user"));
+        // long output keeps the beginning and the end
+        const QString big = QString(20000, QLatin1Char('a')) + QStringLiteral("END");
+        const QString cut = CommandRunner::cut(big);
+        QVERIFY(cut.size() < big.size() && cut.endsWith("END") && cut.contains("left out"));
+        QCOMPARE(CommandRunner::cut("short"), QString("short"));
+    }
+    void everyCommandWaitsForTheUser()
+    {
+        QDir().mkpath(m_dir.filePath("cmdask"));
+        for (const bool allow : {false, true}) {
+            FakeServer server;
+            server.contentType = "application/json";
+            server.queue << agentReply({agentCall("r1", "run_command", {{"command", "echo from-the-agent"}})}, QString())
+                         << agentReply({}, QStringLiteral("Done."));
+            QNetworkAccessManager net;
+            LocalAgent agent(&net);
+            QSignalSpy asked(&agent, &LocalAgent::commandApprovalNeeded);
+            QSignalSpy done(&agent, &LocalAgent::finished);
+            LocalAgent::Config c;
+            c.baseUrl = server.base() + "/v1";
+            c.folder = m_dir.filePath("cmdask");
+            c.allowEdits = true;
+            c.approveWrites = true;
+            c.allowCommands = true;
+            c.history = {{"user", "run it"}};
+            QCOMPARE(agent.start(c), QString());
+            QVERIFY(asked.wait(15000));
+            QCOMPARE(asked.at(0).at(0).toString(), QString("echo from-the-agent"));
+            QVERIFY(agent.waitingForApproval());
+            QCOMPARE(server.requests, 1);                                                        // nothing runs and the model is not asked again while the user decides
+            agent.answerApproval(allow);
+            QVERIFY(done.wait(30000));
+            QVERIFY(done.at(0).at(0).toBool());
+            const QString toolText = requestBody(server.log.at(1)).value("messages").toArray().last().toObject().value("content").toString();
+            QCOMPARE(toolText.contains("from-the-agent"), allow);
+            QCOMPARE(toolText.contains("did not allow"), !allow);
+        }
+        // not offered, not run: a mode without commands
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("r1", "run_command", {{"command", "echo no"}})}, QString()) << agentReply({}, QStringLiteral("ok"));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("cmdask");
+        c.history = {{"user", "run it"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QVERIFY(requestBody(server.log.at(1)).value("messages").toArray().last().toObject().value("content").toString().contains("not allowed"));
+    }
+
+    // ---- the task list and the plan --------------------------------------------------------------------------------------------------------
+    void theTaskListGoesToThePage()
+    {
+        FakeServer server;
+        server.contentType = "application/json";
+        const QJsonArray todos{QJsonObject{{"content", "read files"}, {"status", "completed"}}, QJsonObject{{"content", "write page"}, {"status", "in_progress"}},
+                               QJsonObject{{"content", "check"}, {"status", "bogus"}}};
+        server.queue << agentReply({agentCall("t1", "todo_write", {{"todos", todos}})}, QString()) << agentReply({}, QStringLiteral("ok"));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy changed(&agent, &LocalAgent::todosChanged);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.path();
+        c.history = {{"user", "go"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QCOMPARE(changed.count(), 1);
+        const QVariantList list = changed.at(0).at(0).toList();
+        QCOMPARE(list.size(), 3);
+        QCOMPARE(list.at(0).toMap().value("status").toString(), QString("completed"));
+        QCOMPARE(list.at(1).toMap().value("status").toString(), QString("in_progress"));
+        QCOMPARE(list.at(2).toMap().value("status").toString(), QString("pending"));            // an unknown status becomes pending
+    }
+    void aPlanMustBeApprovedBeforeAnythingChanges()
+    {
+        QDir().mkpath(m_dir.filePath("planwork"));
+        for (const bool approve : {false, true}) {
+            FakeServer server;
+            server.contentType = "application/json";
+            server.queue << agentReply({agentCall("p1", "exit_plan_mode", {{"plan", "1. write index.html"}})}, QString()) << agentReply({}, QStringLiteral("ok"));
+            QNetworkAccessManager net;
+            LocalAgent agent(&net);
+            QSignalSpy asked(&agent, &LocalAgent::planApprovalNeeded);
+            QSignalSpy approved(&agent, &LocalAgent::planApproved);
+            QSignalSpy done(&agent, &LocalAgent::finished);
+            LocalAgent::Config c;
+            c.baseUrl = server.base() + "/v1";
+            c.folder = m_dir.filePath("planwork");
+            c.planMode = true;
+            c.history = {{"user", "make a page"}};
+            QCOMPARE(agent.start(c), QString());
+            QVERIFY(asked.wait(15000));
+            QCOMPARE(asked.at(0).at(0).toString(), QString("1. write index.html"));
+            QCOMPARE(server.requests, 1);
+            // in plan mode the model has no way to change anything
+            QStringList names;
+            for (const QJsonValue& t : requestBody(server.log.at(0)).value("tools").toArray())
+                names << t.toObject().value("function").toObject().value("name").toString();
+            QVERIFY(names.contains("exit_plan_mode") && !names.contains("write_file") && !names.contains("edit_file") && !names.contains("run_command"));
+            agent.answerApproval(approve);
+            QVERIFY(done.wait(15000));
+            QCOMPARE(approved.count(), approve ? 1 : 0);
+            const QString toolText = requestBody(server.log.at(1)).value("messages").toArray().last().toObject().value("content").toString();
+            QCOMPARE(toolText.contains("approved"), approve);
+            // after the approval the next request offers the change tools (and the plan tool is gone)
+            QStringList after;
+            for (const QJsonValue& t : requestBody(server.log.at(1)).value("tools").toArray())
+                after << t.toObject().value("function").toObject().value("name").toString();
+            QCOMPARE(after.contains("edit_file"), approve);
+            QCOMPARE(after.contains("run_command"), approve);
+            QCOMPARE(after.contains("exit_plan_mode"), !approve);
+        }
+    }
+
+    // ---- slash commands of the agent page --------------------------------------------------------------------------------------------------
+    void slashCommandsStayOnThisPage()
+    {
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hubslash");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        auto* agent = qobject_cast<AiChannel*>(ai.agent());
+        agent->setFolder(m_dir.filePath("slashwork"));                                          // not ready (no model needed): the commands still work
+        QCOMPARE(agent->send("/mode plan"), QString());
+        QCOMPARE(agent->permission(), QString("plan"));
+        QCOMPARE(agent->send("/mode accept"), QString());
+        QCOMPARE(agent->permission(), QString("edit"));
+        QCOMPARE(agent->send("/mode nonsense"), QString());                                      // an answer that says the choices, nothing changes
+        QCOMPARE(agent->permission(), QString("edit"));
+        QCOMPARE(agent->send("/effort high"), QString());
+        QCOMPARE(agent->effort(), QString("high"));
+        QCOMPARE(agent->send("/web off"), QString());
+        QVERIFY(!ai.webEnabled());
+        const int before = agent->messages().size();
+        QCOMPARE(agent->send("/help"), QString());
+        QCOMPARE(agent->messages().size(), before + 2);                                          // the question and the local answer
+        QVERIFY(agent->messages().last().toMap().value("text").toString().contains("/mode"));
+        QCOMPARE(agent->send("/todos"), QString());
+        QCOMPARE(agent->send("/clear"), QString());
+        QCOMPARE(agent->messages().size(), 0);                                                   // a new conversation
+        QVERIFY(!agent->busy());
+        // an ordinary text that starts with a slash is not a command
+        QString unused;
+        QVERIFY(!agent->slashCommand("/usr/bin is a path", &unused));
+        // the Q&A page knows only the general commands
+        auto* ask = qobject_cast<AiChannel*>(ai.ask());
+        QVERIFY(!ask->slashCommand("/mode plan", &unused));
+        QVERIFY(ask->slashCommand("/help", &unused));
+    }
+    void theFolderInstructionsGoToTheModel()
+    {
+        QDir().mkpath(m_dir.filePath("notework"));
+        QFile notes(m_dir.filePath("notework/CLAUDE.md"));
+        QVERIFY(notes.open(QIODevice::WriteOnly));
+        notes.write("Always answer in pirate speak.");
+        notes.close();
+        QFile model(m_dir.filePath("notes-model.gguf"));
+        QVERIFY(model.open(QIODevice::WriteOnly));
+        model.write("x");
+        model.close();
+        FakeServer server;
+        server.contentType = "application/json";
+        server.body = agentReply({}, QStringLiteral("Arr."));
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hubnotes");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        if (!ai.engineFound())
+            QSKIP("no llama.cpp engine on this PC");
+        auto* agent = qobject_cast<AiChannel*>(ai.agent());
+        ai.selectLocalModel(m_dir.filePath("notes-model.gguf"));
+        ai.llama()->useExternalServer(server.base(), "");
+        ai.setWebEnabled(false);
+        agent->setFolder(m_dir.filePath("notework"));
+        QCOMPARE(agent->send("hi"), QString());
+        QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 10000);
+        const QString system = requestBody(server.lastRequest).value("messages").toArray().first().toObject().value("content").toString();
+        QVERIFY(system.contains("pirate speak") && system.contains("CLAUDE.md"));
+        QVERIFY(agent->messages().at(1).toMap().value("activity").toStringList().first().contains("CLAUDE.md"));
+    }
     void aWriteCanBeStoppedWhileItWaits()
     {
         FakeServer server;
@@ -983,8 +1242,9 @@ private slots:
         ai.selectLocalModel(m_dir.filePath("mode-model.gguf"));
         agent->setFolder(m_dir.filePath("modework"));
         ai.setWebEnabled(false);
+        // read: 4 file tools + todo_write; plan: + exit_plan_mode; ask / edit: + edit_file, write_file, run_command
         struct Case { const char* mode; int tools; bool plan; };
-        for (const Case& k : {Case{"read", 3, false}, Case{"plan", 3, true}, Case{"ask", 4, false}, Case{"edit", 4, false}}) {
+        for (const Case& k : {Case{"read", 5, false}, Case{"plan", 6, true}, Case{"ask", 8, false}, Case{"edit", 8, false}}) {
             FakeServer server;
             server.contentType = "application/json";
             server.body = agentReply({}, QStringLiteral("ok"));
@@ -995,7 +1255,13 @@ private slots:
             QCOMPARE(agent->send("hello"), QString());
             QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 10000);
             const QJsonObject body = requestBody(server.lastRequest);
-            QCOMPARE(body.value("tools").toArray().size(), k.tools);                       // write_file only in ask and edit
+            QCOMPARE(body.value("tools").toArray().size(), k.tools);                       // changes and commands only in ask and edit, the plan tool only in plan
+            QStringList names;
+            for (const QJsonValue& t : body.value("tools").toArray())
+                names << t.toObject().value("function").toObject().value("name").toString();
+            QCOMPARE(names.contains("write_file"), QString(k.mode) == "ask" || QString(k.mode) == "edit");
+            QCOMPARE(names.contains("run_command"), QString(k.mode) == "ask" || QString(k.mode) == "edit");
+            QCOMPARE(names.contains("exit_plan_mode"), k.plan);
             const QString system = body.value("messages").toArray().first().toObject().value("content").toString();
             QCOMPARE(system.contains("PLAN"), k.plan);
         }
