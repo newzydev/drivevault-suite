@@ -60,10 +60,6 @@ const CatalogEntry kCatalog[] = {
      u"Audio recording, editing and mastering. Planned - not available yet.",
      u"บันทึก ตัดต่อ และมาสเตอร์เสียง อยู่ในแผน - ยังไม่พร้อมใช้งาน",
      "multimedia", "A"},
-    {"drivevault.remotedesktop", "RemoteDesktopPro", "DriveVault Remote Desktop Pro", "#06B6D4", true,
-     u"See and control another Windows PC from far away. Planned - not available yet.",
-     u"ดูและควบคุมหน้าจอ Windows อีกเครื่องจากระยะไกล อยู่ในแผน - ยังไม่พร้อมใช้งาน",
-     "multimedia", "R"},
     // the office programs that are planned (they do not exist yet)
     {"drivevault.document", "DocumentPro", "DriveVault Document Pro", "#3B82F6", true,
      u"Write and format documents. Planned - not available yet.",
@@ -121,7 +117,6 @@ QString slugForKey(const QString& key)
     if (key.compare(QLatin1String("VideoEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-video-editor-pro");
     if (key.compare(QLatin1String("ImageEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-image-editor-pro");
     if (key.compare(QLatin1String("AudioEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-audio-editor-pro");
-    if (key.compare(QLatin1String("RemoteDesktopPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-remote-desktop-pro");
     return {};
 }
 
