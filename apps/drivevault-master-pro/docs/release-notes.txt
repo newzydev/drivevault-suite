@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.23.2 (2026-11-17): Expand the browser, hide the list of conversations
+  - New: an Expand / Shrink button in the browser pane: the browser fills the conversation area too.
+  - New: a button (three bars) at the start of the title row shows or hides the list of conversations at the left.
+  - Changed: the list at the left keeps its width when the browser opens (it was made narrower in 1.23.1).
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.23.1 (2026-11-17): The browser opens at the right of the Agentic AI page
   - Changed: the browser is no longer a separate full page. It opens at the right of the Agentic AI page, in the place of the environment panel, and pushes the conversation aside; the Close button gives the panel back. When the AI opens a page of its work the browser opens there by itself.
   - Changed: the chips of the message box shorten (with ...) when there is not enough room.

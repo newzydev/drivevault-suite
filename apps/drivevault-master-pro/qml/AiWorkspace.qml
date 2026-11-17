@@ -26,7 +26,12 @@ Item {
             modeMenu.popup(modeChip, 0, -modeMenu.implicitHeight - 6)
         else if (part === "effort")
             effortMenu.popup(effortChip, 0, -effortMenu.implicitHeight - 6)
-        else if (part === "tasks") {                                           // two real harmless commands, to look at the list of background tasks
+        else if (part === "side-hidden")                                       // the list of conversations hidden
+            sideOpen = false
+        else if (part === "browser-wide") {                                    // the browser expanded over the conversation
+            openBrowser()
+            browserWide = true
+        } else if (part === "tasks") {                                           // two real harmless commands, to look at the list of background tasks
             ch.startDiagnosticTasks()
             tasksOpen = true
         } else if (part === "conversation" && ch.conversations.length > 0)       // open the newest saved conversation (to look at its step list and plan)
@@ -56,6 +61,8 @@ Item {
         }
     }
     // ---- attachments of the message box: text files (any page) and pictures (agent page, when the model can see) ------------------------------
+    property bool sideOpen: true                            // the list of conversations at the left (a button in the header shows / hides it)
+    property bool browserWide: false                        // the browser is expanded over the conversation
     property bool browserOpen: false                        // the browser is shown at the right (instead of the panel)
     property bool browserEver: false                        // it was opened once: the view stays alive (the AI uses it)
     onBrowserOpenChanged: if (browserOpen) browserEver = true
@@ -610,7 +617,8 @@ Item {
             Rectangle {
                 id: side
                 objectName: "aiSidebar"
-                Layout.preferredWidth: root.width < 900 || root.browserShown ? 210 : 270
+                visible: root.sideOpen
+                Layout.preferredWidth: root.width < 900 ? 210 : 270            // the same width whether the browser is open or not
                 Layout.fillHeight: true
                 color: "#0D0E11"
                 Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.borderSubtle }
@@ -768,6 +776,7 @@ Item {
 
             // ---- middle: the conversation --------------------------------------------------------------------------------------------
             ColumnLayout {
+                visible: !(root.browserShown && root.browserWide)
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 0
@@ -779,6 +788,15 @@ Item {
                     Layout.rightMargin: 28
                     Layout.topMargin: 14
                     spacing: 10
+                    MButton {                                 // shows / hides the list of conversations at the left
+                        objectName: "aiSideToggle"
+                        variant: "ghost"
+                        compact: true
+                        text: "☰"
+                        font.pixelSize: 16
+                        onClicked: root.sideOpen = !root.sideOpen
+                        Accessible.name: Tr.s(root.sideOpen ? "side_hide" : "side_show")
+                    }
                     Text { text: Tr.s(root.agent ? "ai_new_agent" : "ai_new_ask"); font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.text }
                     Chip { text: root.modelLabel }
                     Chip {                                    // the clock of the running job, fades in and out
@@ -1477,8 +1495,13 @@ Item {
                 visible: root.browserShown
                 active: Ai.browser.compiledIn && root.browserEver
                 Layout.preferredWidth: Math.max(440, Math.round(root.width * 0.4))
+                Layout.fillWidth: root.browserWide                     // expanded: it takes the place of the conversation too
                 Layout.fillHeight: true
-                sourceComponent: BrowserView { onCloseRequested: root.browserOpen = false }
+                sourceComponent: BrowserView {
+                    expanded: root.browserWide
+                    onCloseRequested: { root.browserWide = false; root.browserOpen = false }
+                    onExpandToggled: root.browserWide = !root.browserWide
+                }
             }
 
             // ---- right: what this page knows about the work (sources, or plan and changes); hidden when the window is narrow or the browser is open ---------------

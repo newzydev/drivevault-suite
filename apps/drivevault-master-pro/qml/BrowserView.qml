@@ -15,6 +15,8 @@ Item {
 
     property var bridge: Ai.browser
     signal closeRequested()
+    signal expandToggled()
+    property bool expanded: false
 
     // ---- state ---------------------------------------------------------------------------------------------------------------------------
     property var pending: []                 // permission requests that wait for the user (WebEnginePermission values), oldest first
@@ -98,6 +100,7 @@ Item {
                 spacing: 14
                 Text { text: Tr.s("tab_browser"); font.pixelSize: 16; font.weight: Font.DemiBold; color: Theme.text }
                 Item { Layout.fillWidth: true }
+                MButton { objectName: "brExpand"; compact: true; text: root.expanded ? "⤡  " + Tr.s("br_shrink") : "⤢  " + Tr.s("br_expand"); onClicked: root.expandToggled() }
                 MButton { objectName: "brClose"; compact: true; text: "✕  " + Tr.s("br_close"); onClicked: root.closeRequested(); Accessible.name: Tr.s("br_close") }
             }
         }
