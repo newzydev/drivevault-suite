@@ -115,6 +115,8 @@ QList<InstalledModel> installed(const QStringList& folders)
     QSet<QString> seen;
     for (const QString& folder : folders) {
         for (const QFileInfo& f : QDir(folder).entryInfoList({QStringLiteral("*.gguf")}, QDir::Files, QDir::Name)) {
+            if (f.fileName().endsWith(QLatin1String(".mmproj.gguf"), Qt::CaseInsensitive))
+                continue;                                    // the vision file of a model is not a model
             const QString path = QDir::cleanPath(f.absoluteFilePath());
             const QString key = f.fileName().toLower() + QLatin1Char('|') + QString::number(f.size());
             if (f.size() < 1000000 || seen.contains(key))
@@ -124,6 +126,38 @@ QList<InstalledModel> installed(const QStringList& folders)
         }
     }
     return out;
+}
+
+static QString g_visionFolder;
+
+void setVisionFolder(const QString& folder) { g_visionFolder = folder; }
+
+QString visionFileFor(const QString& modelPath)
+{
+    if (modelPath.isEmpty())
+        return {};
+    const QFileInfo m(modelPath);
+    for (const QString& folder : {m.absolutePath(), g_visionFolder}) {       // next to the model, else in the user's models folder (the model may be in Program Files)
+        if (folder.isEmpty())
+            continue;
+        const QString path = folder + QLatin1Char('/') + m.completeBaseName() + QStringLiteral(".mmproj.gguf");
+        if (QFileInfo::exists(path) && QFileInfo(path).size() > 1000000)
+            return path;
+    }
+    return {};
+}
+
+// Only the Qwen3.5 4B file has been checked (size and SHA-256 read from Hugging Face's headers on 2026-11-17); the other models get no offer.
+VisionFile visionFileOf(const QString& modelFileName)
+{
+    VisionFile v;
+    if (modelFileName.compare(QLatin1String("Qwen3.5-4B-Q4_K_M.gguf"), Qt::CaseInsensitive) != 0)
+        return v;
+    v.fileName = QStringLiteral("Qwen3.5-4B-Q4_K_M.mmproj.gguf");
+    v.url = QStringLiteral("https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/e87f176479d0855a907a41277aca2f8ee7a09523/mmproj-F16.gguf");
+    v.sha256 = QStringLiteral("cd88edcf8d031894960bb0c9c5b9b7e1fea6ebee02b9f7ce925a00d12891f864");
+    v.size = 672423616LL;
+    return v;
 }
 
 } // namespace ModelStore

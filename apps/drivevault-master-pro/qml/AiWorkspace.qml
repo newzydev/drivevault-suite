@@ -1445,7 +1445,7 @@ Item {
                                 Layout.preferredHeight: 18
                                 radius: 9
                                 color: Qt.alpha(Theme.accent, 0.2)
-                                Text { id: countText; anchors.centerIn: parent; text: root.ch.git.count; font.pixelSize: 11; font.weight: Font.DemiBold; color: Theme.accent }
+                                Text { id: countText; anchors.centerIn: parent; text: root.ch.git.count !== undefined ? String(root.ch.git.count) : ""; font.pixelSize: 11; font.weight: Font.DemiBold; color: Theme.accent }
                             }
                             Item { Layout.fillWidth: true }
                             Text { visible: root.ch.git.state === "ok" && root.ch.git.added > 0; text: "+" + root.ch.git.added; font.pixelSize: 12; font.weight: Font.DemiBold; color: Theme.success }

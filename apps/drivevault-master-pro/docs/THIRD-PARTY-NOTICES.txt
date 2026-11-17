@@ -3,7 +3,7 @@ DriveVault Master Pro - Third-party notices
 
 DriveVault Master Pro itself is proprietary software (see LICENSE.txt). It includes:
 
-1. Qt 6.8 (Core, Gui, Qml, Quick, Quick Controls 2, Quick Dialogs 2, Quick Layouts, Quick Templates 2, Network and plug-ins)
+1. Qt 6.8 (Core, Gui, Qml, Quick, Quick Controls 2, Quick Dialogs 2, Quick Layouts, Quick Templates 2, Network, WebEngine (Core, Quick), WebChannel, Positioning and plug-ins)
    GNU Lesser General Public License v3 (LGPL-3.0)                              licenses\LGPL-3.0.txt
    The Qt libraries are used as shared libraries (DLLs) and are not modified: you may replace them with another build of the same Qt version.
    LGPL-3.0 incorporates the GNU GPL v3 terms by reference: licenses\GPL-3.0.txt.
@@ -25,4 +25,12 @@ DriveVault Master Pro itself is proprietary software (see LICENSE.txt). It inclu
    Downloaded only when the user presses Download in the AI settings, from the unsloth GGUF conversions on https://huggingface.co (a fixed revision, checked
    by size and SHA-256). Other models the user chooses to download have their own licences.
 
-Trademarks belong to their owners. Qt is a registered trademark of The Qt Company Ltd.
+7. Chromium (inside Qt WebEngine, the browser tab) - Copyright The Chromium Authors, BSD-3-Clause and the licences of the components it contains
+   (FFmpeg - LGPL-2.1 build without proprietary codecs, V8, Skia, ICU, ANGLE, Brotli, zlib and others)              licenses\Chromium-LICENSE.txt
+   Qt WebEngine is LGPL-3.0 (licenses\LGPL-3.0.txt). The list of the components with their licences and the source code are published by The Qt Company:
+   https://code.qt.io/cgit/qt/qtwebengine-chromium.git/ (a written offer for the source is available from DriveVault on request).
+   The browser tab opens web pages only when the user types an address or when the AI opens a page of its own work; it keeps cookies, cache and the
+   permissions the user allowed on this PC only (the data folder of the program, "browser").
+
+Trademarks belong to their owners. Qt is a registered trademark of The Qt Company Ltd. Chromium is a trademark of Google LLC; this program is not made by or
+endorsed by Google.

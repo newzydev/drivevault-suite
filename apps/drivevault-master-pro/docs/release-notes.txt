@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.21.0 (2026-11-17): A browser in the program, and the AI can look at its own web pages
+  - New: a Browser tab (Qt WebEngine, the Chromium engine). Address bar, back / forward / reload, and permissions that work like Chrome's: a site that wants your camera, microphone, screen, location, notifications or clipboard asks in a bar under the address bar (Allow / Block, remembered on this PC); the lock button shows what the open site may use and lets you change or reset it; "Sites and permissions" lists every remembered choice. Downloads are not supported yet (they are refused).
+  - New: after the AI writes a web page it can open it in this browser (browser_open), read it (browser_read: text, headings, images and styles that did not load, errors the page logged) and - with the vision file - look at a picture of it (browser_look) and fix what is wrong. The AI cannot answer a permission question; only you can.
+  - New: AI settings > Let the model look at pictures: a download of the vision file (about 641 MB) for Qwen3.5 4B, only when you press the button.
+  - Note: the program is about 150 MB bigger because it carries Qt WebEngine. Not code-signed (Windows SmartScreen may warn).
+
 v1.20.0 (2026-11-17): The AI checks its own work before it finishes
   - New: when a job has written or changed files, the AI is asked once, before it says it is done, to read them again and compare them with your request (missing sections, styles, scripts, closing tags, broken links) and to fix gaps. The step list shows "Checking its own work before it finishes".
   - Not code-signed (Windows SmartScreen may warn).

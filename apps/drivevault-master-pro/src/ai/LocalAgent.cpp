@@ -2,6 +2,7 @@
 
 #include "HttpChat.h"
 
+#include <QDir>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -64,6 +65,29 @@ QJsonArray controlSpecs(bool commands, bool plan)
     return a;
 }
 
+// The browser of the program (qml/BrowserView.qml): the AI looks at the result of its own work. No script of the model is ever run in a page.
+QJsonArray browserSpecs(bool vision)
+{
+    QJsonArray a;
+    a.append(toolSpec("browser_open",
+                      QStringLiteral("Opens a page in the browser of this program and waits until it has loaded: a file of the working folder (file:///C:/folder/index.html, the full path) "
+                                     "or a page on this computer (http://localhost:3000). Use it after you wrote a web page, then check it with browser_read%1.")
+                          .arg(vision ? QStringLiteral(" and browser_look") : QString()),
+                      QJsonObject{{"url", QJsonObject{{"type", "string"}, {"description", QStringLiteral("the address")}}}}, {QStringLiteral("url")}));
+    a.append(toolSpec("browser_read",
+                      QStringLiteral("Reads the page that is open in the browser: its title, the visible text, how many headings / images / links / sections it has, images that "
+                                     "did not load, and the errors that the page logged. Use it to find missing or broken parts."),
+                      QJsonObject{}, {}));
+    if (vision)
+        a.append(toolSpec("browser_look",
+                          QStringLiteral("Takes a picture of the page that is open in the browser and shows it to you, so you can judge how it looks (layout, colours, spacing, "
+                                         "unstyled parts). The page is long: use scroll to look at the next part."),
+                          QJsonObject{{"scroll", QJsonObject{{"type", "string"}, {"enum", QJsonArray{"top", "down", "up", "bottom"}},
+                                                             {"description", QStringLiteral("where to look: top (default for the first look), down = the next screen, up, bottom")}}}},
+                          {}));
+    return a;
+}
+
 } // namespace
 
 LocalAgent::LocalAgent(QNetworkAccessManager* net, QObject* parent)
@@ -109,6 +133,8 @@ QString LocalAgent::start(const Config& c)
     m_todoList.clear();
     m_changedFiles.clear();
     m_reviewed = false;
+    m_pendingImages = QJsonArray();
+    m_looks = 0;
     m_lastCall.clear();
     m_sameCall = 0;
     m_taskIndex = int(m_messages.size()) - 1;                   // the user's new message: the task
@@ -146,7 +172,9 @@ void LocalAgent::cancel()
     m_waiting = false;
     m_onAnswer = nullptr;
     m_web->cancel();
-    if (m_foregroundTask > 0) {                            // the command that the job waits for is killed (background tasks go on: the page lists them, the user stops them)
+    if (m_config.browser)
+        m_config.browser->cancelAll();                     // (the answers of a browser call that is still waiting are not wanted)
+    if (m_foregroundTask > 0) {                           // the command that the job waits for is killed (background tasks go on: the page lists them, the user stops them)
         ++m_generation;                                    // the answer of the killed command is not wanted
         if (m_pool)
             m_pool->stop(m_foregroundTask);
@@ -174,6 +202,9 @@ void LocalAgent::step()
             tools.append(v);
     if (m_files)
         for (const QJsonValue& v : controlSpecs(m_config.allowCommands, m_config.planMode))
+            tools.append(v);
+    if (m_files && m_config.browser)
+        for (const QJsonValue& v : browserSpecs(m_config.vision))
             tools.append(v);
     // a background command ended while the model worked (or between two questions): it is told, with the end of the output
     for (const QString& n : std::as_const(m_taskNotes))
@@ -503,11 +534,23 @@ void LocalAgent::onReply()
             m_reviewed = true;
             if (!content.isEmpty())
                 m_messages.append(QJsonObject{{"role", "assistant"}, {"content", content}});
+            QString page;                                                  // a web page of this job: it is checked in the browser, not only read
+            for (const QString& f : std::as_const(m_changedFiles))
+                if (f.endsWith(QLatin1String(".html"), Qt::CaseInsensitive) || f.endsWith(QLatin1String(".htm"), Qt::CaseInsensitive)) {
+                    page = QUrl::fromLocalFile(QDir(m_config.folder).absoluteFilePath(f)).toString();
+                    break;
+                }
+            QString how = QStringLiteral("Read what you wrote (%1) and compare it with the user's request: look for parts that are missing "
+                                         "(sections you promised, styles or scripts, closing tags, links that point nowhere) or broken. ").arg(m_changedFiles.join(QStringLiteral(", ")));
+            if (m_config.browser && !page.isEmpty())
+                how = QStringLiteral("You made a web page: open it with browser_open (url %1), read it with browser_read").arg(page)
+                      + (m_config.vision ? QStringLiteral(", then LOOK at it with browser_look (scroll down screen by screen to the end) and judge the layout, colours and spacing against the user's request. ")
+                                         : QStringLiteral(" (look at the warnings and errors it reports). "))
+                      + QStringLiteral("Compare it with the user's request: missing sections, text that is cut or in the wrong language, unstyled parts, images that did not load. ");
             if (nudge(QStringLiteral("Checking its own work: reading the files again"),
-                      QStringLiteral("Before you finish, check your own work once. Read what you wrote (%1) and compare it with the user's request: look for parts that are missing "
-                                     "(sections you promised, styles or scripts, closing tags, links that point nowhere) or broken. Fix a gap with edit_file or append_file. "
-                                     "If everything is complete, answer with a short summary of what you did and what you checked; do not read the files again after that.")
-                          .arg(m_changedFiles.join(QStringLiteral(", ")))))
+                      QStringLiteral("Before you finish, check your own work once. ") + how
+                          + QStringLiteral("Fix a gap with edit_file or append_file. If everything is complete, answer with a short summary of what you did and what you checked; "
+                                           "do not check again after that.")))
                 return;
         }
         end(true, {}, {});
@@ -666,6 +709,20 @@ void LocalAgent::runNextCall()
         return;
     }
     if (m_callIndex >= m_calls.size()) {
+        if (!m_pendingImages.isEmpty()) {                              // what browser_look saw: one user message with the picture(s); older pictures are dropped (they cost the window)
+            for (int i = 0; i < m_messages.size(); ++i) {
+                QJsonObject o = m_messages.at(i).toObject();
+                if (o.value(QLatin1String("role")).toString() == QLatin1String("user") && o.value(QLatin1String("content")).isArray()) {
+                    o["content"] = QStringLiteral("[an earlier screenshot of the page was removed to save room]");
+                    m_messages[i] = o;
+                }
+            }
+            QJsonArray parts{QJsonObject{{"type", "text"}, {"text", QStringLiteral("This is the picture that browser_look took. Judge it against the user's request.")}}};
+            for (const QJsonValue& v : std::as_const(m_pendingImages))
+                parts.append(v);
+            m_messages.append(QJsonObject{{"role", "user"}, {"content", parts}});
+            m_pendingImages = QJsonArray();
+        }
         if (!m_afterCalls.isEmpty()) {                                 // after a kept (cut) write: where to go on
             if (!m_lastResultError)
                 m_messages.append(QJsonObject{{"role", "user"}, {"content", m_afterCalls}});
@@ -704,6 +761,9 @@ void LocalAgent::runNextCall()
         else if (name == QLatin1String("fetch_page")) { kind = QStringLiteral("fetch"); target = args.value(QLatin1String("url")).toString(); }
         else if (name == QLatin1String("command_output")) { kind = QStringLiteral("taskout"); target = QString::number(args.value(QLatin1String("task_id")).toInt()); }
         else if (name == QLatin1String("stop_command")) { kind = QStringLiteral("taskstop"); target = QString::number(args.value(QLatin1String("task_id")).toInt()); }
+        else if (name == QLatin1String("browser_open")) { kind = QStringLiteral("browser"); target = args.value(QLatin1String("url")).toString(); }
+        else if (name == QLatin1String("browser_read")) { kind = QStringLiteral("browserread"); }
+        else if (name == QLatin1String("browser_look")) { kind = QStringLiteral("browserlook"); target = args.value(QLatin1String("scroll")).toString(); }
         else if (name == QLatin1String("todo_write")) { kind = QStringLiteral("todo"); }
         else if (name == QLatin1String("exit_plan_mode")) { kind = QStringLiteral("plan"); }
         else { kind = QStringLiteral("other"); target = name; }
@@ -743,6 +803,10 @@ void LocalAgent::runNextCall()
         m_webSeen.append(key);
         ++m_webCalls;
         m_web->run(name, args, result);
+        return;
+    }
+    if (name == QLatin1String("browser_open") || name == QLatin1String("browser_read") || name == QLatin1String("browser_look")) {
+        runBrowserCall(name, args, result);                            // scrolling with the same call again and again is normal here: no "stuck" check, its own limits
         return;
     }
     // A model that makes the very same call again and again (and gets the very same answer) is stuck. Third time in a row: it is told so and the call is not run;
@@ -808,6 +872,67 @@ void LocalAgent::runNextCall()
     }
     const AgentTools::Result r = m_files->run(name, args);
     result(r.text, r.error);
+}
+
+// browser_open / browser_read / browser_look: the page of the program's browser answers (BrowserBridge). Nothing here needs the user's Allow: it only looks.
+// What may be opened is limited by BrowserBridge::checkAgentUrl.
+void LocalAgent::runBrowserCall(const QString& name, const QJsonObject& args, const std::function<void(const QString&, bool)>& result)
+{
+    constexpr int kMaxLooks = 12;
+    if (!m_config.browser || !m_files) {
+        result(QStringLiteral("the browser is not available"), true);
+        return;
+    }
+    if (name == QLatin1String("browser_look") && !m_config.vision) {
+        result(QStringLiteral("you cannot see pictures with this model; use browser_read"), true);
+        return;
+    }
+    if (name == QLatin1String("browser_look") && m_looks >= kMaxLooks) {
+        result(QStringLiteral("you already looked %1 times in this job; use what you saw and finish").arg(kMaxLooks), true);
+        return;
+    }
+    QVariantMap request;
+    if (name == QLatin1String("browser_open")) {
+        const QString text = args.value(QLatin1String("url")).toString().trimmed();
+        QUrl url = text.startsWith(QLatin1String("file:")) || text.contains(QLatin1String("://")) ? QUrl(text) : QUrl::fromLocalFile(QDir(m_config.folder).absoluteFilePath(text));
+        if (url.isLocalFile() && !QFileInfo::exists(url.toLocalFile())) {                // "file:///index.html": the model means the file in the working folder
+            const QString inFolder = QDir(m_config.folder).absoluteFilePath(url.path().startsWith(QLatin1Char('/')) ? url.path().mid(1) : url.path());
+            if (QFileInfo(inFolder).isFile())
+                url = QUrl::fromLocalFile(inFolder);
+        }
+        const QString why = browser::BrowserBridge::checkAgentUrl(url, m_config.folder, m_config.web);
+        if (!why.isEmpty()) {
+            result(QStringLiteral("this address cannot be opened: %1. The working folder is %2: give the file name (index.html) or file:///%2/index.html")
+                       .arg(why, QDir::fromNativeSeparators(QFileInfo(m_config.folder).absoluteFilePath())), true);
+            return;
+        }
+        request.insert(QStringLiteral("url"), url.toString());
+    } else if (name == QLatin1String("browser_look")) {
+        QString scroll = args.value(QLatin1String("scroll")).toString();
+        if (!QStringList{QStringLiteral("top"), QStringLiteral("down"), QStringLiteral("up"), QStringLiteral("bottom")}.contains(scroll))
+            scroll = m_looks == 0 ? QStringLiteral("top") : QStringLiteral("down");
+        request.insert(QStringLiteral("scroll"), scroll);
+    }
+    emit activity(name == QLatin1String("browser_open") ? QStringLiteral("Browser: opening ") + request.value(QStringLiteral("url")).toString().left(100)
+                                                         : QStringLiteral("Browser: ") + name.mid(8));
+    const int generation = m_generation;
+    m_config.browser->request(name.mid(8), request, [this, generation, name, result](const QVariantMap& r) {
+        if (generation != m_generation || m_cancelled)
+            return;
+        if (!r.value(QStringLiteral("ok")).toBool()) {
+            const QString why = r.value(QStringLiteral("error")).toString();
+            result(why.isEmpty() ? QStringLiteral("the browser failed") : why, true);
+            return;
+        }
+        QString text = r.value(QStringLiteral("text")).toString();
+        if (name == QLatin1String("browser_look")) {
+            ++m_looks;
+            const QString data = r.value(QStringLiteral("image")).toString();
+            if (!data.isEmpty())
+                m_pendingImages.append(QJsonObject{{"type", "image_url"}, {"image_url", QJsonObject{{"url", QStringLiteral("data:image/jpeg;base64,") + data}}}});
+        }
+        result(text.isEmpty() ? QStringLiteral("done") : text, false);
+    });
 }
 
 // todo_write (the list the user sees), run_command (after the user allowed it) and exit_plan_mode (the user reads the plan)
@@ -935,6 +1060,9 @@ qint64 charsOf(const QJsonObject& m)
     const QJsonValue c = m.value(QLatin1String("content"));
     if (c.isString())
         n += c.toString().size();
+    else if (c.isArray())                                              // text and pictures: a picture is about 1000 tokens, whatever its base64 length is
+        for (const QJsonValue& part : c.toArray())
+            n += part.toObject().value(QLatin1String("type")).toString() == QLatin1String("image_url") ? 2500 : part.toObject().value(QLatin1String("text")).toString().size();
     for (const QJsonValue& t : m.value(QLatin1String("tool_calls")).toArray()) {
         const QJsonObject f = t.toObject().value(QLatin1String("function")).toObject();
         n += 30 + f.value(QLatin1String("name")).toString().size() + f.value(QLatin1String("arguments")).toString().size();

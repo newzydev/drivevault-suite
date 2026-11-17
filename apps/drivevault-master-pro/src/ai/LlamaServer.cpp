@@ -1,5 +1,6 @@
 #include "LlamaServer.h"
 
+#include "ModelStore.h"
 #include "ProcessUtil.h"
 
 #include <QCoreApplication>
@@ -119,6 +120,7 @@ void LlamaServer::start(const QString& modelPath)
         return;
     }
     m_ctx = kContextTokens;
+    m_vision = !ModelStore::visionFileFor(m_model).isEmpty();      // a vision file next to the model: the model can look at pictures
     setState(State::Starting);
     launch(true);
 }
@@ -157,11 +159,15 @@ void LlamaServer::launch(bool gpu)
     m_process->setProcessChannelMode(QProcess::MergedChannels);
     m_process->setProgram(serverExecutable());
     m_process->setWorkingDirectory(QFileInfo(serverExecutable()).absolutePath());
-    m_process->setArguments({QStringLiteral("-m"), m_model, QStringLiteral("--host"), QStringLiteral("127.0.0.1"), QStringLiteral("--port"),
-                             QString::number(port), QStringLiteral("-c"), QString::number(m_ctx), QStringLiteral("-ngl"),
-                             gpu ? QStringLiteral("99") : QStringLiteral("0"), QStringLiteral("--no-webui"), QStringLiteral("--parallel"),
-                             QStringLiteral("1"), QStringLiteral("--api-key"), m_apiKey, QStringLiteral("-t"),
-                             QString::number(std::max(2, QThread::idealThreadCount() / 2))});
+    QStringList arguments{QStringLiteral("-m"), m_model, QStringLiteral("--host"), QStringLiteral("127.0.0.1"), QStringLiteral("--port"),
+                          QString::number(port), QStringLiteral("-c"), QString::number(m_ctx), QStringLiteral("-ngl"),
+                          gpu ? QStringLiteral("99") : QStringLiteral("0"), QStringLiteral("--no-webui"), QStringLiteral("--parallel"),
+                          QStringLiteral("1"), QStringLiteral("--api-key"), m_apiKey, QStringLiteral("-t"),
+                          QString::number(std::max(2, QThread::idealThreadCount() / 2))};
+    if (m_vision)
+        arguments << QStringLiteral("--mmproj") << ModelStore::visionFileFor(m_model)           // a fixed path: the vision file of this model
+                  << QStringLiteral("--no-mmproj-offload");                                     // the picture part runs on the processor: on a small graphics card it ran out of memory and ended the server
+    m_process->setArguments(arguments);
     hideConsole(m_process);
     connect(m_process, &QProcess::readyRead, this, [this] {
         m_log += m_process->readAll();
@@ -176,7 +182,10 @@ void LlamaServer::launch(bool gpu)
         if (m_state != State::Starting)
             return;
         const QString detail = QString::fromUtf8(m_log.right(600)).trimmed();
-        if (m_gpu)
+        if (m_vision) {
+            m_vision = false;                            // the engine could not use the vision file: the model still works, without pictures
+            launch(m_gpu);
+        } else if (m_gpu)
             launch(false);                               // the graphics card could not be used: try the processor
         else if (m_ctx > kSmallContextTokens) {
             m_ctx = kSmallContextTokens;                 // not enough memory for the big window: start again with the small one (the graphics card first)

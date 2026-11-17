@@ -33,6 +33,7 @@ public:
     QString baseUrl() const { return m_baseUrl; }          // http://127.0.0.1:port (the chat endpoint is baseUrl + /v1)
     QString apiKey() const { return m_apiKey; }
     QString modelPath() const { return m_model; }
+    bool visionActive() const { return m_vision && m_state == State::Ready; }   // the server runs with the vision file: the model can look at pictures
     QString error() const { return m_error; }              // noEngine | noModel | startFailed (details in detail())
     QString detail() const { return m_detail; }
     bool usesGpu() const { return m_gpu; }
@@ -61,6 +62,7 @@ private:
     QString m_baseUrl, m_apiKey, m_model, m_error, m_detail;
     bool m_gpu = true;
     int m_ctx = kContextTokens;
+    bool m_vision = false;
     bool m_external = false;
     bool m_probing = false;
     int m_waited = 0;

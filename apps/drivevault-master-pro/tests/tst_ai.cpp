@@ -2004,6 +2004,196 @@ private slots:
         QVERIFY(done2.wait(15000));
         QCOMPARE(plain.requests, 1);
     }
+    // ---- the browser of the program: the bridge, what the agent may open, and the three tools ----------------------------------------------------
+    void theBrowserBridgeWaitsForTheViewAnswersAndTimesOut()
+    {
+        dm::browser::BrowserBridge bridge;
+        QSignalSpy wanted(&bridge, &dm::browser::BrowserBridge::viewWanted);
+        QSignalSpy command(&bridge, &dm::browser::BrowserBridge::command);
+        QVariantMap got;
+        int calls = 0;
+        bridge.request("open", {{"url", "http://localhost:1/"}}, [&](const QVariantMap& r) { got = r; ++calls; });
+        QCOMPARE(wanted.count(), 1);                                                        // the page is asked to make the view
+        QCOMPARE(command.count(), 0);                                                       // nothing is sent while there is no view
+        bridge.setViewReady(true);
+        QCOMPARE(command.count(), 1);
+        QCOMPARE(command.at(0).at(1).toString(), QString("open"));
+        bridge.reply(command.at(0).at(0).toInt(), {{"ok", true}, {"text", "Opened"}});
+        QCOMPARE(calls, 1);
+        QCOMPARE(got.value("text").toString(), QString("Opened"));
+        bridge.reply(command.at(0).at(0).toInt(), {{"ok", true}});                          // a second answer to the same command is ignored
+        QCOMPARE(calls, 1);
+        // cancelAll ends every waiting command once
+        int cancelled = 0;
+        bridge.request("read", {}, [&](const QVariantMap& r) { cancelled += r.value("error").toString() == "cancelled"; });
+        bridge.request("read", {}, [&](const QVariantMap& r) { cancelled += r.value("error").toString() == "cancelled"; });
+        bridge.cancelAll();
+        QCOMPARE(cancelled, 2);
+        // a picture is encoded small enough for the model (at most 1024 wide, JPEG)
+        QImage big(2000, 1000, QImage::Format_ARGB32);
+        big.fill(Qt::darkGreen);
+        const QString data = bridge.encodeImage(QVariant::fromValue(big), 1024);
+        QVERIFY(!data.isEmpty());
+        QImage back;
+        QVERIFY(back.loadFromData(QByteArray::fromBase64(data.toLatin1())));
+        QCOMPARE(back.width(), 1024);
+        QVERIFY(bridge.encodeImage(QVariant(), 1024).isEmpty());
+    }
+    void theAgentMayOpenOnlyItsOwnFilesThisComputerAndWhenAllowedThePublicWeb()
+    {
+        using dm::browser::BrowserBridge;
+        QDir().mkpath(m_dir.filePath("site/sub"));
+        QFile f(m_dir.filePath("site/index.html"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("<p>x</p>");
+        f.close();
+        QFile o(m_dir.filePath("outside.html"));
+        QVERIFY(o.open(QIODevice::WriteOnly));
+        o.write("<p>y</p>");
+        o.close();
+        const QString folder = m_dir.filePath("site");
+        QCOMPARE(BrowserBridge::checkAgentUrl(QUrl::fromLocalFile(m_dir.filePath("site/index.html")), folder, false), QString());
+        QVERIFY(!BrowserBridge::checkAgentUrl(QUrl::fromLocalFile(m_dir.filePath("outside.html")), folder, false).isEmpty());            // another folder
+        QVERIFY(!BrowserBridge::checkAgentUrl(QUrl::fromLocalFile(m_dir.filePath("site/../outside.html")), folder, true).isEmpty());      // .. out of the folder
+        QVERIFY(!BrowserBridge::checkAgentUrl(QUrl::fromLocalFile(m_dir.filePath("site/missing.html")), folder, false).isEmpty());        // not there
+        QCOMPARE(BrowserBridge::checkAgentUrl(QUrl("http://localhost:3000/"), folder, false), QString());                                // a dev server of the job
+        QCOMPARE(BrowserBridge::checkAgentUrl(QUrl("http://127.0.0.1:8080/x"), folder, false), QString());
+        QVERIFY(!BrowserBridge::checkAgentUrl(QUrl("https://example.com/"), folder, false).isEmpty());                                   // the web switch is off
+        QCOMPARE(BrowserBridge::checkAgentUrl(QUrl("https://example.com/"), folder, true), QString());
+        QVERIFY(!BrowserBridge::checkAgentUrl(QUrl("http://192.168.1.5/"), folder, true).isEmpty());                                     // the local network
+        QVERIFY(!BrowserBridge::checkAgentUrl(QUrl("http://user:pw@example.com/"), folder, true).isEmpty());
+        QVERIFY(!BrowserBridge::checkAgentUrl(QUrl("ftp://example.com/"), folder, true).isEmpty());
+        QVERIFY(!BrowserBridge::checkAgentUrl(QUrl("javascript:alert(1)"), folder, true).isEmpty());
+        QVERIFY(!BrowserBridge::checkAgentUrl(QUrl("index.html"), folder, true).isEmpty());                                              // not a full address
+    }
+    void theBrowserToolsOpenReadAndLookAndAPictureGoesToTheModelOnce()
+    {
+        QDir().mkpath(m_dir.filePath("brwork"));
+        QFile page(m_dir.filePath("brwork/index.html"));
+        QVERIFY(page.open(QIODevice::WriteOnly));
+        page.write("<p>x</p>");
+        page.close();
+        dm::browser::BrowserBridge bridge;
+        QStringList ops;
+        QObject::connect(&bridge, &dm::browser::BrowserBridge::command, &bridge, [&](int id, const QString& op, const QVariantMap& args) {   // a stand-in for the real view
+            ops << op + QLatin1Char(':') + args.value("scroll").toString();
+            QTimer::singleShot(0, &bridge, [&bridge, id, op] {
+                if (op == "look")
+                    bridge.reply(id, {{"ok", true}, {"text", "Picture, part 1"}, {"image", "QUJD"}});
+                else
+                    bridge.reply(id, {{"ok", true}, {"text", "page text of " + op}});
+            });
+        });
+        bridge.setViewReady(true);
+        const QString url = QUrl::fromLocalFile(m_dir.filePath("brwork/index.html")).toString();
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("b1", "browser_open", {{"url", url}})}, QString())
+                     << agentReply({agentCall("b2", "browser_look", {{"scroll", "top"}})}, QString())
+                     << agentReply({agentCall("b3", "browser_look", {{"scroll", "down"}}), agentCall("b4", "browser_read", {})}, QString())
+                     << agentReply({}, QStringLiteral("The page looks fine."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("brwork");
+        c.browser = &bridge;
+        c.vision = true;
+        c.reviewWork = false;
+        c.history = {{"user", "check the page"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QCOMPARE(ops, QStringList({"open:", "look:top", "look:down", "read:"}));
+        // the tools were offered
+        QStringList names;
+        for (const QJsonValue& t : requestBody(server.log.at(0)).value("tools").toArray())
+            names << t.toObject().value("function").toObject().value("name").toString();
+        QVERIFY(names.contains("browser_open") && names.contains("browser_read") && names.contains("browser_look"));
+        // after the first look the model gets the picture as a user message; after the second look the first picture is gone (only one picture stays in the window)
+        auto imagesIn = [](const QJsonArray& messages) {
+            int n = 0;
+            for (const QJsonValue& m : messages)
+                if (m.toObject().value("content").isArray())
+                    for (const QJsonValue& part : m.toObject().value("content").toArray())
+                        n += part.toObject().value("type").toString() == "image_url";
+            return n;
+        };
+        QCOMPARE(imagesIn(requestBody(server.log.at(1)).value("messages").toArray()), 0);        // the request that follows browser_open
+        QCOMPARE(imagesIn(requestBody(server.log.at(2)).value("messages").toArray()), 1);        // the first look
+        QCOMPARE(imagesIn(requestBody(server.log.at(3)).value("messages").toArray()), 1);        // the second look replaced it
+        const QString second = QString::fromUtf8(server.log.at(3));
+        QVERIFY(second.contains("an earlier screenshot of the page was removed"));
+    }
+    void withoutVisionThereIsNoLookToolAndAnAddressOutsideTheFolderIsRefused()
+    {
+        QDir().mkpath(m_dir.filePath("brnov"));
+        dm::browser::BrowserBridge bridge;
+        bridge.setViewReady(true);
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("b1", "browser_open", {{"url", "file:///C:/Windows/win.ini"}}), agentCall("b2", "browser_look", {})}, QString())
+                     << agentReply({}, QStringLiteral("Cannot."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("brnov");
+        c.browser = &bridge;
+        c.vision = false;
+        c.reviewWork = false;
+        c.history = {{"user", "open it"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QStringList names;
+        for (const QJsonValue& t : requestBody(server.log.at(0)).value("tools").toArray())
+            names << t.toObject().value("function").toObject().value("name").toString();
+        QVERIFY(names.contains("browser_open") && names.contains("browser_read") && !names.contains("browser_look"));
+        const QJsonArray msgs = requestBody(server.log.at(1)).value("messages").toArray();
+        QStringList results;
+        for (const QJsonValue& m : msgs)
+            if (m.toObject().value("role").toString() == "tool")
+                results << m.toObject().value("content").toString();
+        QCOMPARE(results.size(), 2);
+        QVERIFY2(results.at(0).contains("cannot be opened") && results.at(0).contains("outside the working folder"), qPrintable(results.at(0)));
+        QVERIFY(results.at(1).contains("cannot see pictures"));
+        // a job without a browser (the page of an ordinary build) is not offered the tools
+        FakeServer plain;
+        plain.contentType = "application/json";
+        plain.queue << agentReply({}, QStringLiteral("ok"));
+        LocalAgent agent2(&net);
+        QSignalSpy done2(&agent2, &LocalAgent::finished);
+        c.baseUrl = plain.base() + "/v1";
+        c.browser = nullptr;
+        QCOMPARE(agent2.start(c), QString());
+        QVERIFY(done2.wait(15000));
+        QVERIFY(!QString::fromUtf8(plain.log.at(0)).contains("browser_open"));
+    }
+    void theVisionFileOfAModelIsFoundNextToItAndIsNotListedAsAModel()
+    {
+        QDir().mkpath(m_dir.filePath("visionmodels"));
+        auto make = [&](const QString& name) {
+            QFile f(m_dir.filePath("visionmodels/" + name));
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(QByteArray(1100000, 'x'));
+        };
+        make("Qwen3.5-4B-Q4_K_M.gguf");
+        const QString model = m_dir.filePath("visionmodels/Qwen3.5-4B-Q4_K_M.gguf");
+        QVERIFY(dm::ai::ModelStore::visionFileFor(model).isEmpty());
+        make("Qwen3.5-4B-Q4_K_M.mmproj.gguf");
+        QCOMPARE(dm::ai::ModelStore::visionFileFor(model), m_dir.filePath("visionmodels/Qwen3.5-4B-Q4_K_M.mmproj.gguf"));
+        const auto models = dm::ai::ModelStore::installed({m_dir.filePath("visionmodels")});
+        QCOMPARE(models.size(), 1);                                                         // the vision file is not a model of its own
+        QCOMPARE(models.at(0).name, QString("Qwen3.5-4B-Q4_K_M.gguf"));
+        const dm::ai::VisionFile offer = dm::ai::ModelStore::visionFileOf("Qwen3.5-4B-Q4_K_M.gguf");
+        QCOMPARE(offer.fileName, QString("Qwen3.5-4B-Q4_K_M.mmproj.gguf"));
+        QVERIFY(offer.url.startsWith("https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/e87f176") && offer.url.endsWith("/mmproj-F16.gguf"));
+        QCOMPARE(offer.sha256.size(), 64);
+        QVERIFY(offer.size > 600000000);
+        QVERIFY(dm::ai::ModelStore::visionFileOf("Qwen3.5-9B-Q4_K_M.gguf").fileName.isEmpty());   // only the checked file is on offer
+    }
     // ---- edit_file, glob_files ------------------------------------------------------------------------------------------------------------
     void editReplacesOneExactPiece()
     {

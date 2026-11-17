@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AgentTools.h"
+#include "BrowserBridge.h"
 #include "CommandPool.h"
 #include "CommandRunner.h"
 #include "WebTools.h"
@@ -40,6 +41,8 @@ public:
         bool approveWrites = false;                       // ...but every write waits for the user (approvalNeeded / answerApproval)
         bool web = false;                                  // web_search and fetch_page
         bool allowCommands = false;                        // run_command is offered; EVERY command waits for the user (commandApprovalNeeded)
+        dm::browser::BrowserBridge* browser = nullptr;     // browser_open / browser_read (and browser_look with `vision`) are offered when there is a folder
+        bool vision = false;                               // the model can see pictures (the server runs with its vision file): browser_look
         bool planMode = false;                             // exit_plan_mode is offered; nothing is changed until the user approves the plan (planApprovalNeeded)
         QString system;
         QList<QPair<QString, QString>> history;            // user / assistant messages, oldest first, the last is the new question
@@ -143,7 +146,10 @@ private:
     int m_steps = 0;
     int m_parseRetries = 0;                                // answers cut off inside a tool call, asked again
     int m_emptyNudges = 0;                                 // "you sent no answer"
-    QStringList m_changedFiles;                            // files this job wrote / edited / appended (for the final check)
+    void runBrowserCall(const QString& name, const QJsonObject& args, const std::function<void(const QString&, bool)>& result);
+    QJsonArray m_pendingImages;                           // screenshots the tools made: sent to the model as a user message after the tool results
+    int m_looks = 0;                                       // browser_look calls of this job
+    QStringList m_changedFiles;                           // files this job wrote / edited / appended (for the final check)
     bool m_reviewed = false;                               // the final check was asked for
     int m_todoNudges = 0;                                 // "the task list is not finished"
     int m_continues = 0;                                   // answers cut by the length limit, continued

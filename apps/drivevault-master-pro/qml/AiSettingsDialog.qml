@@ -93,6 +93,30 @@ Popup {
                         }
                     }
 
+                    // the vision file of the chosen model: pictures for the AI (it looks at the page it made); a download only when this button is pressed
+                    Heading { text: Tr.s("vision_title") }
+                    Card {
+                        visible: Ai.localModel !== ""
+                        Text { Layout.fillWidth: true; wrapMode: Text.Wrap; font.pixelSize: 12; color: Theme.textSecondary
+                               text: Ai.vision.offered ? Tr.s("vision_help").replace("%1", Ai.vision.sizeText) : Tr.s("vision_none") }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            visible: Ai.vision.offered
+                            spacing: 8
+                            Rectangle { width: 8; height: 8; radius: 4; color: Ai.vision.installed ? Theme.success : Theme.textDisabled }
+                            Text { Layout.fillWidth: true; font.pixelSize: 13; color: Theme.text; text: Ai.vision.installed ? Tr.s("vision_installed") : "" }
+                            MButton {
+                                objectName: "downloadVision"
+                                compact: true
+                                variant: "primary"
+                                visible: !Ai.vision.installed
+                                enabled: !Ai.downloading
+                                text: Tr.s("vision_download")
+                                onClicked: Ai.downloadVision()
+                            }
+                        }
+                    }
+
                     Heading { text: Tr.s("set_models_here") }
                     Note { visible: Ai.installedModels.length === 0; text: Tr.s("set_models_none") }
                     Repeater {

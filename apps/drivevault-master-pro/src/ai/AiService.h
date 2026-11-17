@@ -224,6 +224,8 @@ class AiService : public QObject {
     Q_PROPERTY(QString localModelName READ localModelName NOTIFY settingsChanged FINAL)   // its file name ("" when none)
     Q_PROPERTY(QString modelsFolder READ modelsFolder CONSTANT FINAL)
     Q_PROPERTY(bool webEnabled READ webEnabled WRITE setWebEnabled NOTIFY settingsChanged FINAL)   // the AI may search the web (web_search, fetch_page)
+    Q_PROPERTY(QObject* browser READ browser CONSTANT FINAL)                           // the link to the browser view (BrowserBridge)
+    Q_PROPERTY(QVariantMap vision READ vision NOTIFY modelsChanged FINAL)              // {offered, installed, sizeText}: the vision file of the chosen model
     Q_PROPERTY(bool downloading READ downloading NOTIFY downloadChanged FINAL)
     Q_PROPERTY(double downloadProgress READ downloadProgress NOTIFY downloadChanged FINAL)
     Q_PROPERTY(QString downloadCode READ downloadCode NOTIFY downloadChanged FINAL)
@@ -237,6 +239,10 @@ public:
 
     QObject* ask() { return m_ask; }
     QObject* agent() { return m_agent; }
+    QObject* browser() { return &m_browser; }
+    dm::browser::BrowserBridge* browserBridge() { return &m_browser; }
+    QVariantMap vision() const;
+    Q_INVOKABLE QString downloadVision();                               // "" = started (the vision file of the chosen model, after the user pressed the button)
     AiChannel* askChannel() { return m_ask; }
     AiChannel* agentChannel() { return m_agent; }
     bool engineFound() const { return !LlamaServer::serverExecutable().isEmpty(); }
@@ -284,6 +290,7 @@ private:
     Hub* m_hub;
     QNetworkAccessManager* m_net;
     LlamaServer m_llama;
+    dm::browser::BrowserBridge m_browser;
     ModelDownloader m_downloader;
     AiChannel* m_ask;
     AiChannel* m_agent;

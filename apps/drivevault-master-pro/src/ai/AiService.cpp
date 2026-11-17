@@ -439,6 +439,10 @@ void AiChannel::sendTools()
         c.allowCommands = isAgent() && canWrite();                 // ask and edit: a command always waits for the user
         c.planMode = isAgent() && m_permission == QLatin1String("plan");
         c.web = m_service->webEnabled();
+        if (isAgent() && !m_folder.isEmpty() && m_service->browserBridge()->compiledIn()) {
+            c.browser = m_service->browserBridge();               // the browser of the program: the AI looks at the page it wrote
+            c.vision = server->visionActive();
+        }
         c.thinking = effort.thinking;
         c.maxTokens = effort.maxTokens;
         c.maxSteps = effort.maxSteps;
@@ -456,6 +460,8 @@ void AiChannel::sendTools()
                 tools += QStringLiteral(", run_command");
             if (c.planMode)
                 tools += QStringLiteral(", exit_plan_mode");
+            if (c.browser)
+                tools += c.vision ? QStringLiteral(", browser_open, browser_read, browser_look") : QStringLiteral(", browser_open, browser_read");
             QString modeText;
             if (m_permission == QLatin1String("read"))
                 modeText = QStringLiteral("You can only read; you cannot change anything or run anything. ");
@@ -481,6 +487,10 @@ void AiChannel::sendTools()
                                         "(8) To save room, old tool results in this conversation may be shortened: read the file again when you need its text. ")
                        + (c.allowCommands ? QStringLiteral("run_command runs on the user's PC with the user's permissions: use it only for what the job needs (build, test, git status, dir) "
                                                            "and never to delete, install or reinstall anything that was not asked for. ") : QString())
+                       + (c.browser ? QStringLiteral("When you made a web page, check it in the browser of the program: browser_open it (the file name, e.g. index.html; the working folder is %1), read it with browser_read").arg(QDir::fromNativeSeparators(m_folder))
+                                          + (c.vision ? QStringLiteral(" and LOOK at it with browser_look (first the top, then scroll down screen by screen), and fix what looks wrong or is missing. ")
+                                                      : QStringLiteral(" (text, counts, images that did not load, logged errors) and fix what is missing. "))
+                                    : QString())
                        + QStringLiteral("Make only the changes the user asked for. Answer in the language of the user's message (Thai or English).")
                        + web;
             QString notesFile;
@@ -1321,7 +1331,13 @@ AiService::AiService(Hub* hub, QObject* parent)
     engineDirs();
     connect(m_hub, &Hub::productsChanged, this, engineDirs);
     connect(&m_downloader, &ModelDownloader::changed, this, &AiService::downloadChanged);
+    ModelStore::setVisionFolder(modelsFolder());
     connect(&m_downloader, &ModelDownloader::finished, this, [this](bool ok, const QString&) {
+        if (ok && m_downloadFile.endsWith(QLatin1String(".mmproj.gguf"), Qt::CaseInsensitive)) {
+            m_llama.stop();                                  // the server loads the vision file when it starts: the next question starts it again
+            refreshModels();
+            return;
+        }
         refreshModels();
         if (ok && m_localModel.isEmpty())
             selectLocalModel(m_downloadFile);                // the first model becomes the chosen one
@@ -1453,6 +1469,25 @@ void AiService::selectLocalModel(const QString& path)
     saveSettings();
     emit settingsChanged();
     m_ask->reloadReadiness();
+}
+
+QVariantMap AiService::vision() const
+{
+    const VisionFile offer = ModelStore::visionFileOf(QFileInfo(m_localModel).fileName());
+    return QVariantMap{{"offered", !offer.fileName.isEmpty()},
+                       {"installed", !m_localModel.isEmpty() && !ModelStore::visionFileFor(m_localModel).isEmpty()},
+                       {"sizeText", QStringLiteral("%1 MB").arg(offer.size / 1000000)}};
+}
+
+QString AiService::downloadVision()
+{
+    const VisionFile offer = ModelStore::visionFileOf(QFileInfo(m_localModel).fileName());
+    if (offer.fileName.isEmpty())
+        return QStringLiteral("unknown");
+    m_downloadFile = modelsFolder() + QLatin1Char('/') + offer.fileName;
+    m_downloadTitle = QStringLiteral("Vision file for ") + QFileInfo(m_localModel).fileName();
+    emit downloadChanged();
+    return m_downloader.downloadFile(offer.url, modelsFolder(), offer.fileName, offer.size, offer.sha256);
 }
 
 QString AiService::downloadCatalog(const QString& id)

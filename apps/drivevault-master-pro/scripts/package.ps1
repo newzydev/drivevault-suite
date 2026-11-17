@@ -36,6 +36,8 @@ foreach ($style in 'Material', 'Universal', 'Fusion', 'Imagine', 'Windows', 'Flu
     Get-ChildItem $stage -Filter "Qt6QuickControls2$style*.dll" -ErrorAction SilentlyContinue | Remove-Item -Force
 }
 Remove-Item (Join-Path $stage 'qmltooling') -Recurse -Force -ErrorAction SilentlyContinue
+# Qt WebEngine (the browser tab) pulls in Qt Positioning: its serial-port (NMEA) source needs Qt6SerialPort, which is not shipped; the Windows location source stays
+Remove-Item (Join-Path $stage 'position\qtposition_nmea.dll') -Force -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $stage 'vc_redist.x64.exe') -Force -ErrorAction SilentlyContinue
 
 # Visual C++ runtime app-local (a clean PC may not have it)
@@ -106,7 +108,7 @@ foreach ($f in Get-ChildItem $stage -Recurse -File) {
     if ($f.Name -match 'd\.dll$' -and $f.Name -like 'Qt6*') { throw "Debug build file in the package: $($f.Name)" }
 }
 foreach ($n in 'LICENSE.txt', 'LGPL-3.0.txt', 'GPL-3.0.txt', 'THIRD-PARTY-NOTICES.txt', 'OFL-Inter.txt', 'OFL-NotoSansThai.txt',
-               'llama.cpp-LICENSE.txt', 'LLVM-OpenMP-LICENSE.txt', 'Apache-2.0.txt', 'Qwen3.5-NOTICE.txt') {
+               'llama.cpp-LICENSE.txt', 'LLVM-OpenMP-LICENSE.txt', 'Apache-2.0.txt', 'Qwen3.5-NOTICE.txt', 'Chromium-LICENSE.txt') {
     if (-not (Test-Path (Join-Path $lic $n))) { throw "Missing license file: $n" }
 }
 if (-not (Test-Path (Join-Path $stage 'ai\llama\llama-server.exe'))) { throw 'The AI engine (ai\llama\llama-server.exe) is not in the package.' }
