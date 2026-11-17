@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.26.2 (2026-11-17): Smaller tabs in the title bar
+  - Changed: the three tabs in the title bar are the same size as the language switch next to them (they were bigger).
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.26.1 (2026-11-17): The browser takes the room of the list you hide
   - Changed: when you hide the list of conversations, the browser grows into the freed room and the conversation keeps its width (before, the conversation grew and the browser stayed). Showing the list again gives the room back.
   - Not code-signed (Windows SmartScreen may warn).

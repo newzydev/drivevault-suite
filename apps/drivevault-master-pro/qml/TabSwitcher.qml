@@ -11,9 +11,9 @@ Rectangle {
 
     readonly property var keys: ["programs", "ask", "agent"]            // the browser is not a tab: it belongs to the Agentic AI page (button "Browser" there)
 
-    implicitHeight: 40
-    implicitWidth: tabRow.implicitWidth + 8
-    radius: 20
+    implicitHeight: 32                               // the same size as the language switch next to it
+    implicitWidth: tabRow.implicitWidth + 6
+    radius: 16
     color: "#E61B1D24"
     border.width: 1
     border.color: Theme.border
@@ -29,8 +29,8 @@ Rectangle {
                 required property string modelData
                 objectName: bar.prefix + modelData
                 readonly property bool isCurrent: bar.current === modelData
-                implicitWidth: Math.max(96, tabLabel.implicitWidth + 40)
-                implicitHeight: 32
+                implicitWidth: Math.max(64, tabLabel.implicitWidth + 28)
+                implicitHeight: 26
                 hoverEnabled: true
                 onClicked: bar.picked(modelData)
                 HoverHandler { cursorShape: Qt.PointingHandCursor }
@@ -39,13 +39,13 @@ Rectangle {
                 contentItem: Text {
                     id: tabLabel
                     text: Tr.s("tab_" + tabButton.modelData)
-                    font.pixelSize: 14
+                    font.pixelSize: 12
                     font.weight: Font.DemiBold
                     color: tabButton.isCurrent ? Theme.readableOn(Theme.accent) : tabButton.hovered ? Theme.text : Theme.textSecondary
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
-                background: Rectangle { radius: 16; color: tabButton.isCurrent ? Theme.accent : tabButton.hovered ? Theme.surfaceHover : "transparent" }
+                background: Rectangle { radius: 13; color: tabButton.isCurrent ? Theme.accent : tabButton.hovered ? Theme.surfaceHover : "transparent" }
             }
         }
     }

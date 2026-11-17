@@ -291,7 +291,6 @@ ApplicationWindow {
             TabSwitcher {
                 objectName: "tabBar"
                 anchors.centerIn: parent
-                implicitHeight: 38
                 current: win.tab
                 onPicked: key => win.tab = key
             }
