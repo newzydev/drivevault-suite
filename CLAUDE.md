@@ -18,7 +18,7 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 | `docs` | `suite-integration.md` (contract between programs and hub). |
 | `.tools` (not in git) | Portable toolchain: CMake, Ninja, Qt 6.8.3 msvc2022_64, Inno Setup, FFmpeg (LGPL shared), whisper.cpp + models, PDFium (BSD-3), qpdf (Apache-2.0), ONNX Runtime 1.24.4 (MIT), the OpenThai OCR Text model (`openthai-ocr`, Apache-2.0, 4 MB; PDF Pro ships it), the OpenThai ASR model (`openthai-asr`, OpenMDW-1.1, about 2.6 GB, never shipped), Python. |
 
-Planned (do not pretend they exist): Image Editor Pro, Audio Editor Pro, Remote Desktop Pro (a plan only: `apps/drivevault-remote-desktop-pro/docs/Remote-Desktop-Pro-Plan.md`, no code yet). New programs go in `apps/drivevault-<name>` (lower case, words joined with `-`).
+Planned (do not pretend they exist): Image Editor Pro, Audio Editor Pro, Remote Desktop Pro (`apps/drivevault-remote-desktop-pro`: plan in `docs/Remote-Desktop-Pro-Plan.md`; phase 0 skeleton 0.1.0 and measurement tools only - it captures and connects to nothing, no release). New programs go in `apps/drivevault-<name>` (lower case, words joined with `-`).
 
 ## How to work here
 

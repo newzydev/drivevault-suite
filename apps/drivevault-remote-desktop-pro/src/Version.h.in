@@ -1,0 +1,7 @@
+#pragma once
+
+namespace rd::version {
+inline constexpr const char* kProductName = "DriveVault Remote Desktop Pro";
+inline constexpr const char* kVersion = "@PROJECT_VERSION@";
+inline constexpr const char* kBuildNumber = "@RD_BUILD_NUMBER@";
+} // namespace rd::version
