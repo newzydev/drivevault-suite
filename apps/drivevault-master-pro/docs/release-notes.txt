@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.27.4 (2026-11-17): No yellow "choose a folder" banner on the Agentic AI page
+  - Changed: the banner above the message box that asked for a working folder is gone (the folder button under the box already says "no folder chosen"). The banner for a missing engine or model stays.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.27.3 (2026-11-17): The AI message box loses its orange frame and caret when you click elsewhere
   - Changed: a click outside the message box on the AI pages takes the keyboard focus away (no orange frame, no blinking caret), like the search field of the Programs page; a click inside gives them back.
   - Not code-signed (Windows SmartScreen may warn).

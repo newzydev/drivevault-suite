@@ -1321,10 +1321,11 @@ Item {
                     }
                 }
 
-                // no AI yet: said plainly above the message box, with the way out
+                // no AI yet (no engine / no model): said plainly above the message box, with the way out.
+                // A missing folder gets no banner: the folder chip under the message box already says "no folder chosen".
                 Rectangle {
                     objectName: "aiBanner"
-                    visible: !root.ready
+                    visible: !root.ready && root.ch.notReady !== "noFolder"
                     Layout.fillWidth: true
                     Layout.leftMargin: 28
                     Layout.rightMargin: 28
