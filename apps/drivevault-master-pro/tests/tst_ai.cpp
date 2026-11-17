@@ -487,6 +487,27 @@ private slots:
         ai.llama()->stop();
     }
 
+    // Choosing another model must refresh the vision offer (1.27.1: the settings kept "no vision file" after switching from a model that has none to Qwen3.5 4B).
+    void visionOfferFollowsTheChosenModel()
+    {
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hubvision");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        for (const char* name : {"Qwen3.5-2B-Q4_K_M.gguf", "Qwen3.5-4B-Q4_K_M.gguf"}) {
+            QFile f(m_dir.filePath(QString::fromLatin1(name)));
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write("x");
+        }
+        ai.selectLocalModel(m_dir.filePath("Qwen3.5-2B-Q4_K_M.gguf"));
+        QCOMPARE(ai.vision().value("offered").toBool(), false);
+        QSignalSpy changed(&ai, &AiService::modelsChanged);
+        ai.selectLocalModel(m_dir.filePath("Qwen3.5-4B-Q4_K_M.gguf"));
+        QVERIFY(changed.count() >= 1);
+        QCOMPARE(ai.vision().value("offered").toBool(), true);
+    }
+
     // ---- the folder dialog gives a file: address; the page must accept it (1.12.0 did not: Send stayed disabled) ---------------------------
     void folderFromTheDialogIsAPath()
     {

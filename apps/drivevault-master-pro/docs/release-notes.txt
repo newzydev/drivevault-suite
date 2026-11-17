@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.27.1 (2026-11-17): The vision file button shows up after you choose a model
+  - Fixed: after choosing another model in the AI settings (for example Qwen3.5 4B after a model that has no vision file) the page kept saying "no vision file to download" and showed no download button until the program was restarted.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.27.0 (2026-11-17): Pictures in the AI Q&A too
   - New: on the AI Q&A page you can attach pictures (the + button, or Ctrl+V) as well as text files, when the vision file is installed. The model looks at the picture and answers about it.
   - Not code-signed (Windows SmartScreen may warn).

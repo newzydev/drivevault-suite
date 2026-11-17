@@ -1527,6 +1527,7 @@ void AiService::selectLocalModel(const QString& path)
         return;
     m_localModel = QDir::cleanPath(path);
     saveSettings();
+    emit modelsChanged();                                    // `vision` (the file of the chosen model) hangs on this signal: without it the settings kept showing the old model's answer
     emit settingsChanged();
     m_ask->reloadReadiness();
 }
