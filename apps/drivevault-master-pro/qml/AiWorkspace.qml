@@ -9,6 +9,17 @@ import DriveVault.Master.Backend
 Item {
     id: root
 
+    // Like the search field of the Programs page: a click anywhere outside the message box takes the keyboard focus away,
+    // so the orange frame and the blinking caret go; a click inside the box gives them back (the text area takes the focus itself).
+    TapHandler {
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onTapped: eventPoint => {
+            const p = inputBox.mapFromItem(root, eventPoint.position)
+            if (!inputBox.contains(p))
+                input.focus = false
+        }
+    }
+
     property string mode: "ask"                       // ask | agent
     readonly property bool agent: mode === "agent"
     readonly property var ch: agent ? Ai.agent : Ai.ask          // the AiChannel of this page

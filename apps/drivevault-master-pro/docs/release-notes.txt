@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.27.3 (2026-11-17): The AI message box loses its orange frame and caret when you click elsewhere
+  - Changed: a click outside the message box on the AI pages takes the keyboard focus away (no orange frame, no blinking caret), like the search field of the Programs page; a click inside gives them back.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.27.2 (2026-11-17): "Check for updates" looks like the category button
   - Changed: the button at the right end of the search bar is now a pill inside the bar, with the same bold text and the same hover highlight as the category drop-down (it was a bordered button).
   - Not code-signed (Windows SmartScreen may warn).
