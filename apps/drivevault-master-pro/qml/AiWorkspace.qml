@@ -49,9 +49,48 @@ Item {
         return text
     }
     function send() {
-        const e = ch.send(input.text)
-        if (e === "")
+        const e = ch.send(input.text, root.attachments)
+        if (e === "") {
             input.clear()
+            root.attachments = []
+        }
+    }
+    // ---- attachments of the message box: text files (any page) and pictures (agent page, when the model can see) ------------------------------
+    property var attachments: []                            // [{kind: file | image, name, text | data}] waiting for Send
+    property string attachNote: ""                          // why the last attachment was refused
+    readonly property bool canAttachImages: root.agent && Ai.vision.installed
+    function addAttachment(r) {
+        if (!r.ok) {
+            attachNote = Tr.s("att_err_" + r.error)
+            return
+        }
+        if (r.kind === "image" && !root.agent) {
+            attachNote = Tr.s("att_err_agentOnly")
+            return
+        }
+        if (attachments.length >= 6) {
+            attachNote = Tr.s("att_err_many")
+            return
+        }
+        attachNote = ""
+        const a = attachments.slice()
+        a.push(r)
+        attachments = a
+    }
+    function removeAttachment(i) {
+        const a = attachments.slice()
+        a.splice(i, 1)
+        attachments = a
+    }
+    function pasteImage() {                                 // Ctrl+V with a picture on the clipboard
+        if (!Ai.clipboardHasImage())
+            return false
+        if (!root.agent) {
+            attachNote = Tr.s("att_err_agentOnly")
+            return true
+        }
+        addAttachment(Ai.clipboardImage())
+        return true
     }
     // ---- time: a clock that runs while the AI works, and the time a finished answer took ------------------------------------------------
     property real nowMs: Date.now()
@@ -328,6 +367,26 @@ Item {
         onAccepted: root.ch.setFolder(selectedFolder.toString())
     }
     AiSettingsDialog { id: settings; channel: root.ch; agent: root.agent }
+    FileDialog {
+        id: attachDialog
+        title: Tr.s("att_choose")
+        fileMode: FileDialog.OpenFiles
+        nameFilters: root.canAttachImages ? [Tr.s("att_filter_all") + " (*)", Tr.s("att_filter_pictures") + " (*.png *.jpg *.jpeg *.bmp *.gif *.webp)"]
+                                          : [Tr.s("att_filter_text") + " (*)"]
+        onAccepted: { for (const u of selectedFiles) root.addAttachment(Ai.readAttachment(u.toString())) }
+    }
+    // the "+" of the message box: attach a file or a picture
+    MMenu {
+        id: attachMenu
+        implicitWidth: 300
+        MMenuItem { objectName: "attachFile"; text: Tr.s("att_file"); onTriggered: attachDialog.open() }
+        MMenuItem {
+            objectName: "attachImage"
+            text: Tr.s("att_image") + (root.canAttachImages ? "" : "  (" + Tr.s(root.agent ? "att_need_vision" : "att_agent_only") + ")")
+            enabled: root.canAttachImages
+            onTriggered: attachDialog.open()
+        }
+    }
 
     // the model of this PC to use
     MMenu {
@@ -610,6 +669,13 @@ Item {
                         Behavior on opacity { NumberAnimation { duration: 250 } }
                     }
                     Item { Layout.fillWidth: true }
+                    MButton {                                 // the browser belongs to the Agentic AI page: the AI opens its web pages there, the user can browse too
+                        objectName: "aiBrowser"
+                        visible: root.agent && Ai.browser.compiledIn
+                        compact: true
+                        text: Tr.s("tab_browser")
+                        onClicked: root.tabPicked("browser")
+                    }
                     MButton { objectName: "aiSettings"; compact: true; text: Tr.s("ai_settings"); onClicked: settings.open() }
                 }
 
@@ -687,6 +753,15 @@ Item {
                                     font.pixelSize: 14
                                     color: Theme.text
                                 }
+                            }
+                            Text {                                                  // what the user attached to the question
+                                visible: msg.isUser && msg.modelData.attachNames !== undefined && msg.modelData.attachNames.length > 0
+                                Layout.alignment: Qt.AlignRight
+                                Layout.maximumWidth: msg.width * 0.82
+                                elide: Text.ElideRight
+                                text: msg.isUser && msg.modelData.attachNames !== undefined ? "📎 " + msg.modelData.attachNames.join(",  ") : ""
+                                font.pixelSize: 12
+                                color: Theme.textSecondary
                             }
 
                             // ---- the plan the AI keeps (todo_write): a checklist, a tick in front of what is done; on the newest answer ----
@@ -1205,7 +1280,7 @@ Item {
                     Layout.rightMargin: 28
                     Layout.topMargin: 6
                     Layout.bottomMargin: 22
-                    implicitHeight: 132
+                    implicitHeight: 132 + (root.attachments.length > 0 ? 44 : 0) + (root.attachNote !== "" ? 20 : 0)
                     radius: 18
                     color: Theme.backgroundAlt
                     border.width: input.activeFocus ? 2 : 1
@@ -1231,6 +1306,57 @@ Item {
                         anchors.fill: parent
                         anchors.margins: 12
                         spacing: 6
+                        // what is attached to the next message (a picture shows a small preview); ✕ takes it off
+                        Flow {
+                            objectName: "aiAttachments"
+                            visible: root.attachments.length > 0
+                            Layout.fillWidth: true
+                            spacing: 8
+                            Repeater {
+                                model: root.attachments
+                                delegate: Rectangle {
+                                    id: att
+                                    required property var modelData
+                                    required property int index
+                                    height: 36
+                                    width: attRow.implicitWidth + 16
+                                    radius: 10
+                                    color: Theme.surface
+                                    border.width: 1
+                                    border.color: Theme.border
+                                    Row {
+                                        id: attRow
+                                        anchors.centerIn: parent
+                                        spacing: 8
+                                        Image {
+                                            visible: att.modelData.kind === "image"
+                                            width: 26
+                                            height: 26
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            fillMode: Image.PreserveAspectCrop
+                                            source: att.modelData.kind === "image" ? "data:image/jpeg;base64," + att.modelData.data : ""
+                                        }
+                                        Text { visible: att.modelData.kind !== "image"; anchors.verticalCenter: parent.verticalCenter; text: "📄"; font.pixelSize: 14 }
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: Math.min(implicitWidth, 220)
+                                            elide: Text.ElideMiddle
+                                            text: att.modelData.name
+                                            font.pixelSize: 12
+                                            color: Theme.text
+                                        }
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: "✕"
+                                            font.pixelSize: 12
+                                            color: Theme.textSecondary
+                                            MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: root.removeAttachment(att.index) }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Text { visible: root.attachNote !== ""; Layout.fillWidth: true; text: root.attachNote; font.pixelSize: 12; color: Theme.warning; elide: Text.ElideRight }
                         ScrollView {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
@@ -1257,6 +1383,8 @@ Item {
                                     } else if (event.key === Qt.Key_Backtab && root.agent && !root.ch.busy) {   // Shift+Tab: the next mode
                                         event.accepted = true
                                         root.nextMode()
+                                    } else if (event.matches(StandardKey.Paste) && root.pasteImage()) {          // Ctrl+V with a picture on the clipboard: it is attached
+                                        event.accepted = true
                                     }
                                 }
                             }
@@ -1264,6 +1392,36 @@ Item {
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 8
+                            // "+": attach a file or a picture (like Claude)
+                            Rectangle {
+                                id: plusButton
+                                objectName: "aiAttach"
+                                implicitWidth: 32
+                                implicitHeight: 32
+                                radius: 16
+                                color: plusMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                                border.width: 1
+                                border.color: Theme.border
+                                Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 20; color: Theme.textSecondary }
+                                MouseArea {
+                                    id: plusMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: attachMenu.popup(plusButton, 0, -attachMenu.implicitHeight - 6)
+                                }
+                                Accessible.role: Accessible.Button
+                                Accessible.name: Tr.s("att_add")
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                text: root.ch.busy ? root.statusText(root.ch.status) + (root.runClock !== "" ? "   ⏱ " + root.runClock : "") : ""
+                                font.pixelSize: 12
+                                color: Theme.accent
+                                elide: Text.ElideRight
+                            }
+                            // the settings of this message, next to Send (like Claude): folder, model, effort, web, mode
                             Chip {
                                 objectName: "aiFolder"
                                 visible: root.agent
@@ -1304,18 +1462,11 @@ Item {
                                 text: Tr.s("mode_label") + ": " + Tr.s("mode_" + root.ch.permission) + "  ▾"
                                 onClicked: modeMenu.popup(modeChip, 0, -modeMenu.implicitHeight - 6)
                             }
-                            Text {
-                                Layout.fillWidth: true
-                                text: root.ch.busy ? root.statusText(root.ch.status) + (root.runClock !== "" ? "   ⏱ " + root.runClock : "") : ""
-                                font.pixelSize: 12
-                                color: Theme.accent
-                                elide: Text.ElideRight
-                            }
                             MButton {
                                 objectName: "aiSend"
                                 compact: true
                                 variant: "primary"
-                                enabled: root.ch.busy || (root.ready && input.text.trim() !== "")
+                                enabled: root.ch.busy || (root.ready && (input.text.trim() !== "" || root.attachments.length > 0))
                                 text: root.ch.busy ? Tr.s("ai_stop") : Tr.s("ai_send")
                                 onClicked: root.ch.busy ? root.ch.stop() : root.send()
                             }

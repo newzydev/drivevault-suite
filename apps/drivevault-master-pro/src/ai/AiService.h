@@ -65,6 +65,9 @@ public:
     struct Message {
         QString role;                      // user | assistant
         QString text;
+        QStringList attachNames;           // user message: the files / pictures the user attached (shown as chips)
+        QString extra;                     // user message: the text of the attached files, for the model only (saved, not shown)
+        QStringList images;                // user message: attached pictures as base64 JPEG, for the model only (kept while the program runs, not saved)
         QStringList activity;
         QString errorCode, errorDetail;
         bool streaming = false;
@@ -127,7 +130,7 @@ public:
     // here; `prompt` is then empty (nothing goes to the model) - or, for /init, the text to send instead.
     bool slashCommand(const QString& text, QString* prompt);
 
-    Q_INVOKABLE QString send(const QString& text);        // "" = started, otherwise why not (notReady code, busy, empty)
+    Q_INVOKABLE QString send(const QString& text, const QVariantList& attachments = {});   // "" = started, otherwise why not (notReady code, busy, empty). attachments: [{kind: file | image, name, text | data}] from AiService::readAttachment / clipboardImage
     Q_INVOKABLE void stop();
     Q_INVOKABLE void newConversation();
     Q_INVOKABLE void select(const QString& id);
@@ -204,6 +207,7 @@ private:
     Compactor* m_compactor = nullptr;
     bool m_compacting = false;                             // a summary is being written (busy, status "compacting")
     QString m_pendingText;                                 // the message that waits for an automatic compaction
+    QVariantList m_nextAttachments;                        // the attachments of the message that is being sent (also while it waits for a compaction)
     int m_compactBefore = 0;                               // the size (tokens, estimated) of what is being compacted
     GitInfo* m_git = nullptr;                              // agent page only
     QTimer* m_gitTimer = nullptr;
@@ -242,6 +246,11 @@ public:
     QObject* browser() { return &m_browser; }
     dm::browser::BrowserBridge* browserBridge() { return &m_browser; }
     QVariantMap vision() const;
+    // Attachments of the message box. Both return {ok, kind: file | image, name, text | data (base64 JPEG), error}. A file: text only (no binary, at most 60,000 characters);
+    // a picture: scaled to 1024 px, only when the model can see (the vision file is installed) and only on the agent page.
+    Q_INVOKABLE QVariantMap readAttachment(const QString& fileUrlOrPath) const;
+    Q_INVOKABLE bool clipboardHasImage() const;
+    Q_INVOKABLE QVariantMap clipboardImage() const;
     Q_INVOKABLE QString downloadVision();                               // "" = started (the vision file of the chosen model, after the user pressed the button)
     AiChannel* askChannel() { return m_ask; }
     AiChannel* agentChannel() { return m_agent; }

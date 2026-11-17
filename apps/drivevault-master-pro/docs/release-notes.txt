@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.22.0 (2026-11-17): A tidier message box, attachments, and the browser belongs to Agentic AI
+  - Changed: the browser is no longer a fourth tab. It belongs to the Agentic AI page: the "Browser" button in its header opens it, "Agentic AI" in the browser goes back. When the AI opens a page of its own work the window switches to it.
+  - Changed: the settings of a message (folder, model, effort, web, mode) moved to the right of the message box, next to Send.
+  - New: the "+" button attaches text files (both AI pages) and pictures (Agentic AI, when the vision file is installed). Ctrl+V pastes a picture from the clipboard. The model reads the text of the files and sees the pictures; your message shows only what you typed and the names of the attachments.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.21.0 (2026-11-17): A browser in the program, and the AI can look at its own web pages
   - New: a Browser tab (Qt WebEngine, the Chromium engine). Address bar, back / forward / reload, and permissions that work like Chrome's: a site that wants your camera, microphone, screen, location, notifications or clipboard asks in a bar under the address bar (Allow / Block, remembered on this PC); the lock button shows what the open site may use and lets you change or reset it; "Sites and permissions" lists every remembered choice. Downloads are not supported yet (they are refused).
   - New: after the AI writes a web page it can open it in this browser (browser_open), read it (browser_read: text, headings, images and styles that did not load, errors the page logged) and - with the vision file - look at a picture of it (browser_look) and fix what is wrong. The AI cannot answer a permission question; only you can.

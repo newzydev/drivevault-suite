@@ -4,7 +4,11 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QClipboard>
 #include <QDir>
+#include <QGuiApplication>
+#include <QImage>
+#include <QMimeData>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -205,7 +209,8 @@ QVariantList AiChannel::messages() const
             out.append(QVariantMap{{"role", m.role}, {"text", m.text}, {"streaming", m.streaming}, {"stopped", m.stopped}, {"errorCode", m.errorCode},
                                    {"errorDetail", m.errorDetail}, {"activity", m.activity}, {"approval", m.approval},
                                    {"startedMs", double(m.startedMs)}, {"durationMs", double(m.durationMs)}, {"steps", m.steps}, {"stepList", m.stepList},
-                                   {"live", m.live}, {"compact", m.compact}, {"summary", m.summary}, {"tokensBefore", m.tokensBefore}, {"tokensAfter", m.tokensAfter}});
+                                   {"live", m.live}, {"compact", m.compact}, {"summary", m.summary}, {"tokensBefore", m.tokensBefore}, {"tokensAfter", m.tokensAfter},
+                                   {"attachNames", m.attachNames}});
         }
     }
     return out;
@@ -277,14 +282,18 @@ AiChannel::Conversation& AiChannel::ensureConversation(const QString& firstText)
     return m_conversations.last();
 }
 
-QString AiChannel::send(const QString& text)
+QString AiChannel::send(const QString& text, const QVariantList& attachments)
 {
     QString t = text.trimmed();
+    if (t.isEmpty() && !attachments.isEmpty())
+        t = QStringLiteral("(see the attached)");                 // only a file or a picture was sent
     if (t.isEmpty())
         return QStringLiteral("empty");
     if (m_busy)
         return QStringLiteral("busy");
+    m_nextAttachments = attachments;
     if (t.startsWith(QLatin1Char('/'))) {
+        m_nextAttachments.clear();                                 // a command has no attachments
         QString prompt;
         if (slashCommand(t, &prompt)) {
             if (prompt.isEmpty())
@@ -309,6 +318,16 @@ void AiChannel::beginRequest(const QString& userText)
     Message user;
     user.role = QStringLiteral("user");
     user.text = userText;
+    for (const QVariant& a : std::as_const(m_nextAttachments)) {                // files: their text goes to the model; pictures: base64 JPEG for the model
+        const QVariantMap am = a.toMap();
+        const QString name = am.value("name").toString();
+        user.attachNames << name;
+        if (am.value("kind").toString() == QLatin1String("image"))
+            user.images << am.value("data").toString();
+        else
+            user.extra += QStringLiteral("\n\n[Attached file: %1]\n```\n%2\n```").arg(name, am.value("text").toString());
+    }
+    m_nextAttachments.clear();
     Message reply;
     reply.role = QStringLiteral("assistant");
     reply.streaming = true;
@@ -335,10 +354,11 @@ QList<QPair<QString, QString>> AiChannel::historyFor(const QList<Message>& messa
         const Message& m = messages.at(i);
         if (m.text.trimmed().isEmpty())
             continue;                                              // a failed or stopped reply with no text
-        if (!picked.isEmpty() && chars + m.text.size() > maxChars)
+        const QString shown = m.text + m.extra;                    // the text of attached files is part of the question for the model
+        if (!picked.isEmpty() && chars + shown.size() > maxChars)
             break;
-        chars += m.text.size();
-        picked.prepend({m.role, m.text});
+        chars += shown.size();
+        picked.prepend({m.role, shown});
     }
     // merge neighbours of the same role (a failed reply between two questions), and begin with a question
     QList<QPair<QString, QString>> out;
@@ -507,6 +527,8 @@ void AiChannel::sendTools()
         past.removeLast();
         c.history = historyFor(afterLastCompact(past), effort.historyChars);
         c.system += summaryNote();                                 // a compacted conversation: what happened before, in the model's own summary
+        if (const Conversation* cur = find(m_runId); cur && cur->messages.size() >= 2 && server->visionActive())
+            c.images = cur->messages.at(cur->messages.size() - 2).images;       // the pictures the user attached to this question (the model can see them)
         if (!m_localAgent) {
             m_localAgent = new LocalAgent(m_service->net(), this);
             if (m_pool)
@@ -1212,6 +1234,10 @@ void AiChannel::saveConversations()
         QJsonArray msgs;
         for (const Message& m : c.messages) {
             QJsonObject o{{"role", m.role}, {"text", m.text}};
+            if (!m.attachNames.isEmpty())
+                o["attachNames"] = QJsonArray::fromStringList(m.attachNames);
+            if (!m.extra.isEmpty())
+                o["extra"] = m.extra;
             if (!m.activity.isEmpty())
                 o["activity"] = QJsonArray::fromStringList(m.activity);
             if (!m.errorCode.isEmpty()) {
@@ -1267,6 +1293,9 @@ void AiChannel::load()
             Message m;
             m.role = mo.value(QLatin1String("role")).toString();
             m.text = mo.value(QLatin1String("text")).toString();
+            for (const QJsonValue& a : mo.value(QLatin1String("attachNames")).toArray())
+                m.attachNames << a.toString();
+            m.extra = mo.value(QLatin1String("extra")).toString();
             for (const QJsonValue& a : mo.value(QLatin1String("activity")).toArray())
                 m.activity << a.toString();
             m.errorCode = mo.value(QLatin1String("errorCode")).toString();
@@ -1477,6 +1506,55 @@ QVariantMap AiService::vision() const
     return QVariantMap{{"offered", !offer.fileName.isEmpty()},
                        {"installed", !m_localModel.isEmpty() && !ModelStore::visionFileFor(m_localModel).isEmpty()},
                        {"sizeText", QStringLiteral("%1 MB").arg(offer.size / 1000000)}};
+}
+
+QVariantMap AiService::readAttachment(const QString& fileUrlOrPath) const
+{
+    const QString path = fileUrlOrPath.startsWith(QLatin1String("file:")) ? QUrl(fileUrlOrPath).toLocalFile() : fileUrlOrPath;
+    const QFileInfo fi(path);
+    if (!fi.isFile())
+        return {{"ok", false}, {"error", QStringLiteral("notFound")}};
+    static const QStringList pictures{QStringLiteral("png"), QStringLiteral("jpg"), QStringLiteral("jpeg"), QStringLiteral("bmp"), QStringLiteral("gif"), QStringLiteral("webp")};
+    if (pictures.contains(fi.suffix().toLower())) {
+        QImage image(path);
+        if (image.isNull())
+            return {{"ok", false}, {"error", QStringLiteral("notAnImage")}};
+        if (!vision().value("installed").toBool())
+            return {{"ok", false}, {"error", QStringLiteral("noVision")}};
+        const QString data = m_browser.encodeImage(QVariant::fromValue(image), 1024);
+        return data.isEmpty() ? QVariantMap{{"ok", false}, {"error", QStringLiteral("notAnImage")}}
+                              : QVariantMap{{"ok", true}, {"kind", QStringLiteral("image")}, {"name", fi.fileName()}, {"data", data}};
+    }
+    if (fi.size() > 400000)
+        return {{"ok", false}, {"error", QStringLiteral("tooBig")}};
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly))
+        return {{"ok", false}, {"error", QStringLiteral("notFound")}};
+    const QByteArray bytes = f.readAll();
+    if (bytes.left(4000).contains('\0'))
+        return {{"ok", false}, {"error", QStringLiteral("binary")}};               // only text files: the model reads text
+    QString text = QString::fromUtf8(bytes);
+    if (text.size() > 60000)
+        text = text.left(60000) + QStringLiteral("\n... (the file was cut here: it is longer)");
+    return {{"ok", true}, {"kind", QStringLiteral("file")}, {"name", fi.fileName()}, {"text", text}};
+}
+
+bool AiService::clipboardHasImage() const
+{
+    const QMimeData* d = QGuiApplication::clipboard()->mimeData();
+    return d && d->hasImage() && !d->hasText();                    // a picture only: text (even with a picture) is pasted as text
+}
+
+QVariantMap AiService::clipboardImage() const
+{
+    if (!vision().value("installed").toBool())
+        return {{"ok", false}, {"error", QStringLiteral("noVision")}};
+    const QImage image = QGuiApplication::clipboard()->image();
+    if (image.isNull())
+        return {{"ok", false}, {"error", QStringLiteral("notAnImage")}};
+    const QString data = m_browser.encodeImage(QVariant::fromValue(image), 1024);
+    return data.isEmpty() ? QVariantMap{{"ok", false}, {"error", QStringLiteral("notAnImage")}}
+                          : QVariantMap{{"ok", true}, {"kind", QStringLiteral("image")}, {"name", QStringLiteral("pasted.jpg")}, {"data", data}};
 }
 
 QString AiService::downloadVision()

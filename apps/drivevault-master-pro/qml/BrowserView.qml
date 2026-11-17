@@ -90,11 +90,14 @@ Item {
             implicitHeight: 64
             color: "#17130E"
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
-            TabSwitcher {
-                anchors.centerIn: parent
-                current: "browser"
-                prefix: "brTab_"
-                onPicked: key => root.tabPicked(key)
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 20
+                anchors.rightMargin: 20
+                spacing: 14
+                MButton { objectName: "brBackToAgent"; compact: true; text: "← " + Tr.s("tab_agent"); onClicked: root.tabPicked("agent") }
+                Text { text: Tr.s("tab_browser"); font.pixelSize: 16; font.weight: Font.DemiBold; color: Theme.text }
+                Item { Layout.fillWidth: true }
             }
         }
 

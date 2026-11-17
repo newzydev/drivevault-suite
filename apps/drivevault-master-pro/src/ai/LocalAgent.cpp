@@ -125,6 +125,16 @@ QString LocalAgent::start(const Config& c)
         m_messages.append(QJsonObject{{"role", "system"}, {"content", c.system}});
     for (const auto& m : c.history)
         m_messages.append(QJsonObject{{"role", m.first}, {"content", m.second}});
+    if (!c.images.isEmpty() && !m_messages.isEmpty()) {                 // the new question carries the user's pictures
+        QJsonObject last = m_messages.last().toObject();
+        if (last.value(QLatin1String("role")).toString() == QLatin1String("user")) {
+            QJsonArray parts{QJsonObject{{"type", "text"}, {"text", last.value(QLatin1String("content")).toString()}}};
+            for (const QString& img : c.images)
+                parts.append(QJsonObject{{"type", "image_url"}, {"image_url", QJsonObject{{"url", QStringLiteral("data:image/jpeg;base64,") + img}}}});
+            last["content"] = parts;
+            m_messages[m_messages.size() - 1] = last;
+        }
+    }
     m_steps = 0;
     m_webCalls = 0;
     m_parseRetries = m_emptyNudges = m_todoNudges = m_continues = m_contextRetries = 0;
@@ -712,7 +722,8 @@ void LocalAgent::runNextCall()
         if (!m_pendingImages.isEmpty()) {                              // what browser_look saw: one user message with the picture(s); older pictures are dropped (they cost the window)
             for (int i = 0; i < m_messages.size(); ++i) {
                 QJsonObject o = m_messages.at(i).toObject();
-                if (o.value(QLatin1String("role")).toString() == QLatin1String("user") && o.value(QLatin1String("content")).isArray()) {
+                if (o.value(QLatin1String("role")).toString() == QLatin1String("user") && o.value(QLatin1String("content")).isArray()
+                    && o.value(QLatin1String("content")).toArray().first().toObject().value(QLatin1String("text")).toString().startsWith(QLatin1String("This is the picture that browser_look took"))) {
                     o["content"] = QStringLiteral("[an earlier screenshot of the page was removed to save room]");
                     m_messages[i] = o;
                 }

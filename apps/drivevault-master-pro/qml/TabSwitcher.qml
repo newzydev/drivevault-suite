@@ -9,7 +9,7 @@ Rectangle {
     property string prefix: "tab_"                   // objectName prefix: one set per place, so tests can find each button
     signal picked(string key)
 
-    readonly property var keys: ["programs", "ask", "agent", "browser"]
+    readonly property var keys: ["programs", "ask", "agent"]            // the browser is not a tab: it belongs to the Agentic AI page (button "Browser" there)
 
     implicitHeight: 40
     implicitWidth: tabRow.implicitWidth + 8

@@ -2004,6 +2004,86 @@ private slots:
         QVERIFY(done2.wait(15000));
         QCOMPARE(plain.requests, 1);
     }
+    // ---- attachments of the message box ---------------------------------------------------------------------------------------------------
+    void aTextFileCanBeAttachedAndABinaryOrBigOneAndAPictureWithoutVisionCannot()
+    {
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hub-attach");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        auto write = [&](const QString& name, const QByteArray& data) {
+            QFile f(m_dir.filePath(name));
+            f.open(QIODevice::WriteOnly);
+            f.write(data);
+            return m_dir.filePath(name);
+        };
+        const QVariantMap ok = ai.readAttachment(QUrl::fromLocalFile(write("note.txt", QString::fromUtf8("สวัสดี\nline 2").toUtf8())).toString());
+        QVERIFY(ok.value("ok").toBool());
+        QCOMPARE(ok.value("kind").toString(), QString("file"));
+        QCOMPARE(ok.value("name").toString(), QString("note.txt"));
+        QVERIFY(ok.value("text").toString().startsWith(QString::fromUtf8("สวัสดี")));
+        QCOMPARE(ai.readAttachment(write("bin.dat", QByteArray("ab\0cd", 5))).value("error").toString(), QString("binary"));
+        QCOMPARE(ai.readAttachment(write("big.txt", QByteArray(500000, 'a'))).value("error").toString(), QString("tooBig"));
+        QCOMPARE(ai.readAttachment(m_dir.filePath("nothing.txt")).value("error").toString(), QString("notFound"));
+        QImage img(50, 50, QImage::Format_RGB32);
+        img.fill(Qt::red);
+        QVERIFY(img.save(m_dir.filePath("p.png")));
+        QCOMPARE(ai.readAttachment(m_dir.filePath("p.png")).value("error").toString(), QString("noVision"));   // no vision file: no pictures
+        QCOMPARE(ai.clipboardImage().value("error").toString(), QString("noVision"));
+    }
+    void anAttachedFileGoesToTheModelWithTheQuestionAndAPictureAsAnImagePart()
+    {
+        QDir().mkpath(m_dir.filePath("attwork"));
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({}, QStringLiteral("Seen."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("attwork");
+        c.reviewWork = false;
+        c.history = {{"user", "what is in the picture?"}};
+        c.images = {"QUJD"};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        const QJsonArray msgs = requestBody(server.log.at(0)).value("messages").toArray();
+        const QJsonValue content = msgs.last().toObject().value("content");
+        QVERIFY(content.isArray());
+        QCOMPARE(content.toArray().at(0).toObject().value("text").toString(), QString("what is in the picture?"));
+        QCOMPARE(content.toArray().at(1).toObject().value("type").toString(), QString("image_url"));
+        QVERIFY(content.toArray().at(1).toObject().value("image_url").toObject().value("url").toString().startsWith("data:image/jpeg;base64,QUJD"));
+    }
+    void theMessageKeepsTheNamesAndTheTextOfItsAttachedFilesForTheModel()
+    {
+        QDir().mkpath(m_dir.filePath("attwork2"));
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({}, QStringLiteral("Read it."));
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hub-attach2");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        if (!ai.engineFound())
+            QSKIP("no llama.cpp engine on this PC");
+        auto* agent = qobject_cast<AiChannel*>(ai.agent());
+        ai.selectLocalModel(m_dir.filePath("attach-model.gguf"));
+        ai.llama()->useExternalServer(server.base(), "");
+        ai.setWebEnabled(false);
+        agent->setFolder(m_dir.filePath("attwork2"));
+        const QVariantList atts{QVariantMap{{"kind", "file"}, {"name", "report.txt"}, {"text", "TOTAL = 42"}}};
+        QCOMPARE(agent->send("summarise the file", atts), QString());
+        QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 15000);
+        QCOMPARE(server.requests, 1);
+        const QString sent = lastMessage(server.log.at(0));
+        QVERIFY(sent.contains("summarise the file") && sent.contains("[Attached file: report.txt]") && sent.contains("TOTAL = 42"));     // the model reads the file
+        const QVariantList msgs = agent->messages();
+        QCOMPARE(msgs.at(0).toMap().value("attachNames").toStringList(), QStringList{"report.txt"});
+        QCOMPARE(msgs.at(0).toMap().value("text").toString(), QString("summarise the file"));       // the bubble shows only what the user typed
+    }
     // ---- the browser of the program: the bridge, what the agent may open, and the three tools ----------------------------------------------------
     void theBrowserBridgeWaitsForTheViewAnswersAndTimesOut()
     {

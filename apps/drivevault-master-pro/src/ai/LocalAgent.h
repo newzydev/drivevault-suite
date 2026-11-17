@@ -46,6 +46,7 @@ public:
         bool planMode = false;                             // exit_plan_mode is offered; nothing is changed until the user approves the plan (planApprovalNeeded)
         QString system;
         QList<QPair<QString, QString>> history;            // user / assistant messages, oldest first, the last is the new question
+        QStringList images;                                // pictures (base64 JPEG) the user attached to the new question: sent with it (only when the model can see)
         int maxSteps = 12;                                 // a safety net, not a plan: a real job ends when the model is done (see "finishing" in the .cpp)
         int contextTokens = 8192;                          // the window of the server: older tool results are shortened / dropped to stay inside it
         bool thinking = false;                            // let the model reason first (slower, better on hard questions)
