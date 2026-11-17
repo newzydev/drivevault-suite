@@ -128,7 +128,7 @@ ColumnLayout {
         Layout.leftMargin: 10
         Layout.rightMargin: 10
         enabled: !Doc.outputBusy
-        ComboBox {
+        PComboBox {
             id: mode
             objectName: "redactSearchMode"
             model: [Tr.s("redactText"), "Regex", Tr.s("redactId"), Tr.s("redactPhone"), Tr.s("redactEmail"), Tr.s("redactBank")]
@@ -144,7 +144,7 @@ ColumnLayout {
             onAccepted: bar.scan()
         }
         PButton { objectName: "redactScan"; compact: true; text: Tr.s("redactScan"); onClicked: bar.scan() }
-        ComboBox {
+        PComboBox {
             id: review
             objectName: "redactReview"
             Layout.fillWidth: mode.currentIndex >= 2
@@ -175,13 +175,13 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: 10
         Layout.rightMargin: 10
-        ComboBox {
+        PComboBox {
             id: saveMode
             objectName: "redactSaveMode"
             enabled: !Doc.outputBusy
             model: [Tr.s("redactSelective"), Tr.s("redactRaster")]
         }
-        ComboBox {
+        PComboBox {
             id: boxColor
             enabled: !Doc.outputBusy
             model: [Tr.s("redactBlack"), Tr.s("redactWhite"), Tr.s("redactRed")]

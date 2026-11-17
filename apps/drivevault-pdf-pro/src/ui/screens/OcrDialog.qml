@@ -50,7 +50,7 @@ Popup {
         spacing: 12
         AppText { text: Tr.s("thaiOcr"); font.pixelSize: Theme.fontXl; font.weight: Font.DemiBold }
         AppText { Layout.fillWidth: true; text: Tr.s("ocrDescription"); wrapMode: Text.Wrap; color: Theme.textSecondary }
-        ComboBox {
+        PComboBox {
             id: pageMode
             Layout.fillWidth: true
             enabled: dlg.ready && !dlg.running

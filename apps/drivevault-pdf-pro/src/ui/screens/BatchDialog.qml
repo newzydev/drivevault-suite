@@ -64,7 +64,7 @@ Popup {
             PButton { text: Tr.s("batchOutput"); onClicked: outputPicker.open() }
             AppText { Layout.fillWidth: true; text: dlg.output; textFormat: Text.PlainText; elide: Text.ElideMiddle }
         }
-        ComboBox {
+        PComboBox {
             id: mode
             objectName: "batchMode"
             enabled: !Doc.outputBusy

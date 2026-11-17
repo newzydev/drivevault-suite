@@ -156,7 +156,7 @@ Rectangle {
         Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
 
         // text
-        ComboBox {
+        PComboBox {
             id: fontBox
             objectName: "editFont"
             width: 170; height: 32
@@ -164,8 +164,6 @@ Rectangle {
             currentIndex: Math.max(0, Editor.fonts.indexOf(Editor.fontFamily))
             onActivated: Editor.setStyle("font", currentText)
             font.pixelSize: Theme.fontMd
-            contentItem: AppText { leftPadding: 10; text: fontBox.displayText; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter }
-            background: Rectangle { radius: 8; color: Theme.surface; border.color: fontBox.activeFocus ? Theme.accent : Theme.border }
         }
         SpinBox { objectName: "editSize"; from: 4; to: 400; value: Math.round(Editor.fontSize); editable: true; implicitHeight: 32; onValueModified: Editor.setStyle("size", value) }
         PButton { objectName: "editBold"; compact: true; text: "B"; tip: Tr.s("bold"); variant: Editor.bold ? "secondary" : "ghost"; onClicked: Editor.setStyle("bold", !Editor.bold) }
@@ -173,7 +171,7 @@ Rectangle {
         PButton { objectName: "editAlignLeft"; compact: true; text: "⇤"; tip: Tr.s("alignLeft"); variant: Editor.align === 0 ? "secondary" : "ghost"; onClicked: Editor.setStyle("align", 0) }
         PButton { objectName: "editAlignCenter"; compact: true; text: "↔"; tip: Tr.s("alignCenter"); variant: Editor.align === 1 ? "secondary" : "ghost"; onClicked: Editor.setStyle("align", 1) }
         PButton { objectName: "editAlignRight"; compact: true; text: "⇥"; tip: Tr.s("alignRight"); variant: Editor.align === 2 ? "secondary" : "ghost"; onClicked: Editor.setStyle("align", 2) }
-        ComboBox {
+        PComboBox {
             id: stampBox
             objectName: "editStamp"
             width: 150; height: 32
@@ -191,7 +189,6 @@ Rectangle {
                 onTextEdited: stampBox.editText = text
                 background: null
             }
-            background: Rectangle { radius: 8; color: Theme.surface; border.color: stampBox.activeFocus ? Theme.accent : Theme.border }
         }
         Item { width: 5; height: 32; Rectangle { anchors.centerIn: parent; width: 1; height: 22; color: Theme.border } }
 

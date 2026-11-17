@@ -76,7 +76,7 @@ Popup {
             columns: 2
             enabled: !Doc.outputBusy
             AppText { text: Tr.s("createPaper") }
-            ComboBox { id: paper; objectName: "createPaper"; model: ["A4", "Letter", "Legal", Tr.s("createCustom")] }
+            PComboBox { id: paper; objectName: "createPaper"; model: ["A4", "Letter", "Legal", Tr.s("createCustom")] }
             AppText { visible: paper.currentIndex === 3; text: Tr.s("createPaperSize") }
             RowLayout {
                 visible: paper.currentIndex === 3
@@ -85,7 +85,7 @@ Popup {
                 SpinBox { id: paperHeight; objectName: "createHeight"; from: 20; to: 2000; value: 297; editable: true; Accessible.name: Tr.s("createHeight") }
             }
             AppText { text: Tr.s("createOrientation") }
-            ComboBox { id: orientation; objectName: "createOrientation"; model: [Tr.s("createPortrait"), Tr.s("createLandscape")] }
+            PComboBox { id: orientation; objectName: "createOrientation"; model: [Tr.s("createPortrait"), Tr.s("createLandscape")] }
             AppText { text: Tr.s("createMargin") }
             SpinBox { id: margin; from: 0; to: 200; value: 12; editable: true; Accessible.name: Tr.s("createMargin") }
         }

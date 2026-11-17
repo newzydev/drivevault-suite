@@ -2,6 +2,10 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.22.1 (2026-11-17): Drop-down lists are readable
+  - Fixed: the lists of the drop-down boxes (printer, paper, fonts, page range, redaction and the other windows) were drawn with a white bar on the entry you pointed at, so the text could not be read. They are now one dark rounded list with a soft red highlight and a tick on the chosen entry (the new PComboBox).
+  - Note: the installer is not code-signed yet, so Windows SmartScreen may warn.
+
 v1.22.0 (2026-11-17): Printer settings button in the print window; a neater AI bar
   - New: the print window has a "Properties..." button next to the printer. It opens the printing preferences window of the printer driver (paper type, quality, tray ...); what you set there is the printer's default for you and the next print uses it. Not tried with every driver.
   - Changed: the floating AI bar is one capsule: every part is 40 px high with round ends (Summarize, the question box, Send, the round "-" and clear buttons).

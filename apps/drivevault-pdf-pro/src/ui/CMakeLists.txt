@@ -25,6 +25,7 @@ qt_add_qml_module(dp_ui
         components/PSwitch.qml
         components/PSlider.qml
         components/PTextField.qml
+        components/PComboBox.qml
         components/ConfirmDialog.qml
         components/LanguageSwitch.qml
         components/PdfTitleBar.qml

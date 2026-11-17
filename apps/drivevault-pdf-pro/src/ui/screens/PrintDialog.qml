@@ -126,7 +126,7 @@ Popup {
                     Layout.fillWidth: true
                     spacing: 10
                     AppText { text: Tr.s("printer"); color: Theme.textSecondary }
-                    ComboBox {
+                    PComboBox {
                         id: printerBox
                         objectName: "printerBox"
                         Layout.fillWidth: true
@@ -136,8 +136,6 @@ Popup {
                         displayText: dlg.printers.length > 0 ? currentText : Tr.s("noPrinters")
                         font.pixelSize: Theme.fontMd
                         onCurrentIndexChanged: dlg.updatePaper()
-                        contentItem: AppText { leftPadding: 10; text: printerBox.displayText; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; color: printerBox.enabled ? Theme.text : Theme.textDisabled }
-                        background: Rectangle { radius: 8; color: Theme.surface; border.color: printerBox.activeFocus ? Theme.accent : Theme.border }
                     }
                     // the printer driver's own window (paper type, quality, tray, ...): the same settings window as in the other programs
                     PButton {

@@ -192,7 +192,7 @@ Popup {
         }
         Component {
             id: choiceEditor
-            ComboBox {
+            PComboBox {
                 id: cb
                 objectName: "formField_" + field.name
                 implicitHeight: 36
@@ -201,13 +201,11 @@ Popup {
                 currentIndex: field.options.indexOf(dlg.edits[field.name] !== undefined ? dlg.edits[field.name] : field.value)
                 onActivated: dlg.setValue(field.name, currentText)
                 font.pixelSize: Theme.fontMd
-                contentItem: AppText { leftPadding: 10; text: cb.displayText; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter }
-                background: Rectangle { radius: 8; color: Theme.surface; border.color: cb.activeFocus ? Theme.accent : Theme.border }
             }
         }
         Component {
             id: radioEditor
-            ComboBox {
+            PComboBox {
                 id: rb
                 objectName: "formField_" + field.name
                 implicitHeight: 36
@@ -216,8 +214,6 @@ Popup {
                 currentIndex: field.options.indexOf(dlg.edits[field.name] !== undefined ? dlg.edits[field.name] : field.value) + 1
                 onActivated: dlg.setValue(field.name, currentIndex === 0 ? "" : currentText)
                 font.pixelSize: Theme.fontMd
-                contentItem: AppText { leftPadding: 10; text: rb.displayText; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter }
-                background: Rectangle { radius: 8; color: Theme.surface; border.color: rb.activeFocus ? Theme.accent : Theme.border }
             }
         }
         Component { id: noEditor; AppText { text: Tr.s("formUnsupported"); color: Theme.textDisabled } }

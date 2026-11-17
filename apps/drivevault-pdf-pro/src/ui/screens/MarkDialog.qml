@@ -77,15 +77,13 @@ Popup {
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
-            ComboBox {
+            PComboBox {
                 id: fontBox
                 objectName: "markFont"
                 Layout.fillWidth: true
                 implicitHeight: 34
                 model: Editor.fonts
                 font.pixelSize: Theme.fontMd
-                contentItem: AppText { leftPadding: 10; text: fontBox.displayText; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter }
-                background: Rectangle { radius: 8; color: Theme.surface; border.color: fontBox.activeFocus ? Theme.accent : Theme.border }
             }
             SpinBox { id: sizeBox; objectName: "markSize"; from: 4; to: 400; value: 12; editable: true }
             PCheckBox { id: boldBox; text: "B"; labelWeight: Font.Bold }
@@ -116,7 +114,7 @@ Popup {
             SpinBox { id: toBox; objectName: "markTo"; from: 0; to: Math.max(1, Doc.pageCount); value: 0; editable: true; textFromValue: function (v) { return v === 0 ? Tr.s("lastPage") : v } }
             Item { Layout.fillWidth: true }
             AppText { visible: dlg.type !== "watermark"; text: Tr.s("alignment"); color: Theme.textSecondary }
-            ComboBox {
+            PComboBox {
                 id: alignBox
                 objectName: "markAlign"
                 visible: dlg.type !== "watermark"

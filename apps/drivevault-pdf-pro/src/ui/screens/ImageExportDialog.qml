@@ -63,7 +63,7 @@ Popup {
             Layout.fillWidth: true
             enabled: !Doc.outputBusy
             AppText { text: Tr.s("outputPages") }
-            ComboBox {
+            PComboBox {
                 id: pageMode
                 objectName: "imagePageMode"
                 Layout.fillWidth: true
@@ -79,7 +79,7 @@ Popup {
                 placeholderText: Tr.s("rangeHint")
             }
             AppText { text: Tr.s("outputFormat") }
-            ComboBox { id: format; Layout.fillWidth: true; model: ["PNG", "JPEG"] }
+            PComboBox { id: format; Layout.fillWidth: true; model: ["PNG", "JPEG"] }
             AppText { text: "DPI" }
             SpinBox { id: resolution; from: 72; to: 600; value: 144; editable: true }
             AppText { visible: dlg.jpeg; text: Tr.s("outputQuality") }
@@ -92,7 +92,7 @@ Popup {
 
             }
             AppText { visible: dlg.count > 1; text: Tr.s("outputTarget") }
-            ComboBox { id: target; visible: dlg.count > 1; Layout.fillWidth: true; model: ["ZIP", Tr.s("imageFolder")] }
+            PComboBox { id: target; visible: dlg.count > 1; Layout.fillWidth: true; model: ["ZIP", Tr.s("imageFolder")] }
         }
         AppText {
             Layout.fillWidth: true

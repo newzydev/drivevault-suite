@@ -106,15 +106,13 @@ Popup {
             Layout.fillWidth: true
             spacing: 8
             AppText { text: Tr.s("accLanguage"); color: Theme.textSecondary }
-            ComboBox {
+            PComboBox {
                 id: langBox
                 objectName: "accLanguageBox"
                 Layout.preferredWidth: 220
                 implicitHeight: 36
                 model: dlg.languages.map(l => l[1])
                 font.pixelSize: Theme.fontMd
-                contentItem: AppText { leftPadding: 10; text: langBox.displayText; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter }
-                background: Rectangle { radius: 8; color: Theme.surface; border.color: langBox.activeFocus ? Theme.accent : Theme.border }
             }
             Item { Layout.fillWidth: true }
         }
