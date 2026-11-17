@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.24.1 (2026-11-17): Less wasted time on edits that do not match
+  - Changed: when the AI's edit_file misses the text of the file twice in a row, it is told to stop editing that file that way and to read the part again or write the whole file again, instead of trying a third, fourth, fifth time.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.24.0 (2026-11-17): A live browser with tabs, and an AI that uses it with a cursor
   - New: the browser has tabs (a + button, a close button on each tab; a link that wants a new window opens a tab).
   - New: live preview. When the AI writes a web page, the browser opens by itself and shows it, and the page follows the file while the AI writes: you watch it grow. A change to any html / css / js / svg / json file of the page reloads the tab.

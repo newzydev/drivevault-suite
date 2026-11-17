@@ -170,6 +170,7 @@ QString LocalAgent::start(const Config& c)
     m_looks = 0;
     m_previewed.clear();
     m_browserActions = 0;
+    m_editFails.clear();
     m_lastCall.clear();
     m_sameCall = 0;
     m_taskIndex = int(m_messages.size()) - 1;                   // the user's new message: the task
@@ -811,7 +812,16 @@ void LocalAgent::runNextCall()
         stepStart(kind, target.simplified().left(140));
     }
     const QString changedPath = AgentTools::changesFiles(name) ? args.value(QLatin1String("path")).toString() : QString();
-    auto result = [this, id, changedPath](const QString& text, bool isError) {
+    const QString editPath = name == QLatin1String("edit_file") ? args.value(QLatin1String("path")).toString() : QString();
+    auto result = [this, id, changedPath, editPath](const QString& textIn, bool isError) {
+        QString text = textIn;
+        if (!editPath.isEmpty()) {                                    // a small model often cannot copy the old text exactly: after two misses in a row it must stop trying
+            if (!isError)
+                m_editFails.remove(editPath);
+            else if (++m_editFails[editPath] >= 2)
+                text += QStringLiteral(". You have failed to edit %1 %2 times in a row: STOP using edit_file on it. Either read the part you want to change (read_file with start_line) and copy it exactly, "
+                                       "or write the whole file again with write_file (in parts with append_file).").arg(editPath).arg(m_editFails.value(editPath));
+        }
         m_lastResultError = isError;
         if (!isError && !changedPath.isEmpty() && !m_changedFiles.contains(changedPath))
             m_changedFiles << changedPath;

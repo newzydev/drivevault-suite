@@ -2043,6 +2043,32 @@ private slots:
         QVERIFY(done.wait(20000));
         QCOMPARE(asked.count(), 1);
     }
+    void afterTwoFailedEditsInARowTheModelIsToldToRewriteTheFile()
+    {
+        QDir().mkpath(m_dir.filePath("editfail"));
+        QFile f(m_dir.filePath("editfail/page.html"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("<p>hello</p>\n");
+        f.close();
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("e1", "edit_file", {{"path", "page.html"}, {"old_string", "<p>nothing like it</p>"}, {"new_string", "x"}})}, QString())
+                     << agentReply({agentCall("e2", "edit_file", {{"path", "page.html"}, {"old_string", "<h9>still not there</h9>"}, {"new_string", "y"}})}, QString())
+                     << agentReply({}, QStringLiteral("I will rewrite it."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("editfail");
+        c.allowEdits = true;
+        c.reviewWork = false;
+        c.history = {{"user", "change it"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QVERIFY(!lastMessage(server.log.at(1)).contains("STOP using edit_file"));       // the first miss is just an error
+        QVERIFY(lastMessage(server.log.at(2)).contains("STOP using edit_file") && lastMessage(server.log.at(2)).contains("page.html"));
+    }
     void editFileFindsTheTextEvenWithAnotherIndentationOrLineEndings()
     {
         QString out, err;
