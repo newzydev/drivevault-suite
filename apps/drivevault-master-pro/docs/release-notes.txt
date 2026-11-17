@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.26.1 (2026-11-17): The browser takes the room of the list you hide
+  - Changed: when you hide the list of conversations, the browser grows into the freed room and the conversation keeps its width (before, the conversation grew and the browser stayed). Showing the list again gives the room back.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.26.0 (2026-11-17): The tabs in the title bar, icon buttons, a browser you can resize and that opens the page at once
   - Fixed: when the AI wrote a web page the browser opened a tab for it but did not load the file - the tab stayed on the start page. The page now appears at once and follows the file as the AI writes.
   - Changed: the three tabs (Programs, AI Q&A, Agentic AI) moved into the title bar, so every page has the whole height.

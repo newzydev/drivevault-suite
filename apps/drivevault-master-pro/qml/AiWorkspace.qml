@@ -66,10 +66,13 @@ Item {
     Timer { id: diagToggle; interval: 2500; onTriggered: root.sideOpen = false }
     property bool sideOpen: true                            // the list of conversations at the left (a button in the header shows / hides it)
     property real browserWidth: 0                          // the width the user dragged the browser to (0 = the default, 40% of the window)
+    // The browser takes the width that the list at the left gives up: when the list slides away the browser grows by the same amount (and when it comes back the browser
+    // shrinks), so the conversation keeps its width and the line between them stays where it is. `base` is the width with the list shown.
+    readonly property real sideGone: side.openWidth - side.Layout.preferredWidth          // how much of the list is hidden right now (animated)
     function clampBrowser(w) {                              // at least 380, and the list at the left + the conversation (480) + the line always fit
-        const sideW = root.sideOpen ? (root.width < 900 ? 210 : 270) : 0
-        return Math.max(260, Math.min(Math.max(w, 380), root.width - sideW - 480 - 9))      // (in a narrow window it is narrower than 380 rather than pushed out of the window)
+        return Math.max(260, Math.min(Math.max(w, 380), root.width - side.Layout.preferredWidth - 480 - 9))      // (in a narrow window it is narrower than 380 rather than pushed out of the window)
     }
+    function browserTarget() { return clampBrowser((root.browserWidth > 0 ? root.browserWidth : Math.round(root.width * 0.4)) + root.sideGone) }
     property bool browserWide: false                        // the browser is expanded over the conversation
     property bool browserOpen: false                        // the browser is shown at the right (instead of the panel)
     property bool browserEver: false                        // it was opened once: the view stays alive (the AI uses it)
@@ -1555,7 +1558,7 @@ Item {
                     hoverEnabled: true
                     cursorShape: Qt.SplitHCursor
                     preventStealing: true
-                    onPositionChanged: mouse => { if (pressed) root.browserWidth = root.clampBrowser(root.width - mapToItem(root, mouse.x, 0).x) }
+                    onPositionChanged: mouse => { if (pressed) root.browserWidth = Math.max(380, root.width - mapToItem(root, mouse.x, 0).x - root.sideGone) }
                     onDoubleClicked: root.browserWidth = 0                                  // back to the default width
                 }
             }
@@ -1565,7 +1568,7 @@ Item {
                 objectName: "browserLoader"
                 visible: root.browserShown
                 active: Ai.browser.compiledIn && root.browserEver
-                Layout.preferredWidth: root.clampBrowser(root.browserWidth > 0 ? root.browserWidth : Math.round(root.width * 0.4))
+                Layout.preferredWidth: root.browserTarget()
                 Layout.fillWidth: root.browserWide                     // expanded: it takes the place of the conversation too
                 Layout.fillHeight: true
                 onLoaded: if (root.pendingPreview !== "") { item.showPreview(root.pendingPreview); root.pendingPreview = "" }
