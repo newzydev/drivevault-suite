@@ -23,6 +23,7 @@ Item {
     property var failedLoads: []
     property int openId: 0                   // the AI command (id) that waits for a page to load, 0 = none
     readonly property bool loading: view.loading
+    readonly property bool isStart: view.url.toString() === "" || view.url.toString() === "about:blank"      // nothing is open: the start page is shown
 
     // what each kind of permission is called (the enum values of QWebEnginePermission::PermissionType)
     readonly property var permissionTypes: [
@@ -128,7 +129,7 @@ Item {
                     variant: "secondary"
                     compact: true
                     text: (view.url.toString().indexOf("https:") === 0 ? "🔒 " : "ⓘ ") + root.hostOf(view.url)
-                    visible: view.url.toString() !== ""
+                    visible: !root.isStart
                     Layout.maximumWidth: 240
                     onClicked: { siteMenu.refresh(); siteMenu.open() }
                     Accessible.name: Tr.s("br_site_settings")
@@ -138,12 +139,12 @@ Item {
                     objectName: "brAddress"
                     Layout.fillWidth: true
                     placeholderText: Tr.s("br_address_placeholder")
-                    text: view.url.toString()
+                    text: root.isStart ? "" : view.url.toString()
                     onAccepted: { root.go(text); view.forceActiveFocus() }
                     onActiveFocusChanged: if (activeFocus) selectAll()
                     Connections {
                         target: view
-                        function onUrlChanged() { if (!addressField.activeFocus) addressField.text = view.url.toString() }
+                        function onUrlChanged() { if (!addressField.activeFocus) addressField.text = root.isStart ? "" : view.url.toString() }
                     }
                 }
                 MButton { objectName: "brAllSites"; variant: "ghost"; compact: true; text: Tr.s("br_all_sites"); onClicked: allSites.show() }
@@ -218,6 +219,92 @@ Item {
             url: "about:blank"
             settings.javascriptCanOpenWindows: true
             settings.fullScreenSupportEnabled: false
+
+            // the start page (nothing open yet): a native page in the style of the program instead of a white sheet
+            Rectangle {
+                objectName: "brStartPage"
+                z: 10                                                     // above the web content (the white sheet of an empty page)
+                anchors.fill: parent
+                visible: root.isStart
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#17130E" }
+                    GradientStop { position: 1.0; color: Theme.background }
+                }
+                Flickable {
+                    anchors.fill: parent
+                    contentHeight: startColumn.implicitHeight + 80
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                    ColumnLayout {
+                        id: startColumn
+                        width: Math.min(parent.width - 48, 720)
+                        x: (parent.width - width) / 2
+                        y: Math.max(40, (parent.height - implicitHeight) / 3)
+                        spacing: 22
+                        Rectangle {
+                            Layout.alignment: Qt.AlignHCenter
+                            width: 72
+                            height: 72
+                            radius: 22
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: Qt.lighter(Theme.accent, 1.2) }
+                                GradientStop { position: 1.0; color: Qt.darker(Theme.accent, 1.25) }
+                            }
+                            Text { anchors.centerIn: parent; text: "🌐"; font.pixelSize: 34 }
+                        }
+                        Text { Layout.alignment: Qt.AlignHCenter; text: Tr.s("br_start_title"); font.pixelSize: 30; font.weight: Font.Bold; color: Theme.text }
+                        Text { Layout.alignment: Qt.AlignHCenter; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap
+                               text: Tr.s("br_start_sub"); font.pixelSize: 14; color: Theme.textSecondary }
+                        MField {
+                            id: startSearch
+                            objectName: "brStartSearch"
+                            Layout.fillWidth: true
+                            implicitHeight: 52
+                            font.pixelSize: 15
+                            leftPadding: 20
+                            placeholderText: Tr.s("br_address_placeholder")
+                            onAccepted: root.go(text)
+                        }
+                        GridLayout {
+                            Layout.fillWidth: true
+                            columns: width > 560 ? 3 : 2
+                            columnSpacing: 12
+                            rowSpacing: 12
+                            Repeater {
+                                model: [ { t: "DuckDuckGo", u: "https://duckduckgo.com", i: "🔎" }, { t: "Wikipedia", u: "https://www.wikipedia.org", i: "📚" },
+                                         { t: "GitHub", u: "https://github.com", i: "🐙" }, { t: "OpenStreetMap", u: "https://www.openstreetmap.org", i: "🗺" },
+                                         { t: "MDN Web Docs", u: "https://developer.mozilla.org", i: "🧩" }, { t: "Qt", u: "https://doc.qt.io", i: "📘" } ]
+                                delegate: Rectangle {
+                                    id: tile
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    implicitHeight: 64
+                                    radius: 14
+                                    color: tileMouse.containsMouse ? Theme.surfaceHover : Theme.surface
+                                    border.width: 1
+                                    border.color: tileMouse.containsMouse ? Theme.accent : Theme.border
+                                    Behavior on color { ColorAnimation { duration: 140 } }
+                                    Row {
+                                        anchors.centerIn: parent
+                                        spacing: 10
+                                        Text { text: tile.modelData.i; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
+                                        Text { text: tile.modelData.t; font.pixelSize: 14; font.weight: Font.Medium; color: Theme.text; anchors.verticalCenter: parent.verticalCenter }
+                                    }
+                                    MouseArea { id: tileMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.go(tile.modelData.u) }
+                                }
+                            }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.Wrap
+                            text: Tr.s("br_start_privacy")
+                            font.pixelSize: 12
+                            color: Theme.textDisabled
+                        }
+                    }
+                }
+            }
 
             onPermissionRequested: permission => {                if (permission.state === WebEnginePermission.State.Granted || permission.state === WebEnginePermission.State.Denied) {
                     permission.state === WebEnginePermission.State.Granted ? permission.grant() : permission.deny()   // already decided by the user earlier
