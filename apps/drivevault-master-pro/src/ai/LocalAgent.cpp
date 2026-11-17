@@ -97,6 +97,14 @@ QJsonArray browserSpecs(bool vision)
                       QJsonObject{{"action", QJsonObject{{"type", "string"}, {"enum", QJsonArray{"list", "switch", "close"}}}},
                                   {"index", QJsonObject{{"type", "integer"}, {"description", QStringLiteral("the number of the tab (from list, starting at 1)")}}}},
                       {QStringLiteral("action")}));
+    a.append(toolSpec("browser_viewport",
+                      QStringLiteral("Tests the page at another screen size, to check that it is responsive: the browser then gives the page a window of exactly that size (the page sees it: media queries, "
+                                     "the menu of a phone, columns that stack). Choose a device: mobile 390 x 844, tablet 820 x 1180, laptop 1366 x 768, desktop 1920 x 1080 - or a width and a height in pixels. "
+                                     "browser_read and browser_look then show the page at that size. Use device reset when you are done."),
+                      QJsonObject{{"device", QJsonObject{{"type", "string"}, {"enum", QJsonArray{"mobile", "tablet", "laptop", "desktop", "reset"}}}},
+                                  {"width", QJsonObject{{"type", "integer"}, {"description", QStringLiteral("the width in pixels (200 - 3840), with height, instead of a device")}}},
+                                  {"height", QJsonObject{{"type", "integer"}, {"description", QStringLiteral("the height in pixels (200 - 3840)")}}}},
+                      {}));
     a.append(toolSpec("browser_read",
                       QStringLiteral("Reads the page that is open in the browser: its title, the visible text, how many headings / images / links / sections it has, images that "
                                      "did not load, and the errors that the page logged. Use it to find missing or broken parts."),
@@ -823,6 +831,7 @@ void LocalAgent::runNextCall()
         else if (name == QLatin1String("browser_type")) { kind = QStringLiteral("browsertype"); target = args.value(QLatin1String("target")).toString(); }
         else if (name == QLatin1String("browser_scroll")) { kind = QStringLiteral("browserscroll"); target = args.value(QLatin1String("direction")).toString(); }
         else if (name == QLatin1String("browser_drag")) { kind = QStringLiteral("browserdrag"); target = args.value(QLatin1String("from")).toString() + QStringLiteral(" -> ") + args.value(QLatin1String("to")).toString(); }
+        else if (name == QLatin1String("browser_viewport")) { kind = QStringLiteral("browserviewport"); target = args.value(QLatin1String("device")).toString().isEmpty() ? QStringLiteral("%1x%2").arg(args.value(QLatin1String("width")).toInt()).arg(args.value(QLatin1String("height")).toInt()) : args.value(QLatin1String("device")).toString(); }
         else if (name == QLatin1String("browser_tab")) { kind = QStringLiteral("browsertab"); target = args.value(QLatin1String("action")).toString(); }
         else if (name == QLatin1String("browser_look")) { kind = QStringLiteral("browserlook"); target = args.value(QLatin1String("scroll")).toString(); }
         else if (name == QLatin1String("todo_write")) { kind = QStringLiteral("todo"); }
@@ -884,7 +893,7 @@ void LocalAgent::runNextCall()
         return;
     }
     if (name == QLatin1String("browser_open") || name == QLatin1String("browser_read") || name == QLatin1String("browser_look") || name == QLatin1String("browser_click")
-        || name == QLatin1String("browser_type") || name == QLatin1String("browser_scroll") || name == QLatin1String("browser_drag") || name == QLatin1String("browser_tab")) {
+        || name == QLatin1String("browser_type") || name == QLatin1String("browser_scroll") || name == QLatin1String("browser_drag") || name == QLatin1String("browser_tab") || name == QLatin1String("browser_viewport")) {
         runBrowserCall(name, args, result);                            // scrolling with the same call again and again is normal here: no "stuck" check, its own limits
         return;
     }
@@ -1038,6 +1047,28 @@ void LocalAgent::runBrowserCall(const QString& name, const QJsonObject& args, co
             }
             request.insert(QStringLiteral("action"), action);
             request.insert(QStringLiteral("index"), args.value(QLatin1String("index")).toInt());
+        }
+    } else if (name == QLatin1String("browser_viewport")) {
+        const QString device = args.value(QLatin1String("device")).toString().trimmed().toLower();
+        struct Preset { const char* name; int w; int h; };
+        static const Preset presets[] = {{"mobile", 390, 844}, {"tablet", 820, 1180}, {"laptop", 1366, 768}, {"desktop", 1920, 1080}};
+        if (device == QLatin1String("reset")) {
+            request.insert(QStringLiteral("reset"), true);
+        } else if (!device.isEmpty()) {
+            bool found = false;
+            for (const Preset& p : presets)
+                if (device == QLatin1String(p.name)) {
+                    request.insert(QStringLiteral("width"), p.w);
+                    request.insert(QStringLiteral("height"), p.h);
+                    request.insert(QStringLiteral("name"), device);
+                    found = true;
+                }
+            if (!found) { result(QStringLiteral("device must be mobile, tablet, laptop, desktop or reset - or give width and height"), true); return; }
+        } else {
+            const int w = args.value(QLatin1String("width")).toInt(), h = args.value(QLatin1String("height")).toInt();
+            if (w < 200 || w > 3840 || h < 200 || h > 3840) { result(QStringLiteral("give a device (mobile, tablet, laptop, desktop, reset) or a width and a height between 200 and 3840 pixels"), true); return; }
+            request.insert(QStringLiteral("width"), w);
+            request.insert(QStringLiteral("height"), h);
         }
     } else if (name == QLatin1String("browser_look")) {
         QString scroll = args.value(QLatin1String("scroll")).toString();

@@ -23,7 +23,12 @@ Item {
     property var pending: []                 // permission requests that wait for the user (WebEnginePermission values), oldest first
     property string notice: ""               // a short line under the address bar (a download started / finished, ...)
     property string noticeFolder: ""         // when set, the bar has a "Show in folder" button for this folder
-    property var fsView: null                // the web view that shows a page full screen (a video, a game), null = none
+    // the AI tests a page at other screen sizes (browser_viewport): every view is then given this size (0 = the pane's own size), scaled down to fit the pane
+    property int vpW: 0
+    property int vpH: 0
+    property string vpName: ""
+    function setViewport(w, h, name) { vpW = w; vpH = h; vpName = name }
+    property var fsView: null               // the web view that shows a page full screen (a video, a game), null = none
     property Item fsParent: null
     property int fsVisibility: Window.Windowed
     property int openId: 0                   // the AI command (id) that waits for a page to load, 0 = none
@@ -162,36 +167,6 @@ Item {
         }
     }
 
-    WebEngineProfile {
-        id: browserProfile
-        storageName: "drivevault-browser"
-        persistentStoragePath: root.bridge.storagePath !== "" ? root.bridge.storagePath + "/profile" : ""
-        cachePath: root.bridge.storagePath !== "" ? root.bridge.storagePath + "/cache" : ""
-        persistentPermissionsPolicy: WebEngineProfile.StoreOnDisk       // what the user allowed or blocked is remembered, like in Chrome
-        offTheRecord: root.bridge.storagePath === ""
-        // like Chrome: the file goes to the Downloads folder under a name that never overwrites another file; a kind of file that can run gets a warning in the bar
-        onDownloadRequested: download => {
-            const folder = root.bridge.downloadsFolder()
-            const name = root.bridge.uniqueDownloadName(folder, download.suggestedFileName !== "" ? download.suggestedFileName : download.downloadFileName)
-            const risky = root.bridge.riskyDownload(name)
-            download.downloadDirectory = folder
-            download.downloadFileName = name
-            download.stateChanged.connect(function () {
-                if (download.state === WebEngineDownloadRequest.DownloadCompleted) {
-                    root.notice = Tr.s(risky ? "br_dl_done_risky" : "br_dl_done").replace("%1", name)
-                    root.noticeFolder = folder
-                } else if (download.state === WebEngineDownloadRequest.DownloadInterrupted) {
-                    root.notice = Tr.s("br_dl_failed").replace("%1", name)
-                    root.noticeFolder = ""
-                }
-            })
-            download.accept()
-            root.noticeFolder = ""
-            root.notice = Tr.s("br_dl_started").replace("%1", name)
-        }
-        // the engine says "QtWebEngine/x.y.z" in its name; some sites (sign-in pages) turn such a browser away, so it presents itself as plain Chromium
-        httpUserAgent: root.bridge.userAgent
-    }
 
 
 
@@ -390,12 +365,48 @@ Item {
             Text { anchors.verticalCenter: parent.verticalCenter; x: 16; text: Tr.s("br_ai_using"); font.pixelSize: 12; color: Theme.accent }
         }
 
+        // the AI tests a screen size: which one, and a cross to end the test. A bar of its own above the pages - nothing is drawn over the page, so no click of the AI or the user lands on it
+        Rectangle {
+            objectName: "brViewportBar"
+            visible: root.vpW > 0 && root.fsView === null
+            Layout.fillWidth: true
+            implicitHeight: visible ? 30 : 0
+            color: Theme.surface
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 16
+                anchors.rightMargin: 12
+                Text {
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    font.pixelSize: 12
+                    color: Theme.text
+                    text: Tr.s("br_viewport_bar").replace("%1", root.vpW + " x " + root.vpH + (root.vpName !== "" ? " (" + root.vpName + ")" : ""))
+                          .replace("%2", Math.round(Math.min(1, stage.width / Math.max(1, root.vpW), stage.height / Math.max(1, root.vpH)) * 100))
+                }
+                MButton { objectName: "brViewportReset"; variant: "ghost"; compact: true; text: "✕"; onClicked: root.setViewport(0, 0, ""); Accessible.name: Tr.s("br_viewport_reset") }
+            }
+        }
         // ---- the pages: one web view per tab; the AI's cursor and the start page are drawn above them -------------------------------------
         Item {
             id: stage
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
+
+            // while a screen size is tested: the outline of the screen and a chip that says which size it is (the user can end the test with the cross)
+            Rectangle {
+                visible: root.vpW > 0 && root.fsView === null
+                z: -1
+                readonly property real fit: Math.min(1, stage.width / Math.max(1, root.vpW), stage.height / Math.max(1, root.vpH))
+                width: root.vpW * fit + 2
+                height: root.vpH * fit + 2
+                x: (stage.width - width) / 2
+                y: (stage.height - height) / 2
+                color: "transparent"
+                border.width: 1
+                border.color: Theme.accent
+            }
 
             Repeater {
                 id: views
@@ -404,7 +415,15 @@ Item {
                     id: wv
                     required property int index
                     required property string address                            // a delegate with required properties has no `model` object: the roles are required properties
-                    anchors.fill: parent
+                    // the whole pane, or - while the AI tests a screen size - exactly that size (the page sees it as its window: media queries, innerWidth), centred and scaled to fit
+                    readonly property bool emulated: root.vpW > 0 && root.fsView !== wv
+                    readonly property real fitScale: emulated ? Math.min(1, parent.width / root.vpW, parent.height / root.vpH) : 1
+                    width: emulated ? root.vpW : parent.width
+                    height: emulated ? root.vpH : parent.height
+                    x: emulated ? (parent.width - width) / 2 : 0
+                    y: emulated ? (parent.height - height) / 2 : 0
+                    scale: fitScale
+                    transformOrigin: Item.Center
                     visible: index === root.cur
                     profile: browserProfile                         // NOT `profile: profile` - inside the view that would be its own property (the default profile of Qt)
                     Component.onCompleted: url = address                        // the first address of the tab (no binding: a redirect must not start a new load)
@@ -819,6 +838,7 @@ Item {
         aiCursor.ty = y
         cursorHide.restart()
     }
+    function cursorToView(x, y) { const p = root.view.mapToItem(stage, x, y); cursorTo(p.x, p.y) }     // a point of the page -> where it is on the pane (the view may be scaled)
     function clickRipple() { rippleAnim.restart() }
     function mouse(kind, x, y) { root.bridge.mouse(root.view, kind, x, y) }
     // the AI works only in pages of this computer
@@ -829,7 +849,7 @@ Item {
         find(target, true, function(o) {
             if (!o.ok) { root.bridge.reply(id, { ok: false, error: "no element matches \"" + target + "\": use a CSS selector or the visible text; browser_read lists the headings and text" }); return }
             later(120, function() {
-                cursorTo(o.x, o.y)
+                cursorToView(o.x, o.y)
                 later(640, function() {
                     mouse("move", o.x, o.y)
                     later(120, function() {
@@ -930,7 +950,7 @@ Item {
                 if (!a.ok) { root.bridge.reply(id, { ok: false, error: "no element matches \"" + args.from + "\"" }); return }
                 find(args.to, false, function(b) {
                     if (!b.ok || !b.inside) { root.bridge.reply(id, { ok: false, error: "the target \"" + args.to + "\" is not found or not visible together with the start; scroll so that both are on screen" }); return }
-                    cursorTo(a.x, a.y)
+                    cursorToView(a.x, a.y)
                     later(700, function() {
                         mouse("move", a.x, a.y)
                         later(100, function() {
@@ -943,8 +963,7 @@ Item {
                                 ++n
                                 const f = n / steps, e = f * f * (3 - 2 * f)
                                 const x = a.x + (b.x - a.x) * e, y = a.y + (b.y - a.y) * e
-                                aiCursor.opacity = 1
-                                aiCursor.tx = x; aiCursor.ty = y
+                                cursorToView(x, y)
                                 mouse("move", x, y)
                                 if (n >= steps) {
                                     t.stop(); t.destroy()
@@ -956,6 +975,21 @@ Item {
                             t.start()
                         })
                     })
+                })
+            })
+        } else if (op === "viewport") {
+            if (args.reset === true)
+                root.setViewport(0, 0, "")
+            else
+                root.setViewport(args.width, args.height, args.name || "")
+            later(500, function() {                                              // the page has laid itself out again: say what it really sees
+                root.view.runJavaScript("JSON.stringify({w:window.innerWidth,h:window.innerHeight,sideways:document.documentElement.scrollWidth>window.innerWidth+1})", function(r) {
+                    let o = { w: 0, h: 0, sideways: false }
+                    try { o = JSON.parse(r) } catch (e) {}
+                    root.bridge.reply(id, { ok: true, text: args.reset === true
+                        ? "The browser is back at the size of its pane (" + o.w + " x " + o.h + ")."
+                        : "Viewport " + args.width + " x " + args.height + (args.name ? " (" + args.name + ")" : "") + ": the page now sees a window of " + o.w + " x " + o.h + " px"
+                          + (o.sideways ? " and it scrolls sideways (something is wider than the window)" : "") + ". browser_read and browser_look show it at this size; use browser_viewport with device reset when you are done." })
                 })
             })
         } else if (op === "look") {
@@ -1005,6 +1039,39 @@ Item {
         target: root.bridge
         function onCommand(id, op, args) { root.run(id, op, args) }
     }
+    // The profile is declared LAST on purpose: Qt destroys the children of an object in the order they were made, and a WebEngineProfile must be destroyed after every view that uses it
+    // (the other way round the program crashed when it ended).
+    WebEngineProfile {
+        id: browserProfile
+        storageName: "drivevault-browser"
+        persistentStoragePath: root.bridge.storagePath !== "" ? root.bridge.storagePath + "/profile" : ""
+        cachePath: root.bridge.storagePath !== "" ? root.bridge.storagePath + "/cache" : ""
+        persistentPermissionsPolicy: WebEngineProfile.StoreOnDisk       // what the user allowed or blocked is remembered, like in Chrome
+        offTheRecord: root.bridge.storagePath === ""
+        // like Chrome: the file goes to the Downloads folder under a name that never overwrites another file; a kind of file that can run gets a warning in the bar
+        onDownloadRequested: download => {
+            const folder = root.bridge.downloadsFolder()
+            const name = root.bridge.uniqueDownloadName(folder, download.suggestedFileName !== "" ? download.suggestedFileName : download.downloadFileName)
+            const risky = root.bridge.riskyDownload(name)
+            download.downloadDirectory = folder
+            download.downloadFileName = name
+            download.stateChanged.connect(function () {
+                if (download.state === WebEngineDownloadRequest.DownloadCompleted) {
+                    root.notice = Tr.s(risky ? "br_dl_done_risky" : "br_dl_done").replace("%1", name)
+                    root.noticeFolder = folder
+                } else if (download.state === WebEngineDownloadRequest.DownloadInterrupted) {
+                    root.notice = Tr.s("br_dl_failed").replace("%1", name)
+                    root.noticeFolder = ""
+                }
+            })
+            download.accept()
+            root.noticeFolder = ""
+            root.notice = Tr.s("br_dl_started").replace("%1", name)
+        }
+        // the engine says "QtWebEngine/x.y.z" in its name; some sites (sign-in pages) turn such a browser away, so it presents itself as plain Chromium
+        httpUserAgent: root.bridge.userAgent
+    }
+
     Component.onCompleted: {
         if (tabs.count === 0)
             newTab("about:blank", true, false)

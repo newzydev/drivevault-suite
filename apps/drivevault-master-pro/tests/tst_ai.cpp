@@ -2438,7 +2438,10 @@ private slots:
                      << agentReply({agentCall("k1", "browser_click", {{"target", "Go"}}), agentCall("k2", "browser_type", {{"target", "#name"}, {"text", "Somchai"}}),
                                     agentCall("k3", "browser_scroll", {{"direction", "down"}}), agentCall("k4", "browser_drag", {{"from", "#handle"}, {"to", "#track"}}),
                                     agentCall("k5", "browser_tab", {{"action", "switch"}, {"index", 2}}), agentCall("k6", "browser_open", {{"url", "index.html"}, {"new_tab", true}}),
-                                    agentCall("k7", "browser_scroll", {{"direction", "sideways"}}), agentCall("k8", "browser_click", {})}, QString())
+                                    agentCall("k7", "browser_scroll", {{"direction", "sideways"}}), agentCall("k8", "browser_click", {}),
+                                    agentCall("k9", "browser_viewport", {{"device", "mobile"}}), agentCall("k10", "browser_viewport", {{"width", 1000}, {"height", 700}}),
+                                    agentCall("k11", "browser_viewport", {{"device", "watch"}}), agentCall("k12", "browser_viewport", {{"width", 20}, {"height", 700}}),
+                                    agentCall("k13", "browser_viewport", {{"device", "reset"}})}, QString())
                      << agentReply({}, QStringLiteral("Done."));
         QNetworkAccessManager net;
         LocalAgent agent(&net);
@@ -2458,7 +2461,7 @@ private slots:
         QStringList ops;
         for (const auto& s : seen)
             ops << s.first;
-        QCOMPARE(ops, QStringList({"click", "type", "scroll", "drag", "tab", "open"}));     // the two wrong calls (direction sideways, no target) never reached the page
+        QCOMPARE(ops, QStringList({"click", "type", "scroll", "drag", "tab", "open", "viewport", "viewport", "viewport"}));     // the wrong calls (direction sideways, no target, a device that does not exist, 20 px wide) never reached the page
         QCOMPARE(seen.at(0).second.value("target").toString(), QString("Go"));
         QCOMPARE(seen.at(1).second.value("text").toString(), QString("Somchai"));
         QCOMPARE(seen.at(2).second.value("direction").toString(), QString("down"));
@@ -2466,12 +2469,18 @@ private slots:
         QCOMPARE(seen.at(4).second.value("index").toInt(), 2);
         QVERIFY(seen.at(5).second.value("newTab").toBool());
         QVERIFY(seen.at(5).second.value("url").toString().endsWith("/livejob/index.html"));
+        QCOMPARE(seen.at(6).second.value("width").toInt(), 390);                              // browser_viewport mobile
+        QCOMPARE(seen.at(6).second.value("height").toInt(), 844);
+        QCOMPARE(seen.at(6).second.value("name").toString(), QString("mobile"));
+        QCOMPARE(seen.at(7).second.value("width").toInt(), 1000);                             // an own size
+        QCOMPARE(seen.at(7).second.value("height").toInt(), 700);
+        QVERIFY(seen.at(8).second.value("reset").toBool());
         const QJsonArray msgs = requestBody(server.log.at(3)).value("messages").toArray();
         int errors = 0;
         for (const QJsonValue& m : msgs)
             if (m.toObject().value("role").toString() == "tool" && m.toObject().value("content").toString().startsWith("Error:"))
                 ++errors;
-        QCOMPARE(errors, 2);
+        QCOMPARE(errors, 4);
     }
     void withoutVisionThereIsNoLookToolAndAnAddressOutsideTheFolderIsRefused()
     {

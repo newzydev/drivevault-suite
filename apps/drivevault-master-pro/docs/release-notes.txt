@@ -1,6 +1,11 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.29.0 (2026-11-17): The AI can test a page at other screen sizes
+  - New: the AI tool browser_viewport (mobile 390 x 844, tablet 820 x 1180, laptop 1366 x 768, desktop 1920 x 1080, or its own width and height; "reset" ends it). The page gets a window of exactly that size (media queries, menus of a phone, columns that stack), shown scaled to fit the browser pane with a bar that says which size it is (a cross ends the test); browser_read and browser_look then show the page at that size, and clicks, typing and drags still work. The AI is told to check a page at mobile / tablet / laptop and fix what breaks.
+  - Fixed: the program could crash when it was closed after the browser had been used (the browser profile was destroyed before its pages).
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.28.0 (2026-11-17): The browser blocks nothing the engine can allow; downloads work
   - New: downloads. A file you start in the browser is saved in your Downloads folder (a name that never overwrites a file); the bar says so and has "Show in folder". Files that can run programs (exe, msi, bat, ps1, js, lnk ...) get a warning; the program never opens a downloaded file.
   - New: full screen for videos and pages (Esc leaves), copy / paste by pages, sound and video that start by themselves, screen sharing (you still answer the permission bar), the PDF viewer, and the browser no longer calls itself "QtWebEngine" (sign-in pages of some sites turned it away).
