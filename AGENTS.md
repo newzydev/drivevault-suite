@@ -158,6 +158,7 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 | PDF Pro | 1.9.0 | `drivevault-pdf-pro-v1.9.0` | `75296f1` | 2026-11-12 |
 | PDF Pro | 1.17.0 | `drivevault-pdf-pro-v1.17.0` | `8db9109` | 2026-11-12 |
 | PDF Pro | 1.19.1 | `drivevault-pdf-pro-v1.19.1` | `4ffba4b` | 2026-11-15 |
+| PDF Pro | 1.22.1 | `drivevault-pdf-pro-v1.22.1` | `8e9f69b` | 2026-11-17 |
 
 ## Open items the owner knows about
 
