@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.23.3 (2026-11-17): A line beside the browser
+  - Changed: a thin line now separates the browser from the conversation.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.23.2 (2026-11-17): Expand the browser, hide the list of conversations
   - New: an Expand / Shrink button in the browser pane: the browser fills the conversation area too.
   - New: a button (three bars) at the start of the title row shows or hides the list of conversations at the left.

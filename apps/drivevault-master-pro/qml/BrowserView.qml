@@ -83,6 +83,8 @@ Item {
         }
     }
 
+    Rectangle { z: 100; anchors.left: parent.left; width: 2; height: parent.height; color: Theme.textDisabled }       // the line between the conversation and the browser
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
