@@ -366,6 +366,7 @@ Item {
                     Component.onCompleted: url = address                        // the first address of the tab (no binding: a redirect must not start a new load)
                     settings.javascriptCanOpenWindows: true
                     settings.fullScreenSupportEnabled: false
+                    settings.localContentCanAccessRemoteUrls: true              // a page on this computer may load its fonts / styles / pictures from the Internet, like in Chrome (Google Fonts: without it the page looked different)
                     property var consoleErrors: []                              // what this page logged since it started loading (for the AI)
 
                     onUrlChanged: { if (index < tabs.count) tabs.setProperty(index, "address", url.toString()) }
