@@ -118,6 +118,8 @@ QString LocalAgent::start(const Config& c)
     m_afterCalls.clear();
     m_lastResultError = false;
     m_salvages = 0;
+    m_serverRetries = 0;
+    m_awaitingServer = false;
     m_cancelled = false;
     m_wroteText = false;
     m_running = true;
@@ -125,8 +127,17 @@ QString LocalAgent::start(const Config& c)
     return {};
 }
 
+void LocalAgent::resume()
+{
+    if (!m_awaitingServer || !m_running || m_cancelled)
+        return;
+    m_awaitingServer = false;
+    step();
+}
+
 void LocalAgent::cancel()
 {
+    m_awaitingServer = false;
     if (!m_running)
         return;
     m_cancelled = true;
@@ -420,8 +431,20 @@ void LocalAgent::onReply()
         return;
     }
     if (error != QNetworkReply::NoError && !m_stream.abortedLong) {
-        end(false, QStringLiteral("network"), errorString);
-        return;
+        const bool lost = error == QNetworkReply::RemoteHostClosedError || error == QNetworkReply::ConnectionRefusedError || error == QNetworkReply::UnknownNetworkError;
+        const bool nothing = m_stream.calls.isEmpty() && m_stream.content.trimmed().isEmpty();
+        if (lost && nothing && m_serverRetries < 2) {                   // the server stopped or crashed: it is started again and the same question asked again
+            ++m_serverRetries;
+            m_awaitingServer = true;
+            note(QStringLiteral("The model server stopped: starting it again"));
+            emit serverLost();
+            return;
+        }
+        if (!(lost && m_stream.sse && !m_stream.calls.isEmpty())) {     // (a tool call that was being written when it stopped is kept below like a cut one)
+            end(false, QStringLiteral("network"), errorString);
+            return;
+        }
+        cutError = true;
     }
     const QJsonObject usageObject = root.value(QLatin1String("usage")).toObject();
     if (usageObject.contains(QLatin1String("prompt_tokens")))

@@ -169,6 +169,10 @@ void LlamaServer::launch(bool gpu)
             m_log = m_log.right(4096);
     });
     connect(m_process, &QProcess::finished, this, [this] {
+        if (m_state == State::Ready) {                   // it ended by itself (a crash, killed from outside): it is not "ready" any more, the next use starts it again
+            setState(State::Stopped);
+            return;
+        }
         if (m_state != State::Starting)
             return;
         const QString detail = QString::fromUtf8(m_log.right(600)).trimmed();

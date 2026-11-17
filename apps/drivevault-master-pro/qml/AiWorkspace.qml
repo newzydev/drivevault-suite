@@ -627,13 +627,23 @@ Item {
                         visible: root.ch.messages.length > 0
                         clip: true
                         spacing: 20
-                        model: root.ch.messages
+                        model: root.ch.messageModel                 // a real list model: only the row that changed is updated, the boxes are not rebuilt (no flicker)
+                        // The list follows the newest text while it is written - until the user scrolls up (then it stays where they are), and again when they
+                        // scroll back to the end or send a new message.
                         property bool follow: true
+                        property bool programmatic: false
+                        function toEnd() {
+                            programmatic = true
+                            positionViewAtEnd()
+                            programmatic = false
+                        }
+                        onContentYChanged: if (!programmatic) follow = atYEnd
+                        onContentHeightChanged: if (follow) Qt.callLater(toEnd)
+                        property string cid: root.ch.currentId
+                        onCidChanged: { expandedMap = ({}); seen = 0 }
                         property var expandedMap: ({})             // answer index -> its step list is open (a click on the header changes it)
-                        property int seen: 0                      // messages that already had their entrance (the model is rebuilt on every change: only a new one animates)
-                        onMovementEnded: follow = atYEnd
-                        onModelChanged: if (follow) Qt.callLater(positionViewAtEnd)
-                        onCountChanged: { follow = true; Qt.callLater(positionViewAtEnd) }
+                        property int seen: 0                      // messages that already had their entrance (only a new one animates)
+                        onCountChanged: { follow = true; Qt.callLater(toEnd) }
                         ScrollBar.vertical: ScrollBar {}
                         delegate: ColumnLayout {
                             id: msg

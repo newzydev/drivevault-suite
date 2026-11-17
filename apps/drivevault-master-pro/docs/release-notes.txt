@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.19.1 (2026-11-17): A long job no longer flickers, scrolls by itself or loses the model
+  - Fixed: while the AI worked, the whole conversation flickered and the list jumped to the end whenever you scrolled up. The conversation is now a real list: only the box that changed is updated, and the list follows the newest text only until you scroll up (it follows again when you scroll back to the end or send a message).
+  - Fixed: after exactly 15 minutes a job ended with "Connection closed" - the model program stops itself after 15 quiet minutes and was not told that the job was still running. A running job (also while a card waits for your answer) now keeps it alive.
+  - New: when the model program stops or crashes in the middle of a job, it is started again and the same question is asked again (twice per job at most), instead of ending the job.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.19.0 (2026-11-17): Background tasks in the right panel
   - New: a part "Background tasks" in the right panel lists the commands the AI runs: a turning ring, the command, the time it has run and a stop square. A line "N finished" opens the list of the finished ones (a tick, or a cross with the exit code, and how long each took). A running compaction of the conversation and the model download are listed there too and can be stopped the same way.
   - New: the AI can start a command in the BACKGROUND (for a server, a watcher, a long build). You still allow each command first; then it starts and the AI goes on at once. It can read what the command wrote (command_output) and stop it (stop_command), and it is told when the command ends. Up to 4 run at the same time and all of them end when Master Pro is closed. Stopping a job does not stop the background tasks; the stop square of a task does.

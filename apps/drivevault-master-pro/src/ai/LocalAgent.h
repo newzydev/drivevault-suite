@@ -59,6 +59,7 @@ public:
     void setPool(CommandPool* pool);                       // the pool whose tasks the commands are (the page's list); without one the agent makes its own
     CommandPool* pool();
     void answerApproval(bool allow);                       // the user's answer to approvalNeeded
+    void resume();                                         // after serverLost: the server runs again, ask the same question again
     // The path and the text of a write_file / append_file call whose arguments may end anywhere (a cut answer): the text taken back to its last complete line.
     // `complete` = the text was closed, nothing was cut. false when there is no path yet or almost no text. Pure, tested.
     static bool salvageWrite(const QString& rawArguments, QString* path, QString* text, bool* complete);
@@ -74,6 +75,8 @@ signals:
     // One line of the step list of the page. `no` numbers the steps of a run (a step is sent again when its state changes). kind: list | read | search | glob |
     // edit | write | command | websearch | fetch | todo | plan | note | other; target: the file, the query, the command ... (for a note: its text);
     // state: running | waiting (for the user's answer) | done | error; note: a short result ("exit code 0", the error text).
+    // The connection to the model server was lost before an answer arrived (it stopped or crashed). The agent waits: start the server again and call resume().
+    void serverLost();
     void usage(int promptTokens, int completionTokens);    // what the server counted for the last request (the context meter of the page)
     // While the model answers (the answer is read as a stream): phase waiting (the prompt is read) | thinking | writing (text) | tool (the arguments of a tool call
     // grow: `tool` is its name, `target` the file / command when it is already known, `chars` how much was written). An empty phase: the answer is complete.
@@ -120,6 +123,8 @@ private:
     QString m_afterCalls;                                  // a note for the model, added after the result of a kept (cut) write
     bool m_lastResultError = false;
     int m_salvages = 0;                                    // parts of cut files kept in this job
+    int m_serverRetries = 0;                               // times the model server was started again and the question asked again (2 at most per job)
+    bool m_awaitingServer = false;                         // waiting for resume()
     int m_stepNo = 0;
     int m_curNo = 0;
     QString m_curKind, m_curTarget;                                  // the step of the tool call that runs now

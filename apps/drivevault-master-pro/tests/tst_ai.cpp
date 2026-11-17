@@ -7,6 +7,7 @@
 #include "ai/Compactor.h"
 #include "ai/CommandRunner.h"
 #include "ai/GitInfo.h"
+#include "ai/MessageModel.h"
 #include "ai/LocalAgent.h"
 #include "ai/WebTools.h"
 #include "ai/HttpChat.h"
@@ -35,6 +36,7 @@ namespace {
 class FakeServer : public QTcpServer {
 public:
     int status = 200;
+    bool dropping = false;                         // true: every request is dropped without an answer (the server died)
     QByteArray contentType = "text/event-stream";
     QByteArray body;
     QByteArray lastRequest;
@@ -60,6 +62,10 @@ public:
                     log << data;
                     ++requests;
                     QByteArray answer = queue.isEmpty() ? body : queue.takeFirst();
+                    if (dropping || answer == "DROP") {                         // the server dies without an answer: "Connection closed"
+                        s->abort();
+                        return;
+                    }
                     int code = status;
                     if (answer.size() > 4 && answer.at(3) == '|' && QByteArray(answer.left(3)).toInt() >= 200) {     // "400|{...}": one answer with its own status
                         code = answer.left(3).toInt();
@@ -1286,6 +1292,95 @@ private slots:
         QVERIFY(rw.run("append_file", {{"path", "a.txt"}, {"content", ""}}).error);
         QVERIFY(AgentTools(m_dir.filePath("appendwork"), false).run("append_file", {{"path", "a.txt"}, {"content", "x"}}).error);   // read only
         QVERIFY(QDir(m_dir.filePath("appendwork")).entryList(QDir::Files | QDir::Hidden).size() == 2);                              // no backup copies
+    }
+
+    // ---- the list of messages does not flicker; the model server is not lost in the middle of a job -----------------------------------------
+    void theMessageModelOnlyReportsWhatChanged()
+    {
+        MessageModel model;
+        QSignalSpy changed(&model, &QAbstractItemModel::dataChanged), inserted(&model, &QAbstractItemModel::rowsInserted), removed(&model, &QAbstractItemModel::rowsRemoved),
+            reset(&model, &QAbstractItemModel::modelReset);
+        auto row = [](const QString& text) { return QVariant(QVariantMap{{"role", "assistant"}, {"text", text}, {"stepList", QVariantList{QVariantMap{{"kind", "read"}}}}}); };
+        QCOMPARE(model.sync("c1", {row("a"), row("b")}), 2);
+        QCOMPARE(reset.count(), 1);                                                              // a new conversation: everything is new
+        QCOMPARE(model.rowCount(), 2);
+        QCOMPARE(model.sync("c1", {row("a"), row("b")}), 0);                                     // nothing changed: nothing is reported (the boxes stay as they are)
+        QCOMPARE(changed.count() + inserted.count() + removed.count() + reset.count(), 1);
+        QCOMPARE(model.sync("c1", {row("a"), row("b, and more")}), 1);                           // the last answer grew: one row changed
+        QCOMPARE(changed.count(), 1);
+        QCOMPARE(changed.at(0).at(0).value<QModelIndex>().row(), 1);
+        QCOMPARE(model.data(model.index(1), Qt::UserRole + 1).toMap().value("text").toString(), QString("b, and more"));
+        QCOMPARE(model.sync("c1", {row("a"), row("b, and more"), row("c")}), 1);                  // a new message: one row inserted
+        QCOMPARE(inserted.count(), 1);
+        QCOMPARE(model.rowCount(), 3);
+        QCOMPARE(model.sync("c1", {row("a")}), 0);
+        QCOMPARE(removed.count(), 1);
+        QCOMPARE(model.rowCount(), 1);
+        QCOMPARE(model.sync("c2", {row("x")}), 1);                                               // another conversation: reset
+        QCOMPARE(reset.count(), 2);
+        QCOMPARE(model.roleNames().value(Qt::UserRole + 1), QByteArray("modelData"));
+    }
+    void thePageGetsItsMessagesAsAModel()
+    {
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hubmodel");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        auto* agent = qobject_cast<AiChannel*>(ai.agent());
+        auto* model = qobject_cast<QAbstractItemModel*>(agent->messageModel());
+        QVERIFY(model);
+        QCOMPARE(model->rowCount(), 0);
+        QCOMPARE(agent->send("/help"), QString());
+        QCOMPARE(model->rowCount(), agent->messages().size());                                   // the model follows the channel
+        QCOMPARE(model->rowCount(), 2);
+        QCOMPARE(model->data(model->index(0, 0), Qt::UserRole + 1).toMap().value("role").toString(), QString("user"));
+        agent->newConversation();
+        QCOMPARE(model->rowCount(), 0);
+    }
+    void theModelServerThatStoppedIsStartedAgainAndTheQuestionAskedAgain()
+    {
+        FakeServer server;
+        server.contentType = "application/json";
+        // (Qt itself sends a request once more when the connection was closed before any answer, so the number of dropped requests is not the number of lost answers:
+        // the server drops everything until the test says that it is back)
+        server.dropping = true;
+        server.body = agentReply({}, QStringLiteral("Back again."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy lost(&agent, &LocalAgent::serverLost);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.path();
+        c.history = {{"user", "hello"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(lost.wait(15000));                                                               // the connection was closed: the agent waits for the server
+        QCOMPARE(done.count(), 0);
+        agent.resume();                                                                          // (the page started the server again - and it dies again)
+        QTRY_VERIFY2_WITH_TIMEOUT(lost.count() == 2, qPrintable(QStringLiteral("lost=%1 requests=%2 done=%3").arg(lost.count()).arg(server.requests).arg(done.count())), 15000);   // it stopped once more
+        server.dropping = false;                                                                 // now it stays up
+        agent.resume();
+        QVERIFY(done.wait(15000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QVERIFY(server.requests >= 3);
+        QCOMPARE(requestBody(server.log.last()).value("messages").toArray().size(), requestBody(server.log.at(0)).value("messages").toArray().size());   // the same question
+        // three times is too much: the job ends with the network error
+        FakeServer dead;
+        dead.contentType = "application/json";
+        dead.body = "DROP";
+        LocalAgent agent2(&net);
+        QSignalSpy lost2(&agent2, &LocalAgent::serverLost);
+        QSignalSpy done2(&agent2, &LocalAgent::finished);
+        c.baseUrl = dead.base() + "/v1";
+        QCOMPARE(agent2.start(c), QString());
+        QVERIFY(lost2.wait(15000));
+        agent2.resume();
+        QTRY_VERIFY_WITH_TIMEOUT(lost2.count() == 2, 15000);
+        agent2.resume();
+        QVERIFY(done2.wait(15000));
+        QVERIFY(!done2.at(0).at(0).toBool());
+        QCOMPARE(done2.at(0).at(1).toString(), QString("network"));
     }
 
     // ---- background tasks ------------------------------------------------------------------------------------------------------------------

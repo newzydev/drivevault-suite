@@ -5,6 +5,7 @@
 #include "HttpChat.h"
 #include "LlamaServer.h"
 #include "LocalAgent.h"
+#include "MessageModel.h"
 #include "ModelDownloader.h"
 #include "ModelStore.h"
 
@@ -47,7 +48,8 @@ class AiChannel : public QObject {
     Q_PROPERTY(QString notReady READ notReady NOTIFY settingsChanged FINAL)           // "" when a message can be sent, otherwise why not
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged FINAL)
     Q_PROPERTY(QString status READ status NOTIFY busyChanged FINAL)                   // "" | starting | thinking | writing
-    Q_PROPERTY(QVariantList messages READ messages NOTIFY messagesChanged FINAL)     // [{role, text, streaming, stopped, errorCode, errorDetail, activity: [..]}]
+    Q_PROPERTY(QObject* messageModel READ messageModel CONSTANT FINAL)                // the same messages as a list model: the page shows this one (no rebuilding of the boxes)
+    Q_PROPERTY(QVariantList messages READ messages NOTIFY messagesChanged FINAL)    // [{role, text, streaming, stopped, errorCode, errorDetail, activity: [..]}]
     Q_PROPERTY(QVariantList conversations READ conversations NOTIFY conversationsChanged FINAL)   // [{id, title}]
     Q_PROPERTY(QString currentId READ currentId NOTIFY conversationsChanged FINAL)
     Q_PROPERTY(QString folder READ folder NOTIFY settingsChanged FINAL)               // agent: the working folder
@@ -95,6 +97,7 @@ public:
     bool busy() const { return m_busy; }
     QString status() const { return m_status; }
     QVariantList messages() const;
+    QObject* messageModel() { return m_model; }
     QVariantList conversations() const;
     QString currentId() const { return m_currentId; }
     QString folder() const { return m_folder; }
@@ -195,6 +198,8 @@ private:
     QString m_status;
     HttpChat* m_http = nullptr;
     LocalAgent* m_localAgent = nullptr;
+    MessageModel* m_model = nullptr;
+    QTimer* m_keepAlive = nullptr;                         // while a request runs (or waits for the user) the model server is told every minute that it is in use
     CommandPool* m_pool = nullptr;                         // agent page: the commands as background tasks
     Compactor* m_compactor = nullptr;
     bool m_compacting = false;                             // a summary is being written (busy, status "compacting")

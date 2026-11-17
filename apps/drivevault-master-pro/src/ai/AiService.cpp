@@ -91,6 +91,13 @@ AiChannel::AiChannel(const QString& mode, AiService* service)
     m_viewTimer->setSingleShot(true);
     m_viewTimer->setInterval(60);
     connect(m_viewTimer, &QTimer::timeout, this, &AiChannel::messagesChanged);
+    m_model = new MessageModel(this);
+    connect(this, &AiChannel::messagesChanged, this, [this] { m_model->sync(m_currentId, messages()); });
+    // The model server stops itself after 15 quiet minutes (LlamaServer). A job can run longer than that - a slow model writes for many minutes and the user may
+    // take their time to answer a card - so a running request keeps it alive. (It was stopped in the middle of a 15 minute job: "Connection closed".)
+    m_keepAlive = new QTimer(this);
+    m_keepAlive->setInterval(60 * 1000);
+    connect(m_keepAlive, &QTimer::timeout, this, [this] { m_service->llama()->touch(); });
     if (isAgent()) {                                               // the commands of the agent are background tasks that the page lists
         m_pool = new CommandPool(this);
         connect(m_pool, &CommandPool::changed, this, &AiChannel::tasksChanged);
@@ -241,8 +248,16 @@ void AiChannel::setBusy(bool busy, const QString& status)
 {
     if (m_busy == busy && m_status == status)
         return;
+    const bool was = m_busy;
     m_busy = busy;
     m_status = status;
+    if (busy && !was) {
+        m_service->llama()->touch();
+        m_keepAlive->start();
+    } else if (!busy && was) {
+        m_keepAlive->stop();
+        m_service->llama()->touch();                               // the quiet time counts from the end of the work
+    }
     emit busyChanged();
 }
 
@@ -488,6 +503,12 @@ void AiChannel::sendTools()
             connect(m_localAgent, &LocalAgent::piece, this, &AiChannel::appendPiece);
             connect(m_localAgent, &LocalAgent::activity, this, &AiChannel::appendActivity);
             connect(m_localAgent, &LocalAgent::stepEvent, this, &AiChannel::onStep);
+            connect(m_localAgent, &LocalAgent::serverLost, this, [this] {          // the model server stopped: start it again, then the agent asks again
+                withLocalServer([this] {
+                    if (m_localAgent)
+                        m_localAgent->resume();
+                });
+            });
             connect(m_localAgent, &LocalAgent::generating, this, [this](const QString& phase, const QString& tool, const QString& target, int chars) {   // the live line
                 Conversation* conv = find(m_runId);
                 if (!conv || conv->messages.isEmpty())
@@ -631,6 +652,8 @@ void AiChannel::finish(bool ok, const QString& code, const QString& detail)
     emit contextChanged();
     saveConversations();
     scheduleGit();                                                 // the answer may have changed files
+    if (m_localAgent && m_localAgent->running())                   // (e.g. the model server could not be started again: the agent waits no more)
+        m_localAgent->cancel();
 }
 
 void AiChannel::cancelRunning()
