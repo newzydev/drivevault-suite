@@ -150,52 +150,34 @@ Item {
         }
     }
 
-    Rectangle { z: 100; anchors.left: parent.left; width: 1; height: parent.height; color: Theme.borderSubtle }       // the line between the conversation and the browser
+
 
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
 
-        // ---- the header ---------------------------------------------------------------------------------------------------------------
-        Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 64
-            color: "#17130E"
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 20
-                anchors.rightMargin: 20
-                spacing: 14
-                Text { text: Tr.s("tab_browser"); font.pixelSize: 16; font.weight: Font.DemiBold; color: Theme.text }
-                Item { Layout.fillWidth: true }
-                MButton { objectName: "brExpand"; compact: true; text: root.expanded ? "⤡  " + Tr.s("br_shrink") : "⤢  " + Tr.s("br_expand"); onClicked: root.expandToggled() }
-                MButton { objectName: "brClose"; compact: true; text: "✕  " + Tr.s("br_close"); onClicked: root.closeRequested(); Accessible.name: Tr.s("br_close") }
-            }
-        }
-
-        // ---- the tabs of the browser ---------------------------------------------------------------------------------------------------
+        // ---- the tabs, with the expand and close buttons at the end (no title row: the page gets the room) ------------------------------
         Rectangle {
             objectName: "brTabs"
             Layout.fillWidth: true
-            implicitHeight: 42
-            color: "#101114"
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
+            implicitHeight: 44
+            color: "#0D0E11"
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 10
-                anchors.rightMargin: 10
-                spacing: 6
+                anchors.rightMargin: 8
+                anchors.topMargin: 6
+                spacing: 4
                 ListView {
                     id: tabStrip
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     orientation: ListView.Horizontal
-                    spacing: 4
+                    spacing: 3
                     clip: true
                     model: tabs
                     boundsBehavior: Flickable.StopAtBounds
-                    delegate: Rectangle {
+                    delegate: Item {
                         id: tab
                         required property int index
                         required property string title
@@ -203,16 +185,19 @@ Item {
                         required property bool busy
                         required property bool agent
                         readonly property bool active: index === root.cur
-                        width: Math.max(90, Math.min(200, (tabStrip.width - 40) / Math.max(1, tabs.count)))
-                        height: tabStrip.height - 8
-                        y: 6
-                        radius: 9
-                        color: active ? Theme.surface : tabMouse.containsMouse ? Theme.surfaceHover : "transparent"
-                        border.width: active ? 1 : 0
-                        border.color: active ? Theme.accent : "transparent"
+                        width: Math.max(96, Math.min(210, (tabStrip.width - 8) / Math.max(1, tabs.count)))
+                        height: tabStrip.height
+                        // a tab like the tabs of a browser: round at the top, the shown one is the colour of the bar under it
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.bottomMargin: -12
+                            radius: 10
+                            color: tab.active ? Theme.backgroundAlt : tabMouse.containsMouse ? "#17191F" : "transparent"
+                        }
+                        Rectangle { visible: tab.active; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; height: 2; radius: 1; color: Theme.accent }
                         RowLayout {
                             anchors.fill: parent
-                            anchors.leftMargin: 10
+                            anchors.leftMargin: 11
                             anchors.rightMargin: 6
                             spacing: 6
                             Text { visible: tab.agent; text: "✦"; font.pixelSize: 11; color: Theme.accent }
@@ -223,66 +208,83 @@ Item {
                                 font.pixelSize: 12
                                 color: tab.active ? Theme.text : Theme.textSecondary
                             }
-                            Text {
-                                text: "✕"
-                                font.pixelSize: 11
-                                color: Theme.textDisabled
-                                MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: root.closeTab(tab.index) }
+                            Item {
+                                implicitWidth: 18; implicitHeight: 18
+                                Rectangle { anchors.fill: parent; radius: 9; color: closeMouse.containsMouse ? Theme.surfaceHover : "transparent" }
+                                LineIcon { anchors.centerIn: parent; size: 10; kind: "close"; color: closeMouse.containsMouse ? Theme.text : Theme.textDisabled }
+                                MouseArea { id: closeMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.closeTab(tab.index) }
                             }
                         }
                         MouseArea { id: tabMouse; anchors.fill: parent; z: -1; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.cur = tab.index }
                     }
                 }
-                MButton { objectName: "brNewTab"; variant: "ghost"; compact: true; text: "+"; font.pixelSize: 16; onClicked: root.newTab("about:blank", true, false); Accessible.name: Tr.s("br_new_tab") }
+                IconButton { objectName: "brNewTab"; box: 28; kind: "plus"; tip: Tr.s("br_new_tab"); onClicked: root.newTab("about:blank", true, false) }
+                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 18; color: Theme.border }
+                IconButton { objectName: "brExpand"; box: 28; kind: root.expanded ? "shrink" : "expand"; tip: Tr.s(root.expanded ? "br_shrink" : "br_expand"); onClicked: root.expandToggled() }
+                IconButton { objectName: "brClose"; box: 28; kind: "close"; tip: Tr.s("br_close"); onClicked: root.closeRequested() }
             }
         }
 
         // ---- address bar ----------------------------------------------------------------------------------------------------------------
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 52
+            implicitHeight: 50
             color: Theme.backgroundAlt
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 14
-                anchors.rightMargin: 14
-                spacing: 8
-                MButton { objectName: "brBack"; variant: "ghost"; compact: true; text: "‹"; font.pixelSize: 18; enabled: root.view ? root.view.canGoBack : false; onClicked: root.view.goBack(); Accessible.name: Tr.s("br_back") }
-                MButton { objectName: "brForward"; variant: "ghost"; compact: true; text: "›"; font.pixelSize: 18; enabled: root.view ? root.view.canGoForward : false; onClicked: root.view.goForward(); Accessible.name: Tr.s("br_forward") }
-                MButton {
-                    objectName: "brReload"
-                    variant: "ghost"
-                    compact: true
-                    text: root.loading ? "✕" : "↻"
-                    onClicked: root.loading ? root.view.stop() : root.view.reload()
-                    Accessible.name: Tr.s(root.loading ? "br_stop" : "br_reload")
-                }
-                // the lock: what this site may do (permissions) - like the site information of Chrome
-                MButton {
-                    id: siteButton
-                    objectName: "brSite"
-                    variant: "secondary"
-                    compact: true
-                    text: (root.curUrl.indexOf("https:") === 0 ? "🔒 " : "ⓘ ") + root.hostOf(root.curUrl)
-                    visible: !root.isStart
-                    Layout.maximumWidth: 240
-                    onClicked: { siteMenu.refresh(); siteMenu.open() }
-                    Accessible.name: Tr.s("br_site_settings")
-                }
-                MField {
-                    id: addressField
-                    objectName: "brAddress"
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                spacing: 2
+                IconButton { objectName: "brBack"; box: 30; kind: "back"; tip: Tr.s("br_back"); enabled: root.view ? root.view.canGoBack : false; onClicked: root.view.goBack() }
+                IconButton { objectName: "brForward"; box: 30; kind: "forward"; tip: Tr.s("br_forward"); enabled: root.view ? root.view.canGoForward : false; onClicked: root.view.goForward() }
+                IconButton { objectName: "brReload"; box: 30; kind: root.loading ? "stop" : "reload"; tip: Tr.s(root.loading ? "br_stop" : "br_reload"); onClicked: root.loading ? root.view.stop() : root.view.reload() }
+                Item { Layout.preferredWidth: 4 }
+                // the address as one rounded field: the lock (what this site may do - like the site information of Chrome) and the address
+                Rectangle {
                     Layout.fillWidth: true
-                    placeholderText: Tr.s("br_address_placeholder")
-                    text: root.isStart ? "" : root.curUrl
-                    onAccepted: { root.go(text); if (root.view) root.view.forceActiveFocus() }
-                    onActiveFocusChanged: if (activeFocus) selectAll()
-                    Connections {
-                        target: root
-                        function onCurUrlChanged() { if (!addressField.activeFocus) addressField.text = root.isStart ? "" : root.curUrl }
+                    implicitHeight: 34
+                    radius: 17
+                    color: Theme.background
+                    border.width: addressField.activeFocus ? 2 : 1
+                    border.color: addressField.activeFocus ? Theme.accent : Theme.border
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 6
+                        anchors.rightMargin: 12
+                        spacing: 4
+                        IconButton {
+                            id: siteButton
+                            objectName: "brSite"
+                            box: 26
+                            visible: !root.isStart
+                            kind: root.curUrl.indexOf("https:") === 0 ? "lock" : "info"
+                            tip: Tr.s("br_site_settings") + " - " + root.hostOf(root.curUrl)
+                            onClicked: { siteMenu.refresh(); siteMenu.open() }
+                        }
+                        TextField {
+                            id: addressField
+                            objectName: "brAddress"
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            placeholderText: Tr.s("br_address_placeholder")
+                            placeholderTextColor: Theme.textDisabled
+                            color: Theme.text
+                            font.pixelSize: 13
+                            selectByMouse: true
+                            leftPadding: root.isStart ? 10 : 2
+                            verticalAlignment: TextInput.AlignVCenter
+                            background: null
+                            text: root.isStart ? "" : root.curUrl
+                            onAccepted: { root.go(text); if (root.view) root.view.forceActiveFocus() }
+                            onActiveFocusChanged: if (activeFocus) selectAll()
+                            Connections {
+                                target: root
+                                function onCurUrlChanged() { if (!addressField.activeFocus) addressField.text = root.isStart ? "" : root.curUrl }
+                            }
+                        }
                     }
                 }
-                MButton { objectName: "brAllSites"; variant: "ghost"; compact: true; text: Tr.s("br_all_sites"); onClicked: allSites.show() }
+                IconButton { objectName: "brAllSites"; box: 30; kind: "sites"; tip: Tr.s("br_all_sites"); onClicked: allSites.show() }
             }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
             Rectangle {                                                       // load progress
@@ -293,7 +295,6 @@ Item {
                 color: Theme.accent
             }
         }
-
         // ---- the permission question of a site (Chrome shows it under the address bar, too) ---------------------------------------------
         Rectangle {
             id: askBar
@@ -358,10 +359,11 @@ Item {
                 delegate: WebEngineView {
                     id: wv
                     required property int index
+                    required property string address                            // a delegate with required properties has no `model` object: the roles are required properties
                     anchors.fill: parent
                     visible: index === root.cur
                     profile: profile
-                    Component.onCompleted: url = model.address                  // the first address of the tab (no binding: a redirect must not start a new load)
+                    Component.onCompleted: url = address                        // the first address of the tab (no binding: a redirect must not start a new load)
                     settings.javascriptCanOpenWindows: true
                     settings.fullScreenSupportEnabled: false
                     property var consoleErrors: []                              // what this page logged since it started loading (for the AI)

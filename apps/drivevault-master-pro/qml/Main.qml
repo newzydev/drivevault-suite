@@ -219,7 +219,7 @@ ApplicationWindow {
                 anchors.rightMargin: 0
                 spacing: 12
                 Image { source: "qrc:/qt/qml/DriveVault/Master/resources/icons/app.png"; Layout.preferredWidth: 34; Layout.preferredHeight: 34; sourceSize.width: 68; smooth: true }
-                Text { text: Tr.s("title"); font.pixelSize: 17; font.weight: Font.Bold; color: Theme.text }
+                Text { visible: win.width >= 1180; text: Tr.s("title"); font.pixelSize: 17; font.weight: Font.Bold; color: Theme.text }       // (no room for the name next to the tabs in a narrow window)
                 Item { Layout.fillWidth: true }
                 // language: one small switch
                 Rectangle {
@@ -287,6 +287,14 @@ ApplicationWindow {
                     WindowButton { objectName: "winClose"; kind: "close"; text: Tr.s("close"); onClicked: win.close() }
                 }
             }
+            // the three tabs live in the title bar (the page below gets the whole height): Programs | AI Q&A | Agentic AI
+            TabSwitcher {
+                objectName: "tabBar"
+                anchors.centerIn: parent
+                implicitHeight: 38
+                current: win.tab
+                onPicked: key => win.tab = key
+            }
         }
 
         // ---- Master Pro itself has a newer release ------------------------------------------------------------------------------
@@ -334,7 +342,6 @@ ApplicationWindow {
             mode: win.tab === "agent" ? "agent" : "ask"
             Layout.fillWidth: true
             Layout.fillHeight: true
-            onTabPicked: key => win.tab = key
         }
 
         // ---- hero + programs by section --------------------------------------------------------------------------------------------
@@ -383,15 +390,6 @@ ApplicationWindow {
                         anchors.leftMargin: 40
                         anchors.rightMargin: 40
                         spacing: 10
-
-                        // tabs: Programs | AI Q&A | Agentic AI
-                        TabSwitcher {
-                            objectName: "tabBar"
-                            Layout.alignment: Qt.AlignHCenter
-                            current: win.tab
-                            onPicked: key => win.tab = key
-                        }
-                        Item { Layout.preferredHeight: 6 }
 
                         Text {
                             Layout.fillWidth: true

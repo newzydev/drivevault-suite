@@ -26,6 +26,8 @@ Item {
             modeMenu.popup(modeChip, 0, -modeMenu.implicitHeight - 6)
         else if (part === "effort")
             effortMenu.popup(effortChip, 0, -effortMenu.implicitHeight - 6)
+        else if (part === "side-toggle")                                       // the list is hidden 2.5 s later, while the page is shown (the layout must follow live)
+            diagToggle.start()
         else if (part === "side-hidden")                                       // the list of conversations hidden
             sideOpen = false
         else if (part === "browser-wide") {                                    // the browser expanded over the conversation
@@ -61,7 +63,13 @@ Item {
         }
     }
     // ---- attachments of the message box: text files (any page) and pictures (agent page, when the model can see) ------------------------------
+    Timer { id: diagToggle; interval: 2500; onTriggered: root.sideOpen = false }
     property bool sideOpen: true                            // the list of conversations at the left (a button in the header shows / hides it)
+    property real browserWidth: 0                          // the width the user dragged the browser to (0 = the default, 40% of the window)
+    function clampBrowser(w) {                              // at least 380, and the list at the left + the conversation (480) + the line always fit
+        const sideW = root.sideOpen ? (root.width < 900 ? 210 : 270) : 0
+        return Math.max(260, Math.min(Math.max(w, 380), root.width - sideW - 480 - 9))      // (in a narrow window it is narrower than 380 rather than pushed out of the window)
+    }
     property bool browserWide: false                        // the browser is expanded over the conversation
     property bool browserOpen: false                        // the browser is shown at the right (instead of the panel)
     property bool browserEver: false                        // it was opened once: the view stays alive (the AI uses it)
@@ -618,20 +626,6 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        // ---- slim header: the tabs --------------------------------------------------------------------------------------------
-        Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 64
-            color: "#17130E"
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
-            TabSwitcher {
-                anchors.centerIn: parent
-                current: root.mode
-                prefix: "aiTab_"
-                onPicked: key => root.tabPicked(key)
-            }
-        }
-
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -641,14 +635,19 @@ Item {
             Rectangle {
                 id: side
                 objectName: "aiSidebar"
-                visible: root.sideOpen
-                Layout.preferredWidth: root.width < 900 ? 210 : 270            // the same width whether the browser is open or not
+                readonly property real openWidth: root.width < 900 ? 210 : 270       // the same width whether the browser is open or not
+                visible: Layout.preferredWidth > 0.5
+                Layout.preferredWidth: root.sideOpen ? openWidth : 0
+                Behavior on Layout.preferredWidth { NumberAnimation { duration: 190; easing.type: Easing.OutCubic } }
                 Layout.fillHeight: true
+                clip: true
                 color: "#0D0E11"
                 Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.borderSubtle }
                 ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 16
+                    x: 16
+                    y: 16
+                    width: side.openWidth - 32
+                    height: parent.height - 32
                     spacing: 12
                     MButton {
                         objectName: "aiNew"
@@ -803,6 +802,7 @@ Item {
                 visible: !(root.browserShown && root.browserWide)
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.minimumWidth: 480
                 spacing: 0
 
                 // title row
@@ -812,14 +812,12 @@ Item {
                     Layout.rightMargin: 28
                     Layout.topMargin: 14
                     spacing: 10
-                    MButton {                                 // shows / hides the list of conversations at the left
+                    IconButton {                              // shows / hides the list of conversations at the left
                         objectName: "aiSideToggle"
-                        variant: "ghost"
-                        compact: true
-                        text: "☰"
-                        font.pixelSize: 16
+                        kind: "sidebar"
+                        active: root.sideOpen
+                        tip: Tr.s(root.sideOpen ? "side_hide" : "side_show")
                         onClicked: root.sideOpen = !root.sideOpen
-                        Accessible.name: Tr.s(root.sideOpen ? "side_hide" : "side_show")
                     }
                     Text { text: Tr.s(root.agent ? "ai_new_agent" : "ai_new_ask"); font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.text }
                     Chip { text: root.modelLabel }
@@ -831,14 +829,15 @@ Item {
                         Behavior on opacity { NumberAnimation { duration: 250 } }
                     }
                     Item { Layout.fillWidth: true }
-                    MButton {                                 // the browser belongs to the Agentic AI page: the AI opens its web pages there, the user can browse too
+                    IconButton {                              // the browser belongs to the Agentic AI page: the AI opens its web pages there, the user can browse too
                         objectName: "aiBrowser"
                         visible: root.agent && Ai.browser.compiledIn
-                        compact: true
-                        text: Tr.s("tab_browser")
+                        kind: "globe"
+                        active: root.browserShown
+                        tip: Tr.s("tab_browser")
                         onClicked: root.browserOpen = !root.browserOpen
                     }
-                    MButton { objectName: "aiSettings"; compact: true; text: Tr.s("ai_settings"); onClicked: settings.open() }
+                    IconButton { objectName: "aiSettings"; kind: "gear"; tip: Tr.s("ai_settings"); onClicked: settings.open() }
                 }
 
                 // the conversation (or the welcome when it is empty)
@@ -1541,13 +1540,32 @@ Item {
                 }
             }
 
+            // ---- the line between the conversation and the browser: drag it left / right to make the browser wider / narrower ----
+            Item {
+                id: splitter
+                objectName: "aiSplitter"
+                visible: root.browserShown && !root.browserWide
+                Layout.preferredWidth: 9
+                Layout.fillHeight: true
+                Rectangle { anchors.horizontalCenter: parent.horizontalCenter; width: splitArea.pressed || splitArea.containsMouse ? 3 : 1; height: parent.height
+                            color: splitArea.pressed || splitArea.containsMouse ? Theme.accent : Theme.borderSubtle }
+                MouseArea {
+                    id: splitArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.SplitHCursor
+                    preventStealing: true
+                    onPositionChanged: mouse => { if (pressed) root.browserWidth = root.clampBrowser(root.width - mapToItem(root, mouse.x, 0).x) }
+                    onDoubleClicked: root.browserWidth = 0                                  // back to the default width
+                }
+            }
             // ---- right: the browser (Qt WebEngine) takes the place of the panel when it is open and pushes the conversation aside; created when first opened, then kept ----
             Loader {
                 id: browserLoader
                 objectName: "browserLoader"
                 visible: root.browserShown
                 active: Ai.browser.compiledIn && root.browserEver
-                Layout.preferredWidth: Math.max(440, Math.round(root.width * 0.4))
+                Layout.preferredWidth: root.clampBrowser(root.browserWidth > 0 ? root.browserWidth : Math.round(root.width * 0.4))
                 Layout.fillWidth: root.browserWide                     // expanded: it takes the place of the conversation too
                 Layout.fillHeight: true
                 onLoaded: if (root.pendingPreview !== "") { item.showPreview(root.pendingPreview); root.pendingPreview = "" }

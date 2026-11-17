@@ -1,6 +1,14 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.26.0 (2026-11-17): The tabs in the title bar, icon buttons, a browser you can resize and that opens the page at once
+  - Fixed: when the AI wrote a web page the browser opened a tab for it but did not load the file - the tab stayed on the start page. The page now appears at once and follows the file as the AI writes.
+  - Changed: the three tabs (Programs, AI Q&A, Agentic AI) moved into the title bar, so every page has the whole height.
+  - Changed: the buttons at the top of the Agentic AI page and of the browser are icons (hover for the name).
+  - New: drag the line between the conversation and the browser to make the browser wider or narrower (double-click: default width). The browser no longer runs out of the window when the window is small.
+  - Changed: the list of conversations slides away when hidden. The browser looks like a browser: tabs on top with expand and close at the end, an address field with a lock.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.25.0 (2026-11-17): The final check no longer goes on for ever
   - Changed: the check the AI makes of its own work before it finishes (reading the files, opening the page in the browser) and the fixing it starts are limited to 10 tool calls. After that the AI is told that it is enough, gets no tools, and has to write its short summary of what it did and checked. Before, a vague request such as "make it beautiful" could keep it polishing for an hour.
   - Not code-signed (Windows SmartScreen may warn).

@@ -47,7 +47,8 @@ int main(int argc, char* argv[])
     QCommandLineOption agentFolder(QStringLiteral("agent-folder"), QStringLiteral("Working folder of --agent-test."), QStringLiteral("dir"));
     QCommandLineOption agentOut(QStringLiteral("agent-out"), QStringLiteral("File that gets the result of --agent-test (JSON)."), QStringLiteral("file"));
     QCommandLineOption browserInteract(QStringLiteral("browser-interact"), QStringLiteral("With --screenshot: open the HTML <file> and work it like the AI does (click, type, drag, scroll, tabs, live reload); the answers go next to the screenshot (diagnostics)."), QStringLiteral("file"));
-    parser.addOptions({dataDir, lang, registry, shot, size, list, tab, aiView, browserTest, browserInteract, agentTest, agentFolder, agentOut});
+    QCommandLineOption browserPreview(QStringLiteral("browser-preview"), QStringLiteral("With --screenshot: ask the browser to show the HTML <file> as if the AI had just written it (the live preview), then take the picture (diagnostics)."), QStringLiteral("file"));
+    parser.addOptions({dataDir, lang, registry, shot, size, list, tab, aiView, browserTest, browserInteract, browserPreview, agentTest, agentFolder, agentOut});
     parser.process(app);
 
     for (const char* font : {":/qt/qml/DriveVault/Master/resources/fonts/Inter-Variable.ttf",
@@ -127,7 +128,7 @@ int main(int argc, char* argv[])
                 window->resize(wh.at(0).toInt(), wh.at(1).toInt());
         }
         const QString file = parser.value(shot);
-        const int delay = parser.isSet(browserInteract) ? 30000 : parser.isSet(browserTest) ? 9000 : 1500;
+        const int delay = parser.isSet(browserInteract) ? 30000 : parser.isSet(browserTest) ? 9000 : parser.isSet(browserPreview) ? 6000 : 1500;
         if (parser.isSet(browserTest)) {              // diagnostics: what the AI's browser tools do with a real page (open -> read -> look), written next to the screenshot
             const QString page = QFileInfo(parser.value(browserTest)).absoluteFilePath();
             auto* bridge = ai.browserBridge();
@@ -151,6 +152,11 @@ int main(int argc, char* argv[])
                     });
                 });
             });
+        }
+        if (parser.isSet(browserPreview)) {
+            const QString page = QFileInfo(parser.value(browserPreview)).absoluteFilePath();
+            auto* bridge = ai.browserBridge();
+            QTimer::singleShot(800, &app, [bridge, page] { bridge->previewFile(page); });
         }
         if (parser.isSet(browserInteract)) {          // diagnostics: open a test page and work it like the AI does (click, type, drag, scroll, tabs, live reload); every answer goes to <screenshot>.steps.txt
             const QString page = QFileInfo(parser.value(browserInteract)).absoluteFilePath();
