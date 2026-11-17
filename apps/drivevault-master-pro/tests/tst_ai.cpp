@@ -2043,6 +2043,34 @@ private slots:
         QVERIFY(done.wait(20000));
         QCOMPARE(asked.count(), 1);
     }
+    void theFinalCheckAndThePolishingAfterItAreLimitedThenTheJobEndsWithASummary()
+    {
+        QDir().mkpath(m_dir.filePath("polish"));
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("w1", "write_file", {{"path", "a.txt"}, {"content", "hello"}})}, QString())
+                     << agentReply({}, QStringLiteral("Done."));                                    // the final check starts here
+        for (int i = 0; i < 10; ++i)                                                                // ... and the model keeps looking and fiddling
+            server.queue << agentReply({agentCall(QString("r%1").arg(i).toLatin1().constData(), "read_file", {{"path", "a.txt"}, {"start_line", i + 1}})}, QString());
+        server.queue << agentReply({}, QStringLiteral("Summary: written and checked."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("polish");
+        c.allowEdits = true;
+        c.maxSteps = 60;
+        c.history = {{"user", "write a.txt"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(30000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QCOMPARE(server.requests, 13);
+        const QJsonObject lastBody = requestBody(server.log.at(12));
+        QVERIFY(!lastBody.contains("tools"));                                                       // no tools in the last request: only words
+        QVERIFY(lastMessage(server.log.at(12)).contains("That is enough checking"));
+        QVERIFY(requestBody(server.log.at(11)).contains("tools"));                                  // until then the tools were there
+    }
     void afterTwoFailedEditsInARowTheModelIsToldToRewriteTheFile()
     {
         QDir().mkpath(m_dir.filePath("editfail"));

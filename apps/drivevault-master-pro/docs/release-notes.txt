@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.25.0 (2026-11-17): The final check no longer goes on for ever
+  - Changed: the check the AI makes of its own work before it finishes (reading the files, opening the page in the browser) and the fixing it starts are limited to 10 tool calls. After that the AI is told that it is enough, gets no tools, and has to write its short summary of what it did and checked. Before, a vague request such as "make it beautiful" could keep it polishing for an hour.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.24.2 (2026-11-17): The vision file is not listed as a model
   - Fixed: a vision file named mmproj-F16.gguf (as Hugging Face names it) showed up in the list of models with a Use button. Vision files are no longer listed as models.
   - Not code-signed (Windows SmartScreen may warn).

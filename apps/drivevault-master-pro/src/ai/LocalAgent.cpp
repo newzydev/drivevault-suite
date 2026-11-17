@@ -171,6 +171,8 @@ QString LocalAgent::start(const Config& c)
     m_previewed.clear();
     m_browserActions = 0;
     m_editFails.clear();
+    m_reviewCalls = 0;
+    m_forceFinish = false;
     m_lastCall.clear();
     m_sameCall = 0;
     m_taskIndex = int(m_messages.size()) - 1;                   // the user's new message: the task
@@ -229,6 +231,13 @@ void LocalAgent::step()
         return;
     }
     ++m_steps;
+    constexpr int kMaxReviewCalls = 10;                            // the final check (and whatever it starts) may use this many tool calls, then the job ends with a summary
+    if (m_reviewed && m_reviewCalls >= kMaxReviewCalls && !m_forceFinish) {
+        m_forceFinish = true;
+        note(QStringLiteral("Enough checking: asking for the final summary"));
+        m_messages.append(QJsonObject{{"role", "user"}, {"content", QStringLiteral("That is enough checking and polishing: what the user asked for is done. Do not call any tool. Write the final answer now: "
+                                                                                    "a short summary of what you did and what you checked, and name anything you did not finish.")}});
+    }
     QJsonArray tools;
     if (m_files)
         for (const QJsonValue& v : m_files->specs())
@@ -247,6 +256,8 @@ void LocalAgent::step()
         m_messages.append(QJsonObject{{"role", "user"}, {"content", n}});
     m_taskNotes.clear();
     // keep the conversation inside the window of the server (a long job reads many files and writes many pieces)
+    if (m_forceFinish)
+        tools = QJsonArray();                                      // no tools: only words
     m_toolTokens = qint64(QJsonDocument(tools).toJson(QJsonDocument::Compact).size()) * 2 / 5;
     const qint64 room = m_config.contextTokens - (m_config.maxTokens > 0 ? m_config.maxTokens : 2048) - 1024;
     const int before = int(m_messages.size());
@@ -258,8 +269,10 @@ void LocalAgent::step()
     }
     // The answer is read as a stream: the page shows what is being written while it is written (a slow model needs minutes for a long answer), a tool call that
     // grows too long is stopped at once, and the part of a file that was written is not lost.
-    QJsonObject body{{"model", m_config.model}, {"messages", m_messages}, {"tools", tools}, {"stream", true}, {"stream_options", QJsonObject{{"include_usage", true}}},
+    QJsonObject body{{"model", m_config.model}, {"messages", m_messages}, {"stream", true}, {"stream_options", QJsonObject{{"include_usage", true}}},
                      {"chat_template_kwargs", QJsonObject{{"enable_thinking", m_config.thinking}}}};
+    if (!tools.isEmpty())
+        body["tools"] = tools;
     if (m_config.maxTokens > 0)
         body["max_tokens"] = m_config.maxTokens;
     QNetworkRequest req{QUrl(m_config.baseUrl + QStringLiteral("/chat/completions"))};
@@ -536,6 +549,10 @@ void LocalAgent::onReply()
     }
     if (!calls.isEmpty() && handleBrokenCalls(&calls, content, cutByLength || m_stream.abortedLong || cutError))
         return;
+    if (m_forceFinish && !calls.isEmpty()) {                       // it asked for a tool although it was told to stop: the job ends here
+        end(true, {}, {});
+        return;
+    }
     if (calls.isEmpty()) {
         // ---- finishing: the job is done only when the model says so AND nothing it promised is left ----
         if (cutByLength && m_continues < 8) {                  // a long answer hit max_tokens: let it go on where it stopped
@@ -769,6 +786,8 @@ void LocalAgent::runNextCall()
         return;
     }
     const QJsonObject call = m_calls.at(m_callIndex++).toObject();
+    if (m_reviewed)
+        ++m_reviewCalls;
     const QJsonObject fn = call.value(QLatin1String("function")).toObject();
     const QString name = fn.value(QLatin1String("name")).toString();
     const QString id = call.value(QLatin1String("id")).toString();
