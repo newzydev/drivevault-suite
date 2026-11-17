@@ -62,6 +62,125 @@ Item {
     readonly property string runClock: runStartedMs > 0 ? fmtDuration(nowMs - runStartedMs) : ""
     readonly property int todosDone: root.ch.todos.filter(t => t.status === "completed").length
 
+    // line icons for the panels, drawn here (no icon font needed): monitor | folder | branch | globe | terminal | chevronDown | chevronRight
+    component Icon: Canvas {
+        id: ic
+        property string kind: "folder"
+        property color color: Theme.textSecondary
+        implicitWidth: 16
+        implicitHeight: 16
+        onColorChanged: requestPaint()
+        onKindChanged: requestPaint()
+        Component.onCompleted: requestPaint()
+        onPaint: {
+            const c = getContext("2d")
+            c.reset()
+            c.strokeStyle = ic.color
+            c.fillStyle = ic.color
+            c.lineWidth = 1.5
+            c.lineCap = "round"
+            c.lineJoin = "round"
+            c.beginPath()
+            if (kind === "monitor") {
+                c.rect(2, 3, 12, 8); c.moveTo(8, 11); c.lineTo(8, 13.5); c.moveTo(5.5, 13.5); c.lineTo(10.5, 13.5)
+            } else if (kind === "folder") {
+                c.moveTo(2, 4.5); c.lineTo(6.2, 4.5); c.lineTo(7.6, 6); c.lineTo(14, 6); c.lineTo(14, 12.5); c.lineTo(2, 12.5); c.closePath()
+            } else if (kind === "branch") {
+                c.arc(4.5, 3.8, 1.6, 0, Math.PI * 2); c.moveTo(4.5, 5.4); c.lineTo(4.5, 10.6)
+                c.moveTo(6.1, 12.2); c.arc(4.5, 12.2, 1.6, 0, Math.PI * 2)
+                c.moveTo(12.6, 6.2); c.arc(11, 6.2, 1.6, 0, Math.PI * 2)
+                c.moveTo(11, 7.8); c.quadraticCurveTo(11, 10.2, 4.8, 10.6)
+            } else if (kind === "globe") {
+                c.arc(8, 8, 6, 0, Math.PI * 2); c.moveTo(2, 8); c.lineTo(14, 8)
+                c.ellipse(5.2, 2, 5.6, 12)
+            } else if (kind === "terminal") {
+                c.rect(1.5, 2.5, 13, 11); c.moveTo(4.5, 6); c.lineTo(7, 8.2); c.lineTo(4.5, 10.4); c.moveTo(8.5, 10.6); c.lineTo(11.5, 10.6)
+            } else if (kind === "chevronDown") {
+                c.moveTo(4, 6); c.lineTo(8, 10); c.lineTo(12, 6)
+            } else if (kind === "chevronRight") {
+                c.moveTo(6, 4); c.lineTo(10, 8); c.lineTo(6, 12)
+            }
+            c.stroke()
+        }
+    }
+    // a row of the right panel: an icon, a text, and a small detail at the end (the whole row can be clickable)
+    component PanelRow: RowLayout {
+        id: pr
+        property string icon: ""
+        property string text: ""
+        property string detail: ""
+        property bool bold: false
+        property bool clickable: false
+        property color detailColor: Theme.textSecondary
+        signal clicked()
+        Layout.fillWidth: true
+        spacing: 12
+        Item {
+            Layout.preferredWidth: 22
+            Layout.preferredHeight: 18
+            Icon { anchors.centerIn: parent; kind: pr.icon; color: pr.clickable && rowHover.hovered ? Theme.accent : Theme.textSecondary }
+        }
+        Text {
+            Layout.fillWidth: true
+            text: pr.text
+            font.pixelSize: 13
+            font.weight: pr.bold ? Font.DemiBold : Font.Normal
+            color: pr.clickable && rowHover.hovered ? Theme.accent : Theme.text
+            elide: Text.ElideRight
+            maximumLineCount: 1
+        }
+        Text {
+            visible: pr.detail !== ""
+            Layout.maximumWidth: 150
+            text: pr.detail
+            font.pixelSize: 12
+            color: pr.detailColor
+            elide: Text.ElideLeft
+            maximumLineCount: 1
+        }
+        TapHandler { enabled: pr.clickable; onTapped: pr.clicked() }
+        HoverHandler { id: rowHover; cursorShape: pr.clickable ? Qt.PointingHandCursor : Qt.ArrowCursor }
+    }
+    // a switch
+    component Toggle: Rectangle {
+        id: tg
+        property bool on: false
+        signal toggled()
+        implicitWidth: 34
+        implicitHeight: 20
+        radius: 10
+        color: on ? Theme.accent : Theme.border
+        Behavior on color { ColorAnimation { duration: 140 } }
+        Rectangle {
+            y: 3
+            x: tg.on ? 17 : 3
+            width: 14
+            height: 14
+            radius: 7
+            color: "white"
+            Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+        }
+        MouseArea { anchors.fill: parent; enabled: tg.enabled; cursorShape: Qt.PointingHandCursor; onClicked: tg.toggled() }
+    }
+    function folderName(path) { return path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || path }
+    function folderParent(path) {
+        const p = path.replace(/[\\/]+$/, "")
+        const i = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"))
+        return i > 0 ? p.substring(0, i).replace(/\//g, "\\") : ""
+    }
+    // the git line of the panel: the branch (and how far ahead / behind), or why there is none
+    function gitLine(g) {
+        if (g.state === "ok")
+            return g.branch + (g.detached ? " (HEAD)" : "") + (g.ahead > 0 ? "  ↑" + g.ahead : "") + (g.behind > 0 ? "  ↓" + g.behind : "")
+        if (g.state === "notRepo")
+            return Tr.s("git_not_repo")
+        if (g.state === "noGit")
+            return Tr.s("git_no_git")
+        if (g.state === "error")
+            return Tr.s("git_error")
+        return ""
+    }
+
     // a small ring that turns: this step (or the AI) is working
     component Spinner: Item {
         id: sp
@@ -298,18 +417,93 @@ Item {
                         clip: true
                         spacing: 2
                         model: root.ch.conversations
+                        property var collapsed: ({})                // folder -> its group is closed
+                        // agent page: the conversations are grouped by the folder they work in; a header per folder with a "+" for a new conversation there
+                        section.property: "folder"
+                        section.criteria: ViewSection.FullString
+                        section.delegate: Item {
+                            id: groupHeader
+                            required property string section
+                            readonly property bool closed: convList.collapsed[section] === true
+                            readonly property string name: section === "" ? Tr.s("group_none") : section.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || section
+                            width: convList.width
+                            height: root.agent ? 36 : 0
+                            visible: root.agent
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.topMargin: 2
+                                radius: 9
+                                color: groupMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                                Behavior on color { ColorAnimation { duration: 140 } }
+                            }
+                            MouseArea {
+                                id: groupMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    const m = Object.assign({}, convList.collapsed)
+                                    m[groupHeader.section] = !groupHeader.closed
+                                    convList.collapsed = m
+                                }
+                                ToolTip.visible: containsMouse && groupHeader.section !== ""
+                                ToolTip.text: groupHeader.section
+                                ToolTip.delay: 600
+                            }
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                anchors.rightMargin: 6
+                                spacing: 8
+                                Icon { kind: groupHeader.closed ? "chevronRight" : "chevronDown"; Layout.preferredWidth: 14; Layout.preferredHeight: 14 }
+                                Icon { kind: "folder"; color: Theme.accent }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: groupHeader.name
+                                    font.pixelSize: 13
+                                    font.weight: Font.DemiBold
+                                    color: Theme.text
+                                    elide: Text.ElideRight
+                                }
+                                Rectangle {                          // "+": a new conversation in this folder
+                                    objectName: "aiGroupNew"
+                                    visible: groupHeader.section !== ""
+                                    Layout.preferredWidth: 24
+                                    Layout.preferredHeight: 24
+                                    radius: 7
+                                    color: plusMouse.containsMouse ? Qt.alpha(Theme.accent, 0.22) : "transparent"
+                                    border.width: plusMouse.containsMouse ? 1 : 0
+                                    border.color: Qt.alpha(Theme.accent, 0.6)
+                                    Behavior on color { ColorAnimation { duration: 120 } }
+                                    Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 17; font.weight: Font.DemiBold; color: plusMouse.containsMouse ? Theme.accent : Theme.textSecondary }
+                                    MouseArea {
+                                        id: plusMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: { root.ch.newConversationIn(groupHeader.section); input.forceActiveFocus() }
+                                        ToolTip.visible: containsMouse
+                                        ToolTip.text: Tr.s("group_new")
+                                        ToolTip.delay: 400
+                                    }
+                                }
+                            }
+                        }
                         delegate: Rectangle {
                             id: row
                             required property var modelData
                             readonly property bool current: modelData.id === root.ch.currentId
+                            readonly property bool hidden: root.agent && convList.collapsed[modelData.folder] === true && !current
                             width: convList.width
-                            height: 38
+                            height: hidden ? 0 : 38
+                            visible: !hidden
+                            Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                             radius: 9
                             color: current ? Qt.alpha(Theme.accent, 0.16) : rowMouse.containsMouse ? Theme.surfaceHover : "transparent"
                             Behavior on color { ColorAnimation { duration: 140 } }
                             Text {
                                 anchors.left: parent.left
-                                anchors.leftMargin: 12
+                                anchors.leftMargin: root.agent ? 30 : 12                 // under its group header
                                 anchors.right: removeText.left
                                 anchors.rightMargin: 6
                                 anchors.verticalCenter: parent.verticalCenter
@@ -536,7 +730,7 @@ Item {
                                         Text { text: Tr.s(stepsBox.working ? "steps_title" : "steps_title_done"); font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
                                         Text { text: Tr.s("steps_count").replace("%1", stepsBox.finished).replace("%2", stepsBox.total); font.pixelSize: 12; color: Theme.textSecondary }
                                         Item { Layout.fillWidth: true }
-                                        Text { text: stepsBox.open ? "▾" : "▸"; font.pixelSize: 13; color: Theme.textSecondary }
+                                        Icon { kind: stepsBox.open ? "chevronDown" : "chevronRight" }
                                         TapHandler {
                                             onTapped: {
                                                 const m = Object.assign({}, list.expandedMap)
@@ -1020,37 +1214,195 @@ Item {
                 Layout.fillHeight: true
                 color: "#0D0E11"
                 Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: Theme.borderSubtle }
-                ColumnLayout {
+                Flickable {
+                    id: panelScroll
                     anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 10
-                    SideTitle { text: Tr.s(root.agent ? "ai_side_folder" : "ai_side_model") }
-                    Text {
-                        Layout.fillWidth: true
-                        text: root.agent ? (root.ch.folder === "" ? Tr.s("ai_folder_none") : root.ch.folder)
-                                         : root.modelLabel
-                        font.pixelSize: 13
-                        color: Theme.text
-                        wrapMode: Text.WrapAnywhere
+                    contentHeight: panelColumn.implicitHeight + 40
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                    ScrollBar.vertical: ScrollBar {}
+                    ColumnLayout {
+                        id: panelColumn
+                        x: 20
+                        y: 20
+                        width: panelScroll.width - 40
+                        spacing: 10
+
+                        // ---- the Q&A page: the model and the privacy note, as before ----
+                        SideTitle { visible: !root.agent; text: Tr.s("ai_side_model") }
+                        Text { visible: !root.agent; Layout.fillWidth: true; text: root.modelLabel; font.pixelSize: 13; color: Theme.text; wrapMode: Text.WrapAnywhere }
+                        SideTitle { visible: !root.agent; Layout.topMargin: 14; text: Tr.s("ai_side_privacy") }
+                        Text { visible: !root.agent; Layout.fillWidth: true; text: Tr.s(Ai.webEnabled ? "privacy_local_web" : "privacy_local"); font.pixelSize: 13; color: Theme.textSecondary; wrapMode: Text.Wrap }
+
+                        // ---- environment: where the work happens ----
+                        SideTitle { visible: root.agent; text: Tr.s("env_title") }
+                        PanelRow { visible: root.agent; icon: "monitor"; text: Tr.s("env_computer"); bold: true }
+                        PanelRow {
+                            objectName: "aiEnvFolder"
+                            visible: root.agent
+                            icon: "folder"
+                            text: root.ch.folder === "" ? Tr.s("env_no_folder") : root.folderName(root.ch.folder)
+                            detail: root.ch.folder === "" ? "" : root.folderParent(root.ch.folder)
+                            clickable: !root.ch.busy
+                            onClicked: folderDialog.open()
+                        }
+                        PanelRow {
+                            objectName: "aiEnvGit"
+                            visible: root.agent && root.ch.git.state !== "none"
+                            icon: "branch"
+                            text: root.gitLine(root.ch.git)
+                            detailColor: root.ch.git.state === "ok" ? Theme.textSecondary : Theme.warning
+                        }
+
+                        // ---- context: how much of the model window this conversation uses ----
+                        Rectangle { Layout.fillWidth: true; Layout.topMargin: 6; height: 1; color: Theme.borderSubtle }
+                        RowLayout {
+                            objectName: "aiContext"
+                            Layout.fillWidth: true
+                            spacing: 10
+                            Text { text: Tr.s("ctx_title"); font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
+                            Item { Layout.fillWidth: true }
+                            Text { text: root.ch.context.percent + "%"; font.pixelSize: 12; color: Theme.textSecondary }
+                            Rectangle {
+                                Layout.preferredWidth: 46
+                                Layout.preferredHeight: 6
+                                radius: 3
+                                color: Theme.border
+                                Rectangle {
+                                    height: parent.height
+                                    radius: parent.radius
+                                    width: parent.width * Math.min(100, root.ch.context.percent) / 100
+                                    color: root.ch.context.percent >= 90 ? Theme.error : root.ch.context.percent >= 70 ? Theme.warning : Theme.accent
+                                    Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+                                    Behavior on color { ColorAnimation { duration: 300 } }
+                                }
+                            }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: (root.ch.context.exact ? "" : Tr.s("ctx_estimate") + " ") + Tr.s("ctx_tokens").replace("%1", root.ch.context.used.toLocaleString(Qt.locale("en_US"), "f", 0)).replace("%2", root.ch.context.window.toLocaleString(Qt.locale("en_US"), "f", 0))
+                            font.pixelSize: 11
+                            color: Theme.textDisabled
+                            wrapMode: Text.Wrap
+                        }
+
+                        // ---- changes: what git says changed in the folder ----
+                        Rectangle { visible: root.agent; Layout.fillWidth: true; Layout.topMargin: 6; height: 1; color: Theme.borderSubtle }
+                        RowLayout {
+                            objectName: "aiChanges"
+                            visible: root.agent
+                            Layout.fillWidth: true
+                            spacing: 10
+                            Text { text: Tr.s("chg_title"); font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
+                            Rectangle {
+                                visible: root.ch.git.state === "ok" && root.ch.git.count > 0
+                                Layout.preferredWidth: Math.max(20, countText.implicitWidth + 12)
+                                Layout.preferredHeight: 18
+                                radius: 9
+                                color: Qt.alpha(Theme.accent, 0.2)
+                                Text { id: countText; anchors.centerIn: parent; text: root.ch.git.count; font.pixelSize: 11; font.weight: Font.DemiBold; color: Theme.accent }
+                            }
+                            Item { Layout.fillWidth: true }
+                            Text { visible: root.ch.git.state === "ok" && root.ch.git.added > 0; text: "+" + root.ch.git.added; font.pixelSize: 12; font.weight: Font.DemiBold; color: Theme.success }
+                            Text { visible: root.ch.git.state === "ok" && root.ch.git.removed > 0; text: "−" + root.ch.git.removed; font.pixelSize: 12; font.weight: Font.DemiBold; color: Theme.error }
+                            Text {
+                                text: "↻"
+                                font.pixelSize: 15
+                                color: refreshHover.hovered ? Theme.text : Theme.textSecondary
+                                TapHandler { onTapped: root.ch.refreshGit() }
+                                HoverHandler { id: refreshHover; cursorShape: Qt.PointingHandCursor }
+                                ToolTip.visible: refreshHover.hovered
+                                ToolTip.text: Tr.s("chg_refresh")
+                                ToolTip.delay: 400
+                            }
+                        }
+                        Text {
+                            visible: root.agent && root.ch.git.state !== "ok"
+                            Layout.fillWidth: true
+                            text: root.gitLine(root.ch.git)
+                            font.pixelSize: 12
+                            color: Theme.textDisabled
+                            wrapMode: Text.Wrap
+                        }
+                        Text { visible: root.agent && root.ch.git.state === "ok" && root.ch.git.count === 0; Layout.fillWidth: true; text: Tr.s("chg_none"); font.pixelSize: 12; color: Theme.textDisabled }
+                        Repeater {
+                            model: root.agent && root.ch.git.state === "ok" ? root.ch.git.files.slice(0, 12) : []
+                            delegate: RowLayout {
+                                id: changeRow
+                                required property var modelData
+                                Layout.fillWidth: true
+                                spacing: 8
+                                Rectangle {
+                                    Layout.preferredWidth: 18
+                                    Layout.preferredHeight: 18
+                                    radius: 5
+                                    color: Qt.alpha(changeRow.modelData.status === "D" ? Theme.error : changeRow.modelData.status === "M" || changeRow.modelData.status === "R" ? Theme.warning : changeRow.modelData.status === "U" ? Theme.error : Theme.success, 0.18)
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: changeRow.modelData.status
+                                        font.pixelSize: 11
+                                        font.weight: Font.Bold
+                                        color: changeRow.modelData.status === "D" || changeRow.modelData.status === "U" ? Theme.error : changeRow.modelData.status === "M" || changeRow.modelData.status === "R" ? Theme.warning : Theme.success
+                                    }
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: changeRow.modelData.path
+                                    font.pixelSize: 12
+                                    color: Theme.text
+                                    elide: Text.ElideMiddle
+                                    maximumLineCount: 1
+                                }
+                                Text { visible: changeRow.modelData.added > 0; text: "+" + changeRow.modelData.added; font.pixelSize: 11; color: Theme.success }
+                                Text { visible: changeRow.modelData.removed > 0; text: "−" + changeRow.modelData.removed; font.pixelSize: 11; color: Theme.error }
+                            }
+                        }
+                        Text {
+                            visible: root.agent && root.ch.git.state === "ok" && root.ch.git.count > 12
+                            Layout.fillWidth: true
+                            text: Tr.s("chg_more").replace("%1", root.ch.git.count - 12)
+                            font.pixelSize: 12
+                            color: Theme.textDisabled
+                        }
+
+                        // ---- connectors: what the AI can reach, and what it needs your answer for ----
+                        Rectangle { visible: root.agent; Layout.fillWidth: true; Layout.topMargin: 6; height: 1; color: Theme.borderSubtle }
+                        SideTitle { visible: root.agent; text: Tr.s("con_title") }
+                        RowLayout {
+                            objectName: "aiConnWeb"
+                            visible: root.agent
+                            Layout.fillWidth: true
+                            spacing: 12
+                            Item { Layout.preferredWidth: 22; Layout.preferredHeight: 18; Icon { anchors.centerIn: parent; kind: "globe" } }
+                            Text { Layout.fillWidth: true; text: Tr.s("con_web"); font.pixelSize: 13; color: Theme.text; elide: Text.ElideRight }
+                            Toggle { on: Ai.webEnabled; enabled: !root.ch.busy; opacity: enabled ? 1 : 0.5; onToggled: Ai.webEnabled = !Ai.webEnabled }
+                        }
+                        PanelRow {
+                            visible: root.agent
+                            icon: "branch"
+                            text: Tr.s("con_git")
+                            detail: root.ch.git.state === "noGit" ? Tr.s("con_missing") : Tr.s("con_ready")
+                            detailColor: root.ch.git.state === "noGit" ? Theme.warning : Theme.success
+                        }
+                        PanelRow {
+                            visible: root.agent
+                            icon: "terminal"
+                            text: Tr.s("con_cmd")
+                            detail: root.ch.permission === "ask" || root.ch.permission === "edit" ? Tr.s("con_ask") : Tr.s("con_off")
+                            detailColor: root.ch.permission === "ask" || root.ch.permission === "edit" ? Theme.success : Theme.textDisabled
+                        }
+
+                        // ---- what the AI may do in this mode ----
+                        SideTitle { visible: root.agent; Layout.topMargin: 10; text: Tr.s("ai_side_mode") }
+                        Text {
+                            visible: root.agent
+                            Layout.fillWidth: true
+                            text: Tr.s("ai_mode_" + root.ch.permission)
+                            font.pixelSize: 12
+                            color: Theme.textSecondary
+                            wrapMode: Text.Wrap
+                        }
                     }
-                    SideTitle { Layout.topMargin: 14; text: Tr.s("ai_side_privacy") }
-                    Text {
-                        Layout.fillWidth: true
-                        text: Tr.s(Ai.webEnabled ? "privacy_local_web" : "privacy_local")
-                        font.pixelSize: 13
-                        color: Theme.textSecondary
-                        wrapMode: Text.Wrap
-                    }
-                    SideTitle { visible: root.agent; Layout.topMargin: 14; text: Tr.s("ai_side_mode") }
-                    Text {
-                        visible: root.agent
-                        Layout.fillWidth: true
-                        text: Tr.s("ai_mode_" + root.ch.permission)
-                        font.pixelSize: 13
-                        color: Theme.textSecondary
-                        wrapMode: Text.Wrap
-                    }
-                    Item { Layout.fillHeight: true }
                 }
             }
         }

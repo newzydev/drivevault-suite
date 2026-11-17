@@ -64,6 +64,7 @@ signals:
     // One line of the step list of the page. `no` numbers the steps of a run (a step is sent again when its state changes). kind: list | read | search | glob |
     // edit | write | command | websearch | fetch | todo | plan | note | other; target: the file, the query, the command ... (for a note: its text);
     // state: running | waiting (for the user's answer) | done | error; note: a short result ("exit code 0", the error text).
+    void usage(int promptTokens, int completionTokens);    // what the server counted for the last request (the context meter of the page)
     void stepEvent(int no, const QString& kind, const QString& target, const QString& state, const QString& note);
     void finished(bool ok, const QString& code, const QString& detail);   // code: "" | cancelled | tooManySteps | http<status> | network | badReply | empty
 

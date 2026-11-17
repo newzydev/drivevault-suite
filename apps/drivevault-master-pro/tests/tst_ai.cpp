@@ -4,6 +4,7 @@
 #include "ai/AgentTools.h"
 #include "ai/AiService.h"
 #include "ai/CommandRunner.h"
+#include "ai/GitInfo.h"
 #include "ai/LocalAgent.h"
 #include "ai/WebTools.h"
 #include "ai/HttpChat.h"
@@ -930,6 +931,131 @@ private slots:
         QCOMPARE(steps2.size(), 1);
         QCOMPARE(steps2.at(0).toMap().value("kind").toString(), QString("list"));
         QCOMPARE(steps2.at(0).toMap().value("state").toString(), QString("done"));
+    }
+    // ---- git of the working folder ---------------------------------------------------------------------------------------------------------
+    void gitStatusIsParsed()
+    {
+        const QVariantMap a = GitInfo::parseStatus(QStringLiteral("## main...origin/main [ahead 2, behind 1]\n M src/a.cpp\nA  new.txt\n?? notes.md\nD  gone.txt\nR  old.txt -> renamed.txt\nUU conflict.txt\n"));
+        QCOMPARE(a.value("branch").toString(), QString("main"));
+        QCOMPARE(a.value("ahead").toInt(), 2);
+        QCOMPARE(a.value("behind").toInt(), 1);
+        QCOMPARE(a.value("count").toInt(), 6);
+        QStringList statuses, paths;
+        for (const QVariant& f : a.value("files").toList()) {
+            statuses << f.toMap().value("status").toString();
+            paths << f.toMap().value("path").toString();
+        }
+        QCOMPARE(statuses, QStringList({"M", "A", "?", "D", "R", "U"}));
+        QVERIFY(paths.contains("renamed.txt") && !paths.contains("old.txt"));
+        const QVariantMap b = GitInfo::parseStatus(QStringLiteral("## No commits yet on trunk\n?? a.txt\n"));
+        QCOMPARE(b.value("branch").toString(), QString("trunk"));
+        QCOMPARE(b.value("count").toInt(), 1);
+        const QVariantMap c = GitInfo::parseStatus(QStringLiteral("## HEAD (no branch)\n"));
+        QVERIFY(c.value("detached").toBool());
+        QCOMPARE(c.value("count").toInt(), 0);
+        QVariantMap d = GitInfo::parseStatus(QStringLiteral("## main\n M src/a.cpp\n M bin.dat\n D gone.txt\n"));
+        GitInfo::applyNumstat(d, QStringLiteral("3\t1\tsrc/a.cpp\n-\t-\tbin.dat\n0\t5\tgone.txt\n"));
+        QCOMPARE(d.value("added").toInt(), 3);
+        QCOMPARE(d.value("removed").toInt(), 6);
+        QCOMPARE(d.value("files").toList().at(0).toMap().value("added").toInt(), 3);
+        QCOMPARE(d.value("files").toList().at(1).toMap().value("added").toInt(), -1);          // a binary file: no numbers
+    }
+    void gitReportsARealFolder()
+    {
+        if (GitInfo::gitExecutable().isEmpty())
+            QSKIP("git is not on this PC");
+        const QString dir = m_dir.filePath("repo");
+        QDir().mkpath(dir);
+        auto git = [&](const QStringList& args) {
+            QProcess p;
+            p.setWorkingDirectory(dir);
+            p.start(GitInfo::gitExecutable(), QStringList{"-c", "user.name=t", "-c", "user.email=t@example.com"} + args);
+            return p.waitForFinished(20000) && p.exitCode() == 0;
+        };
+        auto put = [&](const QString& name, const QByteArray& data) {
+            QFile f(dir + "/" + name);
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(data);
+        };
+        QVERIFY(git({"init", "--initial-branch=main"}));
+        put("a.txt", "one\ntwo\n");
+        QVERIFY(git({"add", "."}));
+        QVERIFY(git({"commit", "-m", "first"}));
+        put("a.txt", "one\nthree\nfour\n");                                                    // 2 lines added, 1 removed
+        put("new.txt", "x");                                                                  // not tracked
+        GitInfo info;
+        QSignalSpy changed(&info, &GitInfo::changed);
+        info.refresh(dir);
+        QTRY_VERIFY_WITH_TIMEOUT(changed.count() >= 1, 20000);
+        const QVariantMap m = info.info();
+        QCOMPARE(m.value("state").toString(), QString("ok"));
+        QCOMPARE(m.value("branch").toString(), QString("main"));
+        QCOMPARE(m.value("count").toInt(), 2);
+        QCOMPARE(m.value("added").toInt(), 2);
+        QCOMPARE(m.value("removed").toInt(), 1);
+        // a folder that is not a repository, and no folder
+        QDir().mkpath(m_dir.filePath("plain"));
+        const int before = changed.count();
+        info.refresh(m_dir.filePath("plain"));
+        QTRY_VERIFY_WITH_TIMEOUT(changed.count() > before, 20000);
+        QCOMPARE(info.info().value("state").toString(), QString("notRepo"));
+        info.refresh(QString());
+        QCOMPARE(info.info().value("state").toString(), QString("none"));
+        // nothing in the repository was changed by looking (the file is as we left it)
+        QCOMPARE(QFile(dir + "/a.txt").size(), qint64(15));                                    // "one\nthree\nfour\n"
+    }
+    void conversationsAreGroupedByTheirFolder()
+    {
+        const QString a = m_dir.filePath("groupA"), b = m_dir.filePath("groupB");
+        QDir().mkpath(a);
+        QDir().mkpath(b);
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hubgroup");
+        dm::Hub hub(o);
+        QString idA2, idB;
+        {
+            AiService ai(&hub);
+            auto* agent = qobject_cast<AiChannel*>(ai.agent());
+            agent->setFolder(a);
+            QCOMPARE(agent->send("/help"), QString());                                        // a conversation without the model: it is saved in the folder of the moment
+            QTest::qWait(8);
+            agent->setFolder(b);                                                              // another folder: the next message begins a new conversation
+            QCOMPARE(agent->send("/help"), QString());
+            idB = agent->currentId();
+            QTest::qWait(8);
+            agent->setFolder(a);
+            QCOMPARE(agent->send("/help"), QString());
+            idA2 = agent->currentId();
+            const QVariantList list = agent->conversations();
+            QCOMPARE(list.size(), 3);
+            // the group of the newest conversation first, the newest first inside a group
+            QCOMPARE(list.at(0).toMap().value("id").toString(), idA2);
+            QCOMPARE(list.at(0).toMap().value("group").toString(), QString("groupA"));
+            QCOMPARE(list.at(1).toMap().value("group").toString(), QString("groupA"));
+            QCOMPARE(list.at(2).toMap().value("id").toString(), idB);
+            QCOMPARE(list.at(2).toMap().value("group").toString(), QString("groupB"));
+            QCOMPARE(QDir::cleanPath(list.at(2).toMap().value("folder").toString()), QDir::cleanPath(b));
+            // opening a conversation of another folder moves the work there
+            agent->select(idB);
+            QCOMPARE(QDir::cleanPath(agent->folder()), QDir::cleanPath(b));
+            // the "+" of a group
+            agent->newConversationIn(a);
+            QCOMPARE(QDir::cleanPath(agent->folder()), QDir::cleanPath(a));
+            QVERIFY(agent->currentId().isEmpty());
+            QVERIFY(agent->messages().isEmpty());
+            // the meter of the window
+            agent->select(idA2);
+            const QVariantMap ctx = agent->context();
+            QCOMPARE(ctx.value("window").toInt(), LlamaServer::kContextTokens);
+            QVERIFY(ctx.value("used").toInt() > 0 && ctx.value("percent").toInt() >= 0 && ctx.value("percent").toInt() <= 100);
+            QVERIFY(!ctx.value("exact").toBool());                                              // no request yet: an estimate
+        }
+        AiService again(&hub);                                                                  // the group survives a restart
+        auto* agent2 = qobject_cast<AiChannel*>(again.agent());
+        const QVariantList list2 = agent2->conversations();
+        QCOMPARE(list2.size(), 3);
+        QCOMPARE(list2.at(0).toMap().value("group").toString(), QString("groupA"));
     }
     void theAgentPageUsesTheLocalModel()
     {

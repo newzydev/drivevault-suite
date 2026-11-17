@@ -217,6 +217,9 @@ void LocalAgent::onReply()
         end(false, QStringLiteral("network"), errorString);
         return;
     }
+    const QJsonObject usageObject = root.value(QLatin1String("usage")).toObject();
+    if (usageObject.contains(QLatin1String("prompt_tokens")))
+        emit usage(usageObject.value(QLatin1String("prompt_tokens")).toInt(), usageObject.value(QLatin1String("completion_tokens")).toInt());
     const QJsonObject choice = root.value(QLatin1String("choices")).toArray().first().toObject();
     const QJsonObject message = choice.value(QLatin1String("message")).toObject();
     if (message.isEmpty()) {

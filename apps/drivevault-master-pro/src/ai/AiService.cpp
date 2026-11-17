@@ -144,15 +144,30 @@ QVariantList AiChannel::messages() const
     return out;
 }
 
+// The conversations for the sidebar, newest first. On the agent page they come GROUPED by working folder: the groups are ordered by their newest
+// conversation, inside a group newest first, and every entry says its `folder` (the full path, "" when it has none) and `group` (the name to show).
 QVariantList AiChannel::conversations() const
 {
     QList<const Conversation*> sorted;
     for (const Conversation& c : m_conversations)
         sorted << &c;
     std::sort(sorted.begin(), sorted.end(), [](const Conversation* a, const Conversation* b) { return a->updated > b->updated; });
+    if (isAgent()) {
+        QStringList order;                                         // the folders, the one with the newest conversation first (lower case: Windows paths)
+        for (const Conversation* c : std::as_const(sorted))
+            if (!order.contains(c->folder.toLower()))
+                order << c->folder.toLower();
+        std::stable_sort(sorted.begin(), sorted.end(), [&order](const Conversation* a, const Conversation* b) {
+            return order.indexOf(a->folder.toLower()) < order.indexOf(b->folder.toLower());
+        });
+    }
     QVariantList out;
-    for (const Conversation* c : sorted)
-        out.append(QVariantMap{{"id", c->id}, {"title", c->title}});
+    for (const Conversation* c : std::as_const(sorted)) {
+        QString name = c->folder.isEmpty() ? QString() : QDir(c->folder).dirName();
+        if (name.isEmpty() && !c->folder.isEmpty())
+            name = c->folder;                                      // a drive root
+        out.append(QVariantMap{{"id", c->id}, {"title", c->title}, {"folder", c->folder}, {"group", name}});
+    }
     return out;
 }
 
@@ -180,6 +195,7 @@ AiChannel::Conversation& AiChannel::ensureConversation(const QString& firstText)
     QString title = firstText.simplified();
     c.title = title.size() > 48 ? title.left(47) + QStringLiteral("…") : title;
     c.updated = QDateTime::currentMSecsSinceEpoch();
+    c.folder = isAgent() ? m_folder : QString();                   // the sidebar puts it in the group of this folder
     m_conversations.append(c);
     m_currentId = c.id;
     emit conversationsChanged();
@@ -404,6 +420,12 @@ void AiChannel::sendTools()
             connect(m_localAgent, &LocalAgent::piece, this, &AiChannel::appendPiece);
             connect(m_localAgent, &LocalAgent::activity, this, &AiChannel::appendActivity);
             connect(m_localAgent, &LocalAgent::stepEvent, this, &AiChannel::onStep);
+            connect(m_localAgent, &LocalAgent::usage, this, [this](int prompt, int completion) {          // what the server counted: the context meter of the page
+                if (Conversation* conv = find(m_runId)) {
+                    conv->usedTokens = prompt + completion;
+                    emit contextChanged();
+                }
+            });
             connect(m_localAgent, &LocalAgent::finished, this, &AiChannel::finish);
             auto ask = [this](const QVariantMap& approval) {
                 if (Conversation* conv = find(m_runId); conv && !conv->messages.isEmpty()) {
@@ -473,6 +495,8 @@ void AiChannel::onStep(int no, const QString& kind, const QString& target, const
         while (m.stepList.size() > 400)
             m.stepList.removeFirst();
     }
+    if (state == QLatin1String("done") && (kind == QLatin1String("edit") || kind == QLatin1String("write") || kind == QLatin1String("command")))
+        scheduleGit();                                             // a file or a command may have changed the folder: the list of changes follows
     scheduleView();
 }
 
@@ -519,7 +543,9 @@ void AiChannel::finish(bool ok, const QString& code, const QString& detail)
     setBusy(false);
     emit messagesChanged();
     emit conversationsChanged();
+    emit contextChanged();
     saveConversations();
+    scheduleGit();                                                 // the answer may have changed files
 }
 
 void AiChannel::cancelRunning()
@@ -673,6 +699,7 @@ void AiChannel::newConversation()
 {
     m_currentId.clear();
     clearTodos();
+    emit contextChanged();
     emit messagesChanged();
     emit conversationsChanged();
 }
@@ -682,7 +709,18 @@ void AiChannel::select(const QString& id)
     if (!find(id) || id == m_currentId)
         return;
     m_currentId = id;
+    // the conversation belongs to a folder: work goes on there (and git shows that folder)
+    if (isAgent() && !m_busy) {
+        const QString folder = find(id)->folder;
+        if (!folder.isEmpty() && QFileInfo(folder).isDir() && folder.compare(m_folder, Qt::CaseInsensitive) != 0) {
+            m_folder = folder;
+            emit settingsChanged();
+            emit changed();
+            scheduleGit();
+        }
+    }
     clearTodos();
+    emit contextChanged();
     emit messagesChanged();
     emit conversationsChanged();
 }
@@ -720,8 +758,76 @@ void AiChannel::setFolder(const QString& folder)
     if (m_busy || f == m_folder)
         return;
     m_folder = f;
+    // another folder is another piece of work: a conversation that already has messages stays in its own group and the next message starts a new one
+    if (Conversation* c = current(); c && !c->messages.isEmpty() && c->folder.compare(f, Qt::CaseInsensitive) != 0) {
+        m_currentId.clear();
+        emit messagesChanged();
+        emit conversationsChanged();
+        emit todosChanged();
+        emit contextChanged();
+    }
     emit settingsChanged();
     emit changed();
+    scheduleGit();
+}
+
+// the "+" of a group in the sidebar
+void AiChannel::newConversationIn(const QString& folder)
+{
+    if (m_busy)
+        return;
+    if (!folder.isEmpty())
+        setFolder(folder);
+    newConversation();
+}
+
+// ---- git of the working folder (agent page) ----------------------------------------------------------------------------------------------
+void AiChannel::refreshGit()
+{
+    if (!isAgent())
+        return;
+    if (!m_git) {
+        m_git = new GitInfo(this);
+        connect(m_git, &GitInfo::changed, this, &AiChannel::gitChanged);
+    }
+    m_git->refresh(m_folder);
+}
+
+void AiChannel::scheduleGit()
+{
+    if (!isAgent())
+        return;
+    if (!m_gitTimer) {
+        m_gitTimer = new QTimer(this);
+        m_gitTimer->setSingleShot(true);
+        m_gitTimer->setInterval(500);
+        connect(m_gitTimer, &QTimer::timeout, this, &AiChannel::refreshGit);
+    }
+    m_gitTimer->start();
+}
+
+// How much of the model window the open conversation uses: the number the server reported for the last request when there is one, else an estimate
+// from the text (about 2.5 characters to a token).
+QVariantMap AiChannel::context() const
+{
+    int window = m_service->llama()->isExternal() ? LlamaServer::kSmallContextTokens : m_service->llama()->contextTokens();
+    int used = 0;
+    bool exact = false;
+    for (const Conversation& c : m_conversations) {
+        if (c.id != m_currentId)
+            continue;
+        if (c.usedTokens > 0) {
+            used = c.usedTokens;
+            exact = true;
+        } else {
+            qint64 chars = 0;
+            for (const Message& m : c.messages)
+                chars += m.text.size();
+            used = int(chars * 2 / 5);
+        }
+    }
+    const int percent = window > 0 ? qMin(100, int(qint64(used) * 100 / window)) : 0;
+    return QVariantMap{{"used", used}, {"window", window}, {"percent", percent}, {"exact", exact}};
 }
 
 void AiChannel::setPermission(const QString& permission)
@@ -753,6 +859,7 @@ void AiChannel::applySettings(const QVariantMap& v)
     if (!permissions().contains(m_permission))
         m_permission = v.value(QStringLiteral("allowEdits")).toBool() ? QStringLiteral("edit") : QStringLiteral("ask");     // an older settings file: the old switch
     emit settingsChanged();
+    scheduleGit();
 }
 
 void AiChannel::saveConversations()
@@ -793,7 +900,7 @@ void AiChannel::saveConversations()
         QJsonArray plan;
         for (const QVariant& v : c.todos)
             plan.append(QJsonObject{{"content", v.toMap().value("content").toString()}, {"status", v.toMap().value("status").toString()}});
-        list.append(QJsonObject{{"id", c.id}, {"title", c.title}, {"updated", double(c.updated)}, {"messages", msgs}, {"todos", plan}});
+        list.append(QJsonObject{{"id", c.id}, {"title", c.title}, {"updated", double(c.updated)}, {"messages", msgs}, {"todos", plan}, {"folder", c.folder}});
     }
     writeJson(m_service->dataFolder() + QStringLiteral("/conversations-") + m_mode + QStringLiteral(".json"), QJsonObject{{"conversations", list}});
 }
@@ -808,6 +915,7 @@ void AiChannel::load()
         c.id = o.value(QLatin1String("id")).toString();
         c.title = o.value(QLatin1String("title")).toString();
         c.updated = qint64(o.value(QLatin1String("updated")).toDouble());
+        c.folder = o.value(QLatin1String("folder")).toString();
         for (const QJsonValue& tv : o.value(QLatin1String("todos")).toArray())
             c.todos << QVariantMap{{"content", tv.toObject().value(QLatin1String("content")).toString()}, {"status", tv.toObject().value(QLatin1String("status")).toString()}};
         for (const QJsonValue& mv : o.value(QLatin1String("messages")).toArray()) {

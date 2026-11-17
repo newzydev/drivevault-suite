@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GitInfo.h"
 #include "HttpChat.h"
 #include "LlamaServer.h"
 #include "LocalAgent.h"
@@ -52,6 +53,8 @@ class AiChannel : public QObject {
     Q_PROPERTY(QString permission READ permission NOTIFY settingsChanged FINAL)       // agent mode: read | plan | ask | edit (see Permission below)
     Q_PROPERTY(QString effort READ effort NOTIFY settingsChanged FINAL)               // low | medium | high
     Q_PROPERTY(QVariantList todos READ todos NOTIFY todosChanged FINAL)               // agent: the task list the model keeps (todo_write): [{content, status}]
+    Q_PROPERTY(QVariantMap git READ git NOTIFY gitChanged FINAL)                      // agent: the working folder in git (GitInfo::info: branch, changed files ...)
+    Q_PROPERTY(QVariantMap context READ context NOTIFY contextChanged FINAL)          // {used, window, percent, exact}: how much of the model window the open conversation uses
 
 public:
     struct Message {
@@ -72,6 +75,8 @@ public:
         qint64 updated = 0;
         QList<Message> messages;
         QVariantList todos;                // the plan the AI keeps: [{content, status}]
+        QString folder;                    // agent page: the working folder when the conversation began (the sidebar groups by it)
+        int usedTokens = 0;                // what the server said the last request used (not saved; 0 = unknown)
     };
 
     AiChannel(const QString& mode, AiService* service);
@@ -91,6 +96,10 @@ public:
     bool canWrite() const { return m_permission == QLatin1String("ask") || m_permission == QLatin1String("edit"); }
     QString effort() const { return m_effort; }
     QVariantList todos() const;                            // the plan of the open conversation
+    QVariantMap git() const { return m_git ? m_git->info() : QVariantMap{{"state", "none"}}; }
+    QVariantMap context() const;
+    Q_INVOKABLE void refreshGit();                         // ask git again (also done after a change, a finished answer and a new folder)
+    Q_INVOKABLE void newConversationIn(const QString& folder);   // the "+" of a group of the sidebar: a new conversation in that folder
 
     // A message that starts with "/" is a command of the page (agent page: /help /clear /new /mode /effort /web /todos /init). Returns true when it was handled
     // here; `prompt` is then empty (nothing goes to the model) - or, for /init, the text to send instead.
@@ -123,8 +132,11 @@ signals:
     void conversationsChanged();
     void changed();                                        // anything worth saving to the settings file
     void todosChanged();
+    void gitChanged();
+    void contextChanged();
 
 private:
+    void scheduleGit();                                    // refreshGit in a moment (changes come in bursts)
     void localExchange(const QString& userText, const QString& reply);        // a question and an answer that never reach the model (slash commands)
     QString projectNotes(QString* fileName) const;         // the start of CLAUDE.md / AGENTS.md of the working folder ("" when there is none)
     void clearTodos();
@@ -158,6 +170,8 @@ private:
     QString m_status;
     HttpChat* m_http = nullptr;
     LocalAgent* m_localAgent = nullptr;
+    GitInfo* m_git = nullptr;                              // agent page only
+    QTimer* m_gitTimer = nullptr;
     QMetaObject::Connection m_waitLocal;
     QTimer* m_viewTimer = nullptr;
     int m_generation = 0;                                  // bumps on stop / switch: a late callback of an old request does nothing
