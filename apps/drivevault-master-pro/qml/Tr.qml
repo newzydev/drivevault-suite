@@ -183,6 +183,7 @@ QtObject {
         "step_todo": ["Update the plan", "อัปเดตแผนงาน"],
         "step_plan": ["Plan ready for your approval", "แผนพร้อมให้คุณอนุมัติ"],
         "note_room": ["Made room: older results were shortened", "จัดพื้นที่: ย่อผลลัพธ์เก่าลง"],
+        "note_review": ["Checking its own work before it finishes", "ตรวจงานของตัวเองก่อนจบ"],
         "note_cut": ["The answer was cut off: asking for a shorter one", "คำตอบยาวเกินและถูกตัด: ขอให้เขียนสั้นลง"],
         "note_ctx": ["The conversation was too long: shortening and trying again", "บทสนทนายาวเกินไป: ย่อแล้วลองใหม่"],
         "note_long": ["A long answer: going on", "คำตอบยาว: เขียนต่อ"],

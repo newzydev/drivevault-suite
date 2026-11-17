@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.20.0 (2026-11-17): The AI checks its own work before it finishes
+  - New: when a job has written or changed files, the AI is asked once, before it says it is done, to read them again and compare them with your request (missing sections, styles, scripts, closing tags, broken links) and to fix gaps. The step list shows "Checking its own work before it finishes".
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.19.3 (2026-11-17): A tidier step list
   - Changed: the grey lines "The answer was too long and was cut off" are no longer shown in the box "What the AI does" - the file simply goes on in the next part. The count of steps no longer includes them.
   - Not code-signed (Windows SmartScreen may warn).

@@ -1194,6 +1194,7 @@ private slots:
         c.folder = m_dir.filePath("bigfile");
         c.allowEdits = true;
         c.approveWrites = true;
+        c.reviewWork = false;
         c.maxTokens = 8192;
         c.history = {{"user", "write a big page"}};
         QCOMPARE(agent.start(c), QString());
@@ -1950,6 +1951,7 @@ private slots:
             c.folder = m_dir.filePath("askwork");
             c.allowEdits = true;
             c.approveWrites = true;
+            c.reviewWork = false;
             c.history = {{"user", "write a file"}};
             QCOMPARE(agent.start(c), QString());
             QVERIFY(asked.wait(15000));
@@ -1965,6 +1967,42 @@ private slots:
             const QString toolText = msgs.last().toObject().value("content").toString();
             QCOMPARE(toolText.contains("declined"), !allow);                             // the model is told what happened
         }
+    }
+    void aJobThatChangedFilesChecksItsOwnWorkOnceBeforeItEnds()
+    {
+        QDir().mkpath(m_dir.filePath("selfcheck"));
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("w1", "write_file", {{"path", "a.html"}, {"content", "<p>hi</p>"}})}, QString())
+                     << agentReply({}, QStringLiteral("Done."))                                      // would end here without the check
+                     << agentReply({agentCall("e1", "append_file", {{"path", "a.html"}, {"text", "<p>bye</p>"}})}, QString())   // the check found a gap
+                     << agentReply({}, QStringLiteral("Checked and finished."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("selfcheck");
+        c.allowEdits = true;
+        c.history = {{"user", "write a page"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QVERIFY(done.at(0).at(0).toBool());
+        QCOMPARE(server.requests, 4);                                                              // asked once, not again after the second "done"
+        QVERIFY(lastMessage(server.log.at(2)).contains("check your own work") && lastMessage(server.log.at(2)).contains("a.html"));
+        QFile f(m_dir.filePath("selfcheck/a.html"));
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        QCOMPARE(QString::fromUtf8(f.readAll()), QString("<p>hi</p><p>bye</p>"));
+        // a job that changed nothing is not asked to check anything
+        FakeServer plain;
+        plain.contentType = "application/json";
+        plain.queue << agentReply({}, QStringLiteral("Nothing to do."));
+        LocalAgent agent2(&net);
+        QSignalSpy done2(&agent2, &LocalAgent::finished);
+        c.baseUrl = plain.base() + "/v1";
+        QCOMPARE(agent2.start(c), QString());
+        QVERIFY(done2.wait(15000));
+        QCOMPARE(plain.requests, 1);
     }
     // ---- edit_file, glob_files ------------------------------------------------------------------------------------------------------------
     void editReplacesOneExactPiece()

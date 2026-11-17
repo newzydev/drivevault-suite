@@ -107,6 +107,8 @@ QString LocalAgent::start(const Config& c)
     m_budgetFactor = 1.0;
     m_compacted = false;
     m_todoList.clear();
+    m_changedFiles.clear();
+    m_reviewed = false;
     m_lastCall.clear();
     m_sameCall = 0;
     m_taskIndex = int(m_messages.size()) - 1;                   // the user's new message: the task
@@ -497,6 +499,17 @@ void LocalAgent::onReply()
                                      "Otherwise carry on with the next item now with a tool call.").arg(open.join(QStringLiteral("\n- ")))))
                 return;
         }
+        if (m_config.reviewWork && !m_reviewed && !m_changedFiles.isEmpty() && m_files) {     // one last look at its own work before it says "done"
+            m_reviewed = true;
+            if (!content.isEmpty())
+                m_messages.append(QJsonObject{{"role", "assistant"}, {"content", content}});
+            if (nudge(QStringLiteral("Checking its own work: reading the files again"),
+                      QStringLiteral("Before you finish, check your own work once. Read what you wrote (%1) and compare it with the user's request: look for parts that are missing "
+                                     "(sections you promised, styles or scripts, closing tags, links that point nowhere) or broken. Fix a gap with edit_file or append_file. "
+                                     "If everything is complete, answer with a short summary of what you did and what you checked; do not read the files again after that.")
+                          .arg(m_changedFiles.join(QStringLiteral(", ")))))
+                return;
+        }
         end(true, {}, {});
         return;
     }
@@ -696,8 +709,11 @@ void LocalAgent::runNextCall()
         else { kind = QStringLiteral("other"); target = name; }
         stepStart(kind, target.simplified().left(140));
     }
-    auto result = [this, id](const QString& text, bool isError) {
+    const QString changedPath = AgentTools::changesFiles(name) ? args.value(QLatin1String("path")).toString() : QString();
+    auto result = [this, id, changedPath](const QString& text, bool isError) {
         m_lastResultError = isError;
+        if (!isError && !changedPath.isEmpty() && !m_changedFiles.contains(changedPath))
+            m_changedFiles << changedPath;
         stepEnd(isError ? QStringLiteral("error") : QStringLiteral("done"), text);
         m_messages.append(QJsonObject{{"role", "tool"}, {"tool_call_id", id}, {"content", isError ? QStringLiteral("Error: ") + text : text}});
         runNextCall();

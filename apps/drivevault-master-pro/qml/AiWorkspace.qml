@@ -231,7 +231,8 @@ Item {
     function stepText(kind, target) {
         if (kind === "note") {                           // the texts of the agent's own notes are English in the program: shown in the language of the page
             const notes = [["Made room", "note_room"], ["The answer was too long", "note_cut"], ["The conversation was too long", "note_ctx"], ["The answer was long", "note_long"],
-                           ["The model sent nothing", "note_silent"], ["The task list is not finished", "note_todo"]]
+                           ["The model sent nothing", "note_silent"], ["The task list is not finished", "note_todo"],
+                           ["Checking its own work", "note_review"]]
             for (const n of notes)
                 if (target.indexOf(n[0]) === 0)
                     return Tr.s(n[1])
