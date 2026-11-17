@@ -822,6 +822,115 @@ private slots:
         QVERIFY(!other.ok);
         QCOMPARE(other.code, QString("http400"));
     }
+    // ---- the step list of the page ---------------------------------------------------------------------------------------------------------
+    void everyCallIsALineOfTheStepList()
+    {
+        QDir().mkpath(m_dir.filePath("steps"));
+        QFile f(m_dir.filePath("steps/a.txt"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("hello");
+        f.close();
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("c1", "list_files", {}), agentCall("c2", "read_file", {{"path", "a.txt"}}), agentCall("c3", "read_file", {{"path", "missing.txt"}})}, QString())
+                     << agentReply({}, QStringLiteral("Done."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        struct Ev { int no; QString kind, target, state, note; };
+        QList<Ev> events;
+        QObject::connect(&agent, &LocalAgent::stepEvent, [&](int no, const QString& kind, const QString& target, const QString& state, const QString& note) {
+            events << Ev{no, kind, target, state, note};
+        });
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("steps");
+        c.history = {{"user", "look"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QVERIFY(done.at(0).at(0).toBool());
+        // each call: running, then done (or error with the reason)
+        QCOMPARE(events.size(), 6);
+        QCOMPARE(events.at(0).kind, QString("list"));
+        QCOMPARE(events.at(0).state, QString("running"));
+        QCOMPARE(events.at(1).state, QString("done"));
+        QCOMPARE(events.at(1).no, events.at(0).no);                                              // the same line changes its state
+        QCOMPARE(events.at(2).kind, QString("read"));
+        QCOMPARE(events.at(2).target, QString("a.txt"));
+        QCOMPARE(events.at(3).state, QString("done"));
+        QCOMPARE(events.at(4).target, QString("missing.txt"));
+        QCOMPARE(events.at(5).state, QString("error"));
+        QVERIFY(events.at(5).note.contains("not found"));
+        QVERIFY(events.at(2).no > events.at(0).no && events.at(4).no > events.at(2).no);
+    }
+    void aCommandShowsThatItWaitsForYou()
+    {
+        QDir().mkpath(m_dir.filePath("stepcmd"));
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("r1", "run_command", {{"command", "echo hi"}})}, QString()) << agentReply({}, QStringLiteral("ok"));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QStringList states;
+        QObject::connect(&agent, &LocalAgent::stepEvent, [&](int, const QString&, const QString&, const QString& state, const QString&) { states << state; });
+        QSignalSpy asked(&agent, &LocalAgent::commandApprovalNeeded);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("stepcmd");
+        c.allowEdits = true;
+        c.approveWrites = true;
+        c.allowCommands = true;
+        c.history = {{"user", "run"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(asked.wait(15000));
+        QCOMPARE(states, QStringList({"running", "waiting"}));                                  // it waits for the user: the line says so
+        agent.answerApproval(true);
+        QVERIFY(done.wait(30000));
+        QCOMPARE(states, QStringList({"running", "waiting", "running", "done"}));
+    }
+    void theStepListIsKeptWithTheAnswerAndSurvivesARestart()
+    {
+        QDir().mkpath(m_dir.filePath("stepkeep"));
+        QFile model(m_dir.filePath("step-model.gguf"));
+        QVERIFY(model.open(QIODevice::WriteOnly));
+        model.write("x");
+        model.close();
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("c1", "list_files", {})}, QString()) << agentReply({}, QStringLiteral("One folder."));
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hubstep");
+        dm::Hub hub(o);
+        QString conversation;
+        {
+            AiService ai(&hub);
+            if (!ai.engineFound())
+                QSKIP("no llama.cpp engine on this PC");
+            auto* agent = qobject_cast<AiChannel*>(ai.agent());
+            ai.selectLocalModel(m_dir.filePath("step-model.gguf"));
+            ai.llama()->useExternalServer(server.base(), "");
+            ai.setWebEnabled(false);
+            agent->setFolder(m_dir.filePath("stepkeep"));
+            QCOMPARE(agent->send("what is here?"), QString());
+            QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 10000);
+            const QVariantMap reply = agent->messages().at(1).toMap();
+            const QVariantList steps = reply.value("stepList").toList();
+            QCOMPARE(steps.size(), 1);
+            QCOMPARE(steps.at(0).toMap().value("kind").toString(), QString("list"));
+            QCOMPARE(steps.at(0).toMap().value("state").toString(), QString("done"));
+            QVERIFY(reply.value("durationMs").toDouble() > 0);
+            conversation = agent->conversations().first().toMap().value("id").toString();
+        }
+        AiService again(&hub);                                                                  // the program is started again: the list is read from the file
+        auto* agent2 = qobject_cast<AiChannel*>(again.agent());
+        agent2->select(conversation);
+        const QVariantList steps2 = agent2->messages().at(1).toMap().value("stepList").toList();
+        QCOMPARE(steps2.size(), 1);
+        QCOMPARE(steps2.at(0).toMap().value("kind").toString(), QString("list"));
+        QCOMPARE(steps2.at(0).toMap().value("state").toString(), QString("done"));
+    }
     void theAgentPageUsesTheLocalModel()
     {
         FakeServer server;

@@ -61,6 +61,10 @@ signals:
     void planApproved();                                   // the user approved the plan
     void todosChanged(const QVariantList& todos);          // [{content, status: pending | in_progress | completed}], the whole list
     void activity(const QString& text);                    // "Read: notes.txt", "Web search: ..."
+    // One line of the step list of the page. `no` numbers the steps of a run (a step is sent again when its state changes). kind: list | read | search | glob |
+    // edit | write | command | websearch | fetch | todo | plan | note | other; target: the file, the query, the command ... (for a note: its text);
+    // state: running | waiting (for the user's answer) | done | error; note: a short result ("exit code 0", the error text).
+    void stepEvent(int no, const QString& kind, const QString& target, const QString& state, const QString& note);
     void finished(bool ok, const QString& code, const QString& detail);   // code: "" | cancelled | tooManySteps | http<status> | network | badReply | empty
 
 private:
@@ -71,6 +75,12 @@ private:
     void compact(qint64 budgetTokens);                     // keeps the conversation inside the window: shortens old results, then drops the oldest
     void shortenMessage(int index);
     qint64 estimateTokens() const;
+    void stepStart(const QString& kind, const QString& target);     // a new line of the step list: running
+    void stepEnd(const QString& state, const QString& note);        // the current line changes its state
+    void note(const QString& text);                                 // a line that is not a tool call (also the old activity line)
+    int m_stepNo = 0;
+    int m_curNo = 0;
+    QString m_curKind, m_curTarget;                                  // the step of the tool call that runs now
     bool nudge(const QString& activityText, const QString& text);   // appends a user message, shows an activity line and asks the model again (always true)
     void end(bool ok, const QString& code, const QString& detail);
 

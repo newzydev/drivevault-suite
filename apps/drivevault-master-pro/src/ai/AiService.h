@@ -64,12 +64,14 @@ public:
         qint64 startedMs = 0;              // when the request began (epoch ms; 0 = a local answer of a slash command)
         qint64 durationMs = 0;             // how long it took (0 while it runs)
         int steps = 0;                     // tool steps of the request (the activity list keeps only the newest 300)
+        QVariantList stepList;             // the step list the page shows: [{no, kind, target, state: running | waiting | done | error | stopped, note}] (the newest 400)
         QVariantMap approval;              // waits for the user's answer (not saved): {kind: "change", path, replaces, bytes, preview, diff} | {kind: "command", command} | {kind: "plan", plan}
     };
     struct Conversation {
         QString id, title;
         qint64 updated = 0;
         QList<Message> messages;
+        QVariantList todos;                // the plan the AI keeps: [{content, status}]
     };
 
     AiChannel(const QString& mode, AiService* service);
@@ -88,7 +90,7 @@ public:
     static QStringList permissions() { return {QStringLiteral("read"), QStringLiteral("plan"), QStringLiteral("ask"), QStringLiteral("edit")}; }
     bool canWrite() const { return m_permission == QLatin1String("ask") || m_permission == QLatin1String("edit"); }
     QString effort() const { return m_effort; }
-    QVariantList todos() const { return m_todos; }
+    QVariantList todos() const;                            // the plan of the open conversation
 
     // A message that starts with "/" is a command of the page (agent page: /help /clear /new /mode /effort /web /todos /init). Returns true when it was handled
     // here; `prompt` is then empty (nothing goes to the model) - or, for /init, the text to send instead.
@@ -136,6 +138,7 @@ private:
     void sendTools();                                      // the agent loop: the folder (agent) and / or the web
     void withLocalServer(const std::function<void()>& go);        // runs `go` when the local model is ready (starts it when needed)
     void appendActivity(const QString& text);
+    void onStep(int no, const QString& kind, const QString& target, const QString& state, const QString& note);
     void appendPiece(const QString& text);
     void setStatus(const QString& status);
     void finish(bool ok, const QString& code, const QString& detail);
@@ -148,7 +151,6 @@ private:
     QString m_folder;
     QString m_effort = QStringLiteral("medium");
     QString m_permission = QStringLiteral("ask");
-    QVariantList m_todos;
     QList<Conversation> m_conversations;
     QString m_currentId;
     QString m_runId;                                       // the conversation the running request writes into

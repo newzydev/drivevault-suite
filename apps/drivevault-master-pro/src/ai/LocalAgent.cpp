@@ -100,6 +100,7 @@ QString LocalAgent::start(const Config& c)
     m_lastCall.clear();
     m_sameCall = 0;
     m_taskIndex = int(m_messages.size()) - 1;                   // the user's new message: the task
+    m_stepNo = m_curNo = 0;
     m_webSeen.clear();
     ++m_generation;
     m_waiting = false;
@@ -154,7 +155,7 @@ void LocalAgent::step()
     compact(qint64(double(qMax<qint64>(room, 2048)) * m_budgetFactor));
     if (!m_compacted && (before != m_messages.size() || estimateTokens() < sizeBefore)) {
         m_compacted = true;
-        emit activity(QStringLiteral("Made room: older results were shortened (read a file again if you need it)"));
+        note(QStringLiteral("Made room: older results were shortened (read a file again if you need it)"));
     }
     QJsonObject body{{"model", m_config.model}, {"messages", m_messages}, {"tools", tools}, {"stream", false},
                      {"chat_template_kwargs", QJsonObject{{"enable_thinking", m_config.thinking}}}};
@@ -191,7 +192,7 @@ void LocalAgent::onReply()
         // the arguments and answered 500. Nothing was done: tell the model to make it shorter and ask again (twice at most).
         if (status == 500 && message.contains(QLatin1String("tool call"), Qt::CaseInsensitive) && m_parseRetries < 2) {
             ++m_parseRetries;
-            emit activity(QStringLiteral("The answer was too long and was cut off: asking again for a shorter one"));
+            note(QStringLiteral("The answer was too long and was cut off: asking again for a shorter one"));
             m_messages.append(QJsonObject{{"role", "user"},
                                           {"content", QStringLiteral("Your last tool call was cut off because it was too long, so nothing was done. Make it much shorter: write "
                                                                      "a big file in parts - first create a small file with write_file (under about 80 lines, no long comments), then "
@@ -205,7 +206,7 @@ void LocalAgent::onReply()
                 || message.contains(QLatin1String("too large"), Qt::CaseInsensitive))) {
             ++m_contextRetries;
             m_budgetFactor *= 0.55;
-            emit activity(QStringLiteral("The conversation was too long for the model: shortening it and trying again"));
+            note(QStringLiteral("The conversation was too long for the model: shortening it and trying again"));
             step();
             return;
         }
@@ -300,7 +301,24 @@ void LocalAgent::runNextCall()
             argsOk = false;
         args = doc.object();
     }
+    {   // what the page shows as one line of the step list: it starts "running" here and ends in `result` (done / error)
+        QString kind, target;
+        if (name == QLatin1String("list_files")) { kind = QStringLiteral("list"); target = args.value(QLatin1String("path")).toString(QStringLiteral(".")); }
+        else if (name == QLatin1String("read_file")) { kind = QStringLiteral("read"); target = args.value(QLatin1String("path")).toString(); }
+        else if (name == QLatin1String("search_text")) { kind = QStringLiteral("search"); target = args.value(QLatin1String("query")).toString(); }
+        else if (name == QLatin1String("glob_files")) { kind = QStringLiteral("glob"); target = args.value(QLatin1String("pattern")).toString(); }
+        else if (name == QLatin1String("edit_file")) { kind = QStringLiteral("edit"); target = args.value(QLatin1String("path")).toString(); }
+        else if (name == QLatin1String("write_file")) { kind = QStringLiteral("write"); target = args.value(QLatin1String("path")).toString(); }
+        else if (name == QLatin1String("run_command")) { kind = QStringLiteral("command"); target = args.value(QLatin1String("command")).toString(); }
+        else if (name == QLatin1String("web_search")) { kind = QStringLiteral("websearch"); target = args.value(QLatin1String("query")).toString(); }
+        else if (name == QLatin1String("fetch_page")) { kind = QStringLiteral("fetch"); target = args.value(QLatin1String("url")).toString(); }
+        else if (name == QLatin1String("todo_write")) { kind = QStringLiteral("todo"); }
+        else if (name == QLatin1String("exit_plan_mode")) { kind = QStringLiteral("plan"); }
+        else { kind = QStringLiteral("other"); target = name; }
+        stepStart(kind, target.simplified().left(140));
+    }
     auto result = [this, id](const QString& text, bool isError) {
+        stepEnd(isError ? QStringLiteral("error") : QStringLiteral("done"), text);
         m_messages.append(QJsonObject{{"role", "tool"}, {"tool_call_id", id}, {"content", isError ? QStringLiteral("Error: ") + text : text}});
         runNextCall();
     };
@@ -369,9 +387,11 @@ void LocalAgent::runNextCall()
                 result(QStringLiteral("the user declined this change; do not try again, say what you would have done"), true);
                 return;
             }
+            stepEnd(QStringLiteral("running"), {});
             const AgentTools::Result r = m_files->run(name, args);
             result(r.text, r.error);
         };
+        stepEnd(QStringLiteral("waiting"), {});
         emit approvalNeeded(info.path, info.exists, info.bytes, info.preview, name == QLatin1String("edit_file"));
         return;
     }
@@ -426,6 +446,7 @@ void LocalAgent::runControlCall(const QString& name, const QJsonObject& args, co
                 result(QStringLiteral("the user did not allow this command; do not try it again, say what you wanted to do"), true);
                 return;
             }
+            stepEnd(QStringLiteral("running"), {});
             if (!m_runner)
                 m_runner = new CommandRunner(this);
             const bool started = m_runner->run(folder, command, seconds, [this, gen, result](const QString& text, bool error) {
@@ -435,6 +456,7 @@ void LocalAgent::runControlCall(const QString& name, const QJsonObject& args, co
             if (!started)
                 result(QStringLiteral("another command is still running"), true);
         };
+        stepEnd(QStringLiteral("waiting"), {});
         emit commandApprovalNeeded(command);
         return;
     }
@@ -463,6 +485,7 @@ void LocalAgent::runControlCall(const QString& name, const QJsonObject& args, co
         emit planApproved();
         result(QStringLiteral("The user approved the plan. Carry it out now: you may change files and run commands (the user is asked before each one). Keep the task list up to date."), false);
     };
+    stepEnd(QStringLiteral("waiting"), {});
     emit planApprovalNeeded(plan);
 }
 
@@ -557,9 +580,30 @@ void LocalAgent::compact(qint64 budgetTokens)
     }
 }
 
+// ---- the step list of the page --------------------------------------------------------------------------------------------------------
+void LocalAgent::stepStart(const QString& kind, const QString& target)
+{
+    m_curNo = ++m_stepNo;
+    m_curKind = kind;
+    m_curTarget = target;
+    emit stepEvent(m_curNo, kind, target, QStringLiteral("running"), {});
+}
+
+void LocalAgent::stepEnd(const QString& state, const QString& note)
+{
+    emit stepEvent(m_curNo, m_curKind, m_curTarget, state, note.simplified().left(160));
+}
+
+// something the agent did that is not a tool call (made room, asked again, went on): one line of the list, and the old activity line
+void LocalAgent::note(const QString& text)
+{
+    emit activity(text);
+    emit stepEvent(++m_stepNo, QStringLiteral("note"), text, QStringLiteral("done"), {});
+}
+
 bool LocalAgent::nudge(const QString& activityText, const QString& text)
 {
-    emit activity(activityText);
+    note(activityText);
     m_messages.append(QJsonObject{{"role", "user"}, {"content", text}});
     step();
     return true;

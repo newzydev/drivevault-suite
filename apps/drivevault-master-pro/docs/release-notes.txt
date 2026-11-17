@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.15.0 (2026-11-17): The agent page shows what the AI is doing, step by step
+  - New: a box "What the AI does" lists every step as a line - read / list / search / find files, create or edit a file (with its name), run a command, search the web, open a page - with a turning ring while the step runs, a green tick when it is done, a red cross and the reason when it failed, and "waiting for you" while it waits for your Allow. It stays open on the newest answer and can be opened or closed with a click on its header. The lines are saved with the conversation.
+  - New: the plan of the AI (its task list) is a checklist box in the conversation, with a tick in front of what is done, the item being worked on marked, and a progress bar. The plan is saved with each conversation (it was only in the side panel and lost when you changed conversation); the plan list of the side panel is gone because the box replaces it.
+  - The page shows what the program knows: the calls and their results and the notes of the agent (made room, asked again). The reasoning of the model itself is still never shown.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.14.1 (2026-11-16): Updates close the program, show the installer and open the program again
   - When Master Pro updates itself or another program, the installer now appears at once: it closes the running program by itself (no question), skips the questions (welcome, licence, options, ready page), installs, and when you press Finish the program starts again as before. If the update of Video Editor Pro or PDF Pro also had to update Master Pro (which closes it), Master Pro opens again after Finish too.
   - The same behaviour applies when you double-click a newer setup file over an installed version. A first install is unchanged.

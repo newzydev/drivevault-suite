@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
     QCommandLineOption size(QStringLiteral("size"), QStringLiteral("Window size WxH for --screenshot."), QStringLiteral("WxH"));
     QCommandLineOption list(QStringLiteral("list-products"), QStringLiteral("Write the programs found on this PC as JSON to <file> and exit (diagnostics, installer tests)."), QStringLiteral("file"));
     QCommandLineOption tab(QStringLiteral("tab"), QStringLiteral("Tab shown first: programs, ask or agent (diagnostics, --screenshot)."), QStringLiteral("name"));
-    QCommandLineOption aiView(QStringLiteral("ai-view"), QStringLiteral("Open a part of the shown AI tab: settings, model (the model menu) or effort (the effort menu) (diagnostics, --screenshot)."), QStringLiteral("part"));
+    QCommandLineOption aiView(QStringLiteral("ai-view"), QStringLiteral("Open a part of the shown AI tab: settings, model (the model menu), effort (the effort menu) or conversation (the newest saved conversation) (diagnostics, --screenshot)."), QStringLiteral("part"));
     parser.addOptions({dataDir, lang, registry, shot, size, list, tab, aiView});
     parser.process(app);
 

@@ -138,7 +138,7 @@ QVariantList AiChannel::messages() const
         for (const Message& m : c.messages) {
             out.append(QVariantMap{{"role", m.role}, {"text", m.text}, {"streaming", m.streaming}, {"stopped", m.stopped}, {"errorCode", m.errorCode},
                                    {"errorDetail", m.errorDetail}, {"activity", m.activity}, {"approval", m.approval},
-                                   {"startedMs", double(m.startedMs)}, {"durationMs", double(m.durationMs)}, {"steps", m.steps}});
+                                   {"startedMs", double(m.startedMs)}, {"durationMs", double(m.durationMs)}, {"steps", m.steps}, {"stepList", m.stepList}});
         }
     }
     return out;
@@ -391,6 +391,7 @@ void AiChannel::sendTools()
             if (!notes.isEmpty()) {
                 c.system += QStringLiteral("\n\nProject instructions from %1 in this folder (follow them):\n").arg(notesFile) + notes;
                 appendActivity(QStringLiteral("Project instructions: ") + notesFile);
+                onStep(0, QStringLiteral("note"), QStringLiteral("Project instructions: ") + notesFile, QStringLiteral("done"), {});
             }
         } else {
             c.system = systemPrompt() + web;
@@ -402,6 +403,7 @@ void AiChannel::sendTools()
             m_localAgent = new LocalAgent(m_service->net(), this);
             connect(m_localAgent, &LocalAgent::piece, this, &AiChannel::appendPiece);
             connect(m_localAgent, &LocalAgent::activity, this, &AiChannel::appendActivity);
+            connect(m_localAgent, &LocalAgent::stepEvent, this, &AiChannel::onStep);
             connect(m_localAgent, &LocalAgent::finished, this, &AiChannel::finish);
             auto ask = [this](const QVariantMap& approval) {
                 if (Conversation* conv = find(m_runId); conv && !conv->messages.isEmpty()) {
@@ -421,8 +423,10 @@ void AiChannel::sendTools()
                 emit changed();
             });
             connect(m_localAgent, &LocalAgent::todosChanged, this, [this](const QVariantList& todos) {
-                m_todos = todos;
+                if (Conversation* conv = find(m_runId))                  // the plan belongs to the conversation (it is saved with it)
+                    conv->todos = todos;
                 emit todosChanged();
+                saveConversations();
             });
         }
         const QString err = m_localAgent->start(c);
@@ -444,6 +448,32 @@ void AiChannel::appendActivity(const QString& text)
             m.activity.removeFirst();
         scheduleView();
     }
+}
+
+// A line of the step list: a new step is added, a known one (same number) changes its state / result. The list is rebuilt for the page at most every 60 ms.
+void AiChannel::onStep(int no, const QString& kind, const QString& target, const QString& state, const QString& note)
+{
+    Conversation* conv = find(m_runId);
+    if (!conv || conv->messages.isEmpty())
+        return;
+    Message& m = conv->messages.last();
+    const QVariantMap entry{{"no", no}, {"kind", kind}, {"target", target}, {"state", state}, {"note", note}};
+    bool found = false;
+    if (no > 0) {
+        for (int i = int(m.stepList.size()) - 1; i >= 0 && i >= int(m.stepList.size()) - 6; --i) {          // the step that changes is one of the newest
+            if (m.stepList.at(i).toMap().value("no").toInt() == no) {
+                m.stepList[i] = entry;
+                found = true;
+                break;
+            }
+        }
+    }
+    if (!found) {
+        m.stepList << entry;
+        while (m.stepList.size() > 400)
+            m.stepList.removeFirst();
+    }
+    scheduleView();
 }
 
 void AiChannel::setStatus(const QString& status) { setBusy(true, status); }
@@ -471,6 +501,13 @@ void AiChannel::finish(bool ok, const QString& code, const QString& detail)
         m.approval.clear();
         if (m.startedMs > 0)
             m.durationMs = qMax<qint64>(1, QDateTime::currentMSecsSinceEpoch() - m.startedMs);
+        for (int i = 0; i < m.stepList.size(); ++i) {              // a step that never ended (stopped, an error): it is not "running" for ever
+            QVariantMap s = m.stepList.at(i).toMap();
+            if (s.value("state").toString() == QLatin1String("running") || s.value("state").toString() == QLatin1String("waiting")) {
+                s["state"] = QStringLiteral("stopped");
+                m.stepList[i] = s;
+            }
+        }
         if (code == QLatin1String("cancelled"))
             m.stopped = true;
         else if (!ok) {
@@ -505,13 +542,15 @@ void AiChannel::stop()
         finish(false, QStringLiteral("cancelled"), {});      // still starting the model: nothing is running yet
 }
 
-void AiChannel::clearTodos()
+QVariantList AiChannel::todos() const
 {
-    if (m_todos.isEmpty())
-        return;
-    m_todos.clear();
-    emit todosChanged();
+    for (const Conversation& c : m_conversations)
+        if (c.id == m_currentId)
+            return c.todos;
+    return {};
 }
+
+void AiChannel::clearTodos() { emit todosChanged(); }          // another conversation is shown: its own plan (or none)
 
 // ---- slash commands ----------------------------------------------------------------------------------------------------------------------
 void AiChannel::localExchange(const QString& userText, const QString& reply)
@@ -595,7 +634,7 @@ bool AiChannel::slashCommand(const QString& text, QString* prompt)
     }
     if (cmd == QLatin1String("/todos")) {
         QStringList lines;
-        for (const QVariant& v : std::as_const(m_todos)) {
+        for (const QVariant& v : todos()) {
             const QVariantMap t = v.toMap();
             const QString s = t.value("status").toString();
             lines << QStringLiteral("%1 %2").arg(s == QLatin1String("completed") ? QStringLiteral("[x]") : s == QLatin1String("in_progress") ? QStringLiteral("[>]") : QStringLiteral("[ ]"),
@@ -632,8 +671,8 @@ QString AiChannel::projectNotes(QString* fileName) const
 
 void AiChannel::newConversation()
 {
-    clearTodos();
     m_currentId.clear();
+    clearTodos();
     emit messagesChanged();
     emit conversationsChanged();
 }
@@ -642,8 +681,8 @@ void AiChannel::select(const QString& id)
 {
     if (!find(id) || id == m_currentId)
         return;
-    clearTodos();
     m_currentId = id;
+    clearTodos();
     emit messagesChanged();
     emit conversationsChanged();
 }
@@ -740,9 +779,21 @@ void AiChannel::saveConversations()
                 o["durationMs"] = double(m.durationMs);
                 o["steps"] = m.steps;
             }
+            if (!m.stepList.isEmpty()) {
+                QJsonArray sl;
+                for (const QVariant& v : m.stepList) {
+                    const QVariantMap s = v.toMap();
+                    sl.append(QJsonObject{{"kind", s.value("kind").toString()}, {"target", s.value("target").toString().left(140)}, {"state", s.value("state").toString()},
+                                          {"note", s.value("note").toString().left(160)}});
+                }
+                o["stepList"] = sl;
+            }
             msgs.append(o);
         }
-        list.append(QJsonObject{{"id", c.id}, {"title", c.title}, {"updated", double(c.updated)}, {"messages", msgs}});
+        QJsonArray plan;
+        for (const QVariant& v : c.todos)
+            plan.append(QJsonObject{{"content", v.toMap().value("content").toString()}, {"status", v.toMap().value("status").toString()}});
+        list.append(QJsonObject{{"id", c.id}, {"title", c.title}, {"updated", double(c.updated)}, {"messages", msgs}, {"todos", plan}});
     }
     writeJson(m_service->dataFolder() + QStringLiteral("/conversations-") + m_mode + QStringLiteral(".json"), QJsonObject{{"conversations", list}});
 }
@@ -757,6 +808,8 @@ void AiChannel::load()
         c.id = o.value(QLatin1String("id")).toString();
         c.title = o.value(QLatin1String("title")).toString();
         c.updated = qint64(o.value(QLatin1String("updated")).toDouble());
+        for (const QJsonValue& tv : o.value(QLatin1String("todos")).toArray())
+            c.todos << QVariantMap{{"content", tv.toObject().value(QLatin1String("content")).toString()}, {"status", tv.toObject().value(QLatin1String("status")).toString()}};
         for (const QJsonValue& mv : o.value(QLatin1String("messages")).toArray()) {
             const QJsonObject mo = mv.toObject();
             Message m;
@@ -769,6 +822,12 @@ void AiChannel::load()
             m.stopped = mo.value(QLatin1String("stopped")).toBool();
             m.durationMs = qint64(mo.value(QLatin1String("durationMs")).toDouble());
             m.steps = mo.value(QLatin1String("steps")).toInt();
+            int n = 0;
+            for (const QJsonValue& sv : mo.value(QLatin1String("stepList")).toArray()) {
+                const QJsonObject so = sv.toObject();
+                m.stepList << QVariantMap{{"no", ++n}, {"kind", so.value(QLatin1String("kind")).toString()}, {"target", so.value(QLatin1String("target")).toString()},
+                                          {"state", so.value(QLatin1String("state")).toString()}, {"note", so.value(QLatin1String("note")).toString()}};
+            }
             c.messages << m;
         }
         if (!c.id.isEmpty())

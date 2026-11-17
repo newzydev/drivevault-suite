@@ -26,6 +26,8 @@ Item {
             modeMenu.popup(modeChip, 0, -modeMenu.implicitHeight - 6)
         else if (part === "effort")
             effortMenu.popup(effortChip, 0, -effortMenu.implicitHeight - 6)
+        else if (part === "conversation" && ch.conversations.length > 0)       // open the newest saved conversation (to look at its step list and plan)
+            ch.select(ch.conversations[0].id)
     }
     function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : status === "waiting" ? "ai_waiting" : status === "working" ? "ai_working" : "ai_writing") }
     readonly property string modelLabel: Ai.localModelName === "" ? Tr.s("ai_model_none") : Ai.localModelName.replace(/\.gguf$/i, "")
@@ -59,6 +61,65 @@ Item {
     readonly property real runStartedMs: { const m = root.ch.messages; return root.ch.busy && m.length > 0 ? m[m.length - 1].startedMs : 0 }
     readonly property string runClock: runStartedMs > 0 ? fmtDuration(nowMs - runStartedMs) : ""
     readonly property int todosDone: root.ch.todos.filter(t => t.status === "completed").length
+
+    // a small ring that turns: this step (or the AI) is working
+    component Spinner: Item {
+        id: sp
+        property int size: 14
+        property color color: Theme.accent
+        implicitWidth: size
+        implicitHeight: size
+        Canvas {
+            anchors.fill: parent
+            onPaint: {
+                const c = getContext("2d")
+                c.reset()
+                c.lineWidth = 2
+                c.lineCap = "round"
+                c.strokeStyle = sp.color
+                c.beginPath()
+                c.arc(width / 2, height / 2, width / 2 - 2, 0, Math.PI * 1.5)
+                c.stroke()
+            }
+            Component.onCompleted: requestPaint()
+            onWidthChanged: requestPaint()
+            RotationAnimator on rotation { from: 0; to: 360; duration: 900; loops: Animation.Infinite; running: sp.visible }
+        }
+    }
+
+    // the line of the step list for a step: what it does, in the language of the page
+    function stepText(kind, target) {
+        if (kind === "note") {                           // the texts of the agent's own notes are English in the program: shown in the language of the page
+            const notes = [["Made room", "note_room"], ["The answer was too long", "note_cut"], ["The conversation was too long", "note_ctx"], ["The answer was long", "note_long"],
+                           ["The model sent nothing", "note_silent"], ["The task list is not finished", "note_todo"]]
+            for (const n of notes)
+                if (target.indexOf(n[0]) === 0)
+                    return Tr.s(n[1])
+            if (target.indexOf("Project instructions: ") === 0)
+                return Tr.s("note_project").replace("%1", target.substring(22))
+            return target
+        }
+        const key = "step_" + kind
+        const t = Tr.s(key)
+        if (t === key)
+            return target
+        return t.replace("%1", target)
+    }
+
+    // the same as stepText as rich text: the file / command / query of the step in a code font (everything is escaped)
+    function stepHtml(kind, target) {
+        const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        if (kind === "note")
+            return esc(stepText(kind, target))
+        const shown = target.length > 90 ? target.substring(0, 89) + "…" : target
+        const mono = "<span style='font-family:Consolas; color:" + Theme.textSecondary + "'>" + esc(shown) + "</span>"
+        const key = "step_" + kind
+        const t = Tr.s(key)
+        if (t === key)
+            return mono
+        const parts = t.split("%1")
+        return esc(parts[0]) + (parts.length > 1 ? mono + esc(parts.slice(1).join("%1")) : "")
+    }
 
     // three dots that breathe one after the other: "the AI is working"
     component Dots: Row {
@@ -329,7 +390,8 @@ Item {
                         spacing: 20
                         model: root.ch.messages
                         property bool follow: true
-                        property int seen: 0                       // messages that already had their entrance (the model is rebuilt on every change: only a new one animates)
+                        property var expandedMap: ({})             // answer index -> its step list is open (a click on the header changes it)
+                        property int seen: 0                      // messages that already had their entrance (the model is rebuilt on every change: only a new one animates)
                         onMovementEnded: follow = atYEnd
                         onModelChanged: if (follow) Qt.callLater(positionViewAtEnd)
                         onCountChanged: { follow = true; Qt.callLater(positionViewAtEnd) }
@@ -377,16 +439,176 @@ Item {
                                 }
                             }
 
-                            // the answer: what the agent did, the text, how it ended
-                            Repeater {
-                                model: msg.isUser ? [] : msg.modelData.activity
-                                delegate: Text {
-                                    required property string modelData
-                                    Layout.fillWidth: true
-                                    text: "›  " + modelData
-                                    font.pixelSize: 12
-                                    color: Theme.textSecondary
-                                    elide: Text.ElideRight
+                            // ---- the plan the AI keeps (todo_write): a checklist, a tick in front of what is done; on the newest answer ----
+                            Rectangle {
+                                id: planBox
+                                objectName: "aiPlanBox"
+                                visible: root.agent && !msg.isUser && msg.index === list.count - 1 && root.ch.todos.length > 0
+                                Layout.fillWidth: true
+                                implicitHeight: planColumn.implicitHeight + 24
+                                radius: 12
+                                color: Theme.surface
+                                border.width: 1
+                                border.color: root.todosDone === root.ch.todos.length ? Qt.alpha(Theme.success, 0.5) : Theme.border
+                                Behavior on border.color { ColorAnimation { duration: 300 } }
+                                ColumnLayout {
+                                    id: planColumn
+                                    anchors.fill: parent
+                                    anchors.margins: 12
+                                    spacing: 8
+                                    RowLayout {
+                                        spacing: 10
+                                        Text { text: Tr.s("plan_title"); font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
+                                        Text { text: root.todosDone + " / " + root.ch.todos.length; font.pixelSize: 12; color: Theme.textSecondary }
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 4
+                                            radius: 2
+                                            color: Theme.border
+                                            Rectangle {
+                                                height: parent.height
+                                                radius: parent.radius
+                                                color: root.todosDone === root.ch.todos.length ? Theme.success : Theme.accent
+                                                width: root.ch.todos.length > 0 ? parent.width * root.todosDone / root.ch.todos.length : 0
+                                                Behavior on width { NumberAnimation { duration: 450; easing.type: Easing.OutCubic } }
+                                            }
+                                        }
+                                    }
+                                    Repeater {
+                                        model: planBox.visible ? root.ch.todos : []
+                                        delegate: RowLayout {
+                                            required property var modelData
+                                            Layout.fillWidth: true
+                                            spacing: 10
+                                            Item {
+                                                Layout.alignment: Qt.AlignTop
+                                                implicitWidth: 18
+                                                implicitHeight: 18
+                                                Text { visible: modelData.status === "completed"; anchors.centerIn: parent; text: "✓"; font.pixelSize: 15; font.bold: true; color: Theme.success }
+                                                Spinner { visible: modelData.status === "in_progress" && root.ch.busy; anchors.centerIn: parent; size: 14 }
+                                                Text { visible: modelData.status === "in_progress" && !root.ch.busy; anchors.centerIn: parent; text: "●"; font.pixelSize: 13; color: Theme.accent }
+                                                Rectangle { visible: modelData.status === "pending"; anchors.centerIn: parent; width: 12; height: 12; radius: 6; color: "transparent"; border.width: 1.5; border.color: Theme.textDisabled }
+                                            }
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: modelData.content
+                                                font.pixelSize: 13
+                                                font.strikeout: modelData.status === "completed"
+                                                color: modelData.status === "completed" ? Theme.textDisabled : modelData.status === "in_progress" ? Theme.text : Theme.textSecondary
+                                                wrapMode: Text.Wrap
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // ---- what the AI does: one line per step (reading, creating, editing, running ...) - spinner while it runs, a tick when it is done ----
+                            Rectangle {
+                                id: stepsBox
+                                objectName: "aiStepsBox"
+                                readonly property var steps: msg.isUser ? [] : msg.modelData.stepList
+                                readonly property int total: steps.length
+                                readonly property int finished: steps.filter(s => s.state === "done" || s.state === "error").length
+                                readonly property bool working: !msg.isUser && msg.modelData.streaming
+                                // open while it works and on the newest answer; older answers show only the header (a click opens them)
+                                readonly property bool open: list.expandedMap[msg.index] !== undefined ? list.expandedMap[msg.index] : (working || msg.index === list.count - 1)
+                                visible: total > 0
+                                Layout.fillWidth: true
+                                implicitHeight: stepsColumn.implicitHeight + 24
+                                radius: 12
+                                color: Theme.surface
+                                border.width: 1
+                                border.color: Theme.border
+                                ColumnLayout {
+                                    id: stepsColumn
+                                    anchors.fill: parent
+                                    anchors.margins: 12
+                                    spacing: 8
+                                    // header: a click opens / closes the list (a finished one is closed by default)
+                                    RowLayout {
+                                        spacing: 10
+                                        Item {
+                                            implicitWidth: 18
+                                            implicitHeight: 18
+                                            Spinner { visible: stepsBox.working; anchors.centerIn: parent; size: 14 }
+                                            Text { visible: !stepsBox.working; anchors.centerIn: parent; text: "✓"; font.pixelSize: 15; font.bold: true; color: Theme.success }
+                                        }
+                                        Text { text: Tr.s(stepsBox.working ? "steps_title" : "steps_title_done"); font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
+                                        Text { text: Tr.s("steps_count").replace("%1", stepsBox.finished).replace("%2", stepsBox.total); font.pixelSize: 12; color: Theme.textSecondary }
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: stepsBox.open ? "▾" : "▸"; font.pixelSize: 13; color: Theme.textSecondary }
+                                        TapHandler {
+                                            onTapped: {
+                                                const m = Object.assign({}, list.expandedMap)
+                                                m[msg.index] = !stepsBox.open
+                                                list.expandedMap = m
+                                            }
+                                        }
+                                        HoverHandler { cursorShape: Qt.PointingHandCursor }
+                                    }
+                                    Flickable {
+                                        id: stepFlick
+                                        visible: stepsBox.open
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: Math.min(stepRows.implicitHeight, 280)
+                                        contentHeight: stepRows.implicitHeight
+                                        boundsBehavior: Flickable.StopAtBounds
+                                        clip: true
+                                        ScrollBar.vertical: ScrollBar {}
+                                        onContentHeightChanged: if (stepsBox.working) contentY = Math.max(0, contentHeight - height)      // follows the newest step
+                                        ColumnLayout {
+                                            id: stepRows
+                                            width: stepFlick.width - 10
+                                            spacing: 6
+                                            Repeater {
+                                                model: stepsBox.open ? stepsBox.steps : []
+                                                delegate: RowLayout {
+                                                    id: stepRow
+                                                    required property var modelData
+                                                    readonly property bool isNote: modelData.kind === "note"
+                                                    Layout.fillWidth: true
+                                                    spacing: 10
+                                                    Item {
+                                                        Layout.alignment: Qt.AlignTop
+                                                        implicitWidth: 18
+                                                        implicitHeight: 18
+                                                        Spinner { visible: stepRow.modelData.state === "running"; anchors.centerIn: parent; size: 14 }
+                                                        Text { visible: stepRow.modelData.state === "done"; anchors.centerIn: parent; text: "✓"; font.pixelSize: 15; font.bold: true; color: Theme.success }
+                                                        Text { visible: stepRow.modelData.state === "error"; anchors.centerIn: parent; text: "✗"; font.pixelSize: 14; font.bold: true; color: Theme.error }
+                                                        Text { visible: stepRow.modelData.state === "waiting"; anchors.centerIn: parent; text: "●"; font.pixelSize: 13; color: Theme.warning }
+                                                        Text { visible: stepRow.modelData.state === "stopped"; anchors.centerIn: parent; text: "–"; font.pixelSize: 15; color: Theme.textDisabled }
+                                                    }
+                                                    Text {
+                                                        Layout.fillWidth: true
+                                                        textFormat: Text.RichText                    // the verb in the text font, the file / command in a code font
+                                                        text: root.stepHtml(stepRow.modelData.kind, stepRow.modelData.target)
+                                                        font.pixelSize: 13
+                                                        font.italic: stepRow.isNote
+                                                        color: stepRow.modelData.state === "error" ? Theme.error : stepRow.isNote || stepRow.modelData.state === "stopped" ? Theme.textDisabled : Theme.text
+                                                        wrapMode: Text.NoWrap
+                                                        clip: true
+                                                    }
+                                                    Text {
+                                                        Layout.maximumWidth: stepFlick.width * 0.4
+                                                        visible: text !== ""
+                                                        text: stepRow.modelData.state === "waiting" ? Tr.s("steps_waiting")
+                                                              : (stepRow.modelData.state === "error" || stepRow.modelData.kind === "command" || stepRow.modelData.kind === "edit" || stepRow.modelData.kind === "write") && stepRow.modelData.state !== "running" ? stepRow.modelData.note : ""
+                                                        font.pixelSize: 12
+                                                        color: stepRow.modelData.state === "waiting" ? Theme.warning : stepRow.modelData.state === "error" ? Theme.error : Theme.textDisabled
+                                                        elide: Text.ElideRight
+                                                        maximumLineCount: 1
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    // what it does between the steps: thinking, writing the answer
+                                    RowLayout {
+                                        visible: stepsBox.working && root.ch.status !== "waiting"
+                                        spacing: 10
+                                        Spinner { size: 14 }
+                                        Text { text: root.statusText(root.ch.status) + (msg.modelData.startedMs > 0 ? "   " + root.fmtDuration(root.nowMs - msg.modelData.startedMs) : ""); font.pixelSize: 13; color: Theme.accent }
+                                    }
                                 }
                             }
                             TextEdit {
@@ -402,7 +624,7 @@ Item {
                                 onLinkActivated: link => { if (link.indexOf("https://") === 0) Qt.openUrlExternally(link) }
                             }
                             RowLayout {
-                                visible: !msg.isUser && msg.modelData.streaming && msg.modelData.text === ""
+                                visible: !msg.isUser && msg.modelData.streaming && msg.modelData.text === "" && msg.modelData.stepList.length === 0
                                 spacing: 10
                                 Dots {}
                                 Text {
@@ -827,81 +1049,6 @@ Item {
                         font.pixelSize: 13
                         color: Theme.textSecondary
                         wrapMode: Text.Wrap
-                    }
-                    // the task list the AI keeps for a bigger job (todo_write)
-                    SideTitle { visible: root.agent; Layout.topMargin: 14; text: Tr.s("ai_side_todos") }
-                    Text {
-                        visible: root.agent && root.ch.todos.length === 0
-                        Layout.fillWidth: true
-                        text: Tr.s("ai_todos_none")
-                        font.pixelSize: 13
-                        color: Theme.textDisabled
-                        wrapMode: Text.Wrap
-                    }
-                    // how far the list is: 3 / 7 and a bar that grows
-                    RowLayout {
-                        objectName: "aiTodoProgress"
-                        visible: root.agent && root.ch.todos.length > 0
-                        Layout.fillWidth: true
-                        spacing: 10
-                        Text { text: root.todosDone + " / " + root.ch.todos.length; font.pixelSize: 12; font.weight: Font.DemiBold; color: Theme.textSecondary }
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 5
-                            radius: 2.5
-                            color: Theme.border
-                            Rectangle {
-                                height: parent.height
-                                radius: parent.radius
-                                color: root.todosDone === root.ch.todos.length ? Theme.success : Theme.accent
-                                width: root.ch.todos.length > 0 ? parent.width * root.todosDone / root.ch.todos.length : 0
-                                Behavior on width { NumberAnimation { duration: 450; easing.type: Easing.OutCubic } }
-                                Behavior on color { ColorAnimation { duration: 300 } }
-                            }
-                        }
-                    }
-                    Repeater {
-                        objectName: "aiTodos"
-                        model: root.agent ? root.ch.todos : []
-                        delegate: RowLayout {
-                            id: todoRow
-                            required property var modelData
-                            required property int index
-                            Layout.fillWidth: true
-                            spacing: 8
-                            opacity: 0
-                            transform: Translate { id: todoShift; x: -10 }
-                            Component.onCompleted: todoEnter.start()
-                            SequentialAnimation {
-                                id: todoEnter
-                                PauseAnimation { duration: Math.min(todoRow.index, 8) * 45 }
-                                ParallelAnimation {
-                                    NumberAnimation { target: todoRow; property: "opacity"; to: 1; duration: 260; easing.type: Easing.OutCubic }
-                                    NumberAnimation { target: todoShift; property: "x"; to: 0; duration: 300; easing.type: Easing.OutCubic }
-                                }
-                            }
-                            Text {
-                                id: todoMark
-                                Layout.alignment: Qt.AlignTop
-                                text: modelData.status === "completed" ? "✓" : modelData.status === "in_progress" ? "●" : "○"
-                                font.pixelSize: 13
-                                color: modelData.status === "completed" ? Theme.success : modelData.status === "in_progress" ? Theme.accent : Theme.textDisabled
-                                SequentialAnimation on opacity {                 // the item that is being worked on pulses
-                                    running: modelData.status === "in_progress"
-                                    loops: Animation.Infinite
-                                    NumberAnimation { to: 0.3; duration: 700; easing.type: Easing.InOutSine }
-                                    NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
-                                }
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                text: modelData.content
-                                font.pixelSize: 13
-                                font.strikeout: modelData.status === "completed"
-                                color: modelData.status === "completed" ? Theme.textDisabled : Theme.text
-                                wrapMode: Text.Wrap
-                            }
-                        }
                     }
                     Item { Layout.fillHeight: true }
                 }
