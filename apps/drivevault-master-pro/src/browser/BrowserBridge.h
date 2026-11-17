@@ -21,6 +21,7 @@ namespace dm::browser {
 class BrowserBridge : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool viewReady READ viewReady WRITE setViewReady NOTIFY viewReadyChanged)
+    Q_PROPERTY(QString userAgent READ userAgent CONSTANT)              // how the browser introduces itself (main.cpp: the engine's own name without the "QtWebEngine/x" part)
     Q_PROPERTY(bool compiledIn READ compiledIn CONSTANT)               // set once (main.cpp), before the page is loaded
 public:
     using Done = std::function<void(const QVariantMap&)>;
@@ -32,6 +33,8 @@ public:
     void setViewReady(bool ready);
     bool compiledIn() const { return m_compiledIn; }                    // false in the tests: only the program itself (main.cpp) has Qt WebEngine
     void setCompiledIn(bool on) { m_compiledIn = on; }
+    QString userAgent() const { return m_userAgent; }
+    void setUserAgent(const QString& ua) { m_userAgent = ua; }
 
     // C++ side (the agent). `done` is called exactly once (an answer, a timeout or cancelAll()).
     void request(const QString& op, const QVariantMap& args, Done done);
@@ -59,6 +62,12 @@ public:
     Q_INVOKABLE bool mouse(QObject* item, const QString& kind, qreal x, qreal y, qreal wheelDelta = 0);
 
     Q_INVOKABLE void reply(int id, const QVariantMap& result);          // QML side: the answer to `command`
+    // ---- downloads: a file the user's click started is saved in the Downloads folder (1.28.0: the browser no longer refuses them) ----
+    void setDownloadsFolder(const QString& folder) { m_downloadsFolder = folder; }   // diagnostics / tests only (main.cpp, with --data-dir): where downloads go instead of the real Downloads folder
+    Q_INVOKABLE QString downloadsFolder() const;                        // the Downloads folder of this user (created when it is missing)
+    // A file name that is safe on Windows (no path, no forbidden characters, no device names) and does not overwrite a file of `folder`: "a.pdf" -> "a (2).pdf".
+    Q_INVOKABLE QString uniqueDownloadName(const QString& folder, const QString& suggested) const;
+    Q_INVOKABLE bool riskyDownload(const QString& name) const;          // a kind of file that can run (exe, msi, bat, ps1, js, lnk ...): the bar warns, nothing is ever opened by the program
     // A picture of the page (an image the QML grab made) as base64 JPEG, at most `maxWidth` wide: small enough for the model's window. "" when it is not an image.
     Q_INVOKABLE QString encodeImage(const QVariant& image, int maxWidth) const;
 
@@ -88,6 +97,8 @@ private:
     bool m_viewReady = false;
     bool m_compiledIn = false;
     QString m_storagePath;
+    QString m_downloadsFolder;
+    QString m_userAgent;
     QHash<QString, QString> m_watched;                                  // folder -> signature
     QTimer* m_poll = nullptr;
     bool m_buttonDown = false;

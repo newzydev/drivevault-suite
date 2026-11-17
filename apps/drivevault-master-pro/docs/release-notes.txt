@@ -1,6 +1,13 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.28.0 (2026-11-17): The browser blocks nothing the engine can allow; downloads work
+  - New: downloads. A file you start in the browser is saved in your Downloads folder (a name that never overwrites a file); the bar says so and has "Show in folder". Files that can run programs (exe, msi, bat, ps1, js, lnk ...) get a warning; the program never opens a downloaded file.
+  - New: full screen for videos and pages (Esc leaves), copy / paste by pages, sound and video that start by themselves, screen sharing (you still answer the permission bar), the PDF viewer, and the browser no longer calls itself "QtWebEngine" (sign-in pages of some sites turned it away).
+  - Fixed: the tabs used the default profile of Qt instead of the program's own (so downloads, the browser name and the saved cookies / permissions in `<data>browser` were not used). Cookies and permissions saved before are not carried over.
+  - Still on purpose: a bad certificate stops the page, http content inside an https page is blocked, the AI cannot answer a permission question or click on a website.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.27.5 (2026-11-17): Pages on this computer show their web fonts and styles in the browser
   - Fixed: a page opened from a file (for example one the AI wrote) could not load fonts, styles or pictures from the Internet (Google Fonts, a CDN), so it looked different from Chrome. The browser now lets a page on this computer load them, like Chrome does.
   - Not code-signed (Windows SmartScreen may warn).

@@ -9,7 +9,7 @@ import DriveVault.Master.Backend
 // remembered on this PC), and the lock button lists what a site may do and lets the user change or reset it. The AI uses the SAME views (Ai.browser = BrowserBridge):
 // it opens the page of its work (a tab of its own that FOLLOWS the files while the AI writes them), reads it, takes a picture of it and works the page with a visible
 // cursor - click, type, scroll, drag - but only in pages of this computer; it cannot answer a permission question - only the user can.
-// Downloads are not supported yet (a download is refused and the bar says so).
+// Downloads (1.28.0): a file the user's click started is saved in the Downloads folder (never overwriting a file); the bar says so and has "Show in folder".
 Item {
     id: root
     objectName: "browserPage"
@@ -21,7 +21,11 @@ Item {
 
     // ---- state ---------------------------------------------------------------------------------------------------------------------------
     property var pending: []                 // permission requests that wait for the user (WebEnginePermission values), oldest first
-    property string notice: ""               // a short line under the address bar (downloads are refused, ...)
+    property string notice: ""               // a short line under the address bar (a download started / finished, ...)
+    property string noticeFolder: ""         // when set, the bar has a "Show in folder" button for this folder
+    property var fsView: null                // the web view that shows a page full screen (a video, a game), null = none
+    property Item fsParent: null
+    property int fsVisibility: Window.Windowed
     property int openId: 0                   // the AI command (id) that waits for a page to load, 0 = none
     property int openTab: -1                 // ... and the tab that loads it
     property int cur: 0                      // the tab that is shown
@@ -30,6 +34,27 @@ Item {
     readonly property string curUrl: view ? view.url.toString() : ""
     readonly property bool loading: view ? view.loading : false
     readonly property bool isStart: curUrl === "" || curUrl === "about:blank"      // nothing is open in this tab: the start page is shown
+
+    // a page asked for full screen (the full screen button of a video): its view fills the whole window until it asks to leave or the user presses Esc
+    function setFullscreen(on, v) {
+        const win = root.Window.window
+        if (!win)
+            return
+        if (on && !fsView) {
+            fsView = v
+            fsParent = v.parent
+            fsVisibility = win.visibility
+            v.parent = win.contentItem
+            v.z = 100000
+            win.visibility = Window.FullScreen
+        } else if (!on && fsView) {
+            fsView.parent = fsParent
+            fsView.z = 0
+            win.visibility = fsVisibility === Window.FullScreen ? Window.Windowed : fsVisibility
+            fsView = null
+        }
+    }
+    Shortcut { sequence: "Esc"; enabled: root.fsView !== null; onActivated: root.fsView.fullScreenCancelled() }
 
     ListModel { id: tabs }                   // one row per tab: {title, address, busy, agent}
 
@@ -138,16 +163,34 @@ Item {
     }
 
     WebEngineProfile {
-        id: profile
+        id: browserProfile
         storageName: "drivevault-browser"
         persistentStoragePath: root.bridge.storagePath !== "" ? root.bridge.storagePath + "/profile" : ""
         cachePath: root.bridge.storagePath !== "" ? root.bridge.storagePath + "/cache" : ""
         persistentPermissionsPolicy: WebEngineProfile.StoreOnDisk       // what the user allowed or blocked is remembered, like in Chrome
         offTheRecord: root.bridge.storagePath === ""
+        // like Chrome: the file goes to the Downloads folder under a name that never overwrites another file; a kind of file that can run gets a warning in the bar
         onDownloadRequested: download => {
-            download.cancel()
-            root.notice = Tr.s("br_no_downloads")
+            const folder = root.bridge.downloadsFolder()
+            const name = root.bridge.uniqueDownloadName(folder, download.suggestedFileName !== "" ? download.suggestedFileName : download.downloadFileName)
+            const risky = root.bridge.riskyDownload(name)
+            download.downloadDirectory = folder
+            download.downloadFileName = name
+            download.stateChanged.connect(function () {
+                if (download.state === WebEngineDownloadRequest.DownloadCompleted) {
+                    root.notice = Tr.s(risky ? "br_dl_done_risky" : "br_dl_done").replace("%1", name)
+                    root.noticeFolder = folder
+                } else if (download.state === WebEngineDownloadRequest.DownloadInterrupted) {
+                    root.notice = Tr.s("br_dl_failed").replace("%1", name)
+                    root.noticeFolder = ""
+                }
+            })
+            download.accept()
+            root.noticeFolder = ""
+            root.notice = Tr.s("br_dl_started").replace("%1", name)
         }
+        // the engine says "QtWebEngine/x.y.z" in its name; some sites (sign-in pages) turn such a browser away, so it presents itself as plain Chromium
+        httpUserAgent: root.bridge.userAgent
     }
 
 
@@ -334,7 +377,8 @@ Item {
                 anchors.leftMargin: 16
                 anchors.rightMargin: 12
                 Text { Layout.fillWidth: true; text: root.notice; font.pixelSize: 12; color: Theme.textSecondary; elide: Text.ElideRight }
-                MButton { variant: "ghost"; compact: true; text: "✕"; onClicked: root.notice = "" }
+                MButton { objectName: "brShowFolder"; visible: root.noticeFolder !== ""; variant: "ghost"; compact: true; text: Tr.s("br_show_folder"); onClicked: Qt.openUrlExternally("file:///" + root.noticeFolder) }
+                MButton { variant: "ghost"; compact: true; text: "✕"; onClicked: { root.notice = ""; root.noticeFolder = "" } }
             }
         }
         // the AI is using this view (it opened or looks at a page): the user sees what it sees
@@ -362,10 +406,20 @@ Item {
                     required property string address                            // a delegate with required properties has no `model` object: the roles are required properties
                     anchors.fill: parent
                     visible: index === root.cur
-                    profile: profile
+                    profile: browserProfile                         // NOT `profile: profile` - inside the view that would be its own property (the default profile of Qt)
                     Component.onCompleted: url = address                        // the first address of the tab (no binding: a redirect must not start a new load)
+                    // Everything the engine keeps off by default is on, so a page behaves as in Chrome (what a site may do with the camera, the location ... is still the user's answer in the bar)
                     settings.javascriptCanOpenWindows: true
-                    settings.fullScreenSupportEnabled: false
+                    settings.javascriptCanAccessClipboard: true                 // the "copy" buttons of a page
+                    settings.javascriptCanPaste: true
+                    settings.allowWindowActivationFromJavaScript: true
+                    settings.playbackRequiresUserGesture: false                 // a video or a sound may start by itself
+                    settings.screenCaptureEnabled: true                         // screen sharing (the user still has to allow it)
+                    settings.pluginsEnabled: true
+                    settings.pdfViewerEnabled: true                             // a PDF opens in the viewer of the engine
+                    settings.dnsPrefetchEnabled: true
+                    settings.fullScreenSupportEnabled: true                     // a video / a page may go full screen (Esc leaves it)
+                    onFullScreenRequested: request => { request.accept(); root.setFullscreen(request.toggleOn, wv) }
                     settings.localContentCanAccessRemoteUrls: true              // a page on this computer may load its fonts / styles / pictures from the Internet, like in Chrome (Google Fonts: without it the page looked different)
                     property var consoleErrors: []                              // what this page logged since it started loading (for the AI)
 
@@ -572,7 +626,7 @@ Item {
         function refresh() {
             const r = []
             for (const p of root.permissionTypes) {
-                const q = profile.queryPermission(root.curUrl, p.type)
+                const q = browserProfile.queryPermission(root.curUrl, p.type)
                 r.push({ type: p.type, key: p.key, state: q.state, permission: q })
             }
             rows = r
@@ -641,7 +695,7 @@ Item {
         modal: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         property var items: []
-        function show() { items = profile.listAllPermissions(); open() }
+        function show() { items = browserProfile.listAllPermissions(); open() }
         background: Rectangle { radius: 14; color: Theme.surface; border.width: 1; border.color: Theme.border }
         contentItem: ColumnLayout {
             spacing: 10
@@ -668,7 +722,7 @@ Item {
                         Text { text: root.hostOf(modelData.origin); font.pixelSize: 13; font.weight: Font.Medium; color: Theme.text; elide: Text.ElideRight; Layout.fillWidth: true }
                         Text { text: Tr.s(root.permissionKey(modelData.permissionType)); font.pixelSize: 12; color: Theme.textSecondary }
                     }
-                    PermissionChoice { permission: modelData; shown: modelData.state; onModified: allSites.items = profile.listAllPermissions() }
+                    PermissionChoice { permission: modelData; shown: modelData.state; onModified: allSites.items = browserProfile.listAllPermissions() }
                 }
                 ScrollBar.vertical: ScrollBar {}
             }
@@ -956,5 +1010,10 @@ Item {
             newTab("about:blank", true, false)
         root.bridge.viewReady = true
     }
-    Component.onDestruction: { root.bridge.viewReady = false; root.bridge.unwatchAll() }
+    Component.onDestruction: {
+        if (fsView)
+            setFullscreen(false, fsView)                  // never leave the window full screen when the browser goes away
+        root.bridge.viewReady = false
+        root.bridge.unwatchAll()
+    }
 }

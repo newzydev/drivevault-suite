@@ -21,6 +21,8 @@
 #include <QQuickWindow>
 #include <QTimer>
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
+#include <QRegularExpression>
+#include <QWebEngineProfile>
 #include <qqml.h>
 
 int main(int argc, char* argv[])
@@ -77,8 +79,14 @@ int main(int argc, char* argv[])
     }
 
     dm::ai::AiService ai(&hub);
+    {                                                           // the name the engine gives itself, without "QtWebEngine/x.y.z": sign-in pages of some sites turn such a browser away
+        QWebEngineProfile probe;
+        ai.browserBridge()->setUserAgent(probe.httpUserAgent().replace(QRegularExpression(QStringLiteral(" QtWebEngine/[0-9.]+")), QString()));
+    }
     ai.browserBridge()->setCompiledIn(true);                  // this program has the browser (the tests do not)
     ai.browserBridge()->setStoragePath(hub.dataDir() + QStringLiteral("/browser"));
+    if (parser.isSet(dataDir))                                 // a test / diagnostic run keeps its downloads in its own data folder, never in the real Downloads folder
+        ai.browserBridge()->setDownloadsFolder(hub.dataDir() + QStringLiteral("/downloads"));
     QQmlApplicationEngine engine;
     qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Hub", &hub);
     qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Ai", &ai);

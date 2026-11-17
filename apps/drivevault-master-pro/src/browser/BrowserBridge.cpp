@@ -8,10 +8,13 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QWheelEvent>
+#include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QHostAddress>
 #include <QImage>
+#include <QStandardPaths>
+#include <QRegularExpression>
 #include <QTimer>
 
 namespace dm::browser {
@@ -92,6 +95,54 @@ QString BrowserBridge::toLocalFile(const QString& url) const
     return u.isLocalFile() ? u.toLocalFile() : QString();
 }
 
+QString BrowserBridge::downloadsFolder() const
+{
+    QString dir = !m_downloadsFolder.isEmpty() ? m_downloadsFolder : QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    if (dir.isEmpty())
+        dir = QDir::home().filePath(QStringLiteral("Downloads"));
+    QDir().mkpath(dir);
+    return dir;
+}
+
+QString BrowserBridge::uniqueDownloadName(const QString& folder, const QString& suggested) const
+{
+    QString name = suggested.section(QRegularExpression(QStringLiteral("[\\/]")), -1);      // the last part only: a name never carries a path
+    name.replace(QRegularExpression(QStringLiteral("[<>:\"|?*\x00-\x1f]")), QStringLiteral("_"));
+    while (name.endsWith(QLatin1Char('.')) || name.endsWith(QLatin1Char(' ')))
+        name.chop(1);
+    name = name.trimmed();
+    if (name.isEmpty())
+        name = QStringLiteral("download");
+    static const QRegularExpression device(QStringLiteral("^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$"), QRegularExpression::CaseInsensitiveOption);
+    if (device.match(name).hasMatch())
+        name.prepend(QLatin1Char('_'));
+    if (name.size() > 150) {                                                              // keep the extension, cut the middle
+        const QString suffix = QFileInfo(name).suffix();
+        name = name.left(140) + (suffix.isEmpty() ? QString() : QStringLiteral(".") + suffix.left(8));
+    }
+    const QDir dir(folder);
+    if (!dir.exists(name))
+        return name;
+    const QFileInfo info(name);
+    const QString base = info.completeBaseName();
+    const QString ext = info.suffix().isEmpty() ? QString() : QStringLiteral(".") + info.suffix();
+    for (int n = 2; n < 10000; ++n) {
+        const QString candidate = QStringLiteral("%1 (%2)%3").arg(base).arg(n).arg(ext);
+        if (!dir.exists(candidate))
+            return candidate;
+    }
+    return base + QStringLiteral(" (") + QString::number(QDateTime::currentMSecsSinceEpoch()) + QStringLiteral(")") + ext;
+}
+
+bool BrowserBridge::riskyDownload(const QString& name) const
+{
+    static const QStringList kinds{QStringLiteral("exe"), QStringLiteral("msi"), QStringLiteral("msp"), QStringLiteral("bat"), QStringLiteral("cmd"), QStringLiteral("com"),
+                                   QStringLiteral("scr"), QStringLiteral("pif"), QStringLiteral("ps1"), QStringLiteral("psm1"), QStringLiteral("vbs"), QStringLiteral("vbe"),
+                                   QStringLiteral("js"), QStringLiteral("jse"), QStringLiteral("wsf"), QStringLiteral("wsh"), QStringLiteral("hta"), QStringLiteral("jar"),
+                                   QStringLiteral("lnk"), QStringLiteral("reg"), QStringLiteral("cpl"), QStringLiteral("msc"), QStringLiteral("dll"), QStringLiteral("appx"),
+                                   QStringLiteral("msix")};
+    return kinds.contains(QFileInfo(name).suffix().toLower());
+}
 bool BrowserBridge::aiMayInteract(const QString& url) const
 {
     const QUrl u(url);

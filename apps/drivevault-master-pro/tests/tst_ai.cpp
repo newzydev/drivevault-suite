@@ -2258,6 +2258,30 @@ private slots:
         QCOMPARE(back.width(), 1024);
         QVERIFY(bridge.encodeImage(QVariant(), 1024).isEmpty());
     }
+    // A download the user started is saved in the Downloads folder: the name is safe on Windows and never overwrites a file; runnable kinds are flagged.
+    void aDownloadGetsASafeUniqueNameAndRunnableKindsAreFlagged()
+    {
+        dm::browser::BrowserBridge bridge;
+        bridge.setDownloadsFolder(m_dir.filePath("dl"));
+        const QString folder = bridge.downloadsFolder();
+        QCOMPARE(folder, m_dir.filePath("dl"));
+        QVERIFY(QDir(folder).exists());                                             // created when it is missing
+        QCOMPARE(bridge.uniqueDownloadName(folder, "report.pdf"), QString("report.pdf"));
+        QCOMPARE(bridge.uniqueDownloadName(folder, "..\\..\\evil/../a:b*c?.txt"), QString("a_b_c_.txt"));   // no path, no forbidden characters
+        QCOMPARE(bridge.uniqueDownloadName(folder, "con.txt"), QString("_con.txt"));                        // a Windows device name
+        QCOMPARE(bridge.uniqueDownloadName(folder, "  "), QString("download"));
+        QFile one(QDir(folder).filePath("report.pdf"));
+        QVERIFY(one.open(QIODevice::WriteOnly));
+        one.close();
+        QCOMPARE(bridge.uniqueDownloadName(folder, "report.pdf"), QString("report (2).pdf"));             // never over an existing file
+        QFile two(QDir(folder).filePath("report (2).pdf"));
+        QVERIFY(two.open(QIODevice::WriteOnly));
+        two.close();
+        QCOMPARE(bridge.uniqueDownloadName(folder, "report.pdf"), QString("report (3).pdf"));
+        QVERIFY(bridge.uniqueDownloadName(folder, QString(300, 'x') + ".zip").size() <= 160);
+        QVERIFY(bridge.riskyDownload("setup.EXE") && bridge.riskyDownload("run.ps1") && bridge.riskyDownload("a.lnk"));
+        QVERIFY(!bridge.riskyDownload("photo.jpg") && !bridge.riskyDownload("report.pdf") && !bridge.riskyDownload("noextension"));
+    }
     void theAgentMayOpenOnlyItsOwnFilesThisComputerAndWhenAllowedThePublicWeb()
     {
         using dm::browser::BrowserBridge;
