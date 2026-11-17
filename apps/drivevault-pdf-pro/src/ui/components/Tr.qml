@@ -252,6 +252,8 @@ QtObject {
         "badRange": ["This page range is not valid for this file (it has %1 pages).", "ช่วงหน้าไม่ถูกต้อง (ไฟล์นี้มี %1 หน้า)"],
         "printBusy": ["Another print job is still running.", "ยังมีงานพิมพ์ที่ทำงานอยู่"],
         "printing": ["Printing…", "กำลังพิมพ์…"],
+        "printerProps": ["Properties…", "ตั้งค่าเครื่องพิมพ์…"],
+        "printerPropsTip": ["Open the printer's own settings window (paper type, quality, tray ...)", "เปิดหน้าต่างตั้งค่าของเครื่องพิมพ์เอง (ชนิดกระดาษ คุณภาพ ถาด ฯลฯ)"],
         "printGray": ["Print in grayscale (black and white)", "พิมพ์ขาวดำ (โทนสีเทา)"],
         "pagesToPrintTitle": ["Pages to Print", "หน้าที่จะพิมพ์"],
         "pageSizing": ["Page Sizing & Handling", "ขนาดและการจัดการหน้า"],

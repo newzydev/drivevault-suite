@@ -13,9 +13,9 @@ Rectangle {
     anchors.bottom: parent.bottom
     anchors.bottomMargin: 20
     property bool collapsed: false           // "−" makes the card a small pill so it does not cover the document; "+" brings it back as it was
-    width: collapsed ? miniRow.implicitWidth + 20 : Math.min(760, parent.width - 48)
-    height: collapsed ? miniRow.implicitHeight + 16 : column.implicitHeight + 20
-    radius: 16
+    width: collapsed ? miniRow.implicitWidth + 16 : Math.min(760, parent.width - 48)
+    height: collapsed ? 56 : column.implicitHeight + 16
+    radius: Math.min(28, height / 2)             // a capsule while it is only the bar, rounded corners when the conversation has grown
     color: Theme.backgroundAlt
     border.width: 1
     border.color: Theme.border
@@ -66,13 +66,15 @@ Rectangle {
         objectName: "aiMini"
         anchors.centerIn: parent
         visible: root.collapsed
-        spacing: 6
-        LineIcon { name: "ai"; size: 18; color: Theme.textSecondary }
+        spacing: 4
+        LineIcon { Layout.leftMargin: 6; name: "ai"; size: 20; color: Theme.textSecondary }
         PButton {
             objectName: "aiExpand"
-            compact: true
+            leftPadding: 0
+            cornerRadius: 20
             variant: "ghost"
             text: "+"
+            labelPixelSize: 22
             tip: Tr.s("aiExpand")
             onClicked: root.collapsed = false
         }
@@ -84,7 +86,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: 10
+        anchors.margins: 8
         spacing: 8
 
         // ---- the model is not there yet --------------------------------------------------------------------------------------------
@@ -265,12 +267,13 @@ Rectangle {
         }
 
         // ---- the question ----------------------------------------------------------------------------------------------------------------
+        // every part is 40 px high with fully round ends, so the bar reads as one capsule; the round ones are 40 x 40
         RowLayout {
             Layout.fillWidth: true
-            spacing: 6
+            spacing: 8
             PButton {
                 objectName: "aiSummarize"
-                compact: true
+                cornerRadius: 20
                 variant: "secondary"
                 text: Tr.s("aiSummarize")
                 enabled: root.canAsk
@@ -280,14 +283,25 @@ Rectangle {
                 id: input
                 objectName: "aiInput"
                 Layout.fillWidth: true
+                implicitHeight: 40
+                leftPadding: 18
+                rightPadding: 18
                 placeholderText: Tr.s("aiAskPlaceholder")
                 enabled: Doc.isOpen && Assistant.engineInstalled && Assistant.modelInstalled
                 onAccepted: root.send()
                 onActiveFocusChanged: if (activeFocus && Assistant.state === "idle") Assistant.prepare()      // warm the model up when the user starts to type
+                background: Rectangle {
+                    radius: 20
+                    color: Theme.surface
+                    opacity: input.enabled ? 1 : 0.55
+                    border.width: input.activeFocus ? 2 : 1
+                    border.color: input.activeFocus ? Theme.accent : input.hovered ? Theme.textDisabled : Theme.border
+                }
             }
             PButton {
                 objectName: "aiSend"
                 visible: !Assistant.busy
+                cornerRadius: 20
                 variant: "primary"
                 text: Tr.s("aiSend")
                 enabled: root.canAsk && input.text.trim() !== ""
@@ -296,13 +310,15 @@ Rectangle {
             PButton {
                 objectName: "aiStop"
                 visible: Assistant.busy
+                cornerRadius: 20
                 variant: "secondary"
                 text: Tr.s("aiStop")
                 onClicked: Assistant.stop()
             }
             PButton {
                 objectName: "aiClear"
-                compact: true
+                leftPadding: 0
+                cornerRadius: 20
                 variant: "ghost"
                 glyph: "close"
                 tip: Tr.s("aiClear")
@@ -311,9 +327,11 @@ Rectangle {
             }
             PButton {
                 objectName: "aiCollapse"
-                compact: true
+                leftPadding: 0
+                cornerRadius: 20
                 variant: "ghost"
                 text: "−"
+                labelPixelSize: 22
                 tip: Tr.s("aiCollapse")
                 onClicked: root.collapsed = true
             }

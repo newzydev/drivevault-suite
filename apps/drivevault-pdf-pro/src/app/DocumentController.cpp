@@ -19,6 +19,7 @@
 #include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDesktopServices>
+#include <QProcess>
 #include <QDir>
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -886,6 +887,18 @@ bool DocumentController::openDocument(const QString& fileName) const
 
 QStringList DocumentController::printerNames() const { return QPrinterInfo::availablePrinterNames(); }
 QString DocumentController::defaultPrinter() const { return QPrinterInfo::defaultPrinterName(); }
+
+bool DocumentController::openPrinterPreferences(const QString& printer) const
+{
+    // only a printer Windows itself lists (never text from a document); the printer driver's own window opens (paper, quality, tray ...)
+    if (printer.isEmpty() || !QPrinterInfo::availablePrinterNames().contains(printer))
+        return false;
+#ifdef Q_OS_WIN
+    return QProcess::startDetached(QStringLiteral("rundll32.exe"), {QStringLiteral("printui.dll,PrintUIEntry"), QStringLiteral("/e"), QStringLiteral("/n"), printer});
+#else
+    return false;
+#endif
+}
 
 QVariantMap DocumentController::paperInfo(const QString& printer) const
 {

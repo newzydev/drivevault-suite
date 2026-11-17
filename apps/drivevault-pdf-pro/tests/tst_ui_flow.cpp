@@ -599,7 +599,7 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(dialog->property("opened").toBool(), 5000);
         QVERIFY(visible("printSheet") && visible("printScale") && visible("printPaper"));
         QVERIFY(visible("printShrink") && visible("printFit") && visible("printActual") && visible("printCustom"));
-        QVERIFY(visible("printOrientAuto") && visible("printDuplex") && visible("printGray"));
+        QVERIFY(visible("printOrientAuto") && visible("printDuplex") && visible("printGray") && visible("printProperties"));   // (not clicked: it opens the driver's window)
         QVERIFY(click("printActual"));
         QTRY_COMPARE_WITH_TIMEOUT(text("printScale"), QStringLiteral("Scale: 100%"), 3000);
         QVERIFY(click("printCustom"));

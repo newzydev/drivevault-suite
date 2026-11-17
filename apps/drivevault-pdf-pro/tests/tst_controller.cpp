@@ -474,6 +474,17 @@ private slots:
         QVERIFY2(l.width() > l.height(), "landscape paper");
     }
 
+    // The printer settings window opens only for a printer Windows lists (nothing is started for any other text).
+    void printerPreferencesOpenOnlyForAListedPrinter()
+    {
+        DocumentController c(m_dir.filePath("data11c"));
+        QVERIFY(!c.openPrinterPreferences(QString()));
+        QVERIFY(!c.openPrinterPreferences(QStringLiteral("calc.exe")));
+        QVERIFY(!c.openPrinterPreferences(QStringLiteral("No such printer 123")));
+        const QVariantMap paper = c.paperInfo(QStringLiteral("No such printer 123"));
+        QVERIFY(paper.value("heightPt").toDouble() > paper.value("widthPt").toDouble() && paper.value("widthMm").toInt() > 100);   // A4 when the printer says nothing
+    }
+
     void pageLabelsAndSnapshotCopyToTheClipboard()
     {
         DocumentController c(m_dir.filePath("data12"));

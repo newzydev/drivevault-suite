@@ -79,6 +79,11 @@ Popup {
         target: Doc
         function onPrintFinished(ok, message) { if (ok) dlg.close() }
     }
+    // back from the printer's own window: its paper may have changed
+    Connections {
+        target: Qt.application
+        function onStateChanged() { if (Qt.application.state === Qt.ApplicationActive && dlg.opened) dlg.updatePaper() }
+    }
 
     background: Rectangle { radius: Theme.radius; color: Theme.backgroundAlt; border.color: Theme.border }
 
@@ -133,6 +138,14 @@ Popup {
                         onCurrentIndexChanged: dlg.updatePaper()
                         contentItem: AppText { leftPadding: 10; text: printerBox.displayText; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; color: printerBox.enabled ? Theme.text : Theme.textDisabled }
                         background: Rectangle { radius: 8; color: Theme.surface; border.color: printerBox.activeFocus ? Theme.accent : Theme.border }
+                    }
+                    // the printer driver's own window (paper type, quality, tray, ...): the same settings window as in the other programs
+                    PButton {
+                        objectName: "printProperties"
+                        text: Tr.s("printerProps")
+                        tip: Tr.s("printerPropsTip")
+                        enabled: dlg.printers.length > 0 && !Doc.printing
+                        onClicked: Doc.openPrinterPreferences(dlg.printers[printerBox.currentIndex])
                     }
                 }
                 RowLayout {

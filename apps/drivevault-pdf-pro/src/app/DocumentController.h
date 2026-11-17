@@ -148,6 +148,9 @@ public:
     // ---- printing -----------------------------------------------------------------------------------------------------------
     Q_INVOKABLE QStringList printerNames() const;
     Q_INVOKABLE QString defaultPrinter() const;
+    // opens the printing preferences window of the printer driver (Windows `printui.dll`); false when the printer is not one Windows lists.
+    // What the user sets there is the printer's default for this user, which the next print job picks up.
+    Q_INVOKABLE bool openPrinterPreferences(const QString& printer) const;
     // the paper the printer starts with (portrait size): {name, widthPt, heightPt, widthMm, heightMm}; A4 when the printer says nothing
     Q_INVOKABLE QVariantMap paperInfo(const QString& printer) const;
     // options: {printer, outputFile, pages: "all" | "current" | "1-3,5", currentPage (0-based), copies, color, fit, scaleMode: fit | shrink | actual | custom, scalePercent, orientation: auto | portrait | landscape, duplex}.

@@ -3,7 +3,7 @@
 Native Windows PDF program of the DriveVault suite (C++20, Qt 6.8 / Qt Quick, PDFium, qpdf). Works on this computer only - nothing is uploaded.
 Accent colour red `#EF4444`. The first plan is in [`docs/PDF-Pro-Plan.md`](docs/PDF-Pro-Plan.md); the work since then (towards the local functions of Acrobat Pro) is tracked phase by phase in [`docs/Acrobat-Parity-Roadmap.md`](docs/Acrobat-Parity-Roadmap.md), where every phase says what is done and what is not.
 
-## [Version 1.21.0](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.21.0)
+## [Version 1.22.0](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.22.0)
 
 | Works now (tested) | Not built yet (planned, see the plan) |
 |---|---|
@@ -34,7 +34,7 @@ Accent colour red `#EF4444`. The first plan is in [`docs/PDF-Pro-Plan.md`](docs/
 | **Find** in the whole file (match case, whole word, highlights, next / previous, Ctrl+F, F3) | |
 | **Select text with the mouse, copy** (Ctrl+C, right click menu, select all) - across pages | |
 | **Bookmarks** (outline) and a **comments / markup list**; links in the file (to a page, or to a web address after a question) | |
-| **Printing** (printer, page range, copies, grayscale, fit / actual size / shrink oversized / custom scale, both sides, orientation, preview of the page on the paper) | |
+| **Printing** (printer + the printer's own settings window, page range, copies, grayscale, fit / actual size / shrink oversized / custom scale, both sides, orientation, preview of the page on the paper) | |
 | **Read aloud** the current page with the voice set in Windows (SAPI; Thai needs a Thai voice installed in Windows; a scan has no text until OCR) | Highlighting the words while reading |
 | Files with an open password (asks for it, a wrong password is refused) | |
 | The page, zoom and view mode of each file are remembered | |
