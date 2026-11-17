@@ -82,8 +82,10 @@ int main(int argc, char* argv[])
     if (engine.rootObjects().isEmpty())
         return 1;
 
-    if (parser.isSet(tab) && QStringList{QStringLiteral("programs"), QStringLiteral("ask"), QStringLiteral("agent"), QStringLiteral("browser")}.contains(parser.value(tab)))
+    if (parser.isSet(tab) && QStringList{QStringLiteral("programs"), QStringLiteral("ask"), QStringLiteral("agent")}.contains(parser.value(tab)))
         engine.rootObjects().constFirst()->setProperty("tab", parser.value(tab));
+    else if (parser.value(tab) == QLatin1String("browser"))                       // diagnostics: the Agentic AI page with the browser open at its right
+        QMetaObject::invokeMethod(engine.rootObjects().constFirst(), "showBrowser");
     if (parser.isSet(aiView))
         engine.rootObjects().constFirst()->setProperty("diagnosticView", parser.value(aiView));
     if (parser.isSet(agentTest) && parser.isSet(agentFolder) && parser.isSet(agentOut)) {

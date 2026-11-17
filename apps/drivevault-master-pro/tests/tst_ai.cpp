@@ -1871,9 +1871,9 @@ private slots:
         QVERIFY(why == "noEngine" || why == "noModel" || why == "noFolder");
         agent->setFolder(m_dir.path());
         QCOMPARE(agent->folder(), QDir::cleanPath(m_dir.path()));
-        QCOMPARE(agent->permission(), QString("ask"));                          // every file change asks first until the user says otherwise
-        agent->setPermission("edit");
-        QCOMPARE(agent->permission(), QString("edit"));
+        QCOMPARE(agent->permission(), QString("edit"));                         // the default since 1.23.0: automatic (risky commands still ask)
+        agent->setPermission("ask");
+        QCOMPARE(agent->permission(), QString("ask"));
     }
 
     // The real model with the three effort levels through the Q&A page (web off): "deep" must announce its thinking and still answer.
@@ -2621,9 +2621,9 @@ private slots:
         if (!ai.engineFound())
             QSKIP("no llama.cpp engine on this PC");
         auto* agent = qobject_cast<AiChannel*>(ai.agent());
-        QCOMPARE(agent->permission(), QString("ask"));                                      // the default: ask before every change
+        QCOMPARE(agent->permission(), QString("edit"));                                     // the default: automatic
         agent->setPermission("bogus");
-        QCOMPARE(agent->permission(), QString("ask"));
+        QCOMPARE(agent->permission(), QString("edit"));
         ai.selectLocalModel(m_dir.filePath("mode-model.gguf"));
         agent->setFolder(m_dir.filePath("modework"));
         ai.setWebEnabled(false);
@@ -2674,6 +2674,7 @@ private slots:
         ai.llama()->useExternalServer(server.base(), "");
         ai.setWebEnabled(false);
         agent->setFolder(m_dir.filePath("askpage"));
+        agent->setPermission("ask");                                                        // the mode that asks (the default is automatic since 1.23.0)
         QCOMPARE(agent->send("write a note"), QString());
         QTRY_VERIFY_WITH_TIMEOUT(agent->status() == "waiting", 10000);
         const QVariantMap approval = agent->messages().at(1).toMap().value("approval").toMap();

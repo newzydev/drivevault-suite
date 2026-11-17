@@ -86,9 +86,8 @@ ApplicationWindow {
     readonly property var sections: [ { key: "multimedia" }, { key: "office" }, { key: "other" } ]
     property string category: ""          // "" = all categories, otherwise a section key
     property string tab: "programs"       // the tab at the top of the page: programs | ask | agent | browser
-    property bool browserOpened: false    // the browser view exists once its tab was shown
-    onTabChanged: if (tab === "browser") browserOpened = true
-    readonly property var tabs: [ { key: "programs" }, { key: "ask" }, { key: "agent" }, { key: "browser" } ]
+    function showBrowser() { tab = "agent"; aiWorkspace.openBrowser() }     // diagnostics (--tab browser)
+    readonly property var tabs: [ { key: "programs" }, { key: "ask" }, { key: "agent" } ]
     // diagnostics only (--ai-view): open the settings or one of the menus of the shown AI page
     property string diagnosticView: ""
     onDiagnosticViewChanged: {
@@ -323,19 +322,9 @@ ApplicationWindow {
         }
 
         // ---- AI Q&A and Agentic AI: the same page with another mode (no AI is connected yet; the page says so) -----------------------------
-        // ---- the browser (Qt WebEngine): created when the tab is first shown, then kept (the AI uses the same view) --------------------------
-        Loader {
-            id: browserLoader
-            objectName: "browserLoader"
-            visible: win.tab === "browser"
-            active: Ai.browser.compiledIn && win.browserOpened
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            sourceComponent: BrowserView { onTabPicked: key => win.tab = key }
-        }
         Connections {
             target: Ai.browser
-            function onViewWanted() { if (win.tab !== "browser") win.tab = "browser" }     // the AI opens a page: the user sees it
+            function onViewWanted() { if (win.tab !== "agent") win.tab = "agent" }          // the AI opens a page: the Agentic AI page (it shows the browser at its right) comes forward
         }
 
         AiWorkspace {

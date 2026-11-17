@@ -14,7 +14,7 @@ Item {
     objectName: "browserPage"
 
     property var bridge: Ai.browser
-    signal tabPicked(string key)
+    signal closeRequested()
 
     // ---- state ---------------------------------------------------------------------------------------------------------------------------
     property var pending: []                 // permission requests that wait for the user (WebEnginePermission values), oldest first
@@ -96,9 +96,9 @@ Item {
                 anchors.leftMargin: 20
                 anchors.rightMargin: 20
                 spacing: 14
-                MButton { objectName: "brBackToAgent"; compact: true; text: "← " + Tr.s("tab_agent"); onClicked: root.tabPicked("agent") }
                 Text { text: Tr.s("tab_browser"); font.pixelSize: 16; font.weight: Font.DemiBold; color: Theme.text }
                 Item { Layout.fillWidth: true }
+                MButton { objectName: "brClose"; compact: true; text: "✕  " + Tr.s("br_close"); onClicked: root.closeRequested(); Accessible.name: Tr.s("br_close") }
             }
         }
 

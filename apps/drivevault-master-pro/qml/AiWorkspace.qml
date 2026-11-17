@@ -56,6 +56,12 @@ Item {
         }
     }
     // ---- attachments of the message box: text files (any page) and pictures (agent page, when the model can see) ------------------------------
+    property bool browserOpen: false                        // the browser is shown at the right (instead of the panel)
+    property bool browserEver: false                        // it was opened once: the view stays alive (the AI uses it)
+    onBrowserOpenChanged: if (browserOpen) browserEver = true
+    readonly property bool browserShown: root.agent && root.browserOpen
+    function openBrowser() { if (Ai.browser.compiledIn) browserOpen = true }
+    Connections { target: Ai.browser; function onViewWanted() { root.openBrowser() } }      // the AI opens a page of its work: the user sees it
     property var pinnedManual: undefined                    // the user opened / closed the pinned step box by hand (undefined = automatic: open while it works)
     Connections { target: root.ch; function onBusyChanged() { if (root.ch.busy) root.pinnedManual = undefined } }
     property var attachments: []                         // [{kind: file | image, name, text | data}] waiting for Send
@@ -449,12 +455,15 @@ Item {
         signal clicked()
         implicitHeight: 28
         implicitWidth: chipText.implicitWidth + 22
+        Layout.maximumWidth: implicitWidth                     // in a row that is too narrow (the browser is open) a chip gets shorter and its text is cut with ...
+        Layout.minimumWidth: 56
+        Layout.fillWidth: true
         radius: 14
         color: clickable && chipMouse.containsMouse ? Theme.surfaceHover : "transparent"
         Behavior on color { ColorAnimation { duration: 140 } }
         border.width: 1
         border.color: Theme.border
-        Text { id: chipText; anchors.centerIn: parent; font.pixelSize: 12; font.weight: Font.Medium; color: Theme.textSecondary }
+        Text { id: chipText; anchors.centerIn: parent; width: Math.min(implicitWidth, chip.width - 16); elide: Text.ElideRight; horizontalAlignment: Text.AlignHCenter; font.pixelSize: 12; font.weight: Font.Medium; color: Theme.textSecondary }
         MouseArea { id: chipMouse; anchors.fill: parent; enabled: chip.clickable; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: chip.clicked() }
     }
     component SideTitle: Text {
@@ -601,7 +610,7 @@ Item {
             Rectangle {
                 id: side
                 objectName: "aiSidebar"
-                Layout.preferredWidth: root.width < 900 ? 210 : 270
+                Layout.preferredWidth: root.width < 900 || root.browserShown ? 210 : 270
                 Layout.fillHeight: true
                 color: "#0D0E11"
                 Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.borderSubtle }
@@ -785,7 +794,7 @@ Item {
                         visible: root.agent && Ai.browser.compiledIn
                         compact: true
                         text: Tr.s("tab_browser")
-                        onClicked: root.tabPicked("browser")
+                        onClicked: root.browserOpen = !root.browserOpen
                     }
                     MButton { objectName: "aiSettings"; compact: true; text: Tr.s("ai_settings"); onClicked: settings.open() }
                 }
@@ -1410,7 +1419,7 @@ Item {
                             // the settings of this message, next to Send (like Claude): folder, model, effort, web, mode
                             Chip {
                                 objectName: "aiFolder"
-                                visible: root.agent
+                                visible: root.agent && !root.browserShown            // (the browser is open: no room; the folder is in the left list)
                                 clickable: true
                                 enabled: !root.ch.busy
                                 text: root.ch.folder === "" ? Tr.s("ai_folder_none") : root.ch.folder.replace(/^.*[\\/]/, "")
@@ -1461,11 +1470,22 @@ Item {
                 }
             }
 
-            // ---- right: what this page knows about the work (sources, or plan and changes); hidden when the window is narrow ---------------
+            // ---- right: the browser (Qt WebEngine) takes the place of the panel when it is open and pushes the conversation aside; created when first opened, then kept ----
+            Loader {
+                id: browserLoader
+                objectName: "browserLoader"
+                visible: root.browserShown
+                active: Ai.browser.compiledIn && root.browserEver
+                Layout.preferredWidth: Math.max(440, Math.round(root.width * 0.4))
+                Layout.fillHeight: true
+                sourceComponent: BrowserView { onCloseRequested: root.browserOpen = false }
+            }
+
+            // ---- right: what this page knows about the work (sources, or plan and changes); hidden when the window is narrow or the browser is open ---------------
             Rectangle {
                 id: panel
                 objectName: "aiPanel"
-                visible: root.width >= 1000
+                visible: root.width >= 1000 && !root.browserShown
                 Layout.preferredWidth: 300
                 Layout.fillHeight: true
                 color: "#0D0E11"

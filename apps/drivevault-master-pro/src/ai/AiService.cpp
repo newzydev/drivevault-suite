@@ -1229,8 +1229,10 @@ void AiChannel::applySettings(const QVariantMap& v)
     m_effort = Effort::of(v.value(QStringLiteral("effort")).toString()).id;
     m_folder = localFolder(v.value(QStringLiteral("folder")).toString());      // 1.12.0 saved the dialog's file: address
     m_permission = v.value(QStringLiteral("permission")).toString();
-    if (!permissions().contains(m_permission))
-        m_permission = v.value(QStringLiteral("allowEdits")).toBool() ? QStringLiteral("edit") : QStringLiteral("ask");     // an older settings file: the old switch
+    if (m_permission.isEmpty())
+        m_permission = v.contains(QStringLiteral("allowEdits")) && !v.value(QStringLiteral("allowEdits")).toBool() ? QStringLiteral("ask") : QStringLiteral("edit");   // nothing saved yet: automatic (the default); an older settings file: the old switch
+    else if (!permissions().contains(m_permission))
+        m_permission = QStringLiteral("edit");
     else if (v.value(QStringLiteral("modeVersion")).toInt() < 2 && m_permission == QLatin1String("ask"))
         m_permission = QStringLiteral("edit");                      // 1.23.0: the owner is tired of pressing Allow: "ask" (the old default) becomes automatic once; it can be chosen again
     emit settingsChanged();

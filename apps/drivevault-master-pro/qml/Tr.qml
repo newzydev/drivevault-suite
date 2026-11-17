@@ -168,6 +168,7 @@ QtObject {
         "br_start_title": ["Browser", "เบราว์เซอร์"],
         "br_start_sub": ["Browse the web, and see the pages the AI makes. Websites ask before they use your camera, microphone or location.", "เปิดดูเว็บ และดูหน้าเว็บที่ AI สร้างขึ้น เว็บไซต์จะถามก่อนใช้กล้อง ไมโครโฟน หรือตำแหน่งของคุณ"],
         "br_start_privacy": ["Cookies and your choices are kept on this PC only. Downloads are not supported yet.", "คุกกี้และตัวเลือกของคุณเก็บไว้ในเครื่องนี้เท่านั้น ยังไม่รองรับการดาวน์โหลด"],
+        "br_close": ["Close", "ปิด"],
         "br_back": ["Back", "ย้อนกลับ"],
         "br_forward": ["Forward", "ไปข้างหน้า"],
         "br_reload": ["Reload", "โหลดใหม่"],
