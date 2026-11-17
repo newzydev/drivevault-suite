@@ -1,6 +1,13 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.17.0 (2026-11-17): The conversation is compacted like in Claude Code
+  - New: the AI on this PC writes a summary of the conversation (your goal and wishes, the files it touched, results, errors, what is left) and the conversation goes on with that summary instead of the old messages. A card in the conversation says "Conversation compacted - about 14,200 -> 640 tokens"; a click reads the summary.
+  - Three ways: type /compact (optionally with a wish, e.g. /compact keep the file names), press "Compact now" in the Context part of the right panel, or let it happen by itself: before a message is sent, when the history that would go along has grown to three quarters of what is kept, the summary is written first and your message goes on after it. Stop ends a compaction.
+  - Before, a long conversation lost its oldest messages without a trace. Now they are kept as a summary. Inside one long job the old results are still shortened or dropped to stay in the window, and the AI now keeps a short list of the steps that were dropped.
+  - The token numbers on the card and in the panel are estimates (about 2.5 characters to a token) and say so; the meter shows the model server's own count of the last request when there is one. The summary is written by the small local model, so it can miss details - the card lets you read it.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.16.0 (2026-11-17): Conversations in folders, and a right panel with git, context and changes
   - Left side of the agent page: the conversations are grouped by the folder they work in (a group per folder, the newest first). A group can be closed with a click on its header, and its "+" starts a new conversation in that folder. Opening a conversation puts the work back in its folder; choosing another folder starts a new conversation.
   - Right side: "Environment" (this computer, the folder - click to change it, the git branch with how far it is ahead / behind), "Context" (how much of the model window this conversation uses, in % and tokens: the number the model server counted, or an estimate marked "about"), "Changes" (the files git says changed, with M / A / D / ? marks and +lines / -lines, refreshed after every change, every answer and with the refresh button) and "Connectors" (the web switch, git and commands - the real tools of this page; there are no other connectors).

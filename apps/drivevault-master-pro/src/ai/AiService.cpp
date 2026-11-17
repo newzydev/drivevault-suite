@@ -138,7 +138,8 @@ QVariantList AiChannel::messages() const
         for (const Message& m : c.messages) {
             out.append(QVariantMap{{"role", m.role}, {"text", m.text}, {"streaming", m.streaming}, {"stopped", m.stopped}, {"errorCode", m.errorCode},
                                    {"errorDetail", m.errorDetail}, {"activity", m.activity}, {"approval", m.approval},
-                                   {"startedMs", double(m.startedMs)}, {"durationMs", double(m.durationMs)}, {"steps", m.steps}, {"stepList", m.stepList}});
+                                   {"startedMs", double(m.startedMs)}, {"durationMs", double(m.durationMs)}, {"steps", m.steps}, {"stepList", m.stepList},
+                                   {"compact", m.compact}, {"summary", m.summary}, {"tokensBefore", m.tokensBefore}, {"tokensAfter", m.tokensAfter}});
         }
     }
     return out;
@@ -220,6 +221,10 @@ QString AiChannel::send(const QString& text)
     const QString nr = notReady();
     if (!nr.isEmpty())
         return nr;
+    if (needsCompaction()) {                                       // like Claude Code: a long history is compacted first, then the message goes on
+        startCompaction({}, true, t, {});
+        return {};
+    }
     beginRequest(t);
     return {};
 }
@@ -325,10 +330,10 @@ void AiChannel::sendChat()
         r.baseUrl = server->baseUrl() + QStringLiteral("/v1");
         r.apiKey = server->apiKey();
         r.model = QStringLiteral("local");
-        r.system = systemPrompt();
+        r.system = systemPrompt() + summaryNote();
         QList<Message> past = find(m_runId)->messages;
         past.removeLast();                                         // the empty reply that is being written
-        r.messages = historyFor(past, effort.historyChars);
+        r.messages = historyFor(afterLastCompact(past), effort.historyChars);          // only what came after the last compaction (its summary is in the system prompt)
         r.extraBody = QJsonObject{{"chat_template_kwargs", QJsonObject{{"enable_thinking", effort.thinking}}}, {"max_tokens", effort.maxTokens}};
         if (!m_http) {
             m_http = new HttpChat(m_service->net(), this);
@@ -414,7 +419,8 @@ void AiChannel::sendTools()
         }
         QList<Message> past = find(m_runId)->messages;
         past.removeLast();
-        c.history = historyFor(past, effort.historyChars);
+        c.history = historyFor(afterLastCompact(past), effort.historyChars);
+        c.system += summaryNote();                                 // a compacted conversation: what happened before, in the model's own summary
         if (!m_localAgent) {
             m_localAgent = new LocalAgent(m_service->net(), this);
             connect(m_localAgent, &LocalAgent::piece, this, &AiChannel::appendPiece);
@@ -518,6 +524,10 @@ void AiChannel::finish(bool ok, const QString& code, const QString& detail)
 {
     if (!m_busy)
         return;
+    if (m_compacting) {                                            // the model could not be started for the summary
+        finishCompaction(ok, detail, code);
+        return;
+    }
     QObject::disconnect(m_waitLocal);
     if (Conversation* c = find(m_runId); c && !c->messages.isEmpty()) {
         Message& m = c->messages.last();
@@ -560,6 +570,15 @@ void AiChannel::stop()
 {
     if (!m_busy)
         return;
+    if (m_compacting) {                                            // a summary is being written: stop it (the message that waited is not sent)
+        m_pendingText.clear();
+        ++m_generation;
+        if (m_compactor && m_compactor->running())
+            m_compactor->cancel();
+        else
+            finishCompaction(false, {}, QStringLiteral("cancelled"));
+        return;
+    }
     ++m_generation;
     const bool http = m_http && m_http->running();
     const bool agent = m_localAgent && m_localAgent->running();
@@ -606,8 +625,8 @@ bool AiChannel::slashCommand(const QString& text, QString* prompt)
     const bool agent = isAgent();
 
     if (cmd == QLatin1String("/help")) {
-        QString en = QStringLiteral("Commands:\n- /help  this list\n- /clear (or /new)  start a new conversation\n- /effort low|medium|high  how much the model works\n- /web on|off  let the AI search the web");
-        QString th = QString::fromUtf8("คำสั่ง:\n- /help  รายการนี้\n- /clear (หรือ /new)  เริ่มบทสนทนาใหม่\n- /effort low|medium|high  ระดับความพยายามของโมเดล\n- /web on|off  ให้ AI ค้นเว็บหรือไม่");
+        QString en = QStringLiteral("Commands:\n- /help  this list\n- /clear (or /new)  start a new conversation\n- /compact [wish]  the AI summarizes the conversation so far and goes on with the summary (also automatic when the history gets long)\n- /effort low|medium|high  how much the model works\n- /web on|off  let the AI search the web");
+        QString th = QString::fromUtf8("คำสั่ง:\n- /help  รายการนี้\n- /clear (หรือ /new)  เริ่มบทสนทนาใหม่\n- /compact [ข้อความ]  ให้ AI สรุปบทสนทนาที่ผ่านมาแล้วทำต่อด้วยสรุปนั้น (ทำเองอัตโนมัติเมื่อประวัติยาว)\n- /effort low|medium|high  ระดับความพยายามของโมเดล\n- /web on|off  ให้ AI ค้นเว็บหรือไม่");
         if (agent) {
             en += QStringLiteral("\n- /mode read|plan|ask|edit  how the agent may work (Shift+Tab changes it)\n- /todos  show the task list\n- /init  write a CLAUDE.md for this folder\n\nEsc stops the work.");
             th += QString::fromUtf8("\n- /mode read|plan|ask|edit  เอเจนต์ทำอะไรได้บ้าง (กด Shift+Tab เพื่อสลับ)\n- /todos  แสดงรายการงาน\n- /init  สร้างไฟล์ CLAUDE.md ของโฟลเดอร์นี้\n\nกด Esc เพื่อหยุดงาน");
@@ -637,6 +656,21 @@ bool AiChannel::slashCommand(const QString& text, QString* prompt)
         }
         m_service->setWebEnabled(arg == QLatin1String("on"));
         localExchange(text, tr(QStringLiteral("Web: %1.").arg(arg), QString::fromUtf8("เว็บ: %1").arg(arg == QLatin1String("on") ? QString::fromUtf8("เปิด") : QString::fromUtf8("ปิด"))));
+        return true;
+    }
+    if (cmd == QLatin1String("/compact")) {
+        const QString focus = text.mid(8).trimmed();
+        Conversation* c = current();
+        if (!c || afterLastCompact(c->messages).size() < 2) {
+            localExchange(text, tr(QStringLiteral("There is nothing to compact yet."), QString::fromUtf8("ยังไม่มีอะไรให้บีบอัด")));
+            return true;
+        }
+        if (!notReady().isEmpty()) {
+            localExchange(text, tr(QStringLiteral("The AI is not ready, so the conversation cannot be compacted now (see the note above the message box)."),
+                                   QString::fromUtf8("AI ยังไม่พร้อม จึงบีบอัดตอนนี้ไม่ได้ (ดูข้อความเหนือช่องพิมพ์)")));
+            return true;
+        }
+        startCompaction(focus, false, {}, text);
         return true;
     }
     if (!agent)
@@ -811,23 +845,216 @@ void AiChannel::scheduleGit()
 QVariantMap AiChannel::context() const
 {
     int window = m_service->llama()->isExternal() ? LlamaServer::kSmallContextTokens : m_service->llama()->contextTokens();
-    int used = 0;
-    bool exact = false;
+    int used = 0, history = 0;
+    bool exact = false, canCompact = false;
     for (const Conversation& c : m_conversations) {
         if (c.id != m_currentId)
             continue;
+        const QList<Message> active = afterLastCompact(c.messages);
+        qint64 chars = 0;                                          // the text that the next request carries from this conversation: the summary and what came after it
+        for (const Message& m : active)
+            chars += m.text.size();
+        const int before = int(c.messages.size()) - int(active.size()) - 1;              // the card of the last compaction (when there is one)
+        if (before >= 0 && c.messages.at(before).compact)
+            chars += c.messages.at(before).summary.size();
+        history = int(chars * 2 / 5);
+        canCompact = !m_busy && active.size() >= 2;
         if (c.usedTokens > 0) {
             used = c.usedTokens;
             exact = true;
         } else {
-            qint64 chars = 0;
-            for (const Message& m : c.messages)
-                chars += m.text.size();
-            used = int(chars * 2 / 5);
+            used = history;
         }
     }
     const int percent = window > 0 ? qMin(100, int(qint64(used) * 100 / window)) : 0;
-    return QVariantMap{{"used", used}, {"window", window}, {"percent", percent}, {"exact", exact}};
+    const int autoAt = int(Effort::of(m_effort).historyChars * 3 / 4 * 2 / 5);          // the history size (tokens) at which the next message compacts first
+    return QVariantMap{{"used", used}, {"window", window}, {"percent", percent}, {"exact", exact}, {"history", history}, {"autoAt", autoAt}, {"canCompact", canCompact}};
+}
+
+// ---- compacting the conversation (like Claude Code's /compact and its automatic compaction) ---------------------------------------------------
+// The messages the next request carries: those after the last FINISHED compaction card.
+QList<AiChannel::Message> AiChannel::afterLastCompact(const QList<Message>& messages)
+{
+    for (int i = int(messages.size()) - 1; i >= 0; --i)
+        if (messages.at(i).compact && !messages.at(i).summary.isEmpty())
+            return messages.mid(i + 1);
+    return messages;
+}
+
+QString AiChannel::summaryNote() const
+{
+    for (const Conversation& c : m_conversations) {
+        if (c.id != m_runId)
+            continue;
+        for (int i = int(c.messages.size()) - 1; i >= 0; --i)
+            if (c.messages.at(i).compact && !c.messages.at(i).summary.isEmpty())
+                return QStringLiteral("\n\nThe conversation so far was compacted to save room. This is the summary of what happened before the messages below; rely on it:\n")
+                       + c.messages.at(i).summary;
+    }
+    return {};
+}
+
+// the history that would go along has reached three quarters of what is kept (Effort::historyChars): older messages would be cut off in a moment, so they are
+// summarized first
+bool AiChannel::needsCompaction() const
+{
+    for (const Conversation& c : m_conversations) {
+        if (c.id != m_currentId)
+            continue;
+        const QList<Message> active = afterLastCompact(c.messages);
+        qint64 chars = 0;
+        int count = 0;
+        for (const Message& m : active) {
+            if (m.text.trimmed().isEmpty())
+                continue;
+            chars += m.text.size();
+            ++count;
+        }
+        return count >= 4 && chars >= qint64(Effort::of(m_effort).historyChars) * 3 / 4;
+    }
+    return false;
+}
+
+// What the model summarizes: an earlier summary (if any), then every message with the steps the AI took and how the answer ended, and the plan.
+QString AiChannel::transcriptFor(const Conversation& conversation) const
+{
+    QString out;
+    int start = 0;
+    for (int i = int(conversation.messages.size()) - 1; i >= 0; --i)
+        if (conversation.messages.at(i).compact && !conversation.messages.at(i).summary.isEmpty()) {
+            out += QStringLiteral("[Summary of the conversation before this part]\n") + conversation.messages.at(i).summary + QStringLiteral("\n\n");
+            start = i + 1;
+            break;
+        }
+    for (int i = start; i < conversation.messages.size(); ++i) {
+        const Message& m = conversation.messages.at(i);
+        if (m.compact || (m.text.trimmed().isEmpty() && m.stepList.isEmpty()))
+            continue;
+        if (m.role == QLatin1String("user")) {
+            out += QStringLiteral("User: ") + m.text.trimmed() + QStringLiteral("\n\n");
+            continue;
+        }
+        QStringList steps;
+        for (const QVariant& v : m.stepList) {
+            const QVariantMap s = v.toMap();
+            if (s.value("kind").toString() == QLatin1String("note"))
+                continue;
+            steps << QStringLiteral("%1 %2 (%3)").arg(s.value("kind").toString(), s.value("target").toString().left(100), s.value("state").toString());
+            if (steps.size() >= 60)
+                break;
+        }
+        out += QStringLiteral("Assistant: ") + m.text.trimmed();
+        if (!steps.isEmpty())
+            out += QStringLiteral("\n[Steps taken: ") + steps.join(QStringLiteral("; ")) + QLatin1Char(']');
+        if (!m.errorCode.isEmpty())
+            out += QStringLiteral("\n[This answer ended with an error: ") + m.errorCode + QLatin1Char(']');
+        out += QStringLiteral("\n\n");
+    }
+    if (!conversation.todos.isEmpty()) {
+        QStringList plan;
+        for (const QVariant& v : conversation.todos) {
+            const QString status = v.toMap().value("status").toString();
+            plan << QStringLiteral("[%1] %2").arg(status == QLatin1String("completed") ? QStringLiteral("x") : status == QLatin1String("in_progress") ? QStringLiteral(">") : QStringLiteral(" "),
+                                                  v.toMap().value("content").toString());
+        }
+        out += QStringLiteral("Plan of the assistant now: ") + plan.join(QStringLiteral("; ")) + QStringLiteral("\n");
+    }
+    // it must fit in the window together with the answer: a longer text keeps its beginning and (more of) its end
+    const int window = m_service->llama()->isExternal() ? LlamaServer::kSmallContextTokens : m_service->llama()->contextTokens();
+    const int budget = qMax(6000, (window - Compactor::kSummaryTokens - 1500) * 5 / 2);
+    if (out.size() > budget) {
+        const int head = budget / 5;
+        out = out.left(head) + QStringLiteral("\n... (the middle was left out because it is too long) ...\n") + out.right(budget - head);
+    }
+    return out;
+}
+
+QString AiChannel::compactNow(const QString& focus)
+{
+    if (m_busy)
+        return QStringLiteral("busy");
+    const QString nr = notReady();
+    if (!nr.isEmpty())
+        return nr;
+    Conversation* c = current();
+    if (!c || afterLastCompact(c->messages).size() < 2)
+        return QStringLiteral("nothing");
+    startCompaction(focus, false, {}, {});
+    return {};
+}
+
+void AiChannel::startCompaction(const QString& focus, bool automatic, const QString& pendingText, const QString& userText)
+{
+    Q_UNUSED(automatic)
+    Conversation& c = ensureConversation(userText.isEmpty() ? QStringLiteral("…") : userText);
+    const QString transcript = transcriptFor(c);                    // before the card and the "/compact" message are added
+    m_compactBefore = context().value("history").toInt();
+    if (!userText.isEmpty()) {
+        Message user;
+        user.role = QStringLiteral("user");
+        user.text = userText;
+        c.messages << user;
+    }
+    Message card;
+    card.role = QStringLiteral("assistant");
+    card.compact = true;
+    card.streaming = true;
+    card.startedMs = QDateTime::currentMSecsSinceEpoch();
+    c.messages << card;
+    c.updated = QDateTime::currentMSecsSinceEpoch();
+    m_runId = c.id;
+    ++m_generation;
+    m_compacting = true;
+    m_pendingText = pendingText;
+    setBusy(true, QStringLiteral("compacting"));
+    emit messagesChanged();
+    emit conversationsChanged();
+    saveConversations();
+    withLocalServer([this, focus, transcript] {
+        LlamaServer* server = m_service->llama();
+        if (!m_compactor) {
+            m_compactor = new Compactor(m_service->net(), this);
+            connect(m_compactor, &Compactor::finished, this, &AiChannel::finishCompaction);
+        }
+        const QString err = m_compactor->start(server->baseUrl() + QStringLiteral("/v1"), server->apiKey(), transcript, focus, Compactor::kSummaryTokens);
+        if (!err.isEmpty())
+            finishCompaction(false, {}, err);
+        server->touch();
+    });
+}
+
+void AiChannel::finishCompaction(bool ok, const QString& summary, const QString& error)
+{
+    if (!m_compacting)
+        return;
+    m_compacting = false;
+    QObject::disconnect(m_waitLocal);
+    if (Conversation* c = find(m_runId); c && !c->messages.isEmpty() && c->messages.last().compact) {
+        Message& card = c->messages.last();
+        card.streaming = false;
+        card.durationMs = qMax<qint64>(1, QDateTime::currentMSecsSinceEpoch() - card.startedMs);
+        if (ok) {
+            card.summary = summary;
+            card.tokensBefore = m_compactBefore;
+            card.tokensAfter = int(summary.size() * 2 / 5);
+            c->usedTokens = 0;                                      // what the server counted is out of date now
+        } else if (error == QLatin1String("cancelled")) {
+            card.stopped = true;
+        } else {
+            card.errorCode = error.isEmpty() ? QStringLiteral("failed") : error;
+            card.errorDetail = summary.left(600);
+        }
+        c->updated = QDateTime::currentMSecsSinceEpoch();
+    }
+    setBusy(false);
+    emit messagesChanged();
+    emit conversationsChanged();
+    emit contextChanged();
+    saveConversations();
+    const QString pending = m_pendingText;
+    m_pendingText.clear();
+    if (!pending.isEmpty())                                         // an automatic compaction: the message that waited goes on (also when the summary failed)
+        beginRequest(pending);
 }
 
 void AiChannel::setPermission(const QString& permission)
@@ -886,6 +1113,12 @@ void AiChannel::saveConversations()
                 o["durationMs"] = double(m.durationMs);
                 o["steps"] = m.steps;
             }
+            if (m.compact) {
+                o["compact"] = true;
+                o["summary"] = m.summary;
+                o["tokensBefore"] = m.tokensBefore;
+                o["tokensAfter"] = m.tokensAfter;
+            }
             if (!m.stepList.isEmpty()) {
                 QJsonArray sl;
                 for (const QVariant& v : m.stepList) {
@@ -930,6 +1163,12 @@ void AiChannel::load()
             m.stopped = mo.value(QLatin1String("stopped")).toBool();
             m.durationMs = qint64(mo.value(QLatin1String("durationMs")).toDouble());
             m.steps = mo.value(QLatin1String("steps")).toInt();
+            m.compact = mo.value(QLatin1String("compact")).toBool();
+            m.summary = mo.value(QLatin1String("summary")).toString();
+            m.tokensBefore = mo.value(QLatin1String("tokensBefore")).toInt();
+            m.tokensAfter = mo.value(QLatin1String("tokensAfter")).toInt();
+            if (m.compact && m.summary.isEmpty() && m.errorCode.isEmpty())
+                m.stopped = true;                                           // a compaction that never finished (the program was closed)
             int n = 0;
             for (const QJsonValue& sv : mo.value(QLatin1String("stepList")).toArray()) {
                 const QJsonObject so = sv.toObject();

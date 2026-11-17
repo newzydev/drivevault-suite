@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Compactor.h"
 #include "GitInfo.h"
 #include "HttpChat.h"
 #include "LlamaServer.h"
@@ -68,6 +69,9 @@ public:
         qint64 durationMs = 0;             // how long it took (0 while it runs)
         int steps = 0;                     // tool steps of the request (the activity list keeps only the newest 300)
         QVariantList stepList;             // the step list the page shows: [{no, kind, target, state: running | waiting | done | error | stopped, note}] (the newest 400)
+        bool compact = false;              // not a message: the card "the conversation was compacted"; `summary` replaces everything before it (see Compactor)
+        QString summary;
+        int tokensBefore = 0, tokensAfter = 0;
         QVariantMap approval;              // waits for the user's answer (not saved): {kind: "change", path, replaces, bytes, preview, diff} | {kind: "command", command} | {kind: "plan", plan}
     };
     struct Conversation {
@@ -98,7 +102,12 @@ public:
     QVariantList todos() const;                            // the plan of the open conversation
     QVariantMap git() const { return m_git ? m_git->info() : QVariantMap{{"state", "none"}}; }
     QVariantMap context() const;
-    Q_INVOKABLE void refreshGit();                         // ask git again (also done after a change, a finished answer and a new folder)
+    // Compacts the open conversation like Claude Code: the model writes a summary that replaces the old messages in what is sent from now on. `focus` is an
+    // optional wish ("keep the file names"). "" = started, otherwise why not: busy | nothing | a notReady code. Also done by "/compact" and, before a message is
+    // sent, when the history has grown near what is sent along (needsCompaction).
+    Q_INVOKABLE QString compactNow(const QString& focus = QString());
+    static QList<Message> afterLastCompact(const QList<Message>& messages);      // what the next request carries: the messages after the last finished compaction
+    Q_INVOKABLE void refreshGit();                      // ask git again (also done after a change, a finished answer and a new folder)
     Q_INVOKABLE void newConversationIn(const QString& folder);   // the "+" of a group of the sidebar: a new conversation in that folder
 
     // A message that starts with "/" is a command of the page (agent page: /help /clear /new /mode /effort /web /todos /init). Returns true when it was handled
@@ -137,6 +146,11 @@ signals:
 
 private:
     void scheduleGit();                                    // refreshGit in a moment (changes come in bursts)
+    QString summaryNote() const;                           // the summary of the last compaction as a part of the system prompt ("" when there is none)
+    bool needsCompaction() const;                          // the history that would go along is near what is kept: compact before the next message
+    QString transcriptFor(const Conversation& conversation) const;   // the text the model summarizes
+    void startCompaction(const QString& focus, bool automatic, const QString& pendingText, const QString& userText);
+    void finishCompaction(bool ok, const QString& summary, const QString& error);
     void localExchange(const QString& userText, const QString& reply);        // a question and an answer that never reach the model (slash commands)
     QString projectNotes(QString* fileName) const;         // the start of CLAUDE.md / AGENTS.md of the working folder ("" when there is none)
     void clearTodos();
@@ -170,6 +184,10 @@ private:
     QString m_status;
     HttpChat* m_http = nullptr;
     LocalAgent* m_localAgent = nullptr;
+    Compactor* m_compactor = nullptr;
+    bool m_compacting = false;                             // a summary is being written (busy, status "compacting")
+    QString m_pendingText;                                 // the message that waits for an automatic compaction
+    int m_compactBefore = 0;                               // the size (tokens, estimated) of what is being compacted
     GitInfo* m_git = nullptr;                              // agent page only
     QTimer* m_gitTimer = nullptr;
     QMetaObject::Connection m_waitLocal;

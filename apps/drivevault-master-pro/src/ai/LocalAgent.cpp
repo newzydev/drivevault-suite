@@ -12,6 +12,7 @@
 namespace dm::ai {
 
 static constexpr int kMaxWebCalls = 4;                     // web_search + fetch_page calls in one task
+static constexpr const char* kDigestMarker = "Earlier in this job";   // starts the note that lists the steps whose results were dropped
 
 namespace {
 
@@ -564,22 +565,55 @@ void LocalAgent::compact(qint64 budgetTokens)
     for (int i = firstOld; i < int(m_messages.size()) - 6 && estimateTokens() > budgetTokens; ++i)
         shortenMessage(i);
     const bool hasSystem = !m_messages.isEmpty() && m_messages.at(0).toObject().value(QLatin1String("role")).toString() == QLatin1String("system");
+    QStringList dropped;                                               // what the dropped steps were: the model keeps a trace of its own work
+    auto isDigest = [this](int index) {
+        return index < int(m_messages.size()) && m_messages.at(index).toObject().value(QLatin1String("role")).toString() == QLatin1String("user")
+               && m_messages.at(index).toObject().value(QLatin1String("content")).toString().startsWith(QLatin1String(kDigestMarker));
+    };
     while (estimateTokens() > budgetTokens && m_messages.size() > 4) {
+        const int firstStep = m_taskIndex + 1 + (isDigest(m_taskIndex + 1) ? 1 : 0);      // the note about earlier steps stays
         int i;
         if ((hasSystem ? 1 : 0) < m_taskIndex)
             i = hasSystem ? 1 : 0;                                     // older conversation before the task
-        else if (m_taskIndex + 1 < int(m_messages.size()) - 4)
-            i = m_taskIndex + 1;                                       // the oldest step of this job
+        else if (firstStep < int(m_messages.size()) - 4)
+            i = firstStep;                                             // the oldest step of this job
         else
             break;
         int count = 1;
         if (m_messages.at(i).toObject().contains(QLatin1String("tool_calls")))
             while (i + count < int(m_messages.size()) && m_messages.at(i + count).toObject().value(QLatin1String("role")).toString() == QLatin1String("tool"))
                 ++count;
+        if (i > m_taskIndex) {                                         // a step of this job: write down what it was
+            for (const QJsonValue& t : m_messages.at(i).toObject().value(QLatin1String("tool_calls")).toArray()) {
+                const QJsonObject fn = t.toObject().value(QLatin1String("function")).toObject();
+                const QJsonObject args = QJsonDocument::fromJson(fn.value(QLatin1String("arguments")).toString().toUtf8()).object();
+                QString what;
+                for (const char* key : {"path", "command", "query", "pattern", "url"})
+                    if (what.isEmpty())
+                        what = args.value(QLatin1String(key)).toString();
+                if (args.contains(QLatin1String("start_line")))
+                    what += QStringLiteral(" (from line %1)").arg(args.value(QLatin1String("start_line")).toInt());
+                dropped << (fn.value(QLatin1String("name")).toString() + (what.isEmpty() ? QString() : QLatin1Char(' ') + what.simplified().left(100)));
+            }
+        }
         for (int k = 0; k < count; ++k)
             m_messages.removeAt(i);
         if (i < m_taskIndex)
             m_taskIndex -= count;
+    }
+    if (!dropped.isEmpty()) {                                          // "Earlier in this job ...": a short list right after the task
+        QString lines;
+        for (const QString& d : std::as_const(dropped).mid(0, 80))
+            lines += QStringLiteral("\n- ") + d;
+        if (isDigest(m_taskIndex + 1)) {
+            QJsonObject note = m_messages.at(m_taskIndex + 1).toObject();
+            QString content = note.value(QLatin1String("content")).toString();
+            if (content.size() < 6000)                                 // the list itself stays short
+                note["content"] = content + lines;
+            m_messages[m_taskIndex + 1] = note;
+        } else {
+            m_messages.insert(m_taskIndex + 1, QJsonObject{{"role", "user"}, {"content", QLatin1String(kDigestMarker) + QStringLiteral(" (the results were dropped to save room; this is only what you did, oldest first - read a file again if you need its text):") + lines}});
+        }
     }
 }
 

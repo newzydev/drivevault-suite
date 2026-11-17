@@ -3,6 +3,7 @@
 #include "Hub.h"
 #include "ai/AgentTools.h"
 #include "ai/AiService.h"
+#include "ai/Compactor.h"
 #include "ai/CommandRunner.h"
 #include "ai/GitInfo.h"
 #include "ai/LocalAgent.h"
@@ -810,6 +811,13 @@ private slots:
         const QByteArray last = r.log.last();
         const QJsonArray msgs = requestBody(last).value("messages").toArray();
         QCOMPARE(msgs.first().toObject().value("content").toString(), QString("the task"));    // the task is never dropped
+        // what was dropped is not forgotten: a short list of the steps stays right after the task
+        QString digest;
+        for (const QJsonValue& m : msgs)
+            if (m.toObject().value("content").toString().startsWith("Earlier in this job"))
+                digest = m.toObject().value("content").toString();
+        QVERIFY2(!digest.isEmpty(), "no note about the dropped steps");
+        QVERIFY(digest.contains("read_file big.txt (from line 1)"));
         QVERIFY2(last.size() < 16000, qPrintable(QString::number(last.size())));              // twelve whole 4000 character answers would be about 50000
         QVERIFY(msgs.size() <= 12);
     }
@@ -1056,6 +1064,156 @@ private slots:
         const QVariantList list2 = agent2->conversations();
         QCOMPARE(list2.size(), 3);
         QCOMPARE(list2.at(0).toMap().value("group").toString(), QString("groupA"));
+    }
+    // ---- compacting the conversation -------------------------------------------------------------------------------------------------------
+    void theModelIsAskedForASummary()
+    {
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << replyWithReason("SUMMARY", "stop") << errorBody(500, "boom") << replyWithReason("", "stop");
+        QNetworkAccessManager net;
+        Compactor compactor(&net);
+        QSignalSpy done(&compactor, &Compactor::finished);
+        QCOMPARE(compactor.start(server.base() + "/v1", "key1", "User: hello\n\nAssistant: hi", "keep the file names", 900), QString());
+        QVERIFY(compactor.running());
+        QCOMPARE(compactor.start(server.base() + "/v1", "key1", "x", {}, 900), QString("busy"));
+        QVERIFY(done.wait(15000));
+        QVERIFY(done.at(0).at(0).toBool());
+        QCOMPARE(done.at(0).at(1).toString(), QString("SUMMARY"));
+        const QJsonObject body = requestBody(server.log.at(0));
+        QVERIFY(server.log.at(0).toLower().contains("authorization: bearer key1"));
+        QCOMPARE(body.value("stream").toBool(), true == false);                                  // one plain answer
+        QCOMPARE(body.value("max_tokens").toInt(), 900);
+        QCOMPARE(body.value("chat_template_kwargs").toObject().value("enable_thinking").toBool(), false);
+        QVERIFY(!body.contains("tools"));                                                         // a summary, no tools
+        const QJsonArray msgs = body.value("messages").toArray();
+        QVERIFY(msgs.at(0).toObject().value("content").toString().contains("keep the file names"));
+        QVERIFY(msgs.at(1).toObject().value("content").toString().contains("User: hello"));
+        // a server error and an empty answer are reported, not hidden
+        done.clear();
+        QCOMPARE(compactor.start(server.base() + "/v1", {}, "x", {}, 0), QString());
+        QVERIFY(done.wait(15000));
+        QVERIFY(!done.at(0).at(0).toBool());
+        QCOMPARE(done.at(0).at(2).toString(), QString("http500"));
+        done.clear();
+        QCOMPARE(compactor.start(server.base() + "/v1", {}, "x", {}, 0), QString());
+        QVERIFY(done.wait(15000));
+        QCOMPARE(done.at(0).at(2).toString(), QString("empty"));
+        QCOMPARE(compactor.start("http://example.com/v1", {}, "x", {}, 0), QString("badUrl"));     // only this computer
+    }
+    void aConversationIsCompactedAndGoesOnWithTheSummary()
+    {
+        QDir().mkpath(m_dir.filePath("compactwork"));
+        QFile model(m_dir.filePath("compact-model.gguf"));
+        QVERIFY(model.open(QIODevice::WriteOnly));
+        model.write("x");
+        model.close();
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({}, QStringLiteral("A1: the first answer")) << agentReply({}, QStringLiteral("A2: the second answer"))
+                     << replyWithReason("SUMMARY TEXT: the user wants a page", "stop") << agentReply({}, QStringLiteral("A3: the third answer"));
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hubcompact");
+        dm::Hub hub(o);
+        QString conversation;
+        {
+            AiService ai(&hub);
+            if (!ai.engineFound())
+                QSKIP("no llama.cpp engine on this PC");
+            auto* agent = qobject_cast<AiChannel*>(ai.agent());
+            ai.selectLocalModel(m_dir.filePath("compact-model.gguf"));
+            ai.llama()->useExternalServer(server.base(), "");
+            ai.setWebEnabled(false);
+            agent->setFolder(m_dir.filePath("compactwork"));
+            QCOMPARE(agent->compactNow(), QString("nothing"));                                  // nothing to compact yet
+            QCOMPARE(agent->send("first question"), QString());
+            QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 10000);
+            QCOMPARE(agent->send("second question"), QString());
+            QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 10000);
+            QVERIFY(agent->context().value("canCompact").toBool());
+            QCOMPARE(agent->send("/compact keep the names"), QString());                        // the command: the same as the button
+            QVERIFY(agent->busy());
+            QCOMPARE(agent->status(), QString("compacting"));
+            QCOMPARE(agent->send("hello"), QString("busy"));                                    // nothing else while it writes the summary
+            QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 10000);
+            const QVariantMap card = agent->messages().last().toMap();
+            QVERIFY(card.value("compact").toBool());
+            QCOMPARE(card.value("summary").toString(), QString("SUMMARY TEXT: the user wants a page"));
+            QVERIFY(card.value("tokensBefore").toInt() > 0);
+            QCOMPARE(card.value("errorCode").toString(), QString());
+            QCOMPARE(agent->messages().at(agent->messages().size() - 2).toMap().value("text").toString(), QString("/compact keep the names"));
+            // what the model was asked to summarize: the whole conversation and the wish
+            const QJsonArray ask = requestBody(server.log.at(2)).value("messages").toArray();
+            const QString sys = ask.at(0).toObject().value("content").toString(), usr = ask.at(1).toObject().value("content").toString();
+            QVERIFY(sys.contains("keep the names"));
+            QVERIFY(usr.contains("User: first question") && usr.contains("A1: the first answer") && usr.contains("User: second question") && usr.contains("A2: the second answer"));
+            // the conversation goes on with the summary instead of the old messages
+            QCOMPARE(agent->send("third question"), QString());
+            QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 10000);
+            QCOMPARE(server.requests, 4);
+            const QJsonArray next = requestBody(server.log.at(3)).value("messages").toArray();
+            QVERIFY(next.at(0).toObject().value("content").toString().contains("SUMMARY TEXT: the user wants a page"));
+            QCOMPARE(next.size(), 2);                                                           // the system message and the new question only
+            QCOMPARE(next.at(1).toObject().value("content").toString(), QString("third question"));
+            QCOMPARE(agent->messages().last().toMap().value("text").toString(), QString("A3: the third answer"));
+            conversation = agent->currentId();
+        }
+        AiService again(&hub);                                                                  // the summary is saved with the conversation
+        auto* agent2 = qobject_cast<AiChannel*>(again.agent());
+        agent2->select(conversation);
+        bool found = false;
+        for (const QVariant& m : agent2->messages())
+            if (m.toMap().value("compact").toBool() && m.toMap().value("summary").toString().startsWith("SUMMARY TEXT"))
+                found = true;
+        QVERIFY(found);
+        QCOMPARE(AiChannel::afterLastCompact(QList<AiChannel::Message>{}).size(), 0);
+    }
+    void aLongHistoryIsCompactedBeforeTheNextMessage()
+    {
+        QDir().mkpath(m_dir.filePath("autowork"));
+        QFile model(m_dir.filePath("auto-model.gguf"));
+        QVERIFY(model.open(QIODevice::WriteOnly));
+        model.write("x");
+        model.close();
+        const QString longText(6000, QLatin1Char('w'));
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({}, "A1 " + longText) << agentReply({}, "A2 " + longText) << replyWithReason("AUTO SUMMARY", "stop") << agentReply({}, QStringLiteral("A3"));
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hubauto");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        if (!ai.engineFound())
+            QSKIP("no llama.cpp engine on this PC");
+        auto* agent = qobject_cast<AiChannel*>(ai.agent());
+        ai.selectLocalModel(m_dir.filePath("auto-model.gguf"));
+        ai.llama()->useExternalServer(server.base(), "");
+        ai.setWebEnabled(false);
+        agent->setFolder(m_dir.filePath("autowork"));
+        agent->setEffort("low");                                                                // a history of 16000 characters is kept: 12000 start a compaction
+        QCOMPARE(agent->send("q1"), QString());
+        QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 10000);
+        QCOMPARE(agent->send("q2"), QString());
+        QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 10000);
+        QCOMPARE(server.requests, 2);
+        QCOMPARE(agent->send("q3"), QString());                                                 // the history is long: the summary is written first, then q3 goes on
+        QTRY_VERIFY_WITH_TIMEOUT(!agent->busy() && server.requests == 4, 15000);
+        const QVariantList msgs = agent->messages();
+        int cardAt = -1, q3At = -1;
+        for (int i = 0; i < msgs.size(); ++i) {
+            if (msgs.at(i).toMap().value("compact").toBool())
+                cardAt = i;
+            if (msgs.at(i).toMap().value("text").toString() == "q3")
+                q3At = i;
+        }
+        QVERIFY(cardAt >= 0 && q3At > cardAt);                                                  // card, then the message that waited
+        QCOMPARE(msgs.at(cardAt).toMap().value("summary").toString(), QString("AUTO SUMMARY"));
+        const QJsonArray last = requestBody(server.log.at(3)).value("messages").toArray();
+        QVERIFY(last.at(0).toObject().value("content").toString().contains("AUTO SUMMARY"));
+        QCOMPARE(last.size(), 2);
+        QCOMPARE(msgs.last().toMap().value("text").toString(), QString("A3"));
     }
     void theAgentPageUsesTheLocalModel()
     {

@@ -29,7 +29,7 @@ Item {
         else if (part === "conversation" && ch.conversations.length > 0)       // open the newest saved conversation (to look at its step list and plan)
             ch.select(ch.conversations[0].id)
     }
-    function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : status === "waiting" ? "ai_waiting" : status === "working" ? "ai_working" : "ai_writing") }
+    function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : status === "waiting" ? "ai_waiting" : status === "working" ? "ai_working" : status === "compacting" ? "ai_compacting" : "ai_writing") }
     readonly property string modelLabel: Ai.localModelName === "" ? Tr.s("ai_model_none") : Ai.localModelName.replace(/\.gguf$/i, "")
     function why(code) { return Tr.s("why_" + code) }
     // the text of an error of a reply: what happened, in words, plus what the service said
@@ -95,6 +95,10 @@ Item {
                 c.ellipse(5.2, 2, 5.6, 12)
             } else if (kind === "terminal") {
                 c.rect(1.5, 2.5, 13, 11); c.moveTo(4.5, 6); c.lineTo(7, 8.2); c.lineTo(4.5, 10.4); c.moveTo(8.5, 10.6); c.lineTo(11.5, 10.6)
+            } else if (kind === "compress") {
+                c.moveTo(8, 1.5); c.lineTo(8, 6); c.moveTo(5.5, 4); c.lineTo(8, 6.5); c.lineTo(10.5, 4)
+                c.moveTo(8, 14.5); c.lineTo(8, 10); c.moveTo(5.5, 12); c.lineTo(8, 9.5); c.lineTo(10.5, 12)
+                c.moveTo(3, 8); c.lineTo(13, 8)
             } else if (kind === "chevronDown") {
                 c.moveTo(4, 6); c.lineTo(8, 10); c.lineTo(12, 6)
             } else if (kind === "chevronRight") {
@@ -805,6 +809,67 @@ Item {
                                     }
                                 }
                             }
+                            // ---- "the conversation was compacted": the model's summary replaces the old messages from here on (a click shows it) ----
+                            Rectangle {
+                                id: compactCard
+                                objectName: "aiCompactCard"
+                                readonly property bool isCompact: !msg.isUser && msg.modelData.compact === true
+                                readonly property bool done: isCompact && msg.modelData.summary !== ""
+                                readonly property bool open: list.expandedMap["c" + msg.index] === true
+                                visible: isCompact
+                                Layout.fillWidth: true
+                                implicitHeight: compactColumn.implicitHeight + 24
+                                radius: 12
+                                color: Theme.surface
+                                border.width: 1
+                                border.color: done ? Qt.alpha(Theme.success, 0.45) : Theme.border
+                                ColumnLayout {
+                                    id: compactColumn
+                                    anchors.fill: parent
+                                    anchors.margins: 12
+                                    spacing: 8
+                                    RowLayout {
+                                        spacing: 10
+                                        Item {
+                                            implicitWidth: 18
+                                            implicitHeight: 18
+                                            Spinner { visible: msg.modelData.streaming === true; anchors.centerIn: parent; size: 14 }
+                                            Icon { visible: msg.modelData.streaming !== true; anchors.centerIn: parent; kind: "compress"; color: compactCard.done ? Theme.success : Theme.textDisabled }
+                                        }
+                                        Text {
+                                            text: msg.modelData.streaming === true ? Tr.s("compact_running") : compactCard.done ? Tr.s("compact_done") : Tr.s("compact_failed")
+                                            font.pixelSize: 13
+                                            font.weight: Font.DemiBold
+                                            color: Theme.text
+                                        }
+                                        Text {
+                                            visible: compactCard.done
+                                            text: Tr.s("compact_stats").replace("%1", Math.round(msg.modelData.tokensBefore).toLocaleString(Qt.locale("en_US"), "f", 0)).replace("%2", Math.round(msg.modelData.tokensAfter).toLocaleString(Qt.locale("en_US"), "f", 0))
+                                            font.pixelSize: 12
+                                            color: Theme.textSecondary
+                                        }
+                                        Item { Layout.fillWidth: true }
+                                        Icon { visible: compactCard.done; kind: compactCard.open ? "chevronDown" : "chevronRight" }
+                                        TapHandler {
+                                            enabled: compactCard.done
+                                            onTapped: {
+                                                const m = Object.assign({}, list.expandedMap)
+                                                m["c" + msg.index] = !compactCard.open
+                                                list.expandedMap = m
+                                            }
+                                        }
+                                        HoverHandler { cursorShape: compactCard.done ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                                    }
+                                    Text {
+                                        visible: compactCard.open && compactCard.done
+                                        Layout.fillWidth: true
+                                        text: msg.modelData.summary
+                                        font.pixelSize: 13
+                                        color: Theme.textSecondary
+                                        wrapMode: Text.Wrap
+                                    }
+                                }
+                            }
                             TextEdit {
                                 visible: !msg.isUser && msg.modelData.text !== ""
                                 Layout.fillWidth: true
@@ -818,7 +883,7 @@ Item {
                                 onLinkActivated: link => { if (link.indexOf("https://") === 0) Qt.openUrlExternally(link) }
                             }
                             RowLayout {
-                                visible: !msg.isUser && msg.modelData.streaming && msg.modelData.text === "" && msg.modelData.stepList.length === 0
+                                visible: !msg.isUser && msg.modelData.streaming && msg.modelData.text === "" && msg.modelData.stepList.length === 0 && msg.modelData.compact !== true
                                 spacing: 10
                                 Dots {}
                                 Text {
@@ -1284,6 +1349,32 @@ Item {
                             font.pixelSize: 11
                             color: Theme.textDisabled
                             wrapMode: Text.Wrap
+                        }
+                        // what the next message carries from this conversation, and when it is compacted by itself; "Compact now" does it at once
+                        Text {
+                            objectName: "aiCompactInfo"
+                            Layout.fillWidth: true
+                            text: Tr.s("ctx_history").replace("%1", root.ch.context.history.toLocaleString(Qt.locale("en_US"), "f", 0)).replace("%2", root.ch.context.autoAt.toLocaleString(Qt.locale("en_US"), "f", 0))
+                            font.pixelSize: 11
+                            color: Theme.textDisabled
+                            wrapMode: Text.Wrap
+                        }
+                        Rectangle {
+                            objectName: "aiCompactNow"
+                            visible: root.ch.context.canCompact
+                            Layout.preferredWidth: compactNowText.implicitWidth + 24
+                            Layout.preferredHeight: 28
+                            radius: 14
+                            color: compactNowHover.hovered ? Theme.surfaceHover : "transparent"
+                            border.width: 1
+                            border.color: Theme.border
+                            Behavior on color { ColorAnimation { duration: 140 } }
+                            Text { id: compactNowText; anchors.centerIn: parent; text: Tr.s("compact_now"); font.pixelSize: 12; font.weight: Font.Medium; color: Theme.textSecondary }
+                            TapHandler { onTapped: root.ch.compactNow("") }
+                            HoverHandler { id: compactNowHover; cursorShape: Qt.PointingHandCursor }
+                            ToolTip.visible: compactNowHover.hovered
+                            ToolTip.text: Tr.s("compact_tip")
+                            ToolTip.delay: 500
                         }
 
                         // ---- changes: what git says changed in the folder ----
