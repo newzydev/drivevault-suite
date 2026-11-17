@@ -8,6 +8,7 @@ Master Pro lists the program as "Coming soon" (catalog key `RemoteDesktopPro`, a
 ```
 src/net/     Stun (the STUN Binding request / answer parser, tested)           src/main.cpp, qml/Main.qml   the empty window that says "Not implemented yet"
 tools/natcheck/  rd_natcheck: asks public STUN servers what the NAT does to one UDP port (phase 0 measurement)
+tools/punch/     rd_punch: a real NAT punching test between two PCs (one exe, no Qt, C++ runtime linked in, probes only; `--selftest` runs on loopback in ctest)
 tests/       tst_stun (Qt Test, no network)     resources/product.json     scripts/build.ps1
 ```
 Later phases add `src/capture`, `src/codec`, `src/input`, `src/session`, `service/` (see the plan, section 3).

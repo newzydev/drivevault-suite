@@ -31,6 +31,13 @@ target_link_libraries(rd_stun PUBLIC Qt6::Core Qt6::Network)
 add_executable(rd_natcheck tools/natcheck/natcheck.cpp)
 target_link_libraries(rd_natcheck PRIVATE rd_stun)
 
+# ---- phase 0 tool: a real NAT punching test between two PCs (no Qt, C++ runtime linked in: one exe that can be copied to a second PC) ----
+if(WIN32)
+    add_executable(rd_punch tools/punch/punch.cpp)
+    set_property(TARGET rd_punch PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")
+    target_link_libraries(rd_punch PRIVATE ws2_32)
+endif()
+
 # ---- application (phase 0: an empty window that says it is not implemented) ---------------------------------------------------
 qt_add_executable(DriveVaultRemoteDesktopPro WIN32 src/main.cpp src/app.rc)
 qt_add_qml_module(DriveVaultRemoteDesktopPro
@@ -47,3 +54,6 @@ add_executable(tst_stun tests/tst_stun.cpp)
 target_link_libraries(tst_stun PRIVATE rd_stun Qt6::Test)
 add_test(NAME tst_stun COMMAND tst_stun)
 set_tests_properties(tst_stun PROPERTIES ENVIRONMENT "DV_NO_AUDIO=1;QT_QPA_PLATFORM=offscreen")
+if(WIN32)
+    add_test(NAME punch_selftest COMMAND rd_punch --selftest)     # loopback only, no Internet
+endif()
