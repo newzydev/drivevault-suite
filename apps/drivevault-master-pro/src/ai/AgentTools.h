@@ -60,6 +60,10 @@ private:
     Result save(const QString& fullPath, const QString& content) const;      // backup of the old file, then an atomic write
     // the edit applied to the file: the new content, or an error text
     bool applyEdit(const QJsonObject& args, QString* fullPath, QString* oldContent, QString* newContent, QString* error) const;
+public:
+    // The second try of edit_file (see the .cpp): lines compared after trimming. Pure, tested.
+    static bool replaceIgnoringIndentation(const QString& content, const QString& oldText, const QString& newText, bool all, QString* out, QString* error);
+private:
 
     QString m_root;                   // canonical path of the folder
     bool m_edits;

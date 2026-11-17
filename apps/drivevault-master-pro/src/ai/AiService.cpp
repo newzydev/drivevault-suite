@@ -282,6 +282,18 @@ AiChannel::Conversation& AiChannel::ensureConversation(const QString& firstText)
     return m_conversations.last();
 }
 
+QVariantMap AiChannel::lastMessage() const
+{
+    for (const Conversation& c : m_conversations) {
+        if (c.id != m_currentId || c.messages.isEmpty())
+            continue;
+        const Message& m = c.messages.last();
+        return QVariantMap{{"role", m.role}, {"streaming", m.streaming}, {"stepList", m.stepList}, {"live", m.live}, {"startedMs", double(m.startedMs)},
+                           {"durationMs", double(m.durationMs)}, {"text", m.text}, {"steps", m.steps}};
+    }
+    return QVariantMap{{"role", QString()}};
+}
+
 QString AiChannel::send(const QString& text, const QVariantList& attachments)
 {
     QString t = text.trimmed();
@@ -456,7 +468,8 @@ void AiChannel::sendTools()
         c.folder = isAgent() ? m_folder : QString();
         c.allowEdits = isAgent() && canWrite();
         c.approveWrites = isAgent() && m_permission == QLatin1String("ask");
-        c.allowCommands = isAgent() && canWrite();                 // ask and edit: a command always waits for the user
+        c.allowCommands = isAgent() && canWrite();                 // ask and edit (automatic)
+        c.autoCommands = isAgent() && m_permission == QLatin1String("edit");   // automatic: ordinary commands run without asking; risky ones still wait (LocalAgent::isRiskyCommand)
         c.planMode = isAgent() && m_permission == QLatin1String("plan");
         c.web = m_service->webEnabled();
         if (isAgent() && !m_folder.isEmpty() && m_service->browserBridge()->compiledIn()) {
@@ -491,7 +504,7 @@ void AiChannel::sendTools()
             else if (m_permission == QLatin1String("ask"))
                 modeText = QStringLiteral("Every file change and every command is shown to the user, who may decline it. ");
             else
-                modeText = QStringLiteral("File changes are applied at once (the old version is kept in .drivevault-backup); every command still waits for the user's OK. ");
+                modeText = QStringLiteral("File changes and ordinary commands are done at once without asking (the old version of a file is kept in .drivevault-backup); a risky command (deleting folders, formatting, registry, installing, git push, downloading) waits for the user's OK. ");
             c.system = QStringLiteral("You are a careful coding and file assistant that works inside the folder the user chose, with tools: ") + tools + QStringLiteral(". ") + modeText
                        + QStringLiteral("How you work: (1) A small request (a question, one small change) you simply do. (2) A bigger job: first look around (list_files, glob_files, "
                                         "read the files that matter), then write a task list with todo_write, then do the items one by one and set each to completed when it is done. "
@@ -1209,7 +1222,7 @@ void AiChannel::answerApproval(bool allow)
     emit messagesChanged();
     m_localAgent->answerApproval(allow);
 }
-QVariantMap AiChannel::settingsValues() const { return {{"folder", m_folder}, {"permission", m_permission}, {"effort", m_effort}}; }
+QVariantMap AiChannel::settingsValues() const { return {{"folder", m_folder}, {"permission", m_permission}, {"modeVersion", 2}, {"effort", m_effort}}; }
 
 void AiChannel::applySettings(const QVariantMap& v)
 {
@@ -1218,6 +1231,8 @@ void AiChannel::applySettings(const QVariantMap& v)
     m_permission = v.value(QStringLiteral("permission")).toString();
     if (!permissions().contains(m_permission))
         m_permission = v.value(QStringLiteral("allowEdits")).toBool() ? QStringLiteral("edit") : QStringLiteral("ask");     // an older settings file: the old switch
+    else if (v.value(QStringLiteral("modeVersion")).toInt() < 2 && m_permission == QLatin1String("ask"))
+        m_permission = QStringLiteral("edit");                      // 1.23.0: the owner is tired of pressing Allow: "ask" (the old default) becomes automatic once; it can be chosen again
     emit settingsChanged();
     scheduleGit();
 }

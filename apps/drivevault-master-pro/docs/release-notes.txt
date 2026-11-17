@@ -1,6 +1,13 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.23.0 (2026-11-17): No more questions, a calmer page, fewer wasted minutes
+  - Changed: the mode "Accept edits" is now "Automatic" and is the default: the AI changes files AND runs ordinary commands without asking. A risky command (deleting folders, formatting, registry or system changes, installing programs, git push / reset, downloading from the Internet) still asks. If you had "Ask first" saved it is switched to Automatic once; you can choose it again in the mode menu.
+  - Changed: the box "What the AI does" of the running answer is pinned above the message box (open while it works, closed when it is done; click the header to open or close).
+  - Removed: the moving light above the message box and the pulsing edge of the box.
+  - Faster: when the AI's edit does not match the file only by indentation or line endings, the edit is now applied anyway (before: "old_string was not found" and another try, many minutes with a small model); when it really does not match, the error shows the nearest line of the file.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.22.1 (2026-11-17): A start page for the browser
   - Changed: the browser no longer opens as a white sheet. With nothing open it shows a start page in the style of the program: a search box and shortcuts to a few sites. A page that is opened (by you or by the AI) replaces it.
   - Not code-signed (Windows SmartScreen may warn).

@@ -40,7 +40,8 @@ public:
         bool reviewWork = true;                            // before a job that changed files ends, ask the model once to check its own work
         bool approveWrites = false;                       // ...but every write waits for the user (approvalNeeded / answerApproval)
         bool web = false;                                  // web_search and fetch_page
-        bool allowCommands = false;                        // run_command is offered; EVERY command waits for the user (commandApprovalNeeded)
+        bool autoCommands = false;                         // ordinary commands run without asking (the automatic mode); a risky one still waits (isRiskyCommand)
+        bool allowCommands = false;                       // run_command is offered; EVERY command waits for the user (commandApprovalNeeded)
         dm::browser::BrowserBridge* browser = nullptr;     // browser_open / browser_read (and browser_look with `vision`) are offered when there is a folder
         bool vision = false;                               // the model can see pictures (the server runs with its vision file): browser_look
         bool planMode = false;                             // exit_plan_mode is offered; nothing is changed until the user approves the plan (planApprovalNeeded)
@@ -67,6 +68,9 @@ public:
     void resume();                                         // after serverLost: the server runs again, ask the same question again
     // The path and the text of a write_file / append_file call whose arguments may end anywhere (a cut answer): the text taken back to its last complete line.
     // `complete` = the text was closed, nothing was cut. false when there is no path yet or almost no text. Pure, tested.
+    // A command that is never run without asking, also in the automatic mode: deletes folders or many files, formats, changes the registry / services / accounts /
+    // the system, installs or uninstalls, pushes / resets in git, or fetches from the Internet. Pure, tested.
+    static bool isRiskyCommand(const QString& command);
     static bool salvageWrite(const QString& rawArguments, QString* path, QString* text, bool* complete);
 
 signals:

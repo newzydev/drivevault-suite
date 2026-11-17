@@ -339,6 +339,90 @@ AgentTools::Result AgentTools::save(const QString& path, const QString& content)
 }
 
 // ---- edit_file: one exact piece of text replaced ----------------------------------------------------------------------------------------
+// The tolerant second try of edit_file: the lines of `oldText` are compared with the lines of the file after trimming each line. One match (or every match with
+// replace_all): those lines are replaced by `newText`. No match: `*error` names the nearest line of the file, so the model can copy it exactly.
+bool AgentTools::replaceIgnoringIndentation(const QString& content, const QString& oldText, const QString& newText, bool all, QString* out, QString* error)
+{
+    QStringList want = oldText.split(QLatin1Char('\n'));
+    for (QString& w : want)
+        w = w.trimmed();
+    while (!want.isEmpty() && want.first().isEmpty())
+        want.removeFirst();
+    while (!want.isEmpty() && want.last().isEmpty())
+        want.removeLast();
+    if (want.isEmpty())
+        return false;
+    const bool crlf = content.contains(QLatin1String("\r\n"));
+    QStringList lines = content.split(QLatin1Char('\n'));
+    QStringList trimmed;
+    for (const QString& l : std::as_const(lines))
+        trimmed << l.trimmed();
+    QList<int> hits;
+    for (int i = 0; i + want.size() <= trimmed.size(); ++i) {
+        bool same = true;
+        for (int k = 0; k < want.size() && same; ++k)
+            same = trimmed.at(i + k) == want.at(k);
+        if (same) {
+            hits << i;
+            i += int(want.size()) - 1;                                  // matches do not overlap
+        }
+    }
+    if (hits.isEmpty()) {
+        const QStringList words = want.first().split(QRegularExpression(QStringLiteral("\\W+")), Qt::SkipEmptyParts);
+        int best = 0, bestLine = -1;
+        for (int i = 0; i < trimmed.size(); ++i) {
+            int score = 0;
+            for (const QString& w : words)
+                if (w.size() > 2 && trimmed.at(i).contains(w))
+                    ++score;
+            if (score > best) {
+                best = score;
+                bestLine = i;
+            }
+        }
+        if (bestLine >= 0)
+            *error = QStringLiteral("old_string was not found. The nearest line of the file is line %1: %2 - read that part of the file (read_file with start_line) and copy it exactly")
+                         .arg(bestLine + 1).arg(trimmed.at(bestLine).left(200));
+        return false;
+    }
+    if (hits.size() > 1 && !all) {
+        *error = QStringLiteral("old_string matches %1 places (ignoring indentation). Add more text around it so that it is unique, or set replace_all to true").arg(hits.size());
+        return false;
+    }
+    QString replacement = newText;
+    replacement.remove(QLatin1Char('\r'));
+    if (crlf)
+        replacement.replace(QLatin1Char('\n'), QLatin1String("\r\n"));
+    // the indentation of the first replaced line is kept for the new text when the model sent it without
+    for (int h = int(hits.size()) - 1; h >= 0; --h) {
+        const int first = hits.at(h), last = first + int(want.size()) - 1;
+        QString indent;
+        for (const QChar c : lines.at(first)) {
+            if (c == QLatin1Char(' ') || c == QLatin1Char('\t'))
+                indent += c;
+            else
+                break;
+        }
+        QString text = replacement;
+        bool anyIndented = false;                                       // the model sent its own indentation: keep it; else every line gets the indentation of the first replaced line
+        for (const QString& l : text.split(QLatin1Char('\n')))
+            anyIndented = anyIndented || l.startsWith(QLatin1Char(' ')) || l.startsWith(QLatin1Char('\t'));
+        if (!indent.isEmpty() && !text.isEmpty() && !anyIndented) {
+            QStringList withIndent;
+            for (const QString& l : text.split(QLatin1Char('\n')))
+                withIndent << (l.trimmed().isEmpty() ? l : indent + l);
+            text = withIndent.join(QLatin1Char('\n'));
+        }
+        const bool cr = lines.at(last).endsWith(QLatin1Char('\r'));
+        QStringList part = lines.mid(0, first);
+        part << text + (cr ? QStringLiteral("\r") : QString());
+        part << lines.mid(last + 1);
+        lines = part;
+    }
+    *out = lines.join(QLatin1Char('\n'));
+    return true;
+}
+
 bool AgentTools::applyEdit(const QJsonObject& args, QString* fullPath, QString* oldContent, QString* newContent, QString* error) const
 {
     if (!m_edits) {
@@ -378,9 +462,22 @@ bool AgentTools::applyEdit(const QJsonObject& args, QString* fullPath, QString* 
         return false;
     }
     const QString content = QString::fromUtf8(data);
-    const qsizetype count = content.count(oldText);
+    qsizetype count = content.count(oldText);
     if (count == 0) {
-        *error = QStringLiteral("old_string was not found in %1. Read the file again and copy the text exactly (spaces and line breaks too)").arg(info.fileName());
+        // A small model often gets the indentation or the line breaks (CRLF) wrong: try again line by line, ignoring the spaces at the start and end of each line.
+        QString out;
+        if (replaceIgnoringIndentation(content, oldText, newText, args.value(QLatin1String("replace_all")).toBool(), &out, error)) {
+            if (out.toUtf8().size() > kMaxWrite) {
+                *error = QStringLiteral("the result would be too long (limit %1 bytes)").arg(kMaxWrite);
+                return false;
+            }
+            *fullPath = path;
+            *oldContent = content;
+            *newContent = out;
+            return true;
+        }
+        if (error->isEmpty())
+            *error = QStringLiteral("old_string was not found in %1. Read the file again and copy the text exactly (spaces and line breaks too)").arg(info.fileName());
         return false;
     }
     const bool all = args.value(QLatin1String("replace_all")).toBool();

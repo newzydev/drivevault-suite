@@ -885,6 +885,23 @@ void LocalAgent::runNextCall()
     result(r.text, r.error);
 }
 
+bool LocalAgent::isRiskyCommand(const QString& command)
+{
+    static const QRegularExpression risky(
+        QStringLiteral("(?:^|[\\s&|;(])(?:"
+                       "rd|rmdir|del|erase|rm|remove-item|ri|format|diskpart|shutdown|restart-computer|stop-computer|bcdedit|takeown|icacls|cacls|cipher|vssadmin|"
+                       "wmic|schtasks|sc|net|netsh|reg|regedit|setx|taskkill|stop-process|kill|"
+                       "curl|wget|iwr|irm|invoke-webrequest|invoke-restmethod|bitsadmin|certutil|start-bitstransfer|ftp|scp|ssh|"
+                       "winget|choco|scoop|msiexec|npx|apt|apt-get|brew|install-module|install-package|uninstall-package"
+                       ")(?=$|[\\s&|;)])|"
+                       "(?:npm|pnpm|yarn|pip|pip3|cargo|gem|go|dotnet\\s+tool)\\s+(?:i|install|add|uninstall|remove|publish|update|upgrade|global|get)\\b|"
+                       "git\\s+(?:push|reset|clean|checkout\\s+--|rebase|filter-branch|remote\\s+(?:add|set-url)|clone|fetch|pull)|"
+                       "-enc(?:odedcommand)?\\b|\\bdownloadstring\\b|\\bdownloadfile\\b|\\bhttps?://|\\bftp://|\\\\\\\\[a-z0-9._-]+\\\\|[a-z]:\\\\windows|[a-z]:\\\\program files|"
+                       "\\s>\\s*[a-z]:\\\\(?!my project)"),
+        QRegularExpression::CaseInsensitiveOption);
+    return risky.match(command).hasMatch();
+}
+
 // browser_open / browser_read / browser_look: the page of the program's browser answers (BrowserBridge). Nothing here needs the user's Allow: it only looks.
 // What may be opened is limited by BrowserBridge::checkAgentUrl.
 void LocalAgent::runBrowserCall(const QString& name, const QJsonObject& args, const std::function<void(const QString&, bool)>& result)
@@ -984,8 +1001,8 @@ void LocalAgent::runControlCall(const QString& name, const QJsonObject& args, co
         const bool background = args.value(QLatin1String("background")).toBool();
         const QString folder = m_config.folder;
         const int gen = m_generation;
-        m_waiting = true;                                  // EVERY command waits for the user (a background one too)
-        m_onAnswer = [this, command, seconds, background, folder, gen, result](bool allow) {
+        const bool ask = !m_config.autoCommands || isRiskyCommand(command);   // ask and plan-approved modes ask for every command; the automatic mode only for a risky one
+        auto startCommand = [this, command, seconds, background, folder, gen, result](bool allow) {
             if (!allow) {
                 result(QStringLiteral("the user did not allow this command; do not try it again, say what you wanted to do"), true);
                 return;
@@ -1007,6 +1024,12 @@ void LocalAgent::runControlCall(const QString& name, const QJsonObject& args, co
             else
                 m_foregroundTask = id;
         };
+        if (!ask) {
+            startCommand(true);                            // the automatic mode: no question
+            return;
+        }
+        m_waiting = true;
+        m_onAnswer = startCommand;
         stepEnd(QStringLiteral("waiting"), {});
         emit commandApprovalNeeded(command);
         return;

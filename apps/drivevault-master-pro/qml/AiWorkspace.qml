@@ -56,7 +56,9 @@ Item {
         }
     }
     // ---- attachments of the message box: text files (any page) and pictures (agent page, when the model can see) ------------------------------
-    property var attachments: []                            // [{kind: file | image, name, text | data}] waiting for Send
+    property var pinnedManual: undefined                    // the user opened / closed the pinned step box by hand (undefined = automatic: open while it works)
+    Connections { target: root.ch; function onBusyChanged() { if (root.ch.busy) root.pinnedManual = undefined } }
+    property var attachments: []                         // [{kind: file | image, name, text | data}] waiting for Send
     property string attachNote: ""                          // why the last attachment was refused
     readonly property bool canAttachImages: root.agent && Ai.vision.installed
     function addAttachment(r) {
@@ -463,6 +465,115 @@ Item {
         color: Theme.textSecondary
     }
 
+        component StepsPanel: Rectangle {
+            id: stepsBox
+            property var message: null                  // the answer whose steps are shown (a map of the message model)
+            property bool open: true
+            property bool hidden: false
+            property int maxHeight: 280
+            signal toggle()
+            // the notes about a cut answer ("too long", "long") are housekeeping: they are not shown, the file just goes on
+            readonly property var steps: !message || !message.stepList ? [] : message.stepList.filter(s => !(s.kind === "note"
+                                             && (s.target.indexOf("The answer was too long") === 0 || s.target.indexOf("The answer was long") === 0)))
+            readonly property int total: steps.length
+            readonly property int finished: steps.filter(s => s.state === "done" || s.state === "error").length
+            readonly property bool working: !!message && message.streaming === true
+            visible: total > 0 && !hidden
+            Layout.fillWidth: true
+            implicitHeight: stepsColumn.implicitHeight + 24
+            radius: 12
+            color: Theme.surface
+            border.width: 1
+            border.color: Theme.border
+            ColumnLayout {
+                id: stepsColumn
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: 8
+                // header: a click opens / closes the list (a finished one is closed by default)
+                RowLayout {
+                    spacing: 10
+                    Item {
+                        implicitWidth: 18
+                        implicitHeight: 18
+                        Spinner { visible: stepsBox.working; anchors.centerIn: parent; size: 14 }
+                        Text { visible: !stepsBox.working; anchors.centerIn: parent; text: "✓"; font.pixelSize: 15; font.bold: true; color: Theme.success }
+                    }
+                    Text { text: Tr.s(stepsBox.working ? "steps_title" : "steps_title_done"); font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
+                    Text { text: Tr.s("steps_count").replace("%1", stepsBox.finished).replace("%2", stepsBox.total); font.pixelSize: 12; color: Theme.textSecondary }
+                    Item { Layout.fillWidth: true }
+                    Icon { kind: stepsBox.open ? "chevronDown" : "chevronRight" }
+                    TapHandler {
+                        onTapped: stepsBox.toggle()
+                    }
+                    HoverHandler { cursorShape: Qt.PointingHandCursor }
+                }
+                Flickable {
+                    id: stepFlick
+                    visible: stepsBox.open
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Math.min(stepRows.implicitHeight, stepsBox.maxHeight)
+                    contentHeight: stepRows.implicitHeight
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                    ScrollBar.vertical: ScrollBar {}
+                    onContentHeightChanged: if (stepsBox.working) contentY = Math.max(0, contentHeight - height)      // follows the newest step
+                    ColumnLayout {
+                        id: stepRows
+                        width: stepFlick.width - 10
+                        spacing: 6
+                        Repeater {
+                            model: stepsBox.open ? stepsBox.steps : []
+                            delegate: RowLayout {
+                                id: stepRow
+                                required property var modelData
+                                readonly property bool isNote: modelData.kind === "note"
+                                Layout.fillWidth: true
+                                spacing: 10
+                                Item {
+                                    Layout.alignment: Qt.AlignTop
+                                    implicitWidth: 18
+                                    implicitHeight: 18
+                                    Spinner { visible: stepRow.modelData.state === "running"; anchors.centerIn: parent; size: 14 }
+                                    Text { visible: stepRow.modelData.state === "done"; anchors.centerIn: parent; text: "✓"; font.pixelSize: 15; font.bold: true; color: Theme.success }
+                                    Text { visible: stepRow.modelData.state === "error"; anchors.centerIn: parent; text: "✗"; font.pixelSize: 14; font.bold: true; color: Theme.error }
+                                    Text { visible: stepRow.modelData.state === "waiting"; anchors.centerIn: parent; text: "●"; font.pixelSize: 13; color: Theme.warning }
+                                    Text { visible: stepRow.modelData.state === "stopped"; anchors.centerIn: parent; text: "–"; font.pixelSize: 15; color: Theme.textDisabled }
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    textFormat: Text.RichText                    // the verb in the text font, the file / command in a code font
+                                    text: root.stepHtml(stepRow.modelData.kind, stepRow.modelData.target)
+                                    font.pixelSize: 13
+                                    font.italic: stepRow.isNote
+                                    color: stepRow.modelData.state === "error" ? Theme.error : stepRow.isNote || stepRow.modelData.state === "stopped" ? Theme.textDisabled : Theme.text
+                                    wrapMode: Text.NoWrap
+                                    clip: true
+                                }
+                                Text {
+                                    Layout.maximumWidth: stepFlick.width * 0.4
+                                    visible: text !== ""
+                                    text: stepRow.modelData.state === "waiting" ? Tr.s("steps_waiting")
+                                          : (stepRow.modelData.state === "error" || stepRow.modelData.kind === "command" || stepRow.modelData.kind === "edit" || stepRow.modelData.kind === "write") && stepRow.modelData.state !== "running" ? stepRow.modelData.note : ""
+                                    font.pixelSize: 12
+                                    color: stepRow.modelData.state === "waiting" ? Theme.warning : stepRow.modelData.state === "error" ? Theme.error : Theme.textDisabled
+                                    elide: Text.ElideRight
+                                    maximumLineCount: 1
+                                }
+                            }
+                        }
+                    }
+                }
+                // what it does between the steps: thinking, writing the answer
+                RowLayout {
+                    visible: stepsBox.working && root.ch.status !== "waiting"
+                    spacing: 10
+                    Spinner { size: 14 }
+                    Text { text: root.liveLine(stepsBox.message); font.pixelSize: 13; color: Theme.accent }
+                }
+            }
+        }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -828,114 +939,17 @@ Item {
                             }
 
                             // ---- what the AI does: one line per step (reading, creating, editing, running ...) - spinner while it runs, a tick when it is done ----
-                            Rectangle {
+                            StepsPanel {
                                 id: stepsBox
                                 objectName: "aiStepsBox"
-                                // the notes about a cut answer ("too long", "long") are housekeeping: they are not shown, the file just goes on
-                                readonly property var steps: msg.isUser ? [] : msg.modelData.stepList.filter(s => !(s.kind === "note"
-                                                                 && (s.target.indexOf("The answer was too long") === 0 || s.target.indexOf("The answer was long") === 0)))
-                                readonly property int total: steps.length
-                                readonly property int finished: steps.filter(s => s.state === "done" || s.state === "error").length
-                                readonly property bool working: !msg.isUser && msg.modelData.streaming
-                                // open while it works and on the newest answer; older answers show only the header (a click opens them)
-                                readonly property bool open: list.expandedMap[msg.index] !== undefined ? list.expandedMap[msg.index] : (working || msg.index === list.count - 1)
-                                visible: total > 0
+                                message: msg.isUser ? null : msg.modelData
+                                hidden: msg.index === list.count - 1                    // the newest answer's steps are in the box above the message box
+                                open: list.expandedMap[msg.index] === true              // older answers: only the header (a click opens it)
                                 Layout.fillWidth: true
-                                implicitHeight: stepsColumn.implicitHeight + 24
-                                radius: 12
-                                color: Theme.surface
-                                border.width: 1
-                                border.color: Theme.border
-                                ColumnLayout {
-                                    id: stepsColumn
-                                    anchors.fill: parent
-                                    anchors.margins: 12
-                                    spacing: 8
-                                    // header: a click opens / closes the list (a finished one is closed by default)
-                                    RowLayout {
-                                        spacing: 10
-                                        Item {
-                                            implicitWidth: 18
-                                            implicitHeight: 18
-                                            Spinner { visible: stepsBox.working; anchors.centerIn: parent; size: 14 }
-                                            Text { visible: !stepsBox.working; anchors.centerIn: parent; text: "✓"; font.pixelSize: 15; font.bold: true; color: Theme.success }
-                                        }
-                                        Text { text: Tr.s(stepsBox.working ? "steps_title" : "steps_title_done"); font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
-                                        Text { text: Tr.s("steps_count").replace("%1", stepsBox.finished).replace("%2", stepsBox.total); font.pixelSize: 12; color: Theme.textSecondary }
-                                        Item { Layout.fillWidth: true }
-                                        Icon { kind: stepsBox.open ? "chevronDown" : "chevronRight" }
-                                        TapHandler {
-                                            onTapped: {
-                                                const m = Object.assign({}, list.expandedMap)
-                                                m[msg.index] = !stepsBox.open
-                                                list.expandedMap = m
-                                            }
-                                        }
-                                        HoverHandler { cursorShape: Qt.PointingHandCursor }
-                                    }
-                                    Flickable {
-                                        id: stepFlick
-                                        visible: stepsBox.open
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: Math.min(stepRows.implicitHeight, 280)
-                                        contentHeight: stepRows.implicitHeight
-                                        boundsBehavior: Flickable.StopAtBounds
-                                        clip: true
-                                        ScrollBar.vertical: ScrollBar {}
-                                        onContentHeightChanged: if (stepsBox.working) contentY = Math.max(0, contentHeight - height)      // follows the newest step
-                                        ColumnLayout {
-                                            id: stepRows
-                                            width: stepFlick.width - 10
-                                            spacing: 6
-                                            Repeater {
-                                                model: stepsBox.open ? stepsBox.steps : []
-                                                delegate: RowLayout {
-                                                    id: stepRow
-                                                    required property var modelData
-                                                    readonly property bool isNote: modelData.kind === "note"
-                                                    Layout.fillWidth: true
-                                                    spacing: 10
-                                                    Item {
-                                                        Layout.alignment: Qt.AlignTop
-                                                        implicitWidth: 18
-                                                        implicitHeight: 18
-                                                        Spinner { visible: stepRow.modelData.state === "running"; anchors.centerIn: parent; size: 14 }
-                                                        Text { visible: stepRow.modelData.state === "done"; anchors.centerIn: parent; text: "✓"; font.pixelSize: 15; font.bold: true; color: Theme.success }
-                                                        Text { visible: stepRow.modelData.state === "error"; anchors.centerIn: parent; text: "✗"; font.pixelSize: 14; font.bold: true; color: Theme.error }
-                                                        Text { visible: stepRow.modelData.state === "waiting"; anchors.centerIn: parent; text: "●"; font.pixelSize: 13; color: Theme.warning }
-                                                        Text { visible: stepRow.modelData.state === "stopped"; anchors.centerIn: parent; text: "–"; font.pixelSize: 15; color: Theme.textDisabled }
-                                                    }
-                                                    Text {
-                                                        Layout.fillWidth: true
-                                                        textFormat: Text.RichText                    // the verb in the text font, the file / command in a code font
-                                                        text: root.stepHtml(stepRow.modelData.kind, stepRow.modelData.target)
-                                                        font.pixelSize: 13
-                                                        font.italic: stepRow.isNote
-                                                        color: stepRow.modelData.state === "error" ? Theme.error : stepRow.isNote || stepRow.modelData.state === "stopped" ? Theme.textDisabled : Theme.text
-                                                        wrapMode: Text.NoWrap
-                                                        clip: true
-                                                    }
-                                                    Text {
-                                                        Layout.maximumWidth: stepFlick.width * 0.4
-                                                        visible: text !== ""
-                                                        text: stepRow.modelData.state === "waiting" ? Tr.s("steps_waiting")
-                                                              : (stepRow.modelData.state === "error" || stepRow.modelData.kind === "command" || stepRow.modelData.kind === "edit" || stepRow.modelData.kind === "write") && stepRow.modelData.state !== "running" ? stepRow.modelData.note : ""
-                                                        font.pixelSize: 12
-                                                        color: stepRow.modelData.state === "waiting" ? Theme.warning : stepRow.modelData.state === "error" ? Theme.error : Theme.textDisabled
-                                                        elide: Text.ElideRight
-                                                        maximumLineCount: 1
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    // what it does between the steps: thinking, writing the answer
-                                    RowLayout {
-                                        visible: stepsBox.working && root.ch.status !== "waiting"
-                                        spacing: 10
-                                        Spinner { size: 14 }
-                                        Text { text: root.liveLine(msg.modelData); font.pixelSize: 13; color: Theme.accent }
-                                    }
+                                onToggle: {
+                                    const m = Object.assign({}, list.expandedMap)
+                                    m[msg.index] = !stepsBox.open
+                                    list.expandedMap = m
                                 }
                             }
                             // ---- "the conversation was compacted": the model's summary replaces the old messages from here on (a click shows it) ----
@@ -1246,30 +1260,18 @@ Item {
                     }
                 }
 
-                // a light that runs along the top of the message box while the AI works
-                Item {
-                    objectName: "aiProgress"
+                // what the AI does: pinned above the message box (the steps of the newest answer; a click on the header opens / closes it)
+                StepsPanel {
+                    objectName: "aiStepsPinned"
                     Layout.fillWidth: true
                     Layout.leftMargin: 28
                     Layout.rightMargin: 28
                     Layout.topMargin: 6
-                    implicitHeight: 3
-                    clip: true
-                    opacity: root.ch.busy ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 300 } }
-                    Rectangle { anchors.fill: parent; radius: 1.5; color: Qt.alpha(Theme.accent, 0.14) }
-                    Rectangle {
-                        id: shimmer
-                        width: parent.width * 0.28
-                        height: parent.height
-                        radius: 1.5
-                        color: Theme.accent
-                        SequentialAnimation on x {
-                            loops: Animation.Infinite
-                            running: root.ch.busy
-                            NumberAnimation { from: -shimmer.width; to: shimmer.parent.width; duration: 1400; easing.type: Easing.InOutQuad }
-                        }
-                    }
+                    maxHeight: 220
+                    message: root.ch.lastMessage
+                    hidden: root.ch.lastMessage.role !== "assistant"
+                    open: root.pinnedManual !== undefined ? root.pinnedManual : (root.ch.lastMessage.streaming === true)      // open while it works, closed when it is done
+                    onToggle: root.pinnedManual = !open
                 }
 
                 // message box
@@ -1286,22 +1288,6 @@ Item {
                     border.width: input.activeFocus ? 2 : 1
                     border.color: input.activeFocus ? Theme.accent : Theme.border
                     Behavior on border.color { ColorAnimation { duration: 160 } }
-                    // while it works the edge of the box breathes
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: inputBox.radius
-                        color: "transparent"
-                        border.width: 2
-                        border.color: Theme.accent
-                        visible: root.ch.busy
-                        opacity: 0.15
-                        SequentialAnimation on opacity {
-                            loops: Animation.Infinite
-                            running: root.ch.busy
-                            NumberAnimation { to: 0.7; duration: 950; easing.type: Easing.InOutSine }
-                            NumberAnimation { to: 0.15; duration: 950; easing.type: Easing.InOutSine }
-                        }
-                    }
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 12
@@ -1782,7 +1768,7 @@ Item {
                             visible: root.agent
                             icon: "terminal"
                             text: Tr.s("con_cmd")
-                            detail: root.ch.permission === "ask" || root.ch.permission === "edit" ? Tr.s("con_ask") : Tr.s("con_off")
+                            detail: root.ch.permission === "ask" ? Tr.s("con_ask") : root.ch.permission === "edit" ? Tr.s("con_auto") : Tr.s("con_off")
                             detailColor: root.ch.permission === "ask" || root.ch.permission === "edit" ? Theme.success : Theme.textDisabled
                         }
 

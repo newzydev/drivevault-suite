@@ -52,6 +52,7 @@ class AiChannel : public QObject {
     Q_PROPERTY(QVariantList messages READ messages NOTIFY messagesChanged FINAL)    // [{role, text, streaming, stopped, errorCode, errorDetail, activity: [..]}]
     Q_PROPERTY(QVariantList conversations READ conversations NOTIFY conversationsChanged FINAL)   // [{id, title}]
     Q_PROPERTY(QString currentId READ currentId NOTIFY conversationsChanged FINAL)
+    Q_PROPERTY(QVariantMap lastMessage READ lastMessage NOTIFY messagesChanged FINAL)  // the newest message (the answer that works): its step list is pinned above the message box
     Q_PROPERTY(QString folder READ folder NOTIFY settingsChanged FINAL)               // agent: the working folder
     Q_PROPERTY(QString permission READ permission NOTIFY settingsChanged FINAL)       // agent mode: read | plan | ask | edit (see Permission below)
     Q_PROPERTY(QString effort READ effort NOTIFY settingsChanged FINAL)               // low | medium | high
@@ -100,6 +101,7 @@ public:
     bool busy() const { return m_busy; }
     QString status() const { return m_status; }
     QVariantList messages() const;
+    QVariantMap lastMessage() const;
     QObject* messageModel() { return m_model; }
     QVariantList conversations() const;
     QString currentId() const { return m_currentId; }
@@ -193,7 +195,7 @@ private:
     AiService* m_service;
     QString m_folder;
     QString m_effort = QStringLiteral("medium");
-    QString m_permission = QStringLiteral("ask");
+    QString m_permission = QStringLiteral("edit");         // "edit" = automatic (since 1.23.0 the default: no questions for file changes and ordinary commands)
     QList<Conversation> m_conversations;
     QString m_currentId;
     QString m_runId;                                       // the conversation the running request writes into

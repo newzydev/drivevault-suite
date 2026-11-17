@@ -2004,6 +2004,58 @@ private slots:
         QVERIFY(done2.wait(15000));
         QCOMPARE(plain.requests, 1);
     }
+    // ---- the automatic mode: no questions for ordinary commands; edit_file that survives a wrong indentation -----------------------------------
+    void riskyCommandsAreTheOnesThatStillAskInTheAutomaticMode()
+    {
+        for (const char* ok : {"dir", "echo hello", "cmake --build build", "ctest --test-dir build", "npm test", "npm run build", "python main.py", "git status", "git diff",
+                               "git add index.html", "git commit -m x", "type index.html", "powershell -File build.ps1", "node server.js", "dotnet build"})
+            QVERIFY2(!LocalAgent::isRiskyCommand(QString::fromLatin1(ok)), ok);
+        for (const char* bad : {"rd /s /q build", "rmdir /s /q x", "del /f /q *.*", "rm -rf x", "Remove-Item -Recurse -Force x", "format c:", "reg add HKCU\\x /v a", "shutdown /s",
+                                "git push origin main", "git reset --hard", "git clean -fd", "curl http://x.y/a.exe -o a.exe", "powershell iwr https://x.y", "npm install left-pad",
+                                "pip install requests", "winget install x", "echo a & del x.txt", "cd C:\\Windows & dir", "powershell -enc AAAA", "start http://example.com"})
+            QVERIFY2(LocalAgent::isRiskyCommand(QString::fromLatin1(bad)), bad);
+    }
+    void theAutomaticModeRunsAnOrdinaryCommandWithoutAskingButAsksForARiskyOne()
+    {
+        QDir().mkpath(m_dir.filePath("autocmd"));
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("c1", "run_command", {{"command", "echo auto-marker"}})}, QString())
+                     << agentReply({agentCall("c2", "run_command", {{"command", "rd /s /q somewhere"}})}, QString())
+                     << agentReply({}, QStringLiteral("Done."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy asked(&agent, &LocalAgent::commandApprovalNeeded);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("autocmd");
+        c.allowEdits = true;
+        c.allowCommands = true;
+        c.autoCommands = true;
+        c.reviewWork = false;
+        c.history = {{"user", "run"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(asked.wait(20000));                                                              // only the risky one asks
+        QCOMPARE(asked.at(0).at(0).toString(), QString("rd /s /q somewhere"));
+        QVERIFY(lastMessage(server.log.at(1)).contains("auto-marker"));                         // the first one ran at once, its output went to the model
+        agent.answerApproval(false);
+        QVERIFY(done.wait(20000));
+        QCOMPARE(asked.count(), 1);
+    }
+    void editFileFindsTheTextEvenWithAnotherIndentationOrLineEndings()
+    {
+        QString out, err;
+        const QString file = "<div>\r\n    <p>one</p>\r\n    <p>two</p>\r\n</div>\r\n";
+        QVERIFY(AgentTools::replaceIgnoringIndentation(file, "<p>one</p>\n<p>two</p>", "<p>uno</p>\n<p>dos</p>", false, &out, &err));
+        QCOMPARE(out, QString("<div>\r\n    <p>uno</p>\r\n    <p>dos</p>\r\n</div>\r\n"));            // the indentation of the replaced lines is kept, the line endings too
+        QVERIFY(!AgentTools::replaceIgnoringIndentation(file, "<p>three</p>", "x", false, &out, &err));
+        QVERIFY2(err.contains("nearest line") || err.isEmpty(), qPrintable(err));
+        QVERIFY(!AgentTools::replaceIgnoringIndentation("a\nb\na\nb\n", "a\nb", "z", false, &out, &err));                            // two places: not unique
+        QVERIFY(err.contains("2 places"));
+        QVERIFY(AgentTools::replaceIgnoringIndentation("a\nb\na\nb\n", "a\nb", "z", true, &out, &err));
+        QCOMPARE(out, QString("z\nz\n"));
+    }
     // ---- attachments of the message box ---------------------------------------------------------------------------------------------------
     void aTextFileCanBeAttachedAndABinaryOrBigOneAndAPictureWithoutVisionCannot()
     {
