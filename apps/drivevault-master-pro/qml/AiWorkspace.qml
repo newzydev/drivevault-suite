@@ -21,11 +21,11 @@ Item {
         if (part === "settings")
             settings.open()
         else if (part === "model")
-            modelMenu.popup(modelChip, 0, -modelMenu.implicitHeight - 6)
+            mainMenu.popup(modelChip, 0, -mainMenu.implicitHeight - 6)
         else if (part === "mode")
-            modeMenu.popup(modeChip, 0, -modeMenu.implicitHeight - 6)
+            mainMenu.popup(modelChip, 0, -mainMenu.implicitHeight - 6)
         else if (part === "effort")
-            effortMenu.popup(effortChip, 0, -effortMenu.implicitHeight - 6)
+            mainMenu.popup(modelChip, 0, -mainMenu.implicitHeight - 6)
         else if (part === "side-toggle")                                       // the list is hidden 2.5 s later, while the page is shown (the layout must follow live)
             diagToggle.start()
         else if (part === "side-hidden")                                       // the list of conversations hidden
@@ -438,10 +438,11 @@ Item {
         }
     }
 
-    // the model of this PC to use
+    // the one menu of the message box (like Claude's): the models of this PC, then the effort, the mode and the web as entries (the first two open a list)
     MMenu {
-        id: modelMenu
-        implicitWidth: 340
+        id: mainMenu
+        implicitWidth: 380
+        delegate: MMenuItem {}
         Repeater {
             model: Ai.installedModels
             delegate: MMenuItem {
@@ -454,46 +455,49 @@ Item {
             }
         }
         MenuSeparator { padding: 4; contentItem: Rectangle { implicitHeight: 1; color: Theme.border } }
+        MMenu {                                                    // how hard it tries
+            id: effortMenu
+            title: Tr.s("effort_label") + "   ·   " + Tr.s("effort_" + root.ch.effort)
+            implicitWidth: 520
+            Repeater {
+                model: ["low", "medium", "high"]
+                delegate: MMenuItem {
+                    required property string modelData
+                    objectName: "effort_" + modelData
+                    text: Tr.s("effort_" + modelData) + "  -  " + Tr.s("effort_" + modelData + "_hint")
+                    checkable: true
+                    checked: root.ch.effort === modelData
+                    onTriggered: root.ch.setEffort(modelData)
+                }
+            }
+        }
+        MMenu {                                                    // what the agent may do with the files
+            id: modeMenu
+            title: Tr.s("mode_label") + "   ·   " + Tr.s("mode_" + root.ch.permission)
+            implicitWidth: 520
+            enabled: root.agent
+            Repeater {
+                model: ["read", "plan", "ask", "edit"]
+                delegate: MMenuItem {
+                    required property string modelData
+                    objectName: "mode_" + modelData
+                    text: Tr.s("mode_" + modelData) + "  -  " + Tr.s("mode_" + modelData + "_hint")
+                    checkable: true
+                    checked: root.ch.permission === modelData
+                    onTriggered: root.ch.setPermission(modelData)
+                }
+            }
+        }
+        MMenuItem { objectName: "aiWeb"; text: Tr.s("set_web_on"); checkable: true; checked: Ai.webEnabled; onTriggered: Ai.webEnabled = checked }
+        MenuSeparator { padding: 4; contentItem: Rectangle { implicitHeight: 1; color: Theme.border } }
         MMenuItem { objectName: "modelManage"; text: Tr.s("ai_model_manage"); onTriggered: settings.open() }
     }
-    // what the agent may do with the files (the mode)
-    MMenu {
-        id: modeMenu
-        implicitWidth: 520
-        Repeater {
-            model: ["read", "plan", "ask", "edit"]
-            delegate: MMenuItem {
-                required property string modelData
-                objectName: "mode_" + modelData
-                text: Tr.s("mode_" + modelData) + "  -  " + Tr.s("mode_" + modelData + "_hint")
-                checkable: true
-                checked: root.ch.permission === modelData
-                onTriggered: root.ch.setPermission(modelData)
-            }
-        }
-    }
-    // how hard it tries
-    MMenu {
-        id: effortMenu
-        implicitWidth: 520
-        Repeater {
-            model: ["low", "medium", "high"]
-            delegate: MMenuItem {
-                required property string modelData
-                objectName: "effort_" + modelData
-                text: Tr.s("effort_" + modelData) + "  -  " + Tr.s("effort_" + modelData + "_hint")
-                checkable: true
-                checked: root.ch.effort === modelData
-                onTriggered: root.ch.setEffort(modelData)
-            }
-        }
-    }
-
     // small parts
     component Chip: Rectangle {
         id: chip
         property alias text: chipText.text
         property bool clickable: false
+        readonly property bool hovered: chipMouse.containsMouse
         signal clicked()
         implicitHeight: 28
         implicitWidth: chipText.implicitWidth + 22
@@ -1481,6 +1485,15 @@ Item {
                                 Accessible.role: Accessible.Button
                                 Accessible.name: Tr.s("att_add")
                             }
+                            // the folder the agent works in, next to "+"
+                            Chip {
+                                objectName: "aiFolder"
+                                visible: root.agent
+                                clickable: true
+                                enabled: !root.ch.busy
+                                text: root.ch.folder === "" ? Tr.s("ai_folder_none") : root.ch.folder.replace(/^.*[\\/]/, "")
+                                onClicked: folderDialog.open()
+                            }
                             Text {
                                 Layout.fillWidth: true
                                 Layout.minimumWidth: 0
@@ -1489,48 +1502,18 @@ Item {
                                 color: Theme.accent
                                 elide: Text.ElideRight
                             }
-                            // the settings of this message, next to Send (like Claude): folder, model, effort, web, mode
-                            Chip {
-                                objectName: "aiFolder"
-                                visible: root.agent && !root.browserShown            // (the browser is open: no room; the folder is in the left list)
-                                clickable: true
-                                enabled: !root.ch.busy
-                                text: root.ch.folder === "" ? Tr.s("ai_folder_none") : root.ch.folder.replace(/^.*[\\/]/, "")
-                                onClicked: folderDialog.open()
-                            }
+                            // ONE button, like Claude's: the model and how hard it tries; its menu has the models, the effort, the mode and the web
                             Chip {
                                 id: modelChip
                                 objectName: "aiModel"
                                 clickable: true
                                 enabled: !root.ch.busy
-                                text: root.modelLabel + "  ▾"
-                                onClicked: modelMenu.popup(modelChip, 0, -modelMenu.implicitHeight - 6)
-                            }
-                            Chip {
-                                id: effortChip
-                                objectName: "aiEffort"
-                                clickable: true
-                                enabled: !root.ch.busy
-                                text: Tr.s("effort_label") + ": " + Tr.s("effort_" + root.ch.effort) + "  ▾"
-                                onClicked: effortMenu.popup(effortChip, 0, -effortMenu.implicitHeight - 6)
-                            }
-                            Chip {
-                                objectName: "aiWeb"
-                                clickable: true
-                                enabled: !root.ch.busy
-                                text: Tr.s(Ai.webEnabled ? "ai_web_on" : "ai_web_off")
-                                onClicked: Ai.webEnabled = !Ai.webEnabled
-                            }
-                            Chip {
-                                id: modeChip
-                                objectName: "aiMode"
-                                visible: root.agent
-                                clickable: true
-                                enabled: !root.ch.busy
-                                text: Tr.s("mode_label") + ": " + Tr.s("mode_" + root.ch.permission) + "  ▾"
-                                onClicked: modeMenu.popup(modeChip, 0, -modeMenu.implicitHeight - 6)
-                            }
-                            MButton {
+                                text: root.modelLabel + "   " + Tr.s("effort_" + root.ch.effort) + "  ▾"
+                                onClicked: mainMenu.popup(modelChip, 0, -mainMenu.implicitHeight - 6)
+                                ToolTip.visible: hovered
+                                ToolTip.delay: 600
+                                ToolTip.text: (root.agent ? Tr.s("mode_label") + ": " + Tr.s("mode_" + root.ch.permission) + "   ·   " : "") + Tr.s(Ai.webEnabled ? "ai_web_on" : "ai_web_off")
+                            }                            MButton {
                                 objectName: "aiSend"
                                 compact: true
                                 variant: "primary"

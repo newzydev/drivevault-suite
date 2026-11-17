@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.26.3 (2026-11-17): One settings button in the message box
+  - Changed: the folder button moved next to the + button. The model, effort, web and mode buttons are now ONE button that shows the model and the effort (like Claude). Its menu has the models, the effort and the mode (each opens a list), the web switch and "Manage models".
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.26.2 (2026-11-17): Smaller tabs in the title bar
   - Changed: the three tabs in the title bar are the same size as the language switch next to them (they were bigger).
   - Not code-signed (Windows SmartScreen may warn).
