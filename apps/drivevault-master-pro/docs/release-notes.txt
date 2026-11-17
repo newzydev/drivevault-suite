@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.19.3 (2026-11-17): A tidier step list
+  - Changed: the grey lines "The answer was too long and was cut off" are no longer shown in the box "What the AI does" - the file simply goes on in the next part. The count of steps no longer includes them.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.19.2 (2026-11-17): Files are written a little at a time
   - Changed: the AI now writes a file in small parts (about 60 lines): each part is saved, and it goes on with the next part at once instead of trying to write the whole file in one answer (which was cut off as "answer too long").
   - Changed: you answer Allow once per file; the next parts of the same file are added without a new card.

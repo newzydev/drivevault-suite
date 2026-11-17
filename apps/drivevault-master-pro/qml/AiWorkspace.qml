@@ -755,7 +755,9 @@ Item {
                             Rectangle {
                                 id: stepsBox
                                 objectName: "aiStepsBox"
-                                readonly property var steps: msg.isUser ? [] : msg.modelData.stepList
+                                // the notes about a cut answer ("too long", "long") are housekeeping: they are not shown, the file just goes on
+                                readonly property var steps: msg.isUser ? [] : msg.modelData.stepList.filter(s => !(s.kind === "note"
+                                                                 && (s.target.indexOf("The answer was too long") === 0 || s.target.indexOf("The answer was long") === 0)))
                                 readonly property int total: steps.length
                                 readonly property int finished: steps.filter(s => s.state === "done" || s.state === "error").length
                                 readonly property bool working: !msg.isUser && msg.modelData.streaming
