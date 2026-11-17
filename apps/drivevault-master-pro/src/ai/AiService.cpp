@@ -446,6 +446,8 @@ void AiChannel::sendChat()
         QList<Message> past = find(m_runId)->messages;
         past.removeLast();                                         // the empty reply that is being written
         r.messages = historyFor(afterLastCompact(past), effort.historyChars);          // only what came after the last compaction (its summary is in the system prompt)
+        if (const Conversation* cur = find(m_runId); cur && cur->messages.size() >= 2 && server->visionActive())
+            r.images = cur->messages.at(cur->messages.size() - 2).images;              // the pictures the user attached to this question
         r.extraBody = QJsonObject{{"chat_template_kwargs", QJsonObject{{"enable_thinking", effort.thinking}}}, {"max_tokens", effort.maxTokens}};
         if (!m_http) {
             m_http = new HttpChat(m_service->net(), this);

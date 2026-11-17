@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.27.0 (2026-11-17): Pictures in the AI Q&A too
+  - New: on the AI Q&A page you can attach pictures (the + button, or Ctrl+V) as well as text files, when the vision file is installed. The model looks at the picture and answers about it.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.26.3 (2026-11-17): One settings button in the message box
   - Changed: the folder button moved next to the + button. The model, effort, web and mode buttons are now ONE button that shows the model and the effort (like Claude). Its menu has the models, the effort and the mode (each opens a list), the web switch and "Manage models".
   - Not code-signed (Windows SmartScreen may warn).

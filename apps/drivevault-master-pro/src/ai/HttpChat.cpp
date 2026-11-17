@@ -51,8 +51,17 @@ QByteArray HttpChat::body(const Request& r)
     QJsonArray messages;
     if (!r.system.isEmpty())
         messages.append(QJsonObject{{"role", "system"}, {"content", r.system}});
-    for (const auto& m : r.messages)
-        messages.append(QJsonObject{{"role", m.first}, {"content", m.second}});
+    for (int i = 0; i < r.messages.size(); ++i) {
+        const auto& m = r.messages.at(i);
+        if (i == r.messages.size() - 1 && m.first == QLatin1String("user") && !r.images.isEmpty()) {       // the question carries the user's pictures
+            QJsonArray parts{QJsonObject{{"type", "text"}, {"text", m.second}}};
+            for (const QString& img : r.images)
+                parts.append(QJsonObject{{"type", "image_url"}, {"image_url", QJsonObject{{"url", QStringLiteral("data:image/jpeg;base64,") + img}}}});
+            messages.append(QJsonObject{{"role", m.first}, {"content", parts}});
+        } else {
+            messages.append(QJsonObject{{"role", m.first}, {"content", m.second}});
+        }
+    }
     o["messages"] = messages;
     for (auto it = r.extraBody.begin(); it != r.extraBody.end(); ++it)
         o[it.key()] = it.value();

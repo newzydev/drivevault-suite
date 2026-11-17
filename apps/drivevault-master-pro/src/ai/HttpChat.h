@@ -24,6 +24,7 @@ public:
         QString model;
         QString system;
         QList<QPair<QString, QString>> messages;          // role (user | assistant), text; oldest first
+        QStringList images;                               // pictures (base64 JPEG) of the LAST user message (only when the model can see)
         QJsonObject extraBody;                            // merged into the body (chat_template_kwargs, max_tokens ...)
     };
 

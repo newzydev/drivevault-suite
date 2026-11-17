@@ -2324,6 +2324,23 @@ private slots:
         const QString second = QString::fromUtf8(server.log.at(3));
         QVERIFY(second.contains("an earlier screenshot of the page was removed"));
     }
+    void aPlainQuestionCarriesTheAttachedPicturesAsImageParts()
+    {
+        HttpChat::Request r;
+        r.model = "local";
+        r.system = "sys";
+        r.messages = {{"user", "first"}, {"assistant", "answer"}, {"user", "what is in the picture?"}};
+        r.images = {"QUJD", "REVG"};
+        const QJsonArray msgs = QJsonDocument::fromJson(HttpChat::body(r)).object().value("messages").toArray();
+        QCOMPARE(msgs.size(), 4);
+        QVERIFY(msgs.at(1).toObject().value("content").isString());                         // earlier messages stay plain text
+        const QJsonArray parts = msgs.last().toObject().value("content").toArray();         // only the last question has the pictures
+        QCOMPARE(parts.size(), 3);
+        QCOMPARE(parts.at(0).toObject().value("text").toString(), QString("what is in the picture?"));
+        QCOMPARE(parts.at(1).toObject().value("image_url").toObject().value("url").toString(), QString("data:image/jpeg;base64,QUJD"));
+        r.images.clear();
+        QVERIFY(QJsonDocument::fromJson(HttpChat::body(r)).object().value("messages").toArray().last().toObject().value("content").isString());   // no pictures: as before
+    }
     void theBrowserWatchesTheFolderOfAPageAndTellsWhenAFileChanged()
     {
         QDir().mkpath(m_dir.filePath("livewatch"));

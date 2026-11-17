@@ -95,14 +95,10 @@ Item {
     Connections { target: root.ch; function onBusyChanged() { if (root.ch.busy) root.pinnedManual = undefined } }
     property var attachments: []                         // [{kind: file | image, name, text | data}] waiting for Send
     property string attachNote: ""                          // why the last attachment was refused
-    readonly property bool canAttachImages: root.agent && Ai.vision.installed
+    readonly property bool canAttachImages: Ai.vision.installed                // pictures on both pages, when the model can see (the vision file)
     function addAttachment(r) {
         if (!r.ok) {
             attachNote = Tr.s("att_err_" + r.error)
-            return
-        }
-        if (r.kind === "image" && !root.agent) {
-            attachNote = Tr.s("att_err_agentOnly")
             return
         }
         if (attachments.length >= 6) {
@@ -122,10 +118,6 @@ Item {
     function pasteImage() {                                 // Ctrl+V with a picture on the clipboard
         if (!Ai.clipboardHasImage())
             return false
-        if (!root.agent) {
-            attachNote = Tr.s("att_err_agentOnly")
-            return true
-        }
         addAttachment(Ai.clipboardImage())
         return true
     }
@@ -432,7 +424,7 @@ Item {
         MMenuItem { objectName: "attachFile"; text: Tr.s("att_file"); onTriggered: attachDialog.open() }
         MMenuItem {
             objectName: "attachImage"
-            text: Tr.s("att_image") + (root.canAttachImages ? "" : "  (" + Tr.s(root.agent ? "att_need_vision" : "att_agent_only") + ")")
+            text: Tr.s("att_image") + (root.canAttachImages ? "" : "  (" + Tr.s("att_need_vision") + ")")
             enabled: root.canAttachImages
             onTriggered: attachDialog.open()
         }
