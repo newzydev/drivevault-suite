@@ -12,8 +12,9 @@ Rectangle {
     anchors.horizontalCenter: parent.horizontalCenter
     anchors.bottom: parent.bottom
     anchors.bottomMargin: 20
-    width: Math.min(760, parent.width - 48)
-    height: column.implicitHeight + 20
+    property bool collapsed: false           // "−" makes the card a small pill so it does not cover the document; "+" brings it back as it was
+    width: collapsed ? miniRow.implicitWidth + 20 : Math.min(760, parent.width - 48)
+    height: collapsed ? miniRow.implicitHeight + 16 : column.implicitHeight + 20
     radius: 16
     color: Theme.backgroundAlt
     border.width: 1
@@ -59,8 +60,27 @@ Rectangle {
     TextEdit { id: clipboardHelper; visible: false }
     function copyText(text) { clipboardHelper.text = text; clipboardHelper.selectAll(); clipboardHelper.copy() }
 
+    // ---- made small: the AI mark and "+" ---------------------------------------------------------------------------------------
+    RowLayout {
+        id: miniRow
+        objectName: "aiMini"
+        anchors.centerIn: parent
+        visible: root.collapsed
+        spacing: 6
+        LineIcon { name: "ai"; size: 18; color: Theme.textSecondary }
+        PButton {
+            objectName: "aiExpand"
+            compact: true
+            variant: "ghost"
+            text: "+"
+            tip: Tr.s("aiExpand")
+            onClicked: root.collapsed = false
+        }
+    }
+
     ColumnLayout {
         id: column
+        visible: !root.collapsed
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
@@ -288,6 +308,14 @@ Rectangle {
                 tip: Tr.s("aiClear")
                 visible: Assistant.messages.length > 0 || Assistant.busy
                 onClicked: Assistant.clear()
+            }
+            PButton {
+                objectName: "aiCollapse"
+                compact: true
+                variant: "ghost"
+                text: "−"
+                tip: Tr.s("aiCollapse")
+                onClicked: root.collapsed = true
             }
         }
     }

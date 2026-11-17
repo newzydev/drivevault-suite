@@ -18,7 +18,11 @@ struct PrintOptions {
     QList<int> pages;             // 0-based, in the order to print
     int copies = 1;
     bool color = true;
-    bool fit = true;              // true: shrink / enlarge to the paper; false: actual size
+    bool fit = true;              // old switch: true = scaleMode "fit", false = "actual" (used when scaleMode is empty)
+    QString scaleMode;            // "fit" (shrink / enlarge to the paper) | "shrink" (only larger pages are shrunk) | "actual" | "custom" (scalePercent)
+    int scalePercent = 100;       // for "custom": 10..400, clipped by the paper like Acrobat does
+    QString orientation = QStringLiteral("auto");   // "auto" (each page as it is) | "portrait" | "landscape" (the paper)
+    bool duplex = false;          // both sides of the paper (long edge); the printer driver may ignore it
     int rotation = 0;             // the view rotation is printed too
 };
 

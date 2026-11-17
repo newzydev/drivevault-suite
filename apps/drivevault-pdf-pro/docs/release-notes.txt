@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.21.0 (2026-11-17): New print window, and the AI bar can be made small
+  - New: the print window has a preview of the page on the paper (with the scale and the paper size), page sizing (fit, actual size, shrink oversized pages, custom scale from 10 to 400 percent - a larger scale is cut at the margins), print on both sides, orientation (auto, portrait, landscape) and "print in grayscale". The default is "shrink oversized pages". Printing to a real printer, and the both-sides setting (the printer driver decides), were not tried.
+  - New: the floating AI bar has a "-" button that makes it a small pill so it does not cover the document, and "+" brings it back as it was.
+  - Note: the installer is not code-signed yet, so Windows SmartScreen may warn.
+
 v1.20.0 (2026-11-17): The AI assistant floats over the page; the side panel is open by default
   - Changed: the AI assistant is no longer a tab of the side panel. It is a bar floating at the bottom of the page area (Summarize, the question box, Send). While the conversation is empty it is just that bar; as answers arrive it grows (up to half of the page area) and then scrolls with the mouse wheel.
   - Changed: the left side panel (thumbnails, bookmarks, comments) is open when a file opens; the button in the toolbar still hides and shows it.

@@ -148,7 +148,9 @@ public:
     // ---- printing -----------------------------------------------------------------------------------------------------------
     Q_INVOKABLE QStringList printerNames() const;
     Q_INVOKABLE QString defaultPrinter() const;
-    // options: {printer, outputFile, pages: "all" | "current" | "1-3,5", currentPage (0-based), copies, color, fit}.
+    // the paper the printer starts with (portrait size): {name, widthPt, heightPt, widthMm, heightMm}; A4 when the printer says nothing
+    Q_INVOKABLE QVariantMap paperInfo(const QString& printer) const;
+    // options: {printer, outputFile, pages: "all" | "current" | "1-3,5", currentPage (0-based), copies, color, fit, scaleMode: fit | shrink | actual | custom, scalePercent, orientation: auto | portrait | landscape, duplex}.
     // Returns "" when the job started, otherwise a short error code: "noDocument", "badRange", "busy".
     Q_INVOKABLE QString startPrint(const QVariantMap& options);
     Q_INVOKABLE void cancelPrint();

@@ -355,6 +355,20 @@ private slots:
         QVERIFY2(p.bottom() - c.bottom() < 40, "at the bottom");
     }
 
+    // "−" makes the card a small pill so it does not cover the document, "+" brings it back as it was.
+    void theAiCardCanBeMadeSmallAndBack()
+    {
+        fresh(m_sixPath, "six.pdf");
+        const double fullWidth = find("aiPanel")->width();
+        QVERIFY(visible("aiCollapse") && !visible("aiExpand"));
+        QVERIFY(click("aiCollapse"));
+        QTRY_VERIFY_WITH_TIMEOUT(find("aiPanel")->width() < 200, 3000);
+        QVERIFY(visible("aiExpand") && !visible("aiInput"));
+        QVERIFY(click("aiExpand"));
+        QTRY_COMPARE_WITH_TIMEOUT(find("aiPanel")->width(), fullWidth, 3000);
+        QVERIFY(visible("aiInput") && visible("aiCollapse"));
+    }
+
     void titleBarTogglesAndDialogs()
     {
         QCOMPARE(text("toolbarOpen"), QStringLiteral("Open PDF…"));
@@ -573,6 +587,32 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(brightnessAtPage() < 60, 8000);
         QVERIFY(click("darkPages"));
         QTRY_VERIFY_WITH_TIMEOUT(brightnessAtPage() > 200, 8000);
+    }
+
+    // The print window has a preview of the page on the paper; the sizing choices change its scale (the rules of PrintTask).
+    void thePrintDialogShowsThePageOnThePaper()
+    {
+        fresh(m_sixPath, "six.pdf");
+        QVERIFY(click("printButton"));
+        QObject* dialog = m_window->findChild<QObject*>("printDialog");
+        QVERIFY(dialog);
+        QTRY_VERIFY_WITH_TIMEOUT(dialog->property("opened").toBool(), 5000);
+        QVERIFY(visible("printSheet") && visible("printScale") && visible("printPaper"));
+        QVERIFY(visible("printShrink") && visible("printFit") && visible("printActual") && visible("printCustom"));
+        QVERIFY(visible("printOrientAuto") && visible("printDuplex") && visible("printGray"));
+        QVERIFY(click("printActual"));
+        QTRY_COMPARE_WITH_TIMEOUT(text("printScale"), QStringLiteral("Scale: 100%"), 3000);
+        QVERIFY(click("printCustom"));
+        QVERIFY(typeInto("printCustomField", "50"));
+        QTRY_COMPARE_WITH_TIMEOUT(text("printScale"), QStringLiteral("Scale: 50%"), 3000);
+        const double portraitW = find("printSheet")->width(), portraitH = find("printSheet")->height();
+        QVERIFY(portraitH > portraitW);                                          // a portrait page on portrait paper
+        QVERIFY(click("printOrientLandscape"));
+        QTRY_VERIFY_WITH_TIMEOUT(find("printSheet")->width() > find("printSheet")->height(), 3000);
+        QVERIFY(click("printNextPage"));
+        QTRY_VERIFY(text("printScale").startsWith("Scale:"));
+        QVERIFY(click("printCancel"));
+        QTRY_VERIFY_WITH_TIMEOUT(!dialog->property("opened").toBool(), 5000);
     }
 
     void thePrintDialogChecksThePageRange()

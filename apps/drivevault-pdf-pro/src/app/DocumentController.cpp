@@ -27,6 +27,7 @@
 #include <QJsonObject>
 #include <QLocale>
 #include <QMutexLocker>
+#include <QPageSize>
 #include <QPrinterInfo>
 #include <QRunnable>
 #include <QScreen>
@@ -35,6 +36,7 @@
 #include <QTemporaryFile>
 
 #include <algorithm>
+#include <cmath>
 #include <numeric>
 
 namespace dp {
@@ -885,6 +887,21 @@ bool DocumentController::openDocument(const QString& fileName) const
 QStringList DocumentController::printerNames() const { return QPrinterInfo::availablePrinterNames(); }
 QString DocumentController::defaultPrinter() const { return QPrinterInfo::defaultPrinterName(); }
 
+QVariantMap DocumentController::paperInfo(const QString& printer) const
+{
+    QPrinterInfo info = printer.isEmpty() ? QPrinterInfo::defaultPrinter() : QPrinterInfo::printerInfo(printer);
+    QPageSize size = info.isNull() ? QPageSize() : info.defaultPageSize();
+    if (!size.isValid())
+        size = QPageSize(QPageSize::A4);
+    const QSizeF pt = size.size(QPageSize::Point);              // upright (portrait) size
+    const QSizeF mm = size.size(QPageSize::Millimeter);
+    return {{QStringLiteral("name"), size.name()},
+            {QStringLiteral("widthPt"), std::min(pt.width(), pt.height())},
+            {QStringLiteral("heightPt"), std::max(pt.width(), pt.height())},
+            {QStringLiteral("widthMm"), std::round(std::min(mm.width(), mm.height()))},
+            {QStringLiteral("heightMm"), std::round(std::max(mm.width(), mm.height()))}};
+}
+
 QString DocumentController::startPrint(const QVariantMap& options)
 {
     const auto doc = currentDoc();
@@ -913,6 +930,14 @@ QString DocumentController::startPrint(const QVariantMap& options)
     o.copies = qBound(1, options.value(QStringLiteral("copies"), 1).toInt(), 999);
     o.color = options.value(QStringLiteral("color"), true).toBool();
     o.fit = options.value(QStringLiteral("fit"), true).toBool();
+    const QString scaleMode = options.value(QStringLiteral("scaleMode")).toString();
+    if (scaleMode == QLatin1String("fit") || scaleMode == QLatin1String("shrink") || scaleMode == QLatin1String("actual") || scaleMode == QLatin1String("custom"))
+        o.scaleMode = scaleMode;
+    o.scalePercent = qBound(10, options.value(QStringLiteral("scalePercent"), 100).toInt(), 400);
+    const QString orientation = options.value(QStringLiteral("orientation")).toString();
+    if (orientation == QLatin1String("portrait") || orientation == QLatin1String("landscape"))
+        o.orientation = orientation;
+    o.duplex = options.value(QStringLiteral("duplex"), false).toBool();
     o.rotation = currentRotation();
 
     m_printCancel = std::make_shared<std::atomic_bool>(false);

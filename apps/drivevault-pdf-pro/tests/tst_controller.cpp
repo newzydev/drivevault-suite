@@ -429,6 +429,51 @@ private slots:
         QCOMPARE(one->pageCount(), 1);
         QCOMPARE(c.startPrint({{"pages", "current"}, {"currentPage", 40}}), QStringLiteral("badRange"));
     }
+    // The sizing choices of the print window: actual size, a custom scale (cut at the margins), shrink only what is too big, orientation of the paper.
+    void printingHonoursTheScaleModeAndTheOrientation()
+    {
+        DocumentController c(m_dir.filePath("data11b"));
+        QCOMPARE(c.open(write("scale.pdf", testpdf::make(2))), QString());
+        QSignalSpy finished(&c, &DocumentController::printFinished);
+        auto printTo = [&](const QString& name, QVariantMap options) {
+            finished.clear();
+            options.insert("pages", "current");
+            options.insert("currentPage", 0);
+            options.insert("outputFile", m_dir.filePath(name));
+            if (c.startPrint(options) != QString())
+                return std::shared_ptr<dp::pdf::PdfDocument>();
+            if (!QTest::qWaitFor([&] { return finished.count() > 0; }, 60000) || !finished.first().at(0).toBool())
+                return std::shared_ptr<dp::pdf::PdfDocument>();
+            return std::shared_ptr<dp::pdf::PdfDocument>(dp::pdf::PdfDocument::open(m_dir.filePath(name), {}, nullptr));
+        };
+        auto inkWidth = [](const std::shared_ptr<dp::pdf::PdfDocument>& doc) {          // width of the dark pixels at 1 pixel per point
+            const QImage img = doc->render(0, 1.0);
+            int left = img.width(), right = -1;
+            for (int y = 0; y < img.height(); ++y)
+                for (int x = 0; x < img.width(); ++x)
+                    if (qGray(img.pixel(x, y)) < 110) { left = std::min(left, x); right = std::max(right, x); }
+            return right >= left ? right - left + 1 : 0;
+        };
+
+        const auto actual = printTo("actual.pdf", {{"scaleMode", "actual"}});
+        const auto half = printTo("half.pdf", {{"scaleMode", "custom"}, {"scalePercent", 50}});
+        const auto fit = printTo("fit.pdf", {{"scaleMode", "fit"}});
+        const auto shrink = printTo("shrink.pdf", {{"scaleMode", "shrink"}});
+        QVERIFY(actual && half && fit && shrink);
+        const int wActual = inkWidth(actual), wHalf = inkWidth(half), wFit = inkWidth(fit), wShrink = inkWidth(shrink);
+        QVERIFY2(wActual > 40, qPrintable(QString("actual: %1").arg(wActual)));
+        QVERIFY2(std::abs(wHalf * 2 - wActual) <= std::max(6, wActual / 10), qPrintable(QString("half %1 vs actual %2").arg(wHalf).arg(wActual)));
+        QVERIFY2(wShrink == wActual || std::abs(wShrink - wActual) <= 3 || wShrink < wActual, "shrink never enlarges");
+        QVERIFY2(wFit >= wShrink - 3, qPrintable(QString("fit %1 vs shrink %2").arg(wFit).arg(wShrink)));
+
+        const auto portrait = printTo("portrait.pdf", {{"orientation", "portrait"}});
+        const auto landscape = printTo("landscape.pdf", {{"orientation", "landscape"}});
+        QVERIFY(portrait && landscape);
+        const QSizeF p = portrait->pageSizePt(0, 0), l = landscape->pageSizePt(0, 0);
+        QVERIFY2(p.height() > p.width(), "portrait paper");
+        QVERIFY2(l.width() > l.height(), "landscape paper");
+    }
+
     void pageLabelsAndSnapshotCopyToTheClipboard()
     {
         DocumentController c(m_dir.filePath("data12"));

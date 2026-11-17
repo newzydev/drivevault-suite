@@ -3,7 +3,7 @@
 Native Windows PDF program of the DriveVault suite (C++20, Qt 6.8 / Qt Quick, PDFium, qpdf). Works on this computer only - nothing is uploaded.
 Accent colour red `#EF4444`. The first plan is in [`docs/PDF-Pro-Plan.md`](docs/PDF-Pro-Plan.md); the work since then (towards the local functions of Acrobat Pro) is tracked phase by phase in [`docs/Acrobat-Parity-Roadmap.md`](docs/Acrobat-Parity-Roadmap.md), where every phase says what is done and what is not.
 
-## [Version 1.20.0](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.20.0)
+## [Version 1.21.0](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.21.0)
 
 | Works now (tested) | Not built yet (planned, see the plan) |
 |---|---|
@@ -34,7 +34,7 @@ Accent colour red `#EF4444`. The first plan is in [`docs/PDF-Pro-Plan.md`](docs/
 | **Find** in the whole file (match case, whole word, highlights, next / previous, Ctrl+F, F3) | |
 | **Select text with the mouse, copy** (Ctrl+C, right click menu, select all) - across pages | |
 | **Bookmarks** (outline) and a **comments / markup list**; links in the file (to a page, or to a web address after a question) | |
-| **Printing** (printer, page range, copies, colour, fit to paper) | |
+| **Printing** (printer, page range, copies, grayscale, fit / actual size / shrink oversized / custom scale, both sides, orientation, preview of the page on the paper) | |
 | **Read aloud** the current page with the voice set in Windows (SAPI; Thai needs a Thai voice installed in Windows; a scan has no text until OCR) | Highlighting the words while reading |
 | Files with an open password (asks for it, a wrong password is refused) | |
 | The page, zoom and view mode of each file are remembered | |
@@ -110,5 +110,5 @@ resources/       fonts (OFL), icons (made by scripts\make-icon.ps1)
 - The accessibility check reads the file structure with qpdf. A "pass" does not prove a file is accessible: reading order, table structure, colour contrast and picture content are not judged.
 - Read aloud uses the voice installed in Windows; the Thai voice depends on what the PC has. It was tested for the call, not heard on a real voice.
 - PDF portfolios were checked with qpdf (the embedded bytes, the /Collection entry); they were not opened in Acrobat.
-- Printing was tested to a PDF file; a real printer (and a per-page paper orientation change) was not tried.
+- Printing was tested to a PDF file; a real printer (and the both-sides setting, which depends on the printer driver) was not tried.
 - The local installer is unsigned unless built with `package.ps1 -Sign` and a signing certificate. A separate clean-PC install and uninstall must be checked by the owner before publication.
