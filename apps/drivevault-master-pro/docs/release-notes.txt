@@ -1,6 +1,19 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.19.0 (2026-11-17): Background tasks in the right panel
+  - New: a part "Background tasks" in the right panel lists the commands the AI runs: a turning ring, the command, the time it has run and a stop square. A line "N finished" opens the list of the finished ones (a tick, or a cross with the exit code, and how long each took). A running compaction of the conversation and the model download are listed there too and can be stopped the same way.
+  - New: the AI can start a command in the BACKGROUND (for a server, a watcher, a long build). You still allow each command first; then it starts and the AI goes on at once. It can read what the command wrote (command_output) and stop it (stop_command), and it is told when the command ends. Up to 4 run at the same time and all of them end when Master Pro is closed. Stopping a job does not stop the background tasks; the stop square of a task does.
+  - A command that the job waits for is a task too: its stop square kills just that command and the job goes on ("stopped by the user").
+  - Not code-signed (Windows SmartScreen may warn).
+
+v1.18.0 (2026-11-17): A big file is written in parts, and you see what the AI is writing
+  - Fixed: a whole landing page in one answer ran into the answer limit after minutes, ended in "error 500" and everything was lost. Now the answer is read while it is written. A file that grows too long for one answer (more than about 14,000 characters) is stopped at once, the part that was written (up to its last complete line) is kept - you still answer Allow / Don't allow for it - and the AI goes on with the new tool "append_file", part by part, until the file is complete. Only when nothing can be kept is the AI asked again for something shorter; after three tries the job ends with a clear message.
+  - New: a live line shows what is happening during the long waits: "Reading the conversation...", "Thinking...", "Writing the answer... (n characters)", "Writing index.html... (12,000 characters so far)", together with the clock. Before, the page said only "Starting..." for minutes.
+  - New tool append_file: adds text at the end of a file (creates it when missing); every addition is shown on a card and needs your Allow like any change in "Ask first".
+  - The context meter now shows the number the model server counted, from the stream of the answer.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.17.0 (2026-11-17): The conversation is compacted like in Claude Code
   - New: the AI on this PC writes a summary of the conversation (your goal and wishes, the files it touched, results, errors, what is left) and the conversation goes on with that summary instead of the old messages. A card in the conversation says "Conversation compacted - about 14,200 -> 640 tokens"; a click reads the summary.
   - Three ways: type /compact (optionally with a wish, e.g. /compact keep the file names), press "Compact now" in the Context part of the right panel, or let it happen by itself: before a message is sent, when the history that would go along has grown to three quarters of what is kept, the summary is written first and your message goes on after it. Stop ends a compaction.

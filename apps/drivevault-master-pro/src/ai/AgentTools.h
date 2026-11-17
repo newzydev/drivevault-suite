@@ -32,7 +32,12 @@ public:
     WriteInfo inspectWrite(const QJsonObject& args) const;
     // The same for edit_file: `preview` is a small diff ("- old line" / "+ new line"), `bytes` the size the file would have.
     WriteInfo inspectEdit(const QJsonObject& args) const;
-    static bool changesFiles(const QString& tool) { return tool == QLatin1String("write_file") || tool == QLatin1String("edit_file"); }
+    // The same for append_file: `preview` is the text that would be added, `bytes` the size the file would have.
+    WriteInfo inspectAppend(const QJsonObject& args) const;
+    static bool changesFiles(const QString& tool)
+    {
+        return tool == QLatin1String("write_file") || tool == QLatin1String("edit_file") || tool == QLatin1String("append_file");
+    }
 
     QJsonArray specs() const;                                         // the tools in the OpenAI "tools" format (write_file / edit_file only when edits are allowed)
     Result run(const QString& name, const QJsonObject& args) const;
@@ -50,6 +55,7 @@ private:
     Result searchText(const QJsonObject& args) const;
     Result writeFile(const QJsonObject& args) const;
     Result editFile(const QJsonObject& args) const;
+    Result appendFile(const QJsonObject& args) const;
     Result globFiles(const QJsonObject& args) const;
     Result save(const QString& fullPath, const QString& content) const;      // backup of the old file, then an atomic write
     // the edit applied to the file: the new content, or an error text

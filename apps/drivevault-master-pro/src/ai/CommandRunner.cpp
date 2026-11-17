@@ -44,7 +44,8 @@ bool CommandRunner::run(const QString& folder, const QString& command, int secon
     m_output.clear();
     m_stopped = m_timedOut = false;
     m_done = std::move(done);
-    seconds = qBound(1, seconds <= 0 ? kDefaultSeconds : seconds, kMaxSeconds);
+    const bool unlimited = seconds < 0;
+    seconds = qBound(1, seconds == 0 ? kDefaultSeconds : seconds, kMaxSeconds);
     m_process = new QProcess(this);
     m_process->setWorkingDirectory(folder);
     m_process->setProcessChannelMode(QProcess::MergedChannels);
@@ -77,9 +78,15 @@ bool CommandRunner::run(const QString& folder, const QString& command, int secon
     if (m_process) {
         killWithThisProgram(m_process);
         m_process->closeWriteChannel();                                // nothing to type: a program that asks a question ends instead of waiting
-        m_timer->start(seconds * 1000);
+        if (!unlimited)
+            m_timer->start(seconds * 1000);
     }
     return true;
+}
+
+QString CommandRunner::liveOutput() const
+{
+    return cut(QString::fromUtf8(m_output).trimmed());
 }
 
 void CommandRunner::cancel()

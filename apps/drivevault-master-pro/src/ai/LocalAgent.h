@@ -1,11 +1,16 @@
 #pragma once
 
 #include "AgentTools.h"
+#include "CommandPool.h"
 #include "CommandRunner.h"
 #include "WebTools.h"
 
+#include <QElapsedTimer>
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QList>
+#include <QMap>
+#include <QSet>
 #include <QObject>
 #include <QPair>
 #include <QString>
@@ -51,11 +56,16 @@ public:
     void cancel();
     bool running() const { return m_running; }
     bool waitingForApproval() const { return m_waiting; }
+    void setPool(CommandPool* pool);                       // the pool whose tasks the commands are (the page's list); without one the agent makes its own
+    CommandPool* pool();
     void answerApproval(bool allow);                       // the user's answer to approvalNeeded
+    // The path and the text of a write_file / append_file call whose arguments may end anywhere (a cut answer): the text taken back to its last complete line.
+    // `complete` = the text was closed, nothing was cut. false when there is no path yet or almost no text. Pure, tested.
+    static bool salvageWrite(const QString& rawArguments, QString* path, QString* text, bool* complete);
 
 signals:
     void piece(const QString& text);                       // text of the model (the answer, or what it says between tool calls)
-    void approvalNeeded(const QString& path, bool replaces, qint64 bytes, const QString& preview, bool diff);   // a write_file / edit_file waits (preview: the start of the content, or for edit_file a diff, diff = true): call answerApproval
+    void approvalNeeded(const QString& path, bool replaces, qint64 bytes, const QString& preview, const QString& operation);   // a write_file / edit_file / append_file waits (operation: write | edit | append; preview: the start of the content, for an edit a diff): call answerApproval
     void commandApprovalNeeded(const QString& command);    // a run_command waits: call answerApproval
     void planApprovalNeeded(const QString& plan);          // exit_plan_mode waits: call answerApproval (allow = start the work: editing and commands are switched on)
     void planApproved();                                   // the user approved the plan
@@ -65,12 +75,22 @@ signals:
     // edit | write | command | websearch | fetch | todo | plan | note | other; target: the file, the query, the command ... (for a note: its text);
     // state: running | waiting (for the user's answer) | done | error; note: a short result ("exit code 0", the error text).
     void usage(int promptTokens, int completionTokens);    // what the server counted for the last request (the context meter of the page)
+    // While the model answers (the answer is read as a stream): phase waiting (the prompt is read) | thinking | writing (text) | tool (the arguments of a tool call
+    // grow: `tool` is its name, `target` the file / command when it is already known, `chars` how much was written). An empty phase: the answer is complete.
+    void generating(const QString& phase, const QString& tool, const QString& target, int chars);
     void stepEvent(int no, const QString& kind, const QString& target, const QString& state, const QString& note);
     void finished(bool ok, const QString& code, const QString& detail);   // code: "" | cancelled | tooManySteps | http<status> | network | badReply | empty
 
 private:
     void step();
-    void onReply();
+    void onReadyRead();                                    // a piece of the streamed answer
+    void onReply();                                        // the answer is complete (or failed)
+    void processEvent(const QByteArray& event);            // one "data: {...}" event of the stream
+    void reportProgress(bool force);                       // `generating`, at most every 250 ms
+    // An answer that ended inside a tool call (cut by the length limit, or stopped by us because the call grew too long) or has arguments that are not valid
+    // JSON: a write_file / append_file keeps the part that was written (it is saved, then the model continues with append_file); otherwise the model is asked
+    // again for something shorter. true = taken over (a retry or the end of the job started); false = go on with `calls` (changed when a part was kept).
+    bool handleBrokenCalls(QJsonArray* calls, const QString& content, bool cut);
     void runNextCall();
     void runControlCall(const QString& name, const QJsonObject& args, const std::function<void(const QString&, bool)>& result);
     void compact(qint64 budgetTokens);                     // keeps the conversation inside the window: shortens old results, then drops the oldest
@@ -79,6 +99,27 @@ private:
     void stepStart(const QString& kind, const QString& target);     // a new line of the step list: running
     void stepEnd(const QString& state, const QString& note);        // the current line changes its state
     void note(const QString& text);                                 // a line that is not a tool call (also the old activity line)
+    struct StreamCall {
+        QString id, name, args;
+    };
+    struct Stream {                                        // the answer being read
+        bool sse = false;                                  // a stream of events (else one JSON body, as the tests and older servers send it)
+        QByteArray raw;                                    // the whole body (capped): needed for a JSON answer and for an error
+        QByteArray pending;                                // events that are not complete yet
+        QString content;
+        bool contentStarted = false;
+        qint64 reasoningChars = 0;
+        QMap<int, StreamCall> calls;
+        QString finish, error;
+        QJsonObject usage;
+        bool abortedLong = false;                          // we stopped the answer: a tool call grew too long
+        QString lastPhase;                                 // what `generating` showed last (a change is shown at once)
+        QElapsedTimer progress;
+    };
+    Stream m_stream;
+    QString m_afterCalls;                                  // a note for the model, added after the result of a kept (cut) write
+    bool m_lastResultError = false;
+    int m_salvages = 0;                                    // parts of cut files kept in this job
     int m_stepNo = 0;
     int m_curNo = 0;
     QString m_curKind, m_curTarget;                                  // the step of the tool call that runs now
@@ -114,7 +155,10 @@ private:
     bool m_wroteText = false;
     bool m_waiting = false;                                // a change, a command or a plan waits for the user
     std::function<void(bool)> m_onAnswer;                  // what to do with the user's answer
-    CommandRunner* m_runner = nullptr;
+    CommandPool* m_pool = nullptr;                         // the commands of this agent are tasks of this pool
+    int m_foregroundTask = 0;                              // the command the job waits for now (0 = none)
+    QSet<int> m_myTasks, m_bgTasks;                        // the tasks this agent started / the background ones among them
+    QStringList m_taskNotes;                               // "task 3 has ended ...", told to the model at its next request
     int m_generation = 0;                                  // bumps on every start(): a late answer of an old run does nothing
 };
 

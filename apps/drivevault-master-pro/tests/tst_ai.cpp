@@ -3,6 +3,7 @@
 #include "Hub.h"
 #include "ai/AgentTools.h"
 #include "ai/AiService.h"
+#include "ai/CommandPool.h"
 #include "ai/Compactor.h"
 #include "ai/CommandRunner.h"
 #include "ai/GitInfo.h"
@@ -109,6 +110,45 @@ QByteArray replyWithReason(const QString& content, const QString& reason)
 {
     QJsonObject message{{"role", "assistant"}, {"content", content}};
     return QJsonDocument(QJsonObject{{"choices", QJsonArray{QJsonObject{{"message", message}, {"finish_reason", reason}}}}}).toJson(QJsonDocument::Compact);
+}
+
+// ---- an answer as a stream of events (what llama-server sends with "stream": true) ----
+QByteArray sseDelta(const QJsonObject& delta, const QString& finish = QString())
+{
+    QJsonObject choice{{"index", 0}, {"delta", delta}};
+    choice["finish_reason"] = finish.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(finish);
+    return "data: " + QJsonDocument(QJsonObject{{"choices", QJsonArray{choice}}}).toJson(QJsonDocument::Compact) + "\n\n";
+}
+
+QByteArray sseEnd(const QString& finish, int promptTokens, int completionTokens)
+{
+    return sseDelta({}, finish) + "data: " + QJsonDocument(QJsonObject{{"choices", QJsonArray()}, {"usage", QJsonObject{{"prompt_tokens", promptTokens}, {"completion_tokens", completionTokens}}}}).toJson(QJsonDocument::Compact)
+           + "\n\ndata: [DONE]\n\n";
+}
+
+QByteArray sseText(const QStringList& parts, const QString& finish = QStringLiteral("stop"))
+{
+    QByteArray out = sseDelta({{"role", "assistant"}, {"content", QJsonValue(QJsonValue::Null)}});
+    for (const QString& p : parts)
+        out += sseDelta({{"content", p}});
+    return out + sseEnd(finish, 100, 10);
+}
+
+QByteArray sseToolCall(const QString& name, const QStringList& argumentChunks, const QString& finish = QStringLiteral("tool_calls"))
+{
+    QByteArray out = sseDelta({{"role", "assistant"}, {"content", QJsonValue(QJsonValue::Null)}});
+    for (int i = 0; i < argumentChunks.size(); ++i) {
+        QJsonObject fn{{"arguments", argumentChunks.at(i)}};
+        QJsonObject tc{{"index", 0}};
+        if (i == 0) {
+            tc["id"] = QStringLiteral("call1");
+            tc["type"] = QStringLiteral("function");
+            fn["name"] = name;
+        }
+        tc["function"] = fn;
+        out += sseDelta({{"tool_calls", QJsonArray{tc}}});
+    }
+    return out + sseEnd(finish, 100, 10);
 }
 
 QByteArray errorBody(int status, const QString& message)
@@ -497,7 +537,7 @@ private slots:
         QVERIFY(!QFileInfo::exists(m_dir.filePath("work/x.txt")));
 
         AgentTools rw(m_dir.filePath("work"), true);
-        QCOMPARE(rw.specs().size(), 6);
+        QCOMPARE(rw.specs().size(), 7);
         auto w = rw.run("write_file", {{"path", "sub/new.txt"}, {"content", "hello"}});
         QVERIFY2(!w.error, qPrintable(w.text));
         QCOMPARE(rw.run("read_file", {{"path", "sub/new.txt"}}).text, QString("hello"));
@@ -1065,6 +1105,304 @@ private slots:
         QCOMPARE(list2.size(), 3);
         QCOMPARE(list2.at(0).toMap().value("group").toString(), QString("groupA"));
     }
+    // ---- the answer is read as a stream: live progress, a too long write is stopped and its written part kept -------------------------------
+    void aStreamedAnswerIsShownWhileItComes()
+    {
+        FakeServer server;
+        server.contentType = "text/event-stream";
+        server.queue << sseText({"Hel", "lo ", "world"});
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QStringList pieces, phases;
+        int promptTokens = 0;
+        QObject::connect(&agent, &LocalAgent::piece, [&](const QString& t) { pieces << t; });
+        QObject::connect(&agent, &LocalAgent::generating, [&](const QString& phase, const QString&, const QString&, int) { phases << phase; });
+        QObject::connect(&agent, &LocalAgent::usage, [&](int p, int) { promptTokens = p; });
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.path();
+        c.history = {{"user", "hi"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QCOMPARE(pieces.join(QString()), QString("Hello world"));
+        QVERIFY(pieces.size() >= 2);                                                            // it came in pieces, not as one block
+        QCOMPARE(promptTokens, 100);                                                            // what the server counted
+        QCOMPARE(phases.first(), QString("waiting"));                                           // the prompt is read first
+        QVERIFY(phases.contains("writing"));
+        QCOMPARE(phases.last(), QString());                                                     // and the line is cleared at the end
+        const QJsonObject body = requestBody(server.log.at(0));
+        QVERIFY(body.value("stream").toBool());
+        QVERIFY(body.value("stream_options").toObject().value("include_usage").toBool());
+    }
+    void aStreamedToolCallIsRunAndTheJobGoesOn()
+    {
+        QDir().mkpath(m_dir.filePath("streamtool"));
+        QFile f(m_dir.filePath("streamtool/a.txt"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("hello");
+        f.close();
+        FakeServer server;
+        server.contentType = "text/event-stream";
+        server.queue << sseToolCall("read_file", {"{\"pa", "th\":\"a.", "txt\"}"}) << sseText({"It says hello."});
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QStringList tools, targets;
+        QObject::connect(&agent, &LocalAgent::generating, [&](const QString& phase, const QString& tool, const QString& target, int) {
+            if (phase == "tool") { tools << tool; targets << target; }
+        });
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("streamtool");
+        c.history = {{"user", "read it"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QCOMPARE(server.requests, 2);
+        QVERIFY(lastMessage(server.log.at(1)).contains("hello"));                               // the arguments of the pieces were put together
+        QVERIFY(tools.contains("read_file"));
+    }
+    void aTooLongWriteIsStoppedItsPartIsKeptAndTheFileGoesOnWithAppend()
+    {
+        QDir().mkpath(m_dir.filePath("bigfile"));
+        QStringList chunks{QStringLiteral("{\"path\":\"big.html\",\"content\":\"")};
+        for (int i = 0; i < 80; ++i) {                                                          // far more than a tool call may be: 80 x 20 lines
+            QString part;
+            for (int k = 0; k < 20; ++k)
+                part += QStringLiteral("<p>line %1</p>\\n").arg(i * 20 + k, 4, 10, QLatin1Char('0'));
+            chunks << part;
+        }
+        FakeServer server;
+        server.contentType = "text/event-stream";
+        server.queue << sseToolCall("write_file", chunks, "length")                             // cut by the length limit, in the middle of the text
+                     << sseToolCall("append_file", {QStringLiteral("{\"path\":\"big.html\",\"content\":\"<p>the end</p>\\n\"}")})
+                     << sseText({"The page is written."});
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy asked(&agent, &LocalAgent::approvalNeeded);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("bigfile");
+        c.allowEdits = true;
+        c.approveWrites = true;
+        c.maxTokens = 8192;
+        c.history = {{"user", "write a big page"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(asked.wait(15000));                                                             // the kept part waits for the user like any write
+        QCOMPARE(asked.at(0).at(0).toString(), QString("big.html"));
+        QCOMPARE(asked.at(0).at(4).toString(), QString("write"));
+        agent.answerApproval(true);
+        QVERIFY(asked.count() == 2 || asked.wait(15000));                                       // then the model's next part (append) waits too
+        QCOMPARE(asked.at(1).at(4).toString(), QString("append"));
+        QCOMPARE(asked.at(1).at(2).toLongLong() > asked.at(0).at(2).toLongLong(), true);        // the file would be longer than the kept part
+        agent.answerApproval(true);
+        QVERIFY(done.wait(15000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QFile f(m_dir.filePath("bigfile/big.html"));
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        const QString text = QString::fromUtf8(f.readAll());
+        QVERIFY(text.startsWith("<p>line 0000</p>\n"));
+        QVERIFY(text.endsWith("<p>the end</p>\n"));
+        QVERIFY2(text.size() > 10000 && text.size() < 20000, qPrintable(QString::number(text.size())));      // stopped at the limit, not at the 80 parts
+        QVERIFY(text.contains("</p>\n<p>the end</p>\n"));                                       // the kept part ends at a complete line
+        // the model was told where to go on
+        QCOMPARE(server.requests, 3);
+        const QJsonArray msgs = requestBody(server.log.at(1)).value("messages").toArray();
+        const QString note = msgs.last().toObject().value("content").toString();
+        QVERIFY(note.contains("cut off") && note.contains("append_file") && note.contains("<p>line"));
+        // and what it remembers of its call is the kept part, not the giant text
+        QVERIFY(requestBody(server.log.at(1)).size() > 0);
+        for (const QJsonValue& m : msgs)
+            if (m.toObject().contains("tool_calls")) {
+                const QString args = m.toObject().value("tool_calls").toArray().first().toObject().value("function").toObject().value("arguments").toString();
+                QVERIFY(QJsonDocument::fromJson(args.toUtf8()).isObject());                     // valid JSON again
+                QVERIFY(args.size() < 16000);
+            }
+    }
+    void aCutOffWriteWithNothingToKeepIsAskedAgain()
+    {
+        FakeServer server;
+        server.contentType = "text/event-stream";
+        server.queue << sseToolCall("write_file", {"{\"path\":\"x.txt\",\"con"}, "length") << sseText({"Shorter now."});
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.path();
+        c.allowEdits = true;
+        c.history = {{"user", "write"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QCOMPARE(server.requests, 2);
+        QVERIFY(lastMessage(server.log.at(1)).contains("cut off"));
+    }
+    void aCutTextIsTakenBackToItsLastLine()
+    {
+        QString path, text;
+        bool complete = true;
+        // cut inside the third line
+        QVERIFY(LocalAgent::salvageWrite(QStringLiteral("{\"path\":\"s.txt\",\"content\":\"this is the first line\\nthis is the second line\\nthis is the thi"), &path, &text, &complete));
+        QCOMPARE(path, QString("s.txt"));
+        QCOMPARE(text, QString("this is the first line\nthis is the second line\n"));
+        QVERIFY(!complete);
+        // cut in the middle of an escape and of a \u escape
+        QVERIFY(LocalAgent::salvageWrite(QStringLiteral("{\"path\":\"a\",\"content\":\"this is the first line\\nthis is the second line\\n\\"), &path, &text, &complete));
+        QCOMPARE(text, QString("this is the first line\nthis is the second line\n"));
+        QVERIFY(LocalAgent::salvageWrite(QStringLiteral("{\"path\":\"a\",\"content\":\"this is the first line\\nthis is the second \\u0e"), &path, &text, &complete));
+        QCOMPARE(text, QString("this is the first line\n"));
+        // a Thai text is kept whole (escaped or not), a closed string is complete
+        QVERIFY(LocalAgent::salvageWrite(QStringLiteral("{\"path\":\"t.txt\",\"content\":\"สวัสดีครับ นี่คือข้อความภาษาไทย\"} oops"), &path, &text, &complete));
+        QCOMPARE(text, QString("สวัสดีครับ นี่คือข้อความภาษาไทย"));
+        QVERIFY(complete);
+        // nothing to keep: no path yet, no content yet, a few characters only
+        QVERIFY(!LocalAgent::salvageWrite(QStringLiteral("{\"content\":\"some text that is long enough to keep\""), &path, &text, &complete));
+        QVERIFY(!LocalAgent::salvageWrite(QStringLiteral("{\"path\":\"x\",\"con"), &path, &text, &complete));
+        QVERIFY(!LocalAgent::salvageWrite(QStringLiteral("{\"path\":\"x\",\"content\":\"hi"), &path, &text, &complete));
+    }
+    void appendAddsTextAtTheEnd()
+    {
+        QDir().mkpath(m_dir.filePath("appendwork"));
+        QFile f(m_dir.filePath("appendwork/a.txt"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("one\n");
+        f.close();
+        AgentTools rw(m_dir.filePath("appendwork"), true);
+        const AgentTools::WriteInfo info = rw.inspectAppend({{"path", "a.txt"}, {"content", "two\n"}});
+        QVERIFY(info.ok && info.exists);
+        QCOMPARE(info.bytes, qint64(8));                                                        // the size the file would have
+        QCOMPARE(info.preview, QString("two\n"));
+        QVERIFY(!rw.run("append_file", {{"path", "a.txt"}, {"content", "two\n"}}).error);
+        QVERIFY(!rw.run("append_file", {{"path", "new.txt"}, {"content", "first\n"}}).error);   // created when it is missing
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        QCOMPARE(QString::fromUtf8(f.readAll()), QString("one\ntwo\n"));
+        f.close();
+        QCOMPARE(QFile(m_dir.filePath("appendwork/new.txt")).size(), qint64(6));
+        QVERIFY(rw.run("append_file", {{"path", "../out.txt"}, {"content", "x"}}).error);       // the same folder rule
+        QVERIFY(rw.run("append_file", {{"path", "a.txt"}, {"content", ""}}).error);
+        QVERIFY(AgentTools(m_dir.filePath("appendwork"), false).run("append_file", {{"path", "a.txt"}, {"content", "x"}}).error);   // read only
+        QVERIFY(QDir(m_dir.filePath("appendwork")).entryList(QDir::Files | QDir::Hidden).size() == 2);                              // no backup copies
+    }
+
+    // ---- background tasks ------------------------------------------------------------------------------------------------------------------
+    void theCommandPoolKeepsTasksAndStopsThem()
+    {
+        QDir().mkpath(m_dir.filePath("pool"));
+        CommandPool pool;
+        QSignalSpy finished(&pool, &CommandPool::finished);
+        QString text;
+        bool error = true, got = false;
+        // a command that is waited for
+        const int a = pool.start(m_dir.filePath("pool"), "echo hi", 0, false, [&](const QString& t, bool e) { text = t; error = e; got = true; });
+        QVERIFY(a > 0);
+        QTRY_VERIFY_WITH_TIMEOUT(got, 20000);
+        QVERIFY(!error && text.startsWith("exit code 0"));
+        QCOMPARE(pool.info(a).value("state").toString(), QString("done"));
+        QCOMPARE(pool.info(a).value("note").toString(), QString("exit code 0"));
+        // a background command: the answer comes at once, the command goes on
+        got = false;
+        const int b = pool.start(m_dir.filePath("pool"), "ping -n 30 127.0.0.1", 0, true, [&](const QString& t, bool e) { text = t; error = e; got = true; });
+        QVERIFY(b > 0 && got);
+        QVERIFY(text.contains("background") && text.contains(QString::number(b)) && !error);
+        QCOMPARE(pool.info(b).value("state").toString(), QString("running"));
+        QCOMPARE(pool.runningCount(), 1);
+        QTRY_VERIFY_WITH_TIMEOUT(pool.output(b).contains("Pinging"), 20000);                     // what it wrote so far can be read while it runs
+        // at most four run at the same time
+        QList<int> ids{b};
+        for (int i = 0; i < 3; ++i)
+            ids << pool.start(m_dir.filePath("pool"), "ping -n 30 127.0.0.1", 0, true, [](const QString&, bool) {});
+        QCOMPARE(pool.runningCount(), CommandPool::kMaxRunning);
+        QCOMPARE(pool.start(m_dir.filePath("pool"), "echo no", 0, true, [](const QString&, bool) {}), 0);
+        // stopping
+        const int before = finished.count();
+        QVERIFY(pool.stop(b));
+        QTRY_VERIFY_WITH_TIMEOUT(pool.info(b).value("state").toString() == "stopped", 20000);
+        QVERIFY(finished.count() > before);
+        QVERIFY(!pool.stop(b));                                                                 // not running any more
+        QVERIFY(pool.info(b).value("endedMs").toDouble() >= pool.info(b).value("startedMs").toDouble());
+        for (int id : ids)
+            pool.stop(id);
+        QTRY_VERIFY_WITH_TIMEOUT(pool.runningCount() == 0, 20000);
+        const QVariantList list = pool.list();
+        QCOMPARE(list.first().toMap().value("id").toInt(), ids.last());                         // the newest first
+    }
+    void aBackgroundCommandRunsWhileTheAgentGoesOn()
+    {
+        QDir().mkpath(m_dir.filePath("bgwork"));
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("r1", "run_command", {{"command", "ping -n 4 127.0.0.1 > nul & echo bg-marker"}, {"background", true}})}, QString())
+                     << agentReply({agentCall("o1", "command_output", {{"task_id", 1}})}, QString())
+                     << agentReply({}, QStringLiteral("It runs in the background."))
+                     << agentReply({}, QStringLiteral("Seen."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy asked(&agent, &LocalAgent::commandApprovalNeeded);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("bgwork");
+        c.allowEdits = true;
+        c.approveWrites = true;
+        c.allowCommands = true;
+        c.history = {{"user", "start it"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(asked.wait(15000));                                                              // a background command waits for the user like any command
+        agent.answerApproval(true);
+        QVERIFY(done.wait(30000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QCOMPARE(server.requests, 3);                                                            // the agent did not wait for the command
+        QVERIFY(lastMessage(server.log.at(1)).contains("Started in the background as task 1"));
+        const QString out = lastMessage(server.log.at(2));                                       // command_output
+        QVERIFY(out.contains("task 1") && out.contains("running"));
+        // the command ends by itself: the next request tells the model
+        QTRY_VERIFY_WITH_TIMEOUT(agent.pool()->info(1).value("state").toString() == "done", 20000);
+        QVERIFY(agent.pool()->output(1).contains("bg-marker"));
+        done.clear();
+        c.history = {{"user", "and now?"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(15000));
+        const QJsonArray msgs = requestBody(server.log.at(3)).value("messages").toArray();
+        QString note;
+        for (const QJsonValue& m : msgs)
+            if (m.toObject().value("content").toString().startsWith("The background task 1"))
+                note = m.toObject().value("content").toString();
+        QVERIFY2(!note.isEmpty(), "the model was not told that the task ended");
+        QVERIFY(note.contains("done") && note.contains("bg-marker"));
+    }
+    void theAgentCanStopItsBackgroundCommand()
+    {
+        QDir().mkpath(m_dir.filePath("bgstop"));
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("r1", "run_command", {{"command", "ping -n 60 127.0.0.1 > nul"}, {"background", true}})}, QString())
+                     << agentReply({agentCall("s1", "stop_command", {{"task_id", 1}}), agentCall("s2", "stop_command", {{"task_id", 99}})}, QString())
+                     << agentReply({}, QStringLiteral("Stopped."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy asked(&agent, &LocalAgent::commandApprovalNeeded);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("bgstop");
+        c.allowEdits = true;
+        c.approveWrites = true;
+        c.allowCommands = true;
+        c.history = {{"user", "start and stop"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(asked.wait(15000));
+        agent.answerApproval(true);
+        QVERIFY(done.wait(30000));
+        const QJsonArray msgs = requestBody(server.log.at(2)).value("messages").toArray();
+        QVERIFY(msgs.at(msgs.size() - 2).toObject().value("content").toString().contains("task 1 was stopped"));
+        QVERIFY(msgs.last().toObject().value("content").toString().contains("there is no task 99"));    // only its own tasks
+        QTRY_VERIFY_WITH_TIMEOUT(agent.pool()->info(1).value("state").toString() == "stopped", 20000);
+    }
+
     // ---- compacting the conversation -------------------------------------------------------------------------------------------------------
     void theModelIsAskedForASummary()
     {
@@ -1837,9 +2175,9 @@ private slots:
         ai.selectLocalModel(m_dir.filePath("mode-model.gguf"));
         agent->setFolder(m_dir.filePath("modework"));
         ai.setWebEnabled(false);
-        // read: 4 file tools + todo_write; plan: + exit_plan_mode; ask / edit: + edit_file, write_file, run_command
+        // read: 4 file tools + todo_write; plan: + exit_plan_mode; ask / edit: + edit_file, write_file, append_file, run_command, command_output, stop_command
         struct Case { const char* mode; int tools; bool plan; };
-        for (const Case& k : {Case{"read", 5, false}, Case{"plan", 6, true}, Case{"ask", 8, false}, Case{"edit", 8, false}}) {
+        for (const Case& k : {Case{"read", 5, false}, Case{"plan", 6, true}, Case{"ask", 11, false}, Case{"edit", 11, false}}) {
             FakeServer server;
             server.contentType = "application/json";
             server.body = agentReply({}, QStringLiteral("ok"));
@@ -1948,6 +2286,53 @@ private slots:
     }
 
     // The real local model as an agent: it must call the file tool by itself, and (with DM_TEST_WEB=1) the web tool.
+    // the job that failed for the owner: a whole landing page, with the real model through the whole page code (prompt, streaming, parts, compaction).
+    // Opt in: DM_TEST_REAL_LLM=1 and DM_TEST_MODEL=<a .gguf>; it takes minutes and only reports (it fails only when no file was written).
+    void realLocalBigPage()
+    {
+        if (qEnvironmentVariable("DM_TEST_REAL_LLM") != QLatin1String("1") || qEnvironmentVariable("DM_TEST_MODEL").isEmpty())
+            QSKIP("set DM_TEST_REAL_LLM=1 and DM_TEST_MODEL=<model.gguf> to run the real local model");
+        QDir().mkpath(m_dir.filePath("realpage"));
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hubrealpage");
+        dm::Hub hub(o);
+        AiService ai(&hub);
+        auto* agent = qobject_cast<AiChannel*>(ai.agent());
+        ai.selectLocalModel(qEnvironmentVariable("DM_TEST_MODEL"));
+        ai.setWebEnabled(false);
+        agent->setFolder(m_dir.filePath("realpage"));
+        agent->setPermission("edit");                                                           // no questions: this is a test of the work itself
+        QElapsedTimer clock;
+        clock.start();
+        int seenSteps = 0;
+        QString lastLive;
+        connect(agent, &AiChannel::messagesChanged, [&] {                                      // a time line on stderr: every new step and what is being written
+            const QVariantMap last = agent->messages().last().toMap();
+            const QVariantList sl = last.value("stepList").toList();
+            for (; seenSteps < sl.size(); ++seenSteps)
+                fprintf(stderr, "[%4lld s] step %d: %s %s\n", clock.elapsed() / 1000, seenSteps + 1, qPrintable(sl.at(seenSteps).toMap().value("kind").toString()),
+                        qPrintable(sl.at(seenSteps).toMap().value("target").toString().left(60)));
+            const QVariantMap live = last.value("live").toMap();
+            const QString l = live.value("phase").toString() + " " + live.value("tool").toString() + " " + live.value("target").toString() + " " + QString::number(live.value("chars").toInt() / 2000 * 2000);
+            if (l != lastLive) {
+                lastLive = l;
+                fprintf(stderr, "[%4lld s]   live: %s\n", clock.elapsed() / 1000, qPrintable(l));
+            }
+        });
+        QCOMPARE(agent->send("สร้างไฟล์ index.html เป็นหน้า landing page ที่สวยงาม ดูแพง ซึ่งจะแนะนำเกี่ยวกับสวนสาธารณะเทศบาลนครหาดใหญ่ มีส่วนหัว เมนู Hero ส่วนแนะนำ และส่วนท้าย ใส่ CSS ในไฟล์เดียวกัน"), QString());
+        QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 1200000);
+        const QVariantMap reply = agent->messages().last().toMap();
+        const QVariantList steps = reply.value("stepList").toList();
+        QStringList lines;
+        for (const QVariant& s : steps)
+            lines << s.toMap().value("kind").toString() + " " + s.toMap().value("target").toString() + " [" + s.toMap().value("state").toString() + "] " + s.toMap().value("note").toString().left(60);
+        QFile page(m_dir.filePath("realpage/index.html"));
+        const qint64 size = page.exists() ? page.size() : -1;
+        fprintf(stderr, "REAL PAGE: %lld s, error=%s, index.html=%lld bytes\nSTEPS:\n%s\nANSWER: %s\n", clock.elapsed() / 1000, qPrintable(reply.value("errorCode").toString()), size,
+                qPrintable(lines.join("\n")), qPrintable(reply.value("text").toString().left(300)));
+        QVERIFY2(size > 0, "no index.html was written");
+    }
     void realLocalAgentUsesTools()
     {
         if (qEnvironmentVariable("DM_TEST_REAL_LLM") != QLatin1String("1"))

@@ -8,6 +8,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QRegularExpression>
 
 namespace dm::ai {
 
@@ -44,8 +45,16 @@ QJsonArray controlSpecs(bool commands, bool plan)
                                          "every time, so run only what the job needs (build, test, git status, dir) and never anything that deletes or changes things outside the job. "
                                          "No input is possible: the command must not ask questions."),
                           QJsonObject{{"command", QJsonObject{{"type", "string"}, {"description", QStringLiteral("the command line")}}},
-                                      {"timeout_seconds", QJsonObject{{"type", "integer"}, {"description", QStringLiteral("limit in seconds, default 60, at most 300")}}}},
+                                      {"timeout_seconds", QJsonObject{{"type", "integer"}, {"description", QStringLiteral("limit in seconds, default 60, at most 300 (not for a background command)")}}},
+                                      {"background", QJsonObject{{"type", "boolean"}, {"description", QStringLiteral("true for a command that runs for a long time or for ever (a server, a watcher, a long build): "
+                                                                                                                     "it starts and you go on; read its output with command_output, stop it with stop_command")}}}},
                           {QStringLiteral("command")}));
+    if (commands) {
+        a.append(toolSpec("command_output", QStringLiteral("Shows what a background command (task) has written so far and whether it still runs."),
+                          QJsonObject{{"task_id", QJsonObject{{"type", "integer"}, {"description", QStringLiteral("the number that run_command gave")}}}}, {QStringLiteral("task_id")}));
+        a.append(toolSpec("stop_command", QStringLiteral("Stops a background command (task) that you started."),
+                          QJsonObject{{"task_id", QJsonObject{{"type", "integer"}, {"description", QStringLiteral("the number that run_command gave")}}}}, {QStringLiteral("task_id")}));
+    }
     if (plan)
         a.append(toolSpec("exit_plan_mode",
                           QStringLiteral("Call this when your plan is ready. The user reads it and approves it (then you may change files and run commands) or asks you to revise it. "
@@ -106,6 +115,9 @@ QString LocalAgent::start(const Config& c)
     ++m_generation;
     m_waiting = false;
     m_onAnswer = nullptr;
+    m_afterCalls.clear();
+    m_lastResultError = false;
+    m_salvages = 0;
     m_cancelled = false;
     m_wroteText = false;
     m_running = true;
@@ -121,9 +133,11 @@ void LocalAgent::cancel()
     m_waiting = false;
     m_onAnswer = nullptr;
     m_web->cancel();
-    if (m_runner && m_runner->running()) {
+    if (m_foregroundTask > 0) {                            // the command that the job waits for is killed (background tasks go on: the page lists them, the user stops them)
         ++m_generation;                                    // the answer of the killed command is not wanted
-        m_runner->cancel();
+        if (m_pool)
+            m_pool->stop(m_foregroundTask);
+        m_foregroundTask = 0;
     }
     if (m_reply)
         m_reply->abort();
@@ -148,6 +162,10 @@ void LocalAgent::step()
     if (m_files)
         for (const QJsonValue& v : controlSpecs(m_config.allowCommands, m_config.planMode))
             tools.append(v);
+    // a background command ended while the model worked (or between two questions): it is told, with the end of the output
+    for (const QString& n : std::as_const(m_taskNotes))
+        m_messages.append(QJsonObject{{"role", "user"}, {"content", n}});
+    m_taskNotes.clear();
     // keep the conversation inside the window of the server (a long job reads many files and writes many pieces)
     m_toolTokens = qint64(QJsonDocument(tools).toJson(QJsonDocument::Compact).size()) * 2 / 5;
     const qint64 room = m_config.contextTokens - (m_config.maxTokens > 0 ? m_config.maxTokens : 2048) - 1024;
@@ -158,7 +176,9 @@ void LocalAgent::step()
         m_compacted = true;
         note(QStringLiteral("Made room: older results were shortened (read a file again if you need it)"));
     }
-    QJsonObject body{{"model", m_config.model}, {"messages", m_messages}, {"tools", tools}, {"stream", false},
+    // The answer is read as a stream: the page shows what is being written while it is written (a slow model needs minutes for a long answer), a tool call that
+    // grows too long is stopped at once, and the part of a file that was written is not lost.
+    QJsonObject body{{"model", m_config.model}, {"messages", m_messages}, {"tools", tools}, {"stream", true}, {"stream_options", QJsonObject{{"include_usage", true}}},
                      {"chat_template_kwargs", QJsonObject{{"enable_thinking", m_config.thinking}}}};
     if (m_config.maxTokens > 0)
         body["max_tokens"] = m_config.maxTokens;
@@ -166,9 +186,146 @@ void LocalAgent::step()
     req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
     if (!m_config.apiKey.isEmpty())
         req.setRawHeader("Authorization", "Bearer " + m_config.apiKey.toUtf8());
-    req.setTransferTimeout(600000);                          // a long page on a slow processor
+    req.setTransferTimeout(600000);                          // no data for ten minutes (a long prompt on a slow processor)
+    m_stream = Stream();
+    m_stream.progress.start();
     m_reply = m_net->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(m_reply, &QNetworkReply::readyRead, this, &LocalAgent::onReadyRead);
     connect(m_reply, &QNetworkReply::finished, this, &LocalAgent::onReply);
+    emit generating(QStringLiteral("waiting"), {}, {}, 0);   // the prompt is being read
+}
+
+// ---- the streamed answer -------------------------------------------------------------------------------------------------------------------
+static constexpr int kMaxToolArgChars = 14000;               // a tool call longer than this (a whole big file in one call) is stopped: it is written in parts
+
+static QString argumentTarget(const QString& tool, const QString& args)
+{
+    const QRegularExpression re(tool == QLatin1String("run_command") ? QStringLiteral("\"command\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"")
+                                                                      : QStringLiteral("\"path\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\""));
+    const QRegularExpressionMatch m = re.match(args);
+    if (!m.hasMatch())
+        return {};
+    return QJsonDocument::fromJson(QByteArray("[\"") + m.captured(1).toUtf8() + "\"]").array().first().toString().left(160);
+}
+
+void LocalAgent::reportProgress(bool force)
+{
+    QString phase, tool, target;
+    int chars = 0;
+    if (!m_stream.calls.isEmpty()) {
+        const StreamCall& c = m_stream.calls.last();
+        phase = QStringLiteral("tool");
+        tool = c.name;
+        target = argumentTarget(c.name, c.args);
+        chars = int(c.args.size());
+    } else if (m_stream.contentStarted) {
+        phase = QStringLiteral("writing");
+        chars = int(m_stream.content.size());
+    } else if (m_stream.reasoningChars > 0) {
+        phase = QStringLiteral("thinking");
+        chars = int(m_stream.reasoningChars);
+    } else {
+        return;
+    }
+    const QString key = phase + QLatin1Char('|') + tool;
+    const bool changed = key != m_stream.lastPhase;                     // a new phase (or a new tool) is shown at once, the growing number every 250 ms
+    if (!force && !changed && m_stream.progress.isValid() && m_stream.progress.elapsed() < 250)
+        return;
+    m_stream.lastPhase = key;
+    m_stream.progress.restart();
+    emit generating(phase, tool, target, chars);
+}
+
+void LocalAgent::processEvent(const QByteArray& event)
+{
+    for (const QByteArray& rawLine : event.split('\n')) {
+        QByteArray line = rawLine.trimmed();
+        if (!line.startsWith("data:"))
+            continue;
+        line = line.mid(5).trimmed();
+        if (line.isEmpty() || line == "[DONE]")
+            continue;
+        const QJsonObject obj = QJsonDocument::fromJson(line).object();
+        if (obj.contains(QLatin1String("error"))) {
+            const QJsonValue e = obj.value(QLatin1String("error"));
+            m_stream.error = e.isObject() ? e.toObject().value(QLatin1String("message")).toString() : e.toString();
+            if (m_stream.error.isEmpty())
+                m_stream.error = QStringLiteral("error");
+            continue;
+        }
+        if (obj.contains(QLatin1String("usage")))
+            m_stream.usage = obj.value(QLatin1String("usage")).toObject();
+        const QJsonArray choices = obj.value(QLatin1String("choices")).toArray();
+        if (choices.isEmpty())
+            continue;
+        const QJsonObject choice = choices.first().toObject();
+        const QJsonObject delta = choice.value(QLatin1String("delta")).toObject();
+        const QString text = delta.value(QLatin1String("content")).toString();
+        if (!text.isEmpty()) {
+            if (!m_stream.contentStarted) {
+                m_stream.content += text;                                   // white space at the start waits for the first real character
+                if (!m_stream.content.trimmed().isEmpty()) {
+                    m_stream.contentStarted = true;
+                    if (m_wroteText && !m_joinNext)
+                        emit piece(QStringLiteral("\n\n"));
+                    m_joinNext = false;
+                    m_wroteText = true;
+                    QString first = m_stream.content;
+                    first.remove(QRegularExpression(QStringLiteral("^\\s+")));
+                    emit piece(first);
+                }
+            } else {
+                m_stream.content += text;
+                emit piece(text);
+            }
+        }
+        m_stream.reasoningChars += delta.value(QLatin1String("reasoning_content")).toString().size() + delta.value(QLatin1String("reasoning")).toString().size();
+        const QJsonArray tcs = delta.value(QLatin1String("tool_calls")).toArray();
+        for (int i = 0; i < tcs.size(); ++i) {
+            const QJsonObject tc = tcs.at(i).toObject();
+            StreamCall& call = m_stream.calls[tc.contains(QLatin1String("index")) ? tc.value(QLatin1String("index")).toInt() : i];
+            if (!tc.value(QLatin1String("id")).toString().isEmpty())
+                call.id = tc.value(QLatin1String("id")).toString();
+            const QJsonObject fn = tc.value(QLatin1String("function")).toObject();
+            if (!fn.value(QLatin1String("name")).toString().isEmpty())
+                call.name = fn.value(QLatin1String("name")).toString();
+            call.args += fn.value(QLatin1String("arguments")).toString();
+            if (call.args.size() > kMaxToolArgChars)
+                m_stream.abortedLong = true;
+        }
+        const QJsonValue fr = choice.value(QLatin1String("finish_reason"));
+        if (fr.isString() && !fr.toString().isEmpty())
+            m_stream.finish = fr.toString();
+        if (m_stream.abortedLong)
+            return;
+    }
+}
+
+void LocalAgent::onReadyRead()
+{
+    if (!m_reply)
+        return;
+    QByteArray chunk = m_reply->readAll();
+    if (m_stream.raw.size() < 2000000)
+        m_stream.raw += chunk;
+    const int status = m_reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    m_stream.sse = m_reply->header(QNetworkRequest::ContentTypeHeader).toString().contains(QLatin1String("event-stream"), Qt::CaseInsensitive) && status < 400;
+    if (!m_stream.sse || m_stream.abortedLong)
+        return;
+    chunk.replace("\r\n", "\n");
+    m_stream.pending += chunk;
+    int at;
+    while (!m_stream.abortedLong && (at = m_stream.pending.indexOf("\n\n")) >= 0) {
+        const QByteArray event = m_stream.pending.left(at);
+        m_stream.pending.remove(0, at + 2);
+        processEvent(event);
+    }
+    if (m_stream.abortedLong) {
+        reportProgress(true);
+        m_reply->abort();                                       // the call is too long: no need to wait for the rest
+        return;
+    }
+    reportProgress(false);
 }
 
 void LocalAgent::onReply()
@@ -177,16 +334,64 @@ void LocalAgent::onReply()
     if (!reply)
         return;
     m_reply = nullptr;
-    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     const QByteArray data = reply->readAll();
     const QNetworkReply::NetworkError error = reply->error();
     const QString errorString = reply->errorString();
+    const bool eventStream = reply->header(QNetworkRequest::ContentTypeHeader).toString().contains(QLatin1String("event-stream"), Qt::CaseInsensitive) && status < 400;
     reply->deleteLater();
+    emit generating({}, {}, {}, 0);                                   // the answer is complete
     if (m_cancelled) {
         end(false, QStringLiteral("cancelled"), {});
         return;
     }
-    const QJsonObject root = QJsonDocument::fromJson(data).object();
+    QJsonObject root;
+    bool cutError = false;                                            // the server said that it could not read a tool call (it was cut)
+    if (eventStream) {                                                // the answer was read as a stream: put it together
+        m_stream.sse = true;
+        if (m_stream.raw.size() < 2000000)
+            m_stream.raw += data;
+        if (!m_stream.abortedLong) {                                  // what came with the end, and an event that has no blank line after it
+            QByteArray tail = data;
+            tail.replace("\r\n", "\n");
+            m_stream.pending += tail;
+            int at;
+            while (!m_stream.abortedLong && (at = m_stream.pending.indexOf("\n\n")) >= 0) {
+                const QByteArray event = m_stream.pending.left(at);
+                m_stream.pending.remove(0, at + 2);
+                processEvent(event);
+            }
+            if (!m_stream.abortedLong && !m_stream.pending.trimmed().isEmpty())
+                processEvent(m_stream.pending);
+        }
+        QJsonArray callsArray;
+        int n = 0;
+        for (auto it = m_stream.calls.constBegin(); it != m_stream.calls.constEnd(); ++it) {
+            if (it.value().name.isEmpty())
+                continue;
+            callsArray.append(QJsonObject{{"id", it.value().id.isEmpty() ? QStringLiteral("call_%1").arg(++n) : it.value().id}, {"type", "function"},
+                                          {"function", QJsonObject{{"name", it.value().name}, {"arguments", it.value().args}}}});
+        }
+        const QString text = m_stream.content.trimmed();
+        QJsonObject msg{{"role", "assistant"}};
+        msg["content"] = text.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(text);
+        if (!callsArray.isEmpty())
+            msg["tool_calls"] = callsArray;
+        root = QJsonObject{{"choices", QJsonArray{QJsonObject{{"message", msg}, {"finish_reason", m_stream.abortedLong ? QStringLiteral("length") : m_stream.finish}}}},
+                           {"usage", m_stream.usage}};
+        if (!m_stream.error.isEmpty()) {
+            if (m_stream.error.contains(QLatin1String("tool call"), Qt::CaseInsensitive) && !callsArray.isEmpty()) {
+                cutError = true;                                      // a cut tool call: go on with the pieces that arrived
+            } else if (text.isEmpty() && callsArray.isEmpty()) {
+                status = 500;                                         // an error in the stream: the same as an error answer
+                root = QJsonObject{{"error", QJsonObject{{"message", m_stream.error}}}};
+            }
+        }
+    } else {
+        if (m_stream.raw.size() < 2000000)
+            m_stream.raw += data;
+        root = QJsonDocument::fromJson(m_stream.raw).object();
+    }
     if (status >= 400) {
         const QString message = root.value(QLatin1String("error")).toObject().value(QLatin1String("message")).toString();
         // The model's answer was cut off in the middle of a tool call (a long file does not fit in max_tokens), so the server could not read
@@ -196,8 +401,8 @@ void LocalAgent::onReply()
             note(QStringLiteral("The answer was too long and was cut off: asking again for a shorter one"));
             m_messages.append(QJsonObject{{"role", "user"},
                                           {"content", QStringLiteral("Your last tool call was cut off because it was too long, so nothing was done. Make it much shorter: write "
-                                                                     "a big file in parts - first create a small file with write_file (under about 80 lines, no long comments), then "
-                                                                     "add each further part with edit_file. Do not repeat the long text.")}});
+                                                                     "a big file in parts - first create it with write_file (under about 80 lines, no long comments), then "
+                                                                     "add each further part with append_file. Do not repeat the long text.")}});
             step();
             return;
         }
@@ -214,7 +419,7 @@ void LocalAgent::onReply()
         end(false, QStringLiteral("http%1").arg(status), message);
         return;
     }
-    if (error != QNetworkReply::NoError) {
+    if (error != QNetworkReply::NoError && !m_stream.abortedLong) {
         end(false, QStringLiteral("network"), errorString);
         return;
     }
@@ -228,15 +433,17 @@ void LocalAgent::onReply()
         return;
     }
     const QString content = message.value(QLatin1String("content")).toString().trimmed();
-    const QJsonArray calls = message.value(QLatin1String("tool_calls")).toArray();
+    QJsonArray calls = message.value(QLatin1String("tool_calls")).toArray();
     const bool cutByLength = choice.value(QLatin1String("finish_reason")).toString() == QLatin1String("length");
-    if (!content.isEmpty()) {
+    if (!m_stream.sse && !content.isEmpty()) {                         // (a streamed answer was shown piece by piece while it came)
         if (m_wroteText && !m_joinNext)
             emit piece(QStringLiteral("\n\n"));
         emit piece(content);
         m_wroteText = true;
         m_joinNext = false;
     }
+    if (!calls.isEmpty() && handleBrokenCalls(&calls, content, cutByLength || m_stream.abortedLong || cutError))
+        return;
     if (calls.isEmpty()) {
         // ---- finishing: the job is done only when the model says so AND nothing it promised is left ----
         if (cutByLength && m_continues < 8) {                  // a long answer hit max_tokens: let it go on where it stopped
@@ -279,6 +486,142 @@ void LocalAgent::onReply()
     runNextCall();
 }
 
+// The text of a (possibly cut) "content" string of a write_file / append_file call, decoded: `rawArguments` may end anywhere. `complete` = the string was closed
+// (nothing was cut). Needs the path (it comes first in the call) and some text. A cut text is taken back to its last complete line.
+bool LocalAgent::salvageWrite(const QString& rawArguments, QString* path, QString* text, bool* complete)
+{
+    auto decode = [](const QString& escaped) { return QJsonDocument::fromJson(QByteArray("[\"") + escaped.toUtf8() + "\"]").array().first().toString(); };
+    const QRegularExpressionMatch pm = QRegularExpression(QStringLiteral("\"path\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"")).match(rawArguments);
+    const QRegularExpressionMatch cm = QRegularExpression(QStringLiteral("\"content\"\\s*:\\s*\"")).match(rawArguments);
+    if (!pm.hasMatch() || !cm.hasMatch())
+        return false;
+    const QString p = decode(pm.captured(1)).trimmed();
+    if (p.isEmpty())
+        return false;
+    QString body;                                                      // the raw (still escaped) characters of the string, up to its closing quote
+    bool closed = false;
+    for (qsizetype i = cm.capturedEnd(); i < rawArguments.size(); ++i) {
+        const QChar c = rawArguments.at(i);
+        if (c == QLatin1Char('\\')) {
+            if (i + 1 >= rawArguments.size())
+                break;                                                 // an escape that was cut in the middle
+            const QChar n = rawArguments.at(i + 1);
+            if (n == QLatin1Char('u')) {
+                if (i + 5 >= rawArguments.size())
+                    break;                                             // a \uXXXX that was cut
+                body += rawArguments.mid(i, 6);
+                i += 5;
+            } else {
+                body += c;
+                body += n;
+                ++i;
+            }
+            continue;
+        }
+        if (c == QLatin1Char('"')) {
+            closed = true;
+            break;
+        }
+        body += c;
+    }
+    QString t = decode(body);
+    if (!closed && t.contains(QLatin1Char('\n')))
+        t = t.left(t.lastIndexOf(QLatin1Char('\n')) + 1);              // the last line may be cut: it is written again in the next part
+    if (t.trimmed().size() < 20)
+        return false;
+    *path = p;
+    *text = t;
+    *complete = closed;
+    return true;
+}
+
+// The commands of this agent are tasks of a pool (the page lists them). The channel gives its own pool, so that the tasks outlive a job; without one the agent
+// makes its own. A background task that ends is announced to the model at its next request.
+void LocalAgent::setPool(CommandPool* pool)
+{
+    if (m_pool == pool)
+        return;
+    m_pool = pool;
+    if (m_pool)
+        connect(m_pool, &CommandPool::finished, this, [this](int id) {
+            if (!m_bgTasks.contains(id))
+                return;
+            const QVariantMap info = m_pool->info(id);
+            QString out = m_pool->output(id);
+            if (out.size() > 1200)
+                out = QStringLiteral("...") + out.right(1200);
+            m_taskNotes << QStringLiteral("The background task %1 (%2) has ended: %3. What it wrote last:\n%4")
+                               .arg(id).arg(info.value("title").toString(), info.value("state").toString() + (info.value("note").toString().isEmpty() ? QString() : QStringLiteral(" - ") + info.value("note").toString()),
+                                    out.isEmpty() ? QStringLiteral("(nothing)") : out);
+        });
+}
+
+CommandPool* LocalAgent::pool()
+{
+    if (!m_pool)
+        setPool(new CommandPool(this));
+    return m_pool;
+}
+
+bool LocalAgent::handleBrokenCalls(QJsonArray* calls, const QString& content, bool cut)
+{
+    bool broken = false, kept = false;
+    QString path, tool;
+    qsizetype keptChars = 0;
+    QString keptTail;
+    for (int i = 0; i < calls->size(); ++i) {
+        QJsonObject call = calls->at(i).toObject();
+        QJsonObject fn = call.value(QLatin1String("function")).toObject();
+        const QJsonValue av = fn.value(QLatin1String("arguments"));
+        if (!av.isString() || av.toString().trimmed().isEmpty() || QJsonDocument::fromJson(av.toString().toUtf8()).isObject())
+            continue;                                                  // the arguments are fine
+        broken = true;
+        const QString name = fn.value(QLatin1String("name")).toString();
+        QString p, t;
+        bool complete = false;
+        if ((name == QLatin1String("write_file") || name == QLatin1String("append_file")) && m_salvages < 60 && salvageWrite(av.toString(), &p, &t, &complete)) {
+            fn["arguments"] = QString::fromUtf8(QJsonDocument(QJsonObject{{"path", p}, {"content", t}}).toJson(QJsonDocument::Compact));
+            call["function"] = fn;
+            calls->replace(i, call);
+            if (!complete) {                                           // a cut part: it is saved, the model writes the rest with append_file
+                kept = true;
+                path = p;
+                tool = name;
+                keptChars = t.size();
+                keptTail = t.right(200);
+                ++m_salvages;
+            }
+        }
+    }
+    if (!broken)
+        return false;
+    if (kept) {
+        note(QStringLiteral("The answer was too long: the part that was written is kept, the rest is added in parts"));
+        m_afterCalls = QStringLiteral("Your %1 call was cut off because one answer may not be that long (it was stopped after about %2 characters). The part up to the last complete "
+                                      "line was saved in %3; the file now ends with:\n<<<\n%4\n>>>\nContinue the SAME file now with append_file (path and content): add only the "
+                                      "next part, at most about 100 lines, starting exactly after the text above and without repeating anything. Repeat until the file is complete, "
+                                      "then say that you are done.").arg(tool).arg(keptChars).arg(path, keptTail);
+        return false;                                                  // the kept part is written like any other call
+    }
+    if (!cut)
+        return false;                                                  // not cut, only wrong: the model is told by the tool result
+    // cut, and nothing of it can be kept: ask for something shorter
+    if (m_parseRetries < 3) {
+        ++m_parseRetries;
+        note(QStringLiteral("The answer was too long and was cut off: asking again for a shorter one"));
+        if (!content.isEmpty())
+            m_messages.append(QJsonObject{{"role", "assistant"}, {"content", content}});
+        m_messages.append(QJsonObject{{"role", "user"},
+                                      {"content", QStringLiteral("Your last tool call was cut off because it was too long, so nothing was done. Make it much shorter: write a big file in "
+                                                                 "parts - first create it with write_file (the first 100 lines at most, no long comments), then add each further part "
+                                                                 "with append_file. Do not repeat the long text.")}});
+        step();
+        return true;
+    }
+    end(false, QStringLiteral("cutOff"), {});
+    return true;
+}
+
 void LocalAgent::runNextCall()
 {
     if (m_cancelled) {
@@ -286,6 +629,11 @@ void LocalAgent::runNextCall()
         return;
     }
     if (m_callIndex >= m_calls.size()) {
+        if (!m_afterCalls.isEmpty()) {                                 // after a kept (cut) write: where to go on
+            if (!m_lastResultError)
+                m_messages.append(QJsonObject{{"role", "user"}, {"content", m_afterCalls}});
+            m_afterCalls.clear();
+        }
         step();
         return;
     }
@@ -313,15 +661,19 @@ void LocalAgent::runNextCall()
         else if (name == QLatin1String("glob_files")) { kind = QStringLiteral("glob"); target = args.value(QLatin1String("pattern")).toString(); }
         else if (name == QLatin1String("edit_file")) { kind = QStringLiteral("edit"); target = args.value(QLatin1String("path")).toString(); }
         else if (name == QLatin1String("write_file")) { kind = QStringLiteral("write"); target = args.value(QLatin1String("path")).toString(); }
+        else if (name == QLatin1String("append_file")) { kind = QStringLiteral("append"); target = args.value(QLatin1String("path")).toString(); }
         else if (name == QLatin1String("run_command")) { kind = QStringLiteral("command"); target = args.value(QLatin1String("command")).toString(); }
         else if (name == QLatin1String("web_search")) { kind = QStringLiteral("websearch"); target = args.value(QLatin1String("query")).toString(); }
         else if (name == QLatin1String("fetch_page")) { kind = QStringLiteral("fetch"); target = args.value(QLatin1String("url")).toString(); }
+        else if (name == QLatin1String("command_output")) { kind = QStringLiteral("taskout"); target = QString::number(args.value(QLatin1String("task_id")).toInt()); }
+        else if (name == QLatin1String("stop_command")) { kind = QStringLiteral("taskstop"); target = QString::number(args.value(QLatin1String("task_id")).toInt()); }
         else if (name == QLatin1String("todo_write")) { kind = QStringLiteral("todo"); }
         else if (name == QLatin1String("exit_plan_mode")) { kind = QStringLiteral("plan"); }
         else { kind = QStringLiteral("other"); target = name; }
         stepStart(kind, target.simplified().left(140));
     }
     auto result = [this, id](const QString& text, bool isError) {
+        m_lastResultError = isError;
         stepEnd(isError ? QStringLiteral("error") : QStringLiteral("done"), text);
         m_messages.append(QJsonObject{{"role", "tool"}, {"tool_call_id", id}, {"content", isError ? QStringLiteral("Error: ") + text : text}});
         runNextCall();
@@ -370,7 +722,8 @@ void LocalAgent::runNextCall()
             return;
         }
     }
-    if (name == QLatin1String("todo_write") || name == QLatin1String("run_command") || name == QLatin1String("exit_plan_mode")) {
+    if (name == QLatin1String("todo_write") || name == QLatin1String("run_command") || name == QLatin1String("exit_plan_mode") || name == QLatin1String("command_output")
+        || name == QLatin1String("stop_command")) {
         if (!m_files) {
             result(QStringLiteral("no folder is chosen, so this tool is not available"), true);
             return;
@@ -380,7 +733,8 @@ void LocalAgent::runNextCall()
     }
     emit activity(AgentTools::describe(name, args));
     if (AgentTools::changesFiles(name) && m_files && m_config.approveWrites) {
-        const AgentTools::WriteInfo info = name == QLatin1String("edit_file") ? m_files->inspectEdit(args) : m_files->inspectWrite(args);
+        const AgentTools::WriteInfo info = name == QLatin1String("edit_file") ? m_files->inspectEdit(args)
+                                           : name == QLatin1String("append_file") ? m_files->inspectAppend(args) : m_files->inspectWrite(args);
         if (!info.ok) {
             result(info.error, true);
             return;
@@ -396,7 +750,8 @@ void LocalAgent::runNextCall()
             result(r.text, r.error);
         };
         stepEnd(QStringLiteral("waiting"), {});
-        emit approvalNeeded(info.path, info.exists, info.bytes, info.preview, name == QLatin1String("edit_file"));
+        emit approvalNeeded(info.path, info.exists, info.bytes, info.preview, name == QLatin1String("edit_file") ? QStringLiteral("edit")
+                                                                               : name == QLatin1String("append_file") ? QStringLiteral("append") : QStringLiteral("write"));
         return;
     }
     if (!m_files) {
@@ -442,26 +797,56 @@ void LocalAgent::runControlCall(const QString& name, const QJsonObject& args, co
             return;
         }
         const int seconds = args.value(QLatin1String("timeout_seconds")).toInt(CommandRunner::kDefaultSeconds);
+        const bool background = args.value(QLatin1String("background")).toBool();
         const QString folder = m_config.folder;
         const int gen = m_generation;
-        m_waiting = true;                                  // EVERY command waits for the user
-        m_onAnswer = [this, command, seconds, folder, gen, result](bool allow) {
+        m_waiting = true;                                  // EVERY command waits for the user (a background one too)
+        m_onAnswer = [this, command, seconds, background, folder, gen, result](bool allow) {
             if (!allow) {
                 result(QStringLiteral("the user did not allow this command; do not try it again, say what you wanted to do"), true);
                 return;
             }
             stepEnd(QStringLiteral("running"), {});
-            if (!m_runner)
-                m_runner = new CommandRunner(this);
-            const bool started = m_runner->run(folder, command, seconds, [this, gen, result](const QString& text, bool error) {
-                if (gen == m_generation)
-                    result(text, error);
+            const int id = pool()->start(folder, command, seconds, background, [this, gen, result](const QString& text, bool error) {
+                if (gen != m_generation)
+                    return;                                // the job was stopped: nobody waits for this answer
+                m_foregroundTask = 0;
+                result(text, error);
             });
-            if (!started)
-                result(QStringLiteral("another command is still running"), true);
+            if (id == 0) {
+                result(QStringLiteral("too many commands are running (at most %1 at the same time): stop one first (stop_command)").arg(CommandPool::kMaxRunning), true);
+                return;
+            }
+            m_myTasks.insert(id);
+            if (background)
+                m_bgTasks.insert(id);
+            else
+                m_foregroundTask = id;
         };
         stepEnd(QStringLiteral("waiting"), {});
         emit commandApprovalNeeded(command);
+        return;
+    }
+    if (name == QLatin1String("command_output") || name == QLatin1String("stop_command")) {
+        const int id = args.value(QLatin1String("task_id")).toInt();
+        emit activity(QStringLiteral("Task %1").arg(id));
+        if (!m_config.allowCommands || !pool()->known(id) || !m_myTasks.contains(id)) {
+            result(QStringLiteral("there is no task %1 of yours (the tasks are the ones that run_command started)").arg(id), true);
+            return;
+        }
+        const QVariantMap info = pool()->info(id);
+        if (name == QLatin1String("stop_command")) {
+            if (pool()->stop(id))
+                result(QStringLiteral("task %1 was stopped").arg(id), false);
+            else
+                result(QStringLiteral("task %1 is not running (%2)").arg(id).arg(info.value("state").toString()), true);
+            return;
+        }
+        const QString out = pool()->output(id);
+        result(QStringLiteral("task %1 (%2): %3%4\n%5").arg(id).arg(info.value("title").toString(), info.value("state").toString(),
+                                                            info.value("note").toString().isEmpty() ? QString() : QStringLiteral(" - ") + info.value("note").toString(),
+                                                            out.isEmpty() ? QStringLiteral("(no output yet)") : out),
+               false);
         return;
     }
     // exit_plan_mode

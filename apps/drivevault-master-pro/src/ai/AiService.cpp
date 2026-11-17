@@ -91,11 +91,70 @@ AiChannel::AiChannel(const QString& mode, AiService* service)
     m_viewTimer->setSingleShot(true);
     m_viewTimer->setInterval(60);
     connect(m_viewTimer, &QTimer::timeout, this, &AiChannel::messagesChanged);
+    if (isAgent()) {                                               // the commands of the agent are background tasks that the page lists
+        m_pool = new CommandPool(this);
+        connect(m_pool, &CommandPool::changed, this, &AiChannel::tasksChanged);
+        connect(service, &AiService::downloadChanged, this, &AiChannel::tasksChanged);
+    }
 }
 
 AiChannel::~AiChannel()
 {
     cancelRunning();
+}
+
+// ---- background tasks -------------------------------------------------------------------------------------------------------------------
+QVariantList AiChannel::tasks() const
+{
+    QVariantList out;
+    if (m_compacting) {
+        qint64 started = 0;
+        for (const Conversation& c : m_conversations)
+            if (c.id == m_runId && !c.messages.isEmpty())
+                started = c.messages.last().startedMs;
+        out << QVariantMap{{"id", "compact"}, {"kind", "compact"}, {"title", QString()}, {"state", "running"}, {"startedMs", double(started)}, {"endedMs", 0.0}, {"note", QString()},
+                           {"background", true}, {"progress", -1.0}};
+    }
+    if (isAgent() && m_service->downloading())
+        out << QVariantMap{{"id", "download"}, {"kind", "download"}, {"title", m_service->downloadTitle()}, {"state", "running"}, {"startedMs", 0.0}, {"endedMs", 0.0},
+                           {"note", QString()}, {"background", true}, {"progress", m_service->downloadProgress()}};
+    if (m_pool)
+        for (const QVariant& v : m_pool->list()) {
+            QVariantMap t = v.toMap();
+            t["kind"] = QStringLiteral("command");
+            t["id"] = QStringLiteral("cmd:%1").arg(t.value("id").toInt());
+            t["progress"] = -1.0;
+            out << t;
+        }
+    return out;
+}
+
+bool AiChannel::tasksRunning() const
+{
+    return m_compacting || (isAgent() && m_service->downloading()) || (m_pool && m_pool->runningCount() > 0);
+}
+
+void AiChannel::startDiagnosticTasks()
+{
+    if (!m_pool)
+        return;
+    const QString folder = QDir::tempPath();
+    m_pool->start(folder, QStringLiteral("echo built"), 0, false, [](const QString&, bool) {});
+    m_pool->start(folder, QStringLiteral("dir /b & echo done"), 0, false, [](const QString&, bool) {});
+    m_pool->start(folder, QStringLiteral("ping -n 30 127.0.0.1"), 0, true, [](const QString&, bool) {});
+    m_pool->start(folder, QStringLiteral("npm run dev"), 0, true, [](const QString&, bool) {});      // not installed: it ends with an error, which the list shows too
+}
+
+void AiChannel::stopTask(const QString& id)
+{
+    if (id == QLatin1String("compact")) {
+        if (m_compacting)
+            stop();
+    } else if (id == QLatin1String("download")) {
+        m_service->cancelDownload();
+    } else if (id.startsWith(QLatin1String("cmd:")) && m_pool) {
+        m_pool->stop(id.mid(4).toInt());
+    }
 }
 
 // The folder dialog gives a file: address; the agent needs a path. (QDir::cleanPath would first squeeze "file:///" to "file:/", so convert before cleaning.)
@@ -139,7 +198,7 @@ QVariantList AiChannel::messages() const
             out.append(QVariantMap{{"role", m.role}, {"text", m.text}, {"streaming", m.streaming}, {"stopped", m.stopped}, {"errorCode", m.errorCode},
                                    {"errorDetail", m.errorDetail}, {"activity", m.activity}, {"approval", m.approval},
                                    {"startedMs", double(m.startedMs)}, {"durationMs", double(m.durationMs)}, {"steps", m.steps}, {"stepList", m.stepList},
-                                   {"compact", m.compact}, {"summary", m.summary}, {"tokensBefore", m.tokensBefore}, {"tokensAfter", m.tokensAfter}});
+                                   {"live", m.live}, {"compact", m.compact}, {"summary", m.summary}, {"tokensBefore", m.tokensBefore}, {"tokensAfter", m.tokensAfter}});
         }
     }
     return out;
@@ -377,7 +436,7 @@ void AiChannel::sendTools()
         if (isAgent()) {
             QString tools = QStringLiteral("list_files, read_file, search_text, glob_files, todo_write");
             if (c.allowEdits)
-                tools += QStringLiteral(", edit_file, write_file");
+                tools += QStringLiteral(", edit_file, write_file, append_file");
             if (c.allowCommands)
                 tools += QStringLiteral(", run_command");
             if (c.planMode)
@@ -400,8 +459,9 @@ void AiChannel::sendTools()
                        + (c.allowCommands ? QStringLiteral(" or run the build or test") : QString())
                        + QStringLiteral(". (5) Do not stop and do not ask the user questions unless you are really blocked: go on until the whole job is done, then give a short summary of "
                                         "what you did and what you checked. (6) A tool error is information: read it, fix the cause and take another way; never repeat a call that failed. "
-                                        "(7) Your answer has a length limit and a longer one is cut off and lost: keep every write_file under about 150 lines and build a big file in parts "
-                                        "(a first small version with write_file, then edit_file for each further part). A long file is read in parts (start_line). "
+                                        "(7) Your answer has a length limit and a longer one is cut off and lost: keep every write_file and append_file under about 100 lines and build a big file in "
+                                        "parts: the first part with write_file, then each next part with append_file (each starts exactly where the file ends); edit_file changes what is "
+                                        "already in a file. A long file is read in parts (start_line). "
                                         "(8) To save room, old tool results in this conversation may be shortened: read the file again when you need its text. ")
                        + (c.allowCommands ? QStringLiteral("run_command runs on the user's PC with the user's permissions: use it only for what the job needs (build, test, git status, dir) "
                                                            "and never to delete, install or reinstall anything that was not asked for. ") : QString())
@@ -423,9 +483,22 @@ void AiChannel::sendTools()
         c.system += summaryNote();                                 // a compacted conversation: what happened before, in the model's own summary
         if (!m_localAgent) {
             m_localAgent = new LocalAgent(m_service->net(), this);
+            if (m_pool)
+                m_localAgent->setPool(m_pool);                                // its commands are the tasks of the page
             connect(m_localAgent, &LocalAgent::piece, this, &AiChannel::appendPiece);
             connect(m_localAgent, &LocalAgent::activity, this, &AiChannel::appendActivity);
             connect(m_localAgent, &LocalAgent::stepEvent, this, &AiChannel::onStep);
+            connect(m_localAgent, &LocalAgent::generating, this, [this](const QString& phase, const QString& tool, const QString& target, int chars) {   // the live line
+                Conversation* conv = find(m_runId);
+                if (!conv || conv->messages.isEmpty())
+                    return;
+                Message& m = conv->messages.last();
+                if (phase.isEmpty())
+                    m.live.clear();
+                else
+                    m.live = QVariantMap{{"phase", phase}, {"tool", tool}, {"target", target}, {"chars", chars}};
+                scheduleView();
+            });
             connect(m_localAgent, &LocalAgent::usage, this, [this](int prompt, int completion) {          // what the server counted: the context meter of the page
                 if (Conversation* conv = find(m_runId)) {
                     conv->usedTokens = prompt + completion;
@@ -440,8 +513,9 @@ void AiChannel::sendTools()
                     emit messagesChanged();
                 }
             };
-            connect(m_localAgent, &LocalAgent::approvalNeeded, this, [ask](const QString& path, bool replaces, qint64 bytes, const QString& preview, bool diff) {
-                ask(QVariantMap{{"kind", "change"}, {"path", path}, {"replaces", replaces}, {"bytes", double(bytes)}, {"preview", preview}, {"diff", diff}});
+            connect(m_localAgent, &LocalAgent::approvalNeeded, this, [ask](const QString& path, bool replaces, qint64 bytes, const QString& preview, const QString& operation) {
+                ask(QVariantMap{{"kind", "change"}, {"path", path}, {"replaces", replaces}, {"bytes", double(bytes)}, {"preview", preview}, {"op", operation},
+                                {"diff", operation == QLatin1String("edit")}});
             });
             connect(m_localAgent, &LocalAgent::commandApprovalNeeded, this, [ask](const QString& command) { ask(QVariantMap{{"kind", "command"}, {"command", command}}); });
             connect(m_localAgent, &LocalAgent::planApprovalNeeded, this, [ask](const QString& plan) { ask(QVariantMap{{"kind", "plan"}, {"plan", plan}}); });
@@ -533,6 +607,7 @@ void AiChannel::finish(bool ok, const QString& code, const QString& detail)
         Message& m = c->messages.last();
         m.streaming = false;
         m.approval.clear();
+        m.live.clear();
         if (m.startedMs > 0)
             m.durationMs = qMax<qint64>(1, QDateTime::currentMSecsSinceEpoch() - m.startedMs);
         for (int i = 0; i < m.stepList.size(); ++i) {              // a step that never ended (stopped, an error): it is not "running" for ever
@@ -1007,6 +1082,7 @@ void AiChannel::startCompaction(const QString& focus, bool automatic, const QStr
     m_compacting = true;
     m_pendingText = pendingText;
     setBusy(true, QStringLiteral("compacting"));
+    emit tasksChanged();
     emit messagesChanged();
     emit conversationsChanged();
     saveConversations();
@@ -1047,6 +1123,7 @@ void AiChannel::finishCompaction(bool ok, const QString& summary, const QString&
         c->updated = QDateTime::currentMSecsSinceEpoch();
     }
     setBusy(false);
+    emit tasksChanged();
     emit messagesChanged();
     emit conversationsChanged();
     emit contextChanged();

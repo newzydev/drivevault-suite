@@ -25,10 +25,11 @@ public:
     static constexpr int kMaxOutput = 8000;                            // characters handed back to the model
 
     using Done = std::function<void(const QString& text, bool error)>;
-    // false (and `done` not called) when one is already running
+    // false (and `done` not called) when one is already running. seconds: 0 = the default limit, a negative number = no limit (a background task: a server, a watcher)
     bool run(const QString& folder, const QString& command, int seconds, Done done);
     void cancel();                                                     // kills the command; `done` is called with "stopped"
     bool running() const { return m_process != nullptr; }
+    QString liveOutput() const;                                        // what the command has written so far (cut like the final answer), also while it runs
 
     static QString cut(const QString& output);                         // pure, tested: the beginning and the end when it is too long
 

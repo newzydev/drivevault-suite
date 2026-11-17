@@ -67,8 +67,13 @@ QJsonArray AgentTools::specs() const
                                   {"new_string", prop("string", QStringLiteral("the text that replaces it"))},
                                   {"replace_all", prop("boolean", QStringLiteral("replace every occurrence (default false)"))}},
                       {QStringLiteral("path"), QStringLiteral("old_string"), QStringLiteral("new_string")}));
-        a.append(tool("write_file", QStringLiteral("Creates a text file or replaces its whole content (relative path). A replaced file is saved to .drivevault-backup first."),
+        a.append(tool("write_file", QStringLiteral("Creates a text file or replaces its whole content (relative path). A replaced file is saved to .drivevault-backup first. "
+                                                   "Your answer has a length limit: for a big file write only the first part (about 100 lines) here and add the rest with append_file."),
                       QJsonObject{{"path", prop("string", QStringLiteral("relative path of the file"))}, {"content", prop("string", QStringLiteral("the whole new content"))}},
+                      {QStringLiteral("path"), QStringLiteral("content")}));
+        a.append(tool("append_file", QStringLiteral("Adds text at the END of a text file (relative path; the file is created when it does not exist). Use it to build a big file in parts: "
+                                                    "write_file for the first part, then append_file for each next part (about 100 lines each), each starting exactly where the file ends."),
+                      QJsonObject{{"path", prop("string", QStringLiteral("relative path of the file"))}, {"content", prop("string", QStringLiteral("the text to add at the end"))}},
                       {QStringLiteral("path"), QStringLiteral("content")}));
     }
     return a;
@@ -87,6 +92,7 @@ QString AgentTools::describe(const QString& name, const QJsonObject& args)
                           : name == QLatin1String("search_text") ? QStringLiteral("Search")
                           : name == QLatin1String("glob_files") ? QStringLiteral("Find files")
                           : name == QLatin1String("edit_file") ? QStringLiteral("Edit")
+                          : name == QLatin1String("append_file") ? QStringLiteral("Append")
                           : name == QLatin1String("write_file") ? QStringLiteral("Write") : name;
     return detail.isEmpty() ? label : label + QStringLiteral(": ") + detail;
 }
@@ -135,6 +141,8 @@ AgentTools::Result AgentTools::run(const QString& name, const QJsonObject& args)
         return writeFile(args);
     if (name == QLatin1String("edit_file"))
         return editFile(args);
+    if (name == QLatin1String("append_file"))
+        return appendFile(args);
     return {QStringLiteral("unknown tool: %1").arg(name), true};
 }
 
@@ -405,6 +413,58 @@ AgentTools::Result AgentTools::editFile(const QJsonObject& args) const
     const bool all = args.value(QLatin1String("replace_all")).toBool();
     return {QStringLiteral("Edited %1 (%2).%3").arg(QDir(m_root).relativeFilePath(path), all ? QStringLiteral("every occurrence") : QStringLiteral("1 place"),
                                                     QStringLiteral(" The old version is saved in .drivevault-backup.")), false};
+}
+
+// ---- append_file: a big file is built in parts ------------------------------------------------------------------------------------------
+AgentTools::WriteInfo AgentTools::inspectAppend(const QJsonObject& args) const
+{
+    WriteInfo w;
+    if (!m_edits) {
+        w.error = QStringLiteral("editing is not allowed in this mode");
+        return w;
+    }
+    const QString content = args.value(QLatin1String("content")).toString();
+    if (content.isEmpty()) {
+        w.error = QStringLiteral("content is empty");
+        return w;
+    }
+    QString err;
+    const QString path = resolve(args.value(QLatin1String("path")).toString(), false, &err);
+    if (path.isEmpty()) {
+        w.error = err;
+        return w;
+    }
+    const QFileInfo info(path);
+    if (info.isDir() || info.fileName().isEmpty() || skippedFolder(info.fileName())) {
+        w.error = QStringLiteral("that name is not allowed");
+        return w;
+    }
+    w.bytes = (info.exists() ? info.size() : 0) + content.toUtf8().size();
+    if (w.bytes > kMaxWrite) {
+        w.error = QStringLiteral("the file would be too long (limit %1 bytes)").arg(kMaxWrite);
+        return w;
+    }
+    w.ok = true;
+    w.path = QDir(m_root).relativeFilePath(path);
+    w.exists = info.exists();
+    w.preview = content.left(800);
+    return w;
+}
+
+AgentTools::Result AgentTools::appendFile(const QJsonObject& args) const
+{
+    const WriteInfo w = inspectAppend(args);
+    if (!w.ok)
+        return {w.error, true};
+    QString err;
+    const QString path = resolve(args.value(QLatin1String("path")).toString(), false, &err);
+    if (path.isEmpty())
+        return {err, true};
+    const QByteArray data = args.value(QLatin1String("content")).toString().toUtf8();
+    QFile f(path);                                                   // only text is added: what was there is never changed, so no backup copy is needed
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Append) || f.write(data) != data.size())
+        return {QStringLiteral("the file could not be written"), true};
+    return {QStringLiteral("Added %1 bytes to %2; the file is now %3 bytes.").arg(data.size()).arg(w.path).arg(w.bytes), false};
 }
 
 // ---- glob_files --------------------------------------------------------------------------------------------------------------------------

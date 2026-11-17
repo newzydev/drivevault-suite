@@ -26,7 +26,10 @@ Item {
             modeMenu.popup(modeChip, 0, -modeMenu.implicitHeight - 6)
         else if (part === "effort")
             effortMenu.popup(effortChip, 0, -effortMenu.implicitHeight - 6)
-        else if (part === "conversation" && ch.conversations.length > 0)       // open the newest saved conversation (to look at its step list and plan)
+        else if (part === "tasks") {                                           // two real harmless commands, to look at the list of background tasks
+            ch.startDiagnosticTasks()
+            tasksOpen = true
+        } else if (part === "conversation" && ch.conversations.length > 0)       // open the newest saved conversation (to look at its step list and plan)
             ch.select(ch.conversations[0].id)
     }
     function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : status === "waiting" ? "ai_waiting" : status === "working" ? "ai_working" : status === "compacting" ? "ai_compacting" : "ai_writing") }
@@ -52,7 +55,21 @@ Item {
     }
     // ---- time: a clock that runs while the AI works, and the time a finished answer took ------------------------------------------------
     property real nowMs: Date.now()
-    Timer { interval: 500; repeat: true; running: root.ch.busy; onTriggered: root.nowMs = Date.now() }
+    Timer { interval: 500; repeat: true; running: root.ch.busy || root.ch.tasksRunning; onTriggered: root.nowMs = Date.now() }
+    property bool tasksOpen: false                          // the list of finished background tasks is open
+    // a short time for a task: 38s, 2m 05s, 1h 03m
+    function fmtShort(ms) {
+        const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60
+        const two = n => (n < 10 ? "0" : "") + n
+        return h > 0 ? h + "h " + two(m) + "m" : m > 0 ? m + "m " + two(r) + "s" : r + "s"
+    }
+    function taskTitle(t) {
+        if (t.kind === "compact")
+            return Tr.s("task_compact")
+        if (t.kind === "download")
+            return Tr.s("task_download").replace("%1", t.title)
+        return t.title + (t.background === true && t.state === "running" ? "   · " + Tr.s("task_bg") : "") + (t.state === "error" && t.note ? "   · " + t.note : "")
+    }
     function fmtDuration(ms) {
         const s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60
         const two = n => (n < 10 ? "0" : "") + n
@@ -229,6 +246,30 @@ Item {
         return t.replace("%1", target)
     }
 
+    // what the AI is doing right now, with the clock: the live line of the answer (reading the prompt, thinking, writing a file with how much is written) or,
+    // before there is one, the status of the page
+    function liveLine(m) {
+        const live = m.live
+        let text = root.statusText(root.ch.status)
+        if (live && live.phase !== undefined) {
+            const n = Number(live.chars).toLocaleString(Qt.locale("en_US"), "f", 0)
+            if (live.phase === "waiting")
+                text = Tr.s("live_waiting")
+            else if (live.phase === "thinking")
+                text = Tr.s("live_thinking").replace("%1", n)
+            else if (live.phase === "writing")
+                text = Tr.s("live_writing").replace("%1", n)
+            else if (live.phase === "tool") {
+                if (live.tool === "write_file" || live.tool === "append_file" || live.tool === "edit_file")
+                    text = Tr.s(live.target !== "" ? "live_file" : "live_file_unknown").replace("%1", live.target).replace("%2", n)
+                else if (live.tool === "run_command")
+                    text = Tr.s("live_command")
+                else
+                    text = Tr.s("live_tool").replace("%1", live.tool)
+            }
+        }
+        return text + (m.startedMs > 0 ? "   " + root.fmtDuration(root.nowMs - m.startedMs) : "")
+    }
     // the same as stepText as rich text: the file / command / query of the step in a code font (everything is escaped)
     function stepHtml(kind, target) {
         const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -805,7 +846,7 @@ Item {
                                         visible: stepsBox.working && root.ch.status !== "waiting"
                                         spacing: 10
                                         Spinner { size: 14 }
-                                        Text { text: root.statusText(root.ch.status) + (msg.modelData.startedMs > 0 ? "   " + root.fmtDuration(root.nowMs - msg.modelData.startedMs) : ""); font.pixelSize: 13; color: Theme.accent }
+                                        Text { text: root.liveLine(msg.modelData); font.pixelSize: 13; color: Theme.accent }
                                     }
                                 }
                             }
@@ -887,7 +928,7 @@ Item {
                                 spacing: 10
                                 Dots {}
                                 Text {
-                                    text: root.statusText(root.ch.status) + (msg.modelData.startedMs > 0 ? "   " + root.fmtDuration(root.nowMs - msg.modelData.startedMs) : "")
+                                    text: root.liveLine(msg.modelData)
                                     font.pixelSize: 13
                                     color: Theme.textSecondary
                                 }
@@ -943,7 +984,7 @@ Item {
                                     Text {
                                         Layout.fillWidth: true
                                         text: approvalCard.kind === "change"
-                                              ? Tr.s(approvalCard.isDiff ? "appr_edit" : approvalCard.appr.replaces ? "appr_replace" : "appr_new").replace("%1", approvalCard.appr.path).replace("%2", Math.round(approvalCard.appr.bytes))
+                                              ? Tr.s(approvalCard.appr.op === "append" ? "appr_append" : approvalCard.isDiff ? "appr_edit" : approvalCard.appr.replaces ? "appr_replace" : "appr_new").replace("%1", approvalCard.appr.path).replace("%2", Math.round(approvalCard.appr.bytes))
                                               : approvalCard.kind === "command" ? Tr.s("appr_cmd")
                                               : approvalCard.kind === "plan" ? Tr.s("appr_plan") : ""
                                         font.pixelSize: 13
@@ -1454,6 +1495,104 @@ Item {
                             text: Tr.s("chg_more").replace("%1", root.ch.git.count - 12)
                             font.pixelSize: 12
                             color: Theme.textDisabled
+                        }
+
+                        // ---- background tasks: commands (also the ones that run for ever), a compaction, the model download; a square stops one ----
+                        Rectangle { visible: root.agent && root.ch.tasks.length > 0; Layout.fillWidth: true; Layout.topMargin: 6; height: 1; color: Theme.borderSubtle }
+                        ColumnLayout {
+                            objectName: "aiTasks"
+                            visible: root.agent && root.ch.tasks.length > 0
+                            Layout.fillWidth: true
+                            spacing: 8
+                            SideTitle { text: Tr.s("tasks_title") }
+                            Repeater {
+                                model: root.agent ? root.ch.tasks.filter(t => t.state === "running") : []
+                                delegate: RowLayout {
+                                    id: taskRow
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    spacing: 10
+                                    Item {
+                                        Layout.preferredWidth: 22
+                                        Layout.preferredHeight: 18
+                                        Spinner { anchors.centerIn: parent; size: 14 }
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: root.taskTitle(taskRow.modelData)
+                                        font.pixelSize: 13
+                                        color: Theme.text
+                                        elide: Text.ElideMiddle
+                                        maximumLineCount: 1
+                                    }
+                                    Text {
+                                        text: taskRow.modelData.progress >= 0 ? Math.round(taskRow.modelData.progress * 100) + "%"
+                                              : taskRow.modelData.startedMs > 0 ? root.fmtShort(root.nowMs - taskRow.modelData.startedMs) : ""
+                                        font.pixelSize: 12
+                                        color: Theme.textSecondary
+                                    }
+                                    Rectangle {                          // the square: stop this task
+                                        objectName: "aiTaskStop"
+                                        Layout.preferredWidth: 22
+                                        Layout.preferredHeight: 22
+                                        radius: 6
+                                        color: stopHover.hovered ? Qt.alpha(Theme.error, 0.28) : "transparent"
+                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                        Rectangle { anchors.centerIn: parent; width: 9; height: 9; radius: 2; color: stopHover.hovered ? Theme.error : Theme.text }
+                                        TapHandler { onTapped: root.ch.stopTask(taskRow.modelData.id) }
+                                        HoverHandler { id: stopHover; cursorShape: Qt.PointingHandCursor }
+                                        ToolTip.visible: stopHover.hovered
+                                        ToolTip.text: Tr.s("tasks_stop")
+                                        ToolTip.delay: 400
+                                    }
+                                }
+                            }
+                            // the finished ones: one row with their number, a click shows them
+                            RowLayout {
+                                id: finishedRow
+                                readonly property var finished: root.agent ? root.ch.tasks.filter(t => t.state !== "running") : []
+                                visible: finished.length > 0
+                                Layout.fillWidth: true
+                                spacing: 10
+                                Item {
+                                    Layout.preferredWidth: 22
+                                    Layout.preferredHeight: 18
+                                    Icon { anchors.centerIn: parent; kind: root.tasksOpen ? "chevronDown" : "chevronRight" }
+                                }
+                                Text { Layout.fillWidth: true; text: Tr.s("tasks_finished").replace("%1", finishedRow.finished.length); font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
+                                TapHandler { onTapped: root.tasksOpen = !root.tasksOpen }
+                                HoverHandler { cursorShape: Qt.PointingHandCursor }
+                            }
+                            Repeater {
+                                model: root.tasksOpen ? finishedRow.finished.slice(0, 12) : []
+                                delegate: RowLayout {
+                                    id: doneRow
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    spacing: 10
+                                    Item {
+                                        Layout.preferredWidth: 22
+                                        Layout.preferredHeight: 18
+                                        Text { visible: doneRow.modelData.state === "done"; anchors.centerIn: parent; text: "✓"; font.pixelSize: 15; font.bold: true; color: Theme.success }
+                                        Text { visible: doneRow.modelData.state === "error"; anchors.centerIn: parent; text: "✗"; font.pixelSize: 14; font.bold: true; color: Theme.error }
+                                        Text { visible: doneRow.modelData.state === "stopped"; anchors.centerIn: parent; text: "–"; font.pixelSize: 15; color: Theme.textDisabled }
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: root.taskTitle(doneRow.modelData)
+                                        font.pixelSize: 12
+                                        color: doneRow.modelData.state === "error" ? Theme.error : Theme.textSecondary
+                                        elide: Text.ElideMiddle
+                                        maximumLineCount: 1
+                                    }
+                                    Text {
+                                        visible: doneRow.modelData.endedMs > 0 && doneRow.modelData.startedMs > 0
+                                        text: root.fmtShort(doneRow.modelData.endedMs - doneRow.modelData.startedMs)
+                                        font.pixelSize: 11
+                                        color: Theme.textDisabled
+                                    }
+                                }
+                            }
                         }
 
                         // ---- connectors: what the AI can reach, and what it needs your answer for ----

@@ -54,7 +54,9 @@ class AiChannel : public QObject {
     Q_PROPERTY(QString permission READ permission NOTIFY settingsChanged FINAL)       // agent mode: read | plan | ask | edit (see Permission below)
     Q_PROPERTY(QString effort READ effort NOTIFY settingsChanged FINAL)               // low | medium | high
     Q_PROPERTY(QVariantList todos READ todos NOTIFY todosChanged FINAL)               // agent: the task list the model keeps (todo_write): [{content, status}]
-    Q_PROPERTY(QVariantMap git READ git NOTIFY gitChanged FINAL)                      // agent: the working folder in git (GitInfo::info: branch, changed files ...)
+    Q_PROPERTY(QVariantList tasks READ tasks NOTIFY tasksChanged FINAL)               // the background tasks: commands (running and finished), a compaction, the model download
+    Q_PROPERTY(bool tasksRunning READ tasksRunning NOTIFY tasksChanged FINAL)         // something runs in the background (the page keeps its clock going)
+    Q_PROPERTY(QVariantMap git READ git NOTIFY gitChanged FINAL)                     // agent: the working folder in git (GitInfo::info: branch, changed files ...)
     Q_PROPERTY(QVariantMap context READ context NOTIFY contextChanged FINAL)          // {used, window, percent, exact}: how much of the model window the open conversation uses
 
 public:
@@ -69,6 +71,7 @@ public:
         qint64 durationMs = 0;             // how long it took (0 while it runs)
         int steps = 0;                     // tool steps of the request (the activity list keeps only the newest 300)
         QVariantList stepList;             // the step list the page shows: [{no, kind, target, state: running | waiting | done | error | stopped, note}] (the newest 400)
+        QVariantMap live;                  // what the model is writing right now (not saved): {phase, tool, target, chars}; empty when nothing is
         bool compact = false;              // not a message: the card "the conversation was compacted"; `summary` replaces everything before it (see Compactor)
         QString summary;
         int tokensBefore = 0, tokensAfter = 0;
@@ -102,6 +105,13 @@ public:
     QVariantList todos() const;                            // the plan of the open conversation
     QVariantMap git() const { return m_git ? m_git->info() : QVariantMap{{"state", "none"}}; }
     QVariantMap context() const;
+    // [{id: "cmd:3" | "compact" | "download", kind: command | compact | download, title, state: running | done | error | stopped, startedMs, endedMs, note, background, progress}]
+    // - running ones first, then the commands, the newest first
+    QVariantList tasks() const;
+    bool tasksRunning() const;
+    Q_INVOKABLE void stopTask(const QString& id);          // the stop button of a task (a command is killed, a compaction or a download is cancelled)
+    Q_INVOKABLE void startDiagnosticTasks();               // diagnostics only (--ai-view tasks): starts two REAL harmless commands (a ping that runs 30 s, an echo) to look at the list
+    CommandPool* pool() { return m_pool; }
     // Compacts the open conversation like Claude Code: the model writes a summary that replaces the old messages in what is sent from now on. `focus` is an
     // optional wish ("keep the file names"). "" = started, otherwise why not: busy | nothing | a notReady code. Also done by "/compact" and, before a message is
     // sent, when the history has grown near what is sent along (needsCompaction).
@@ -143,6 +153,7 @@ signals:
     void todosChanged();
     void gitChanged();
     void contextChanged();
+    void tasksChanged();
 
 private:
     void scheduleGit();                                    // refreshGit in a moment (changes come in bursts)
@@ -184,6 +195,7 @@ private:
     QString m_status;
     HttpChat* m_http = nullptr;
     LocalAgent* m_localAgent = nullptr;
+    CommandPool* m_pool = nullptr;                         // agent page: the commands as background tasks
     Compactor* m_compactor = nullptr;
     bool m_compacting = false;                             // a summary is being written (busy, status "compacting")
     QString m_pendingText;                                 // the message that waits for an automatic compaction
