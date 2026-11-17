@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.24.2 (2026-11-17): The vision file is not listed as a model
+  - Fixed: a vision file named mmproj-F16.gguf (as Hugging Face names it) showed up in the list of models with a Use button. Vision files are no longer listed as models.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.24.1 (2026-11-17): Less wasted time on edits that do not match
   - Changed: when the AI's edit_file misses the text of the file twice in a row, it is told to stop editing that file that way and to read the part again or write the whole file again, instead of trying a third, fourth, fifth time.
   - Not code-signed (Windows SmartScreen may warn).

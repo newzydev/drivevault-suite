@@ -115,8 +115,8 @@ QList<InstalledModel> installed(const QStringList& folders)
     QSet<QString> seen;
     for (const QString& folder : folders) {
         for (const QFileInfo& f : QDir(folder).entryInfoList({QStringLiteral("*.gguf")}, QDir::Files, QDir::Name)) {
-            if (f.fileName().endsWith(QLatin1String(".mmproj.gguf"), Qt::CaseInsensitive))
-                continue;                                    // the vision file of a model is not a model
+            if (f.fileName().contains(QLatin1String("mmproj"), Qt::CaseInsensitive))
+                continue;                                    // the vision file of a model (<model>.mmproj.gguf or the original mmproj-F16.gguf) is not a model
             const QString path = QDir::cleanPath(f.absoluteFilePath());
             const QString key = f.fileName().toLower() + QLatin1Char('|') + QString::number(f.size());
             if (f.size() < 1000000 || seen.contains(key))

@@ -2137,6 +2137,10 @@ private slots:
     void theMessageKeepsTheNamesAndTheTextOfItsAttachedFilesForTheModel()
     {
         QDir().mkpath(m_dir.filePath("attwork2"));
+        QFile model(m_dir.filePath("attach-model.gguf"));                                   // a stand-in for the model file (the test never listed a real one: it passed by luck before)
+        QVERIFY(model.open(QIODevice::WriteOnly));
+        model.write("x");
+        model.close();
         FakeServer server;
         server.contentType = "application/json";
         server.queue << agentReply({}, QStringLiteral("Read it."));
@@ -2435,6 +2439,7 @@ private slots:
         make("Qwen3.5-4B-Q4_K_M.gguf");
         const QString model = m_dir.filePath("visionmodels/Qwen3.5-4B-Q4_K_M.gguf");
         QVERIFY(dm::ai::ModelStore::visionFileFor(model).isEmpty());
+        make("mmproj-F16.gguf");                                                           // the file as Hugging Face names it: also not a model
         make("Qwen3.5-4B-Q4_K_M.mmproj.gguf");
         QCOMPARE(dm::ai::ModelStore::visionFileFor(model), m_dir.filePath("visionmodels/Qwen3.5-4B-Q4_K_M.mmproj.gguf"));
         const auto models = dm::ai::ModelStore::installed({m_dir.filePath("visionmodels")});
