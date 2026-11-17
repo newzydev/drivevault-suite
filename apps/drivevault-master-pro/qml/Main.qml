@@ -555,16 +555,43 @@ ApplicationWindow {
                                 MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor; onClicked: searchField.clear() }
                             }
                             // Check for updates: at the right end of the search bar (it was in the top bar)
-                            MButton {
+                            // same look as the category button: a pill inside the bar, highlighted on hover
+                            Item {
                                 id: updateButton
                                 objectName: "checkUpdates"
-                                compact: true
+                                readonly property string label: Hub.checking ? Tr.s("checking") : Tr.s("checkUpdates")
                                 anchors.right: parent.right
-                                anchors.rightMargin: 10
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: Hub.checking ? Tr.s("checking") : Tr.s("checkUpdates")
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                width: updateText.implicitWidth + 54
                                 enabled: !Hub.busy && !Hub.checking
-                                onClicked: { const e = Hub.checkForUpdates(); if (e !== "") win.showNotice(e) }
+                                opacity: enabled ? 1 : 0.55
+                                Accessible.role: Accessible.Button
+                                Accessible.name: label
+                                Accessible.onPressAction: updateMouse.clicked(null)
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    anchors.margins: 5
+                                    radius: height / 2
+                                    color: updateMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                                    Behavior on color { ColorAnimation { duration: 100 } }
+                                }
+                                Text {
+                                    id: updateText
+                                    anchors.centerIn: parent
+                                    text: updateButton.label
+                                    font.pixelSize: 14
+                                    font.weight: Font.DemiBold
+                                    color: Theme.text
+                                }
+                                MouseArea {
+                                    id: updateMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: { const e = Hub.checkForUpdates(); if (e !== "") win.showNotice(e) }
+                                }
                             }
                         }
                     }
