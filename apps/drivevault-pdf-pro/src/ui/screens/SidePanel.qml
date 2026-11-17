@@ -7,11 +7,10 @@ import DriveVault.PdfPro.Backend
 Rectangle {
     id: panel
 
-    property string mode: "thumbs"        // "thumbs" | "outline" | "comments" | "ai"
+    property string mode: "thumbs"        // "thumbs" | "outline" | "comments"  (the AI assistant is a floating card over the page area, AiPanel.qml)
     property int currentPage: 0
     property real dpr: 1
     signal pageRequested(int page, real y)
-    signal ocrRequested()
 
     color: Theme.backgroundAlt
     Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.borderSubtle }
@@ -45,7 +44,6 @@ Rectangle {
                 PButton { objectName: "sideThumbs"; compact: true; glyph: "thumbs"; tip: Tr.s("thumbnails"); variant: panel.mode === "thumbs" ? "secondary" : "ghost"; onClicked: panel.mode = "thumbs" }
                 PButton { objectName: "sideOutline"; compact: true; glyph: "outline"; tip: Tr.s("outline"); variant: panel.mode === "outline" ? "secondary" : "ghost"; onClicked: panel.mode = "outline" }
                 PButton { objectName: "sideComments"; compact: true; glyph: "comment"; tip: Tr.s("comments"); variant: panel.mode === "comments" ? "secondary" : "ghost"; onClicked: panel.mode = "comments" }
-                PButton { objectName: "sideAi"; compact: true; glyph: "ai"; tip: Tr.s("ai"); variant: panel.mode === "ai" ? "secondary" : "ghost"; onClicked: panel.mode = "ai" }
                 Item { Layout.fillWidth: true }
             }
         }
@@ -53,7 +51,7 @@ Rectangle {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: panel.mode === "thumbs" ? 0 : panel.mode === "outline" ? 1 : panel.mode === "comments" ? 2 : 3
+            currentIndex: panel.mode === "thumbs" ? 0 : panel.mode === "outline" ? 1 : 2
 
             // ---- thumbnails -----------------------------------------------------------------------------------------------
             ListView {
@@ -209,13 +207,6 @@ Rectangle {
                     wrapMode: Text.Wrap
                     font.pixelSize: Theme.fontSm
                 }
-            }
-
-            // ---- AI assistant: questions and a summary of the open document ----------------------------------------------------------
-            AiPanel {
-                objectName: "aiPanel"
-                onPageRequested: (page, y) => panel.pageRequested(page, y)
-                onOcrRequested: panel.ocrRequested()
             }
         }
     }

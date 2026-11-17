@@ -2,6 +2,11 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.20.0 (2026-11-17): The AI assistant floats over the page; the side panel is open by default
+  - Changed: the AI assistant is no longer a tab of the side panel. It is a bar floating at the bottom of the page area (Summarize, the question box, Send). While the conversation is empty it is just that bar; as answers arrive it grows (up to half of the page area) and then scrolls with the mouse wheel.
+  - Changed: the left side panel (thumbnails, bookmarks, comments) is open when a file opens; the button in the toolbar still hides and shows it.
+  - Note: the installer is not code-signed yet, so Windows SmartScreen may warn.
+
 v1.19.1 (2026-11-15): Gear icon
   - The menu button in the title bar now shows a gear instead of three dots (the same gear in all DriveVault programs). It opens the same menu (theme, settings, about).
   - Note: the installer is not code-signed yet, so Windows SmartScreen may warn.

@@ -267,13 +267,14 @@ private slots:
         QQuickItem* image = find("pageImage_0");
         QVERIFY(image->width() > 300 && image->height() > image->width());     // a portrait page
         QCOMPARE(text("zoomLabel"), QStringLiteral("100%"));
-        QVERIFY(!visible("sidePanel"));
+        QVERIFY(visible("sidePanel"));                                   // open by default
         QVERIFY(visible("toolPanel"));
         QCOMPARE(find("zoomLabel")->property("variant").toString(), QStringLiteral("secondary"));
         const auto* pages = find("pages");
         const double pageCenter = image->mapToScene(QPointF(image->width() / 2, 0)).x();
         const double viewportCenter = pages->mapToScene(QPointF(pages->width() / 2, 0)).x();
-        QVERIFY(qAbs(pageCenter - viewportCenter) < 2);
+        if (image->width() + 48 <= pages->width())                               // the small test window with the side panel open may be narrower than the page (it then scrolls sideways)
+            QVERIFY(qAbs(pageCenter - viewportCenter) < 2);
         QVERIFY(visible("tab_0"));
     }
 
@@ -329,12 +330,29 @@ private slots:
 
     void theSidePanelCanBeHiddenAndShowsTheThumbnails()
     {
+        QVERIFY(visible("sidePanel"));                                           // open by default
+        QVERIFY(visible("thumbnails"));
+        QVERIFY(click("toggleSidebar"));
         QVERIFY(!visible("sidePanel"));
         QVERIFY(click("toggleSidebar"));
         QVERIFY(visible("sidePanel"));
         QVERIFY(visible("thumbnails"));
-        QVERIFY(click("toggleSidebar"));
-        QVERIFY(!visible("sidePanel"));
+    }
+
+    // The AI assistant is a card floating over the page area (not a tab of the side panel): only the question bar to begin with.
+    void theAiCardFloatsOverThePages()
+    {
+        fresh(m_sixPath, "six.pdf");
+        QVERIFY(find("aiPanel") && visible("aiPanel"));
+        QVERIFY(!find("sideAi"));
+        const QQuickItem* card = find("aiPanel");
+        const QQuickItem* pages = find("pages");
+        const QRectF c(card->mapToScene(QPointF()), QSizeF(card->width(), card->height()));
+        const QRectF p(pages->mapToScene(QPointF()), QSizeF(pages->width(), pages->height()));
+        QVERIFY2(p.contains(c), "the card lies inside the page area");
+        QVERIFY2(qAbs(c.center().x() - p.center().x()) < 2, "centred");
+        QVERIFY2(c.height() < 110, "only the question bar while the conversation is empty");
+        QVERIFY2(p.bottom() - c.bottom() < 40, "at the bottom");
     }
 
     void titleBarTogglesAndDialogs()
@@ -406,7 +424,7 @@ private slots:
     void theBookmarkAndCommentPanelsListTheStructureAndJump()
     {
         fresh(m_featurePath, "feature.pdf");
-        QVERIFY(click("toggleSidebar"));
+        QVERIFY(visible("sidePanel"));
         QVERIFY(click("sideOutline"));
         QVERIFY(visible("outline_0") && visible("outline_1") && visible("outline_2"));
         QVERIFY(!visible("noOutline"));

@@ -4,8 +4,26 @@ import QtQuick.Layouts
 import DriveVault.PdfPro.Backend
 
 // The AI assistant of the open document: ask questions, summarise. It runs a language model on this computer (nothing is uploaded) and only reads the file.
-Item {
+// A card that floats at the bottom of the page area: only the question bar while the conversation is empty; it grows (up to half of the
+// page area) as the conversation fills and then scrolls with the mouse wheel.
+Rectangle {
     id: root
+
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.bottom: parent.bottom
+    anchors.bottomMargin: 20
+    width: Math.min(760, parent.width - 48)
+    height: column.implicitHeight + 20
+    radius: 16
+    color: Theme.backgroundAlt
+    border.width: 1
+    border.color: Theme.border
+    visible: Doc.isOpen
+    readonly property bool hasChat: Assistant.messages.length > 0
+    readonly property real chatMax: Math.max(140, parent.height * 0.5)
+    property real chatTarget: hasChat ? Math.min(chatMax, chat.contentHeight + 4) : 0
+    property real chatH: chatTarget
+    Behavior on chatH { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
     signal pageRequested(int page, real y)
     signal ocrRequested()
@@ -41,10 +59,11 @@ Item {
     TextEdit { id: clipboardHelper; visible: false }
     function copyText(text) { clipboardHelper.text = text; clipboardHelper.selectAll(); clipboardHelper.copy() }
 
-    onVisibleChanged: if (visible && Assistant.state === "idle") Assistant.prepare()
-
     ColumnLayout {
-        anchors.fill: parent
+        id: column
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
         anchors.margins: 10
         spacing: 8
 
@@ -112,33 +131,11 @@ Item {
             }
         }
 
-        // ---- actions -------------------------------------------------------------------------------------------------------------------
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 6
-            PButton {
-                objectName: "aiSummarize"
-                Layout.fillWidth: true
-                variant: "secondary"
-                text: Tr.s("aiSummarize")
-                enabled: root.canAsk
-                onClicked: Assistant.summarize()
-            }
-            PButton {
-                objectName: "aiClear"
-                compact: true
-                variant: "ghost"
-                glyph: "close"
-                tip: Tr.s("aiClear")
-                enabled: Assistant.messages.length > 0 || Assistant.busy
-                onClicked: Assistant.clear()
-            }
-        }
-
-        // ---- the conversation ------------------------------------------------------------------------------------------------------
+        // ---- the conversation (grows with its content, then scrolls) -----------------------------------------------------------------
         Item {
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.preferredHeight: root.chatH
+            visible: root.chatH > 0.5
             ListView {
                 id: chat
                 objectName: "aiMessages"
@@ -212,21 +209,6 @@ Item {
                     }
                 }
             }
-            ColumnLayout {
-                anchors.centerIn: parent
-                width: parent.width - 20
-                visible: Assistant.messages.length === 0
-                spacing: 8
-                LineIcon { Layout.alignment: Qt.AlignHCenter; name: "ai"; size: 32; color: Theme.textDisabled }
-                AppText {
-                    Layout.fillWidth: true
-                    wrapMode: Text.Wrap
-                    horizontalAlignment: Text.AlignHCenter
-                    font.pixelSize: Theme.fontSm
-                    color: Theme.textDisabled
-                    text: Tr.s("aiEmpty")
-                }
-            }
         }
 
         // ---- status ----------------------------------------------------------------------------------------------------------------------
@@ -266,6 +248,14 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             spacing: 6
+            PButton {
+                objectName: "aiSummarize"
+                compact: true
+                variant: "secondary"
+                text: Tr.s("aiSummarize")
+                enabled: root.canAsk
+                onClicked: Assistant.summarize()
+            }
             PTextField {
                 id: input
                 objectName: "aiInput"
@@ -273,6 +263,7 @@ Item {
                 placeholderText: Tr.s("aiAskPlaceholder")
                 enabled: Doc.isOpen && Assistant.engineInstalled && Assistant.modelInstalled
                 onAccepted: root.send()
+                onActiveFocusChanged: if (activeFocus && Assistant.state === "idle") Assistant.prepare()      // warm the model up when the user starts to type
             }
             PButton {
                 objectName: "aiSend"
@@ -288,6 +279,15 @@ Item {
                 variant: "secondary"
                 text: Tr.s("aiStop")
                 onClicked: Assistant.stop()
+            }
+            PButton {
+                objectName: "aiClear"
+                compact: true
+                variant: "ghost"
+                glyph: "close"
+                tip: Tr.s("aiClear")
+                visible: Assistant.messages.length > 0 || Assistant.busy
+                onClicked: Assistant.clear()
             }
         }
     }

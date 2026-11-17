@@ -85,7 +85,7 @@ Item {
     property string zoomMode: "custom"            // "fitWidth" | "fitPage" | "custom"
     property string viewMode: "continuous"        // "continuous" | "twoPage"
     property int currentPage: 0
-    property bool showSidebar: false
+    property bool showSidebar: true          // open by default; the button in the toolbar hides / shows it
     property bool searchOpen: false
     property real maxW: 612                       // largest page as shown, in points
     property real maxH: 792
@@ -357,7 +357,7 @@ Item {
     function diagnosticOpen(name) {
         if (name === "print") printDialog.open()
         else if (name === "edit") Editor.active = true
-        else if (name === "ai") { showSidebar = true; sidePanel.mode = "ai" }
+        // "ai": the floating card is always there when a file is open
     }
 
     function openSearch() {
@@ -665,7 +665,6 @@ Item {
                 currentPage: viewer.currentPage
                 dpr: viewer.dpr
                 onPageRequested: (page, y) => viewer.goTo(page, y)
-                onOcrRequested: viewer.ocrRequested(viewer.currentPage)
             }
 
             Rectangle {
@@ -982,6 +981,13 @@ Item {
                             pointer.extend()
                         }
                     }
+                }
+
+                // the AI assistant: a card floating at the bottom of the page area (grows with the conversation, then scrolls)
+                AiPanel {
+                    objectName: "aiPanel"
+                    onPageRequested: (page, y) => viewer.goTo(page, y)
+                    onOcrRequested: viewer.ocrRequested(viewer.currentPage)
                 }
             }
         }
