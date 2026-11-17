@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.23.5 (2026-11-17): The line beside the browser matches the others
+  - Changed: the line between the conversation and the browser is the same thin line as the one beside the list of conversations (it was thicker and lighter).
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.23.4 (2026-11-17): Pictures you attach are shown
   - New: a picture attached to a question is shown as a preview in the question (click it to see it bigger); a small copy is saved with the conversation, so the preview is still there after a restart. In the message box the attached picture shows a bigger thumbnail.
   - Not code-signed (Windows SmartScreen may warn).
