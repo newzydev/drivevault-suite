@@ -1201,31 +1201,28 @@ private slots:
         QCOMPARE(asked.at(0).at(0).toString(), QString("big.html"));
         QCOMPARE(asked.at(0).at(4).toString(), QString("write"));
         agent.answerApproval(true);
-        QVERIFY(asked.count() == 2 || asked.wait(15000));                                       // then the model's next part (append) waits too
-        QCOMPARE(asked.at(1).at(4).toString(), QString("append"));
-        QCOMPARE(asked.at(1).at(2).toLongLong() > asked.at(0).at(2).toLongLong(), true);        // the file would be longer than the kept part
-        agent.answerApproval(true);
-        QVERIFY(done.wait(15000));
+        QVERIFY(done.wait(15000));                                                              // the next part (append) needs no second Allow for the same file
+        QCOMPARE(asked.count(), 1);
         QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
         QFile f(m_dir.filePath("bigfile/big.html"));
         QVERIFY(f.open(QIODevice::ReadOnly));
         const QString text = QString::fromUtf8(f.readAll());
         QVERIFY(text.startsWith("<p>line 0000</p>\n"));
         QVERIFY(text.endsWith("<p>the end</p>\n"));
-        QVERIFY2(text.size() > 10000 && text.size() < 20000, qPrintable(QString::number(text.size())));      // stopped at the limit, not at the 80 parts
+        QVERIFY2(text.size() > 4000 && text.size() < 9000, qPrintable(QString::number(text.size())));        // stopped at the small limit, not at the 80 parts
         QVERIFY(text.contains("</p>\n<p>the end</p>\n"));                                       // the kept part ends at a complete line
         // the model was told where to go on
         QCOMPARE(server.requests, 3);
         const QJsonArray msgs = requestBody(server.log.at(1)).value("messages").toArray();
         const QString note = msgs.last().toObject().value("content").toString();
-        QVERIFY(note.contains("cut off") && note.contains("append_file") && note.contains("<p>line"));
+        QVERIFY(note.contains("stopped") && note.contains("append_file") && note.contains("Do NOT read the file again"));
         // and what it remembers of its call is the kept part, not the giant text
         QVERIFY(requestBody(server.log.at(1)).size() > 0);
         for (const QJsonValue& m : msgs)
             if (m.toObject().contains("tool_calls")) {
                 const QString args = m.toObject().value("tool_calls").toArray().first().toObject().value("function").toObject().value("arguments").toString();
                 QVERIFY(QJsonDocument::fromJson(args.toUtf8()).isObject());                     // valid JSON again
-                QVERIFY(args.size() < 16000);
+                QVERIFY(args.size() < 9000);
             }
     }
     void aCutOffWriteWithNothingToKeepIsAskedAgain()
@@ -1245,7 +1242,7 @@ private slots:
         QVERIFY(done.wait(15000));
         QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
         QCOMPARE(server.requests, 2);
-        QVERIFY(lastMessage(server.log.at(1)).contains("cut off"));
+        QVERIFY(lastMessage(server.log.at(1)).contains("too long"));
     }
     void aCutTextIsTakenBackToItsLastLine()
     {

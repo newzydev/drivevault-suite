@@ -29,6 +29,25 @@ QJsonObject tool(const char* name, const QString& description, const QJsonObject
 
 bool looksBinary(const QByteArray& head) { return head.contains('\0'); }
 
+// The text of a write_file / append_file call. The argument is called "text" (it sorts after "path", so the model sees and writes the path FIRST: a cut call
+// then still says which file it was for); "content" is accepted too (older conversations, other models).
+QString textArgument(const QJsonObject& args)
+{
+    return args.contains(QLatin1String("text")) ? args.value(QLatin1String("text")).toString() : args.value(QLatin1String("content")).toString();
+}
+
+// the last characters of a text file: a part of a big file tells the model where it ends, so that it need not read the file again
+QString tailOf(const QString& path, int characters = 200)
+{
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly))
+        return {};
+    if (f.size() > 4000)
+        f.seek(f.size() - 4000);
+    const QString text = QString::fromUtf8(f.readAll());
+    return text.right(characters);
+}
+
 bool skippedFolder(const QString& name)
 {
     return name == QLatin1String(".git") || name == QLatin1String("node_modules") || name == QLatin1String(".drivevault-backup");
@@ -69,12 +88,12 @@ QJsonArray AgentTools::specs() const
                       {QStringLiteral("path"), QStringLiteral("old_string"), QStringLiteral("new_string")}));
         a.append(tool("write_file", QStringLiteral("Creates a text file or replaces its whole content (relative path). A replaced file is saved to .drivevault-backup first. "
                                                    "Your answer has a length limit: for a big file write only the first part (about 100 lines) here and add the rest with append_file."),
-                      QJsonObject{{"path", prop("string", QStringLiteral("relative path of the file"))}, {"content", prop("string", QStringLiteral("the whole new content"))}},
-                      {QStringLiteral("path"), QStringLiteral("content")}));
+                      QJsonObject{{"path", prop("string", QStringLiteral("relative path of the file (give it first)"))}, {"text", prop("string", QStringLiteral("the whole new content (the first part of a big file)"))}},
+                      {QStringLiteral("path"), QStringLiteral("text")}));
         a.append(tool("append_file", QStringLiteral("Adds text at the END of a text file (relative path; the file is created when it does not exist). Use it to build a big file in parts: "
                                                     "write_file for the first part, then append_file for each next part (about 100 lines each), each starting exactly where the file ends."),
-                      QJsonObject{{"path", prop("string", QStringLiteral("relative path of the file"))}, {"content", prop("string", QStringLiteral("the text to add at the end"))}},
-                      {QStringLiteral("path"), QStringLiteral("content")}));
+                      QJsonObject{{"path", prop("string", QStringLiteral("relative path of the file (give it first)"))}, {"text", prop("string", QStringLiteral("the text to add at the end"))}},
+                      {QStringLiteral("path"), QStringLiteral("text")}));
     }
     return a;
 }
@@ -252,7 +271,7 @@ AgentTools::WriteInfo AgentTools::inspectWrite(const QJsonObject& args) const
         w.error = QStringLiteral("editing is not allowed in this mode");
         return w;
     }
-    const QString content = args.value(QLatin1String("content")).toString();
+    const QString content = textArgument(args);
     w.bytes = content.toUtf8().size();
     if (w.bytes > kMaxWrite) {
         w.error = QStringLiteral("the content is too long (limit %1 bytes)").arg(kMaxWrite);
@@ -280,7 +299,7 @@ AgentTools::Result AgentTools::writeFile(const QJsonObject& args) const
 {
     if (!m_edits)
         return {QStringLiteral("editing is not allowed: the user chose read only"), true};
-    const QString content = args.value(QLatin1String("content")).toString();
+    const QString content = textArgument(args);
     if (content.toUtf8().size() > kMaxWrite)
         return {QStringLiteral("the content is too long (limit %1 bytes)").arg(kMaxWrite), true};
     QString err;
@@ -313,7 +332,10 @@ AgentTools::Result AgentTools::save(const QString& path, const QString& content)
     QSaveFile out(path);
     if (!out.open(QIODevice::WriteOnly) || out.write(content.toUtf8()) < 0 || !out.commit())
         return {QStringLiteral("the file could not be written"), true};
-    return {QStringLiteral("Wrote %1 bytes to %2.%3").arg(content.toUtf8().size()).arg(QDir(m_root).relativeFilePath(path), note), false};
+    QString ends;
+    if (content.size() > 600)                                         // a first part of a big file: where it ends (the next part goes on there)
+        ends = QStringLiteral("\nThe file ends with:\n<<<\n%1\n>>>").arg(tailOf(path));
+    return {QStringLiteral("Wrote %1 bytes to %2.%3%4").arg(content.toUtf8().size()).arg(QDir(m_root).relativeFilePath(path), note, ends), false};
 }
 
 // ---- edit_file: one exact piece of text replaced ----------------------------------------------------------------------------------------
@@ -423,7 +445,7 @@ AgentTools::WriteInfo AgentTools::inspectAppend(const QJsonObject& args) const
         w.error = QStringLiteral("editing is not allowed in this mode");
         return w;
     }
-    const QString content = args.value(QLatin1String("content")).toString();
+    const QString content = textArgument(args);
     if (content.isEmpty()) {
         w.error = QStringLiteral("content is empty");
         return w;
@@ -460,11 +482,12 @@ AgentTools::Result AgentTools::appendFile(const QJsonObject& args) const
     const QString path = resolve(args.value(QLatin1String("path")).toString(), false, &err);
     if (path.isEmpty())
         return {err, true};
-    const QByteArray data = args.value(QLatin1String("content")).toString().toUtf8();
+    const QByteArray data = textArgument(args).toUtf8();
     QFile f(path);                                                   // only text is added: what was there is never changed, so no backup copy is needed
     if (!f.open(QIODevice::WriteOnly | QIODevice::Append) || f.write(data) != data.size())
         return {QStringLiteral("the file could not be written"), true};
-    return {QStringLiteral("Added %1 bytes to %2; the file is now %3 bytes.").arg(data.size()).arg(w.path).arg(w.bytes), false};
+    f.close();
+    return {QStringLiteral("Added %1 bytes to %2; the file is now %3 bytes. It ends with:\n<<<\n%4\n>>>").arg(data.size()).arg(w.path).arg(w.bytes).arg(tailOf(path)), false};
 }
 
 // ---- glob_files --------------------------------------------------------------------------------------------------------------------------

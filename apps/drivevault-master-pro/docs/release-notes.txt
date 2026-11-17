@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.19.2 (2026-11-17): Files are written a little at a time
+  - Changed: the AI now writes a file in small parts (about 60 lines): each part is saved, and it goes on with the next part at once instead of trying to write the whole file in one answer (which was cut off as "answer too long").
+  - Changed: you answer Allow once per file; the next parts of the same file are added without a new card.
+  - Changed: after a write the result shows how the file ends, so the AI no longer reads the file again before adding the next part.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.19.1 (2026-11-17): A long job no longer flickers, scrolls by itself or loses the model
   - Fixed: while the AI worked, the whole conversation flickered and the list jumped to the end whenever you scrolled up. The conversation is now a real list: only the box that changed is updated, and the list follows the newest text only until you scroll up (it follows again when you scroll back to the end or send a message).
   - Fixed: after exactly 15 minutes a job ended with "Connection closed" - the model program stops itself after 15 quiet minutes and was not told that the job was still running. A running job (also while a card waits for your answer) now keeps it alive.

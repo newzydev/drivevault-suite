@@ -158,7 +158,8 @@ private:
     bool m_running = false;
     bool m_cancelled = false;
     bool m_wroteText = false;
-    bool m_waiting = false;                                // a change, a command or a plan waits for the user
+    QSet<QString> m_approvedFiles;                         // files the user allowed a write / append to: later parts of the same file need no new card
+    bool m_waiting = false;                               // a change, a command or a plan waits for the user
     std::function<void(bool)> m_onAnswer;                  // what to do with the user's answer
     CommandPool* m_pool = nullptr;                         // the commands of this agent are tasks of this pool
     int m_foregroundTask = 0;                              // the command the job waits for now (0 = none)

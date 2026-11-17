@@ -474,8 +474,9 @@ void AiChannel::sendTools()
                        + (c.allowCommands ? QStringLiteral(" or run the build or test") : QString())
                        + QStringLiteral(". (5) Do not stop and do not ask the user questions unless you are really blocked: go on until the whole job is done, then give a short summary of "
                                         "what you did and what you checked. (6) A tool error is information: read it, fix the cause and take another way; never repeat a call that failed. "
-                                        "(7) Your answer has a length limit and a longer one is cut off and lost: keep every write_file and append_file under about 100 lines and build a big file in "
-                                        "parts: the first part with write_file, then each next part with append_file (each starts exactly where the file ends); edit_file changes what is "
+                                        "(7) Your answer has a length limit and a longer one is cut off and lost: keep every write_file and append_file SMALL (about 60 lines) and build a file in "
+                                        "parts: the first part with write_file, then each next part at once with append_file (each starts exactly where the file ends; the result shows how "
+                                        "the file ends, so do not read it again); give the arguments path first, then text; edit_file changes what is "
                                         "already in a file. A long file is read in parts (start_line). "
                                         "(8) To save room, old tool results in this conversation may be shortened: read the file again when you need its text. ")
                        + (c.allowCommands ? QStringLiteral("run_command runs on the user's PC with the user's permissions: use it only for what the job needs (build, test, git status, dir) "

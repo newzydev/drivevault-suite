@@ -207,7 +207,7 @@ void LocalAgent::step()
 }
 
 // ---- the streamed answer -------------------------------------------------------------------------------------------------------------------
-static constexpr int kMaxToolArgChars = 14000;               // a tool call longer than this (a whole big file in one call) is stopped: it is written in parts
+static constexpr int kMaxToolArgChars = 6000;                // a tool call longer than this (about 60 lines of a file) is stopped at once: a big file is written in small parts, one after the other
 
 static QString argumentTarget(const QString& tool, const QString& args)
 {
@@ -515,7 +515,7 @@ bool LocalAgent::salvageWrite(const QString& rawArguments, QString* path, QStrin
 {
     auto decode = [](const QString& escaped) { return QJsonDocument::fromJson(QByteArray("[\"") + escaped.toUtf8() + "\"]").array().first().toString(); };
     const QRegularExpressionMatch pm = QRegularExpression(QStringLiteral("\"path\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"")).match(rawArguments);
-    const QRegularExpressionMatch cm = QRegularExpression(QStringLiteral("\"content\"\\s*:\\s*\"")).match(rawArguments);
+    const QRegularExpressionMatch cm = QRegularExpression(QStringLiteral("\"(?:text|content)\"\\s*:\\s*\"")).match(rawArguments);
     if (!pm.hasMatch() || !cm.hasMatch())
         return false;
     const QString p = decode(pm.captured(1)).trimmed();
@@ -603,7 +603,7 @@ bool LocalAgent::handleBrokenCalls(QJsonArray* calls, const QString& content, bo
         QString p, t;
         bool complete = false;
         if ((name == QLatin1String("write_file") || name == QLatin1String("append_file")) && m_salvages < 60 && salvageWrite(av.toString(), &p, &t, &complete)) {
-            fn["arguments"] = QString::fromUtf8(QJsonDocument(QJsonObject{{"path", p}, {"content", t}}).toJson(QJsonDocument::Compact));
+            fn["arguments"] = QString::fromUtf8(QJsonDocument(QJsonObject{{"path", p}, {"text", t}}).toJson(QJsonDocument::Compact));
             call["function"] = fn;
             calls->replace(i, call);
             if (!complete) {                                           // a cut part: it is saved, the model writes the rest with append_file
@@ -620,10 +620,11 @@ bool LocalAgent::handleBrokenCalls(QJsonArray* calls, const QString& content, bo
         return false;
     if (kept) {
         note(QStringLiteral("The answer was too long: the part that was written is kept, the rest is added in parts"));
-        m_afterCalls = QStringLiteral("Your %1 call was cut off because one answer may not be that long (it was stopped after about %2 characters). The part up to the last complete "
-                                      "line was saved in %3; the file now ends with:\n<<<\n%4\n>>>\nContinue the SAME file now with append_file (path and content): add only the "
-                                      "next part, at most about 100 lines, starting exactly after the text above and without repeating anything. Repeat until the file is complete, "
-                                      "then say that you are done.").arg(tool).arg(keptChars).arg(path, keptTail);
+        Q_UNUSED(keptTail)
+        m_afterCalls = QStringLiteral("Your %1 call was stopped after about %2 characters: one call may only hold a small part (about 60 lines). That part was saved in %3 (the result above "
+                                      "shows how the file ends). Go on at once with append_file (path first, then text): the next part only, about 60 lines, starting exactly "
+                                      "where the file ends, without repeating anything. Do NOT read the file again. Part after part until the file is complete, then say that you "
+                                      "are done.").arg(tool).arg(keptChars).arg(path);
         return false;                                                  // the kept part is written like any other call
     }
     if (!cut)
@@ -635,9 +636,9 @@ bool LocalAgent::handleBrokenCalls(QJsonArray* calls, const QString& content, bo
         if (!content.isEmpty())
             m_messages.append(QJsonObject{{"role", "assistant"}, {"content", content}});
         m_messages.append(QJsonObject{{"role", "user"},
-                                      {"content", QStringLiteral("Your last tool call was cut off because it was too long, so nothing was done. Make it much shorter: write a big file in "
-                                                                 "parts - first create it with write_file (the first 100 lines at most, no long comments), then add each further part "
-                                                                 "with append_file. Do not repeat the long text.")}});
+                                      {"content", QStringLiteral("Your last tool call was stopped because it was too long, so nothing was done. Write a big file in SMALL parts: first create it with "
+                                                                 "write_file (about 60 lines at most), then add each further part with append_file. Give the arguments in this order: "
+                                                                 "path first, then text. Do not repeat the long text.")}});
         step();
         return true;
     }
@@ -762,12 +763,20 @@ void LocalAgent::runNextCall()
             result(info.error, true);
             return;
         }
+        if (name == QLatin1String("append_file") && m_approvedFiles.contains(info.path)) {
+            const AgentTools::Result r = m_files->run(name, args);   // a further part of a file the user already allowed
+            result(r.text, r.error);
+            return;
+        }
         m_waiting = true;                                  // the user decides: answerApproval() goes on
-        m_onAnswer = [this, name, args, result](bool allow) {
+        const QString approvedPath = info.path;
+        m_onAnswer = [this, name, args, result, approvedPath](bool allow) {
             if (!allow) {
                 result(QStringLiteral("the user declined this change; do not try again, say what you would have done"), true);
                 return;
             }
+            if (name != QLatin1String("edit_file"))
+                m_approvedFiles.insert(approvedPath);
             stepEnd(QStringLiteral("running"), {});
             const AgentTools::Result r = m_files->run(name, args);
             result(r.text, r.error);
