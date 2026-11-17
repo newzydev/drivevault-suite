@@ -210,7 +210,7 @@ QVariantList AiChannel::messages() const
                                    {"errorDetail", m.errorDetail}, {"activity", m.activity}, {"approval", m.approval},
                                    {"startedMs", double(m.startedMs)}, {"durationMs", double(m.durationMs)}, {"steps", m.steps}, {"stepList", m.stepList},
                                    {"live", m.live}, {"compact", m.compact}, {"summary", m.summary}, {"tokensBefore", m.tokensBefore}, {"tokensAfter", m.tokensAfter},
-                                   {"attachNames", m.attachNames}});
+                                   {"attachNames", m.attachNames}, {"thumbs", m.thumbs}});
         }
     }
     return out;
@@ -334,8 +334,14 @@ void AiChannel::beginRequest(const QString& userText)
         const QVariantMap am = a.toMap();
         const QString name = am.value("name").toString();
         user.attachNames << name;
-        if (am.value("kind").toString() == QLatin1String("image"))
+        if (am.value("kind").toString() == QLatin1String("image")) {
             user.images << am.value("data").toString();
+            QImage full;
+            full.loadFromData(QByteArray::fromBase64(am.value("data").toString().toLatin1()));
+            const QString small = m_service->browserBridge()->encodeImage(QVariant::fromValue(full), 480);
+            if (!small.isEmpty())
+                user.thumbs << small;                                                // the preview the bubble shows (the picture itself is not saved)
+        }
         else
             user.extra += QStringLiteral("\n\n[Attached file: %1]\n```\n%2\n```").arg(name, am.value("text").toString());
     }
@@ -1253,6 +1259,8 @@ void AiChannel::saveConversations()
             QJsonObject o{{"role", m.role}, {"text", m.text}};
             if (!m.attachNames.isEmpty())
                 o["attachNames"] = QJsonArray::fromStringList(m.attachNames);
+            if (!m.thumbs.isEmpty())
+                o["thumbs"] = QJsonArray::fromStringList(m.thumbs);
             if (!m.extra.isEmpty())
                 o["extra"] = m.extra;
             if (!m.activity.isEmpty())
@@ -1313,6 +1321,8 @@ void AiChannel::load()
             for (const QJsonValue& a : mo.value(QLatin1String("attachNames")).toArray())
                 m.attachNames << a.toString();
             m.extra = mo.value(QLatin1String("extra")).toString();
+            for (const QJsonValue& a : mo.value(QLatin1String("thumbs")).toArray())
+                m.thumbs << a.toString();
             for (const QJsonValue& a : mo.value(QLatin1String("activity")).toArray())
                 m.activity << a.toString();
             m.errorCode = mo.value(QLatin1String("errorCode")).toString();

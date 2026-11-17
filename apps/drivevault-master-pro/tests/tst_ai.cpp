@@ -2126,14 +2126,22 @@ private slots:
         ai.llama()->useExternalServer(server.base(), "");
         ai.setWebEnabled(false);
         agent->setFolder(m_dir.filePath("attwork2"));
-        const QVariantList atts{QVariantMap{{"kind", "file"}, {"name", "report.txt"}, {"text", "TOTAL = 42"}}};
+        QImage shot(600, 300, QImage::Format_RGB32);
+        shot.fill(Qt::blue);
+        const QString shotData = ai.browserBridge()->encodeImage(QVariant::fromValue(shot), 1024);
+        const QVariantList atts{QVariantMap{{"kind", "file"}, {"name", "report.txt"}, {"text", "TOTAL = 42"}}, QVariantMap{{"kind", "image"}, {"name", "shot.jpg"}, {"data", shotData}}};
         QCOMPARE(agent->send("summarise the file", atts), QString());
         QTRY_VERIFY_WITH_TIMEOUT(!agent->busy(), 15000);
         QCOMPARE(server.requests, 1);
         const QString sent = lastMessage(server.log.at(0));
         QVERIFY(sent.contains("summarise the file") && sent.contains("[Attached file: report.txt]") && sent.contains("TOTAL = 42"));     // the model reads the file
         const QVariantList msgs = agent->messages();
-        QCOMPARE(msgs.at(0).toMap().value("attachNames").toStringList(), QStringList{"report.txt"});
+        QCOMPARE(msgs.at(0).toMap().value("attachNames").toStringList(), (QStringList{"report.txt", "shot.jpg"}));
+        const QStringList thumbs = msgs.at(0).toMap().value("thumbs").toStringList();               // the bubble shows a preview of the picture
+        QCOMPARE(thumbs.size(), 1);
+        QImage preview;
+        QVERIFY(preview.loadFromData(QByteArray::fromBase64(thumbs.at(0).toLatin1())));
+        QCOMPARE(preview.width(), 480);
         QCOMPARE(msgs.at(0).toMap().value("text").toString(), QString("summarise the file"));       // the bubble shows only what the user typed
     }
     // ---- the browser of the program: the bridge, what the agent may open, and the three tools ----------------------------------------------------

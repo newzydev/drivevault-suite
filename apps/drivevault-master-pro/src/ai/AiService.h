@@ -66,6 +66,7 @@ public:
     struct Message {
         QString role;                      // user | assistant
         QString text;
+        QStringList thumbs;                // user message: small previews (base64 JPEG, 480 px) of the attached pictures, saved with the conversation and shown in the bubble
         QStringList attachNames;           // user message: the files / pictures the user attached (shown as chips)
         QString extra;                     // user message: the text of the attached files, for the model only (saved, not shown)
         QStringList images;                // user message: attached pictures as base64 JPEG, for the model only (kept while the program runs, not saved)

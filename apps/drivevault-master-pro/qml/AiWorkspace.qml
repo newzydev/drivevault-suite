@@ -382,6 +382,19 @@ Item {
         onAccepted: root.ch.setFolder(selectedFolder.toString())
     }
     AiSettingsDialog { id: settings; channel: root.ch; agent: root.agent }
+    // a picture of a question, bigger
+    Popup {
+        id: bigPreview
+        property alias source: bigImage.source
+        anchors.centerIn: parent
+        width: Math.min(root.width - 80, 900)
+        height: Math.min(root.height - 80, 700)
+        modal: true
+        padding: 10
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        background: Rectangle { radius: 14; color: Theme.surface; border.width: 1; border.color: Theme.border }
+        contentItem: Image { id: bigImage; fillMode: Image.PreserveAspectFit; MouseArea { anchors.fill: parent; onClicked: bigPreview.close() } }
+    }
     FileDialog {
         id: attachDialog
         title: Tr.s("att_choose")
@@ -892,6 +905,35 @@ Item {
                                     color: Theme.text
                                 }
                             }
+                            Flow {                                                  // the pictures the user attached: a preview each (click: bigger)
+                                visible: msg.isUser && msg.modelData.thumbs !== undefined && msg.modelData.thumbs.length > 0
+                                Layout.alignment: Qt.AlignRight
+                                Layout.maximumWidth: msg.width * 0.82
+                                layoutDirection: Qt.RightToLeft
+                                spacing: 8
+                                Repeater {
+                                    model: msg.isUser && msg.modelData.thumbs !== undefined ? msg.modelData.thumbs : []
+                                    delegate: Rectangle {
+                                        id: thumb
+                                        required property string modelData
+                                        width: thumbImage.paintedWidth + 4
+                                        height: 164
+                                        radius: 10
+                                        color: Theme.surface
+                                        border.width: 1
+                                        border.color: Theme.border
+                                        Image {
+                                            id: thumbImage
+                                            anchors.centerIn: parent
+                                            height: 160
+                                            width: Math.min(300, implicitWidth * 160 / Math.max(1, implicitHeight))
+                                            fillMode: Image.PreserveAspectFit
+                                            source: "data:image/jpeg;base64," + thumb.modelData
+                                        }
+                                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { bigPreview.source = thumbImage.source; bigPreview.open() } }
+                                    }
+                                }
+                            }
                             Text {                                                  // what the user attached to the question
                                 visible: msg.isUser && msg.modelData.attachNames !== undefined && msg.modelData.attachNames.length > 0
                                 Layout.alignment: Qt.AlignRight
@@ -1309,7 +1351,7 @@ Item {
                     Layout.rightMargin: 28
                     Layout.topMargin: 6
                     Layout.bottomMargin: 22
-                    implicitHeight: 132 + (root.attachments.length > 0 ? 44 : 0) + (root.attachNote !== "" ? 20 : 0)
+                    implicitHeight: 132 + (root.attachments.length > 0 ? (root.attachments.some(a => a.kind === "image") ? 70 : 44) : 0) + (root.attachNote !== "" ? 20 : 0)
                     radius: 18
                     color: Theme.backgroundAlt
                     border.width: input.activeFocus ? 2 : 1
@@ -1331,7 +1373,7 @@ Item {
                                     id: att
                                     required property var modelData
                                     required property int index
-                                    height: 36
+                                    height: att.modelData.kind === "image" ? 62 : 36
                                     width: attRow.implicitWidth + 16
                                     radius: 10
                                     color: Theme.surface
@@ -1343,8 +1385,8 @@ Item {
                                         spacing: 8
                                         Image {
                                             visible: att.modelData.kind === "image"
-                                            width: 26
-                                            height: 26
+                                            width: 52
+                                            height: 52
                                             anchors.verticalCenter: parent.verticalCenter
                                             fillMode: Image.PreserveAspectCrop
                                             source: att.modelData.kind === "image" ? "data:image/jpeg;base64," + att.modelData.data : ""
