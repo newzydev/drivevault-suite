@@ -2,6 +2,8 @@
 #include "ai/AiService.h"
 
 #include <QCommandLineParser>
+#include <functional>
+#include <memory>
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QIcon>
@@ -44,7 +46,8 @@ int main(int argc, char* argv[])
     QCommandLineOption agentTest(QStringLiteral("agent-test"), QStringLiteral("Run ONE agent job with the local model and write what happened to --agent-out (diagnostics): <prompt>, in --agent-folder, file changes applied at once, no commands."), QStringLiteral("prompt"));
     QCommandLineOption agentFolder(QStringLiteral("agent-folder"), QStringLiteral("Working folder of --agent-test."), QStringLiteral("dir"));
     QCommandLineOption agentOut(QStringLiteral("agent-out"), QStringLiteral("File that gets the result of --agent-test (JSON)."), QStringLiteral("file"));
-    parser.addOptions({dataDir, lang, registry, shot, size, list, tab, aiView, browserTest, agentTest, agentFolder, agentOut});
+    QCommandLineOption browserInteract(QStringLiteral("browser-interact"), QStringLiteral("With --screenshot: open the HTML <file> and work it like the AI does (click, type, drag, scroll, tabs, live reload); the answers go next to the screenshot (diagnostics)."), QStringLiteral("file"));
+    parser.addOptions({dataDir, lang, registry, shot, size, list, tab, aiView, browserTest, browserInteract, agentTest, agentFolder, agentOut});
     parser.process(app);
 
     for (const char* font : {":/qt/qml/DriveVault/Master/resources/fonts/Inter-Variable.ttf",
@@ -95,12 +98,16 @@ int main(int argc, char* argv[])
         channel->setPermission(QStringLiteral("edit"));
         const QString prompt = parser.value(agentTest);
         const QString outFile = parser.value(agentOut);
-        QTimer::singleShot(1500, &app, [&app, channel, prompt, outFile] {
+        auto* agentWindow = qobject_cast<QQuickWindow*>(engine.rootObjects().constFirst());
+        QTimer::singleShot(1500, &app, [&app, channel, prompt, outFile, agentWindow] {
             const QString started = channel->send(prompt);
             auto* poll = new QTimer(&app);
             auto* clock = new QElapsedTimer;
             clock->start();
-            QObject::connect(poll, &QTimer::timeout, &app, [&app, channel, outFile, started, poll, clock] {
+            auto ticks = std::make_shared<int>(0);
+            QObject::connect(poll, &QTimer::timeout, &app, [&app, channel, outFile, started, poll, clock, agentWindow, ticks] {
+                if (++*ticks % 12 == 0 && agentWindow)                            // a picture of the window every 12 seconds: what the user would see while the AI works
+                    agentWindow->grabWindow().save(outFile + QStringLiteral(".%1.png").arg(*ticks / 12, 2, 10, QLatin1Char('0')));
                 if (started.isEmpty() && channel->busy() && clock->elapsed() < 25 * 60 * 1000)
                     return;
                 QJsonObject out{{"started", started}, {"seconds", clock->elapsed() / 1000}, {"messages", QJsonArray::fromVariantList(channel->messages())}};
@@ -120,7 +127,7 @@ int main(int argc, char* argv[])
                 window->resize(wh.at(0).toInt(), wh.at(1).toInt());
         }
         const QString file = parser.value(shot);
-        const int delay = parser.isSet(browserTest) ? 9000 : 1500;
+        const int delay = parser.isSet(browserInteract) ? 30000 : parser.isSet(browserTest) ? 9000 : 1500;
         if (parser.isSet(browserTest)) {              // diagnostics: what the AI's browser tools do with a real page (open -> read -> look), written next to the screenshot
             const QString page = QFileInfo(parser.value(browserTest)).absoluteFilePath();
             auto* bridge = ai.browserBridge();
@@ -144,6 +151,64 @@ int main(int argc, char* argv[])
                     });
                 });
             });
+        }
+        if (parser.isSet(browserInteract)) {          // diagnostics: open a test page and work it like the AI does (click, type, drag, scroll, tabs, live reload); every answer goes to <screenshot>.steps.txt
+            const QString page = QFileInfo(parser.value(browserInteract)).absoluteFilePath();
+            auto* bridge = ai.browserBridge();
+            struct Step { QString op; QVariantMap args; int waitAfterMs = 0; };
+            auto steps = std::make_shared<QList<Step>>(QList<Step>{
+                {QStringLiteral("open"), {{"url", QUrl::fromLocalFile(page).toString()}}},
+                {QStringLiteral("click"), {{"target", QStringLiteral("Go")}}},
+                {QStringLiteral("SHOT"), {}, 0},                                          // a picture of the window while the cursor is still shown
+                {QStringLiteral("click"), {{"target", QStringLiteral("#go")}}},
+                {QStringLiteral("type"), {{"target", QStringLiteral("#name")}, {"text", QStringLiteral("Somchai")}}},
+                {QStringLiteral("drag"), {{"from", QStringLiteral("#handle")}, {"to", QStringLiteral("#track")}}},
+                {QStringLiteral("scroll"), {{"direction", QStringLiteral("bottom")}}},
+                {QStringLiteral("read"), {}},
+                {QStringLiteral("tab"), {{"action", QStringLiteral("list")}, {"index", 0}}},
+                {QStringLiteral("MODIFY"), {}, 3000},                                     // change a file of the page on disk: the tab must follow it
+                {QStringLiteral("read"), {}},
+            });
+            auto log = std::make_shared<QString>();
+            auto at = std::make_shared<int>(0);
+            auto next = std::make_shared<std::function<void()>>();
+            *next = [=, &app]() {
+                if (*at >= steps->size()) {
+                    QFile f(file + QStringLiteral(".steps.txt"));
+                    if (f.open(QIODevice::WriteOnly))
+                        f.write(log->toUtf8());
+                    return;
+                }
+                const Step s = steps->at((*at)++);
+                if (s.op == QLatin1String("SHOT")) {
+                    const QImage image = window ? window->grabWindow() : QImage();
+                    image.save(file + QStringLiteral(".cursor.png"));
+                    *log += QStringLiteral("== picture of the window saved\n");
+                    QTimer::singleShot(0, &app, [next] { (*next)(); });
+                    return;
+                }
+                if (s.op == QLatin1String("MODIFY")) {
+                    QFile p(page);
+                    if (p.open(QIODevice::ReadOnly)) {
+                        QByteArray data = p.readAll();
+                        p.close();
+                        data.replace("Interact test</h1>", "Interact test CHANGED-BY-FILE</h1>");
+                        if (p.open(QIODevice::WriteOnly | QIODevice::Truncate))
+                            p.write(data);
+                    }
+                    *log += QStringLiteral("== file changed on disk\n");
+                    QTimer::singleShot(s.waitAfterMs, &app, [next] { (*next)(); });
+                    return;
+                }
+                bridge->request(s.op, s.args, [=, &app](const QVariantMap& r) {
+                    QString text = r.value(QStringLiteral("text")).toString() + r.value(QStringLiteral("error")).toString();
+                    if (s.op == QLatin1String("read"))
+                        text = text.left(500);
+                    *log += QStringLiteral("== %1 %2\n%3\n").arg(s.op, r.value(QStringLiteral("ok")).toBool() ? QStringLiteral("ok") : QStringLiteral("ERROR"), text);
+                    QTimer::singleShot(200, &app, [next] { (*next)(); });
+                });
+            };
+            QTimer::singleShot(0, &app, [next] { (*next)(); });
         }
         QTimer::singleShot(delay, &app, [window, file] {
             const QImage image = window ? window->grabWindow() : QImage();

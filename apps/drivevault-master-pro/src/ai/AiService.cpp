@@ -500,7 +500,7 @@ void AiChannel::sendTools()
             if (c.planMode)
                 tools += QStringLiteral(", exit_plan_mode");
             if (c.browser)
-                tools += c.vision ? QStringLiteral(", browser_open, browser_read, browser_look") : QStringLiteral(", browser_open, browser_read");
+                tools += QStringLiteral(", browser_open, browser_read, browser_click, browser_type, browser_scroll, browser_drag, browser_tab") + (c.vision ? QStringLiteral(", browser_look") : QString());
             QString modeText;
             if (m_permission == QLatin1String("read"))
                 modeText = QStringLiteral("You can only read; you cannot change anything or run anything. ");
@@ -529,6 +529,8 @@ void AiChannel::sendTools()
                        + (c.browser ? QStringLiteral("When you made a web page, check it in the browser of the program: browser_open it (the file name, e.g. index.html; the working folder is %1), read it with browser_read").arg(QDir::fromNativeSeparators(m_folder))
                                           + (c.vision ? QStringLiteral(" and LOOK at it with browser_look (first the top, then scroll down screen by screen), and fix what looks wrong or is missing. ")
                                                       : QStringLiteral(" (text, counts, images that did not load, logged errors) and fix what is missing. "))
+                                          + QStringLiteral("The page you write is shown to the user in the browser at once and follows your file changes. You can also try it like a user, with a visible cursor: "
+                                                           "browser_click (a CSS selector or the visible text), browser_type, browser_scroll, browser_drag - only in your own pages - and see whether buttons, forms and sliders work. ")
                                     : QString())
                        + QStringLiteral("Make only the changes the user asked for. Answer in the language of the user's message (Thai or English).")
                        + web;

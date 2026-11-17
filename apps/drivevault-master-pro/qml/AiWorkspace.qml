@@ -69,6 +69,17 @@ Item {
     readonly property bool browserShown: root.agent && root.browserOpen
     function openBrowser() { if (Ai.browser.compiledIn) browserOpen = true }
     Connections { target: Ai.browser; function onViewWanted() { root.openBrowser() } }      // the AI opens a page of its work: the user sees it
+    property string pendingPreview: ""                       // the page the AI wrote, waiting for the browser view to exist
+    Connections {
+        target: Ai.browser
+        function onPreviewRequested(url) {                  // the AI wrote a web page: the browser opens it (a tab of its own) and follows the file while the AI goes on
+            root.openBrowser()
+            if (browserLoader.item)
+                browserLoader.item.showPreview(url)
+            else
+                root.pendingPreview = url
+        }
+    }
     property var pinnedManual: undefined                    // the user opened / closed the pinned step box by hand (undefined = automatic: open while it works)
     Connections { target: root.ch; function onBusyChanged() { if (root.ch.busy) root.pinnedManual = undefined } }
     property var attachments: []                         // [{kind: file | image, name, text | data}] waiting for Send
@@ -1539,6 +1550,7 @@ Item {
                 Layout.preferredWidth: Math.max(440, Math.round(root.width * 0.4))
                 Layout.fillWidth: root.browserWide                     // expanded: it takes the place of the conversation too
                 Layout.fillHeight: true
+                onLoaded: if (root.pendingPreview !== "") { item.showPreview(root.pendingPreview); root.pendingPreview = "" }
                 sourceComponent: BrowserView {
                     expanded: root.browserWide
                     onCloseRequested: { root.browserWide = false; root.browserOpen = false }

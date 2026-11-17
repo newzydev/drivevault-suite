@@ -2266,6 +2266,93 @@ private slots:
         const QString second = QString::fromUtf8(server.log.at(3));
         QVERIFY(second.contains("an earlier screenshot of the page was removed"));
     }
+    void theBrowserWatchesTheFolderOfAPageAndTellsWhenAFileChanged()
+    {
+        QDir().mkpath(m_dir.filePath("livewatch"));
+        auto write = [&](const QString& name, const QByteArray& data) {
+            QFile f(m_dir.filePath("livewatch/" + name));
+            f.open(QIODevice::WriteOnly);
+            f.write(data);
+        };
+        write("index.html", "<p>one</p>");
+        write("notes.txt", "x");                                                            // not a kind of file a page uses: it is not watched
+        dm::browser::BrowserBridge bridge;
+        QSignalSpy changed(&bridge, &dm::browser::BrowserBridge::liveFilesChanged);
+        bridge.watchFolder(m_dir.filePath("livewatch"));
+        bridge.watchFolder(m_dir.filePath("livewatch"));                                    // twice is one
+        write("notes.txt", "yy");
+        QTest::qWait(1200);
+        QCOMPARE(changed.count(), 0);
+        write("index.html", "<p>two two</p>");
+        QTRY_VERIFY_WITH_TIMEOUT(changed.count() >= 1, 5000);
+        QCOMPARE(QDir::cleanPath(changed.at(0).at(0).toString()), QDir::cleanPath(m_dir.filePath("livewatch")));
+        write("style.css", "p{color:red}");                                                 // a new file of the page
+        QTRY_VERIFY_WITH_TIMEOUT(changed.count() >= 2, 5000);
+        bridge.unwatchAll();
+        const int n = changed.count();
+        write("index.html", "<p>three three three</p>");
+        QTest::qWait(1200);
+        QCOMPARE(changed.count(), n);                                                       // nothing is watched any more
+        QCOMPARE(bridge.toLocalFile(QUrl::fromLocalFile(m_dir.filePath("livewatch/index.html")).toString()), m_dir.filePath("livewatch/index.html"));
+        QVERIFY(bridge.toLocalFile("https://example.com/").isEmpty());
+        QVERIFY(bridge.aiMayInteract("file:///C:/work/index.html") && bridge.aiMayInteract("http://localhost:3000/") && bridge.aiMayInteract("http://127.0.0.1:8080/x"));
+        QVERIFY(!bridge.aiMayInteract("https://example.com/") && !bridge.aiMayInteract("http://192.168.1.5/") && !bridge.aiMayInteract("ftp://localhost/") && !bridge.aiMayInteract("about:blank"));
+    }
+    void aWebPageTheAgentWritesIsShownLiveOncePerPageAndTheNewBrowserToolsPassTheirArguments()
+    {
+        QDir().mkpath(m_dir.filePath("livejob"));
+        dm::browser::BrowserBridge bridge;
+        bridge.setCompiledIn(true);
+        QSignalSpy preview(&bridge, &dm::browser::BrowserBridge::previewRequested);
+        QList<QPair<QString, QVariantMap>> seen;
+        QObject::connect(&bridge, &dm::browser::BrowserBridge::command, &bridge, [&](int id, const QString& op, const QVariantMap& args) {
+            seen.append({op, args});
+            QTimer::singleShot(0, &bridge, [&bridge, id] { bridge.reply(id, {{"ok", true}, {"text", "done"}}); });
+        });
+        bridge.setViewReady(true);
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue << agentReply({agentCall("w1", "write_file", {{"path", "index.html"}, {"content", "<p>a</p>"}})}, QString())
+                     << agentReply({agentCall("w2", "append_file", {{"path", "index.html"}, {"text", "<p>b</p>"}}), agentCall("w3", "write_file", {{"path", "other.html"}, {"content", "<p>c</p>"}}),
+                                    agentCall("w4", "write_file", {{"path", "style.css"}, {"content", "p{}"}})}, QString())
+                     << agentReply({agentCall("k1", "browser_click", {{"target", "Go"}}), agentCall("k2", "browser_type", {{"target", "#name"}, {"text", "Somchai"}}),
+                                    agentCall("k3", "browser_scroll", {{"direction", "down"}}), agentCall("k4", "browser_drag", {{"from", "#handle"}, {"to", "#track"}}),
+                                    agentCall("k5", "browser_tab", {{"action", "switch"}, {"index", 2}}), agentCall("k6", "browser_open", {{"url", "index.html"}, {"new_tab", true}}),
+                                    agentCall("k7", "browser_scroll", {{"direction", "sideways"}}), agentCall("k8", "browser_click", {})}, QString())
+                     << agentReply({}, QStringLiteral("Done."));
+        QNetworkAccessManager net;
+        LocalAgent agent(&net);
+        QSignalSpy done(&agent, &LocalAgent::finished);
+        LocalAgent::Config c;
+        c.baseUrl = server.base() + "/v1";
+        c.folder = m_dir.filePath("livejob");
+        c.allowEdits = true;
+        c.browser = &bridge;
+        c.reviewWork = false;
+        c.history = {{"user", "make and try a page"}};
+        QCOMPARE(agent.start(c), QString());
+        QVERIFY(done.wait(20000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+        QCOMPARE(preview.count(), 2);                                                       // index.html (written, then appended: once) and other.html; style.css is not a page
+        QVERIFY(preview.at(0).at(0).toString().endsWith("/livejob/index.html") && preview.at(1).at(0).toString().endsWith("/livejob/other.html"));
+        QStringList ops;
+        for (const auto& s : seen)
+            ops << s.first;
+        QCOMPARE(ops, QStringList({"click", "type", "scroll", "drag", "tab", "open"}));     // the two wrong calls (direction sideways, no target) never reached the page
+        QCOMPARE(seen.at(0).second.value("target").toString(), QString("Go"));
+        QCOMPARE(seen.at(1).second.value("text").toString(), QString("Somchai"));
+        QCOMPARE(seen.at(2).second.value("direction").toString(), QString("down"));
+        QCOMPARE(seen.at(3).second.value("to").toString(), QString("#track"));
+        QCOMPARE(seen.at(4).second.value("index").toInt(), 2);
+        QVERIFY(seen.at(5).second.value("newTab").toBool());
+        QVERIFY(seen.at(5).second.value("url").toString().endsWith("/livejob/index.html"));
+        const QJsonArray msgs = requestBody(server.log.at(3)).value("messages").toArray();
+        int errors = 0;
+        for (const QJsonValue& m : msgs)
+            if (m.toObject().value("role").toString() == "tool" && m.toObject().value("content").toString().startsWith("Error:"))
+                ++errors;
+        QCOMPARE(errors, 2);
+    }
     void withoutVisionThereIsNoLookToolAndAnAddressOutsideTheFolderIsRefused()
     {
         QDir().mkpath(m_dir.filePath("brnov"));

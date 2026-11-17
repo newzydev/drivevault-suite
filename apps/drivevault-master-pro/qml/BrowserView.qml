@@ -4,10 +4,11 @@ import QtQuick.Layouts
 import QtWebEngine
 import DriveVault.Master.Backend
 
-// The browser of the program (Qt WebEngine = Chromium). The user browses here like in any browser: address bar, back / forward / reload, and permissions that work
+// The browser of the program (Qt WebEngine = Chromium). The user browses here like in any browser: tabs, address bar, back / forward / reload, and permissions that work
 // like Chrome's - a site that wants the camera, the microphone, the location, notifications or the clipboard asks in a bar under the address bar (Allow / Block,
-// remembered on this PC), and the lock button lists what a site may do and lets the user change or reset it. The AI uses the SAME view (Ai.browser = BrowserBridge):
-// it can open a page of its work, read it and take a picture of it, but it cannot answer a permission question - only the user can.
+// remembered on this PC), and the lock button lists what a site may do and lets the user change or reset it. The AI uses the SAME views (Ai.browser = BrowserBridge):
+// it opens the page of its work (a tab of its own that FOLLOWS the files while the AI writes them), reads it, takes a picture of it and works the page with a visible
+// cursor - click, type, scroll, drag - but only in pages of this computer; it cannot answer a permission question - only the user can.
 // Downloads are not supported yet (a download is refused and the bar says so).
 Item {
     id: root
@@ -21,11 +22,16 @@ Item {
     // ---- state ---------------------------------------------------------------------------------------------------------------------------
     property var pending: []                 // permission requests that wait for the user (WebEnginePermission values), oldest first
     property string notice: ""               // a short line under the address bar (downloads are refused, ...)
-    property var consoleErrors: []           // errors the page logged since the last open (for the AI)
-    property var failedLoads: []
     property int openId: 0                   // the AI command (id) that waits for a page to load, 0 = none
-    readonly property bool loading: view.loading
-    readonly property bool isStart: view.url.toString() === "" || view.url.toString() === "about:blank"      // nothing is open: the start page is shown
+    property int openTab: -1                 // ... and the tab that loads it
+    property int cur: 0                      // the tab that is shown
+    // the tab that is shown (a WebEngineView); null only before the first tab exists
+    readonly property var view: views.count > 0 && cur >= 0 && cur < views.count ? views.itemAt(cur) : null
+    readonly property string curUrl: view ? view.url.toString() : ""
+    readonly property bool loading: view ? view.loading : false
+    readonly property bool isStart: curUrl === "" || curUrl === "about:blank"      // nothing is open in this tab: the start page is shown
+
+    ListModel { id: tabs }                   // one row per tab: {title, address, busy, agent}
 
     // what each kind of permission is called (the enum values of QWebEnginePermission::PermissionType)
     readonly property var permissionTypes: [
@@ -66,8 +72,69 @@ Item {
     }
     function go(text) {
         const u = resolveInput(text)
-        if (u !== "")
+        if (u !== "" && view)
             view.url = u
+    }
+
+    // ---- tabs --------------------------------------------------------------------------------------------------------------------------------
+    function newTab(address, activate, agent) {
+        tabs.append({ title: "", address: address || "about:blank", busy: false, agent: agent === true })
+        if (activate !== false)
+            cur = tabs.count - 1
+        return tabs.count - 1
+    }
+    function closeTab(i) {
+        if (i < 0 || i >= tabs.count)
+            return
+        if (tabs.count === 1) {                                              // the last tab is never removed: it goes back to the start page
+            views.itemAt(0).url = "about:blank"
+            tabs.setProperty(0, "agent", false)
+            return
+        }
+        const was = cur
+        tabs.remove(i)
+        cur = Math.max(0, Math.min(tabs.count - 1, i < was ? was - 1 : (i === was ? Math.min(was, tabs.count - 1) : was)))
+    }
+    function indexOfUrl(address) {
+        for (let i = 0; i < views.count; ++i)
+            if (views.itemAt(i) && views.itemAt(i).url.toString() === address)
+                return i
+        return -1
+    }
+    // the page the AI wrote: shown in a tab of its own, which follows the file (see liveFilesChanged)
+    function showPreview(address) {
+        if (indexOfUrl(address) >= 0)
+            return
+        for (let i = 0; i < tabs.count; ++i)
+            if (tabs.get(i).agent === true) {                                // the AI's tab: it goes to the new page
+                views.itemAt(i).url = address
+                cur = i
+                return
+            }
+        for (let i = 0; i < tabs.count; ++i)
+            if (views.itemAt(i).url.toString() === "about:blank") {          // an empty tab is used before a new one is made
+                views.itemAt(i).url = address
+                tabs.setProperty(i, "agent", true)
+                cur = i
+                return
+            }
+        newTab(address, true, true)
+    }
+    function watchTab(i) {
+        const f = bridge.toLocalFile(views.itemAt(i).url.toString())
+        if (f !== "")
+            bridge.watchFolder(f.replace(/[\\\/][^\\\/]*$/, ""))
+    }
+    Connections {
+        target: root.bridge
+        function onLiveFilesChanged(folder) {                                // a file of the page changed (the AI is writing): the tabs that show a page of this folder reload
+            const dir = folder.replace(/\\/g, "/").toLowerCase()
+            for (let i = 0; i < views.count; ++i) {
+                const f = root.bridge.toLocalFile(views.itemAt(i).url.toString()).replace(/\\/g, "/").toLowerCase()
+                if (f !== "" && f.indexOf(dir + "/") === 0)
+                    views.itemAt(i).reload()
+            }
+        }
     }
 
     WebEngineProfile {
@@ -89,7 +156,7 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        // ---- the tabs of the program ------------------------------------------------------------------------------------------------
+        // ---- the header ---------------------------------------------------------------------------------------------------------------
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: 64
@@ -107,6 +174,69 @@ Item {
             }
         }
 
+        // ---- the tabs of the browser ---------------------------------------------------------------------------------------------------
+        Rectangle {
+            objectName: "brTabs"
+            Layout.fillWidth: true
+            implicitHeight: 42
+            color: "#101114"
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                spacing: 6
+                ListView {
+                    id: tabStrip
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    orientation: ListView.Horizontal
+                    spacing: 4
+                    clip: true
+                    model: tabs
+                    boundsBehavior: Flickable.StopAtBounds
+                    delegate: Rectangle {
+                        id: tab
+                        required property int index
+                        required property string title
+                        required property string address
+                        required property bool busy
+                        required property bool agent
+                        readonly property bool active: index === root.cur
+                        width: Math.max(90, Math.min(200, (tabStrip.width - 40) / Math.max(1, tabs.count)))
+                        height: tabStrip.height - 8
+                        y: 6
+                        radius: 9
+                        color: active ? Theme.surface : tabMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                        border.width: active ? 1 : 0
+                        border.color: active ? Theme.accent : "transparent"
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 6
+                            spacing: 6
+                            Text { visible: tab.agent; text: "✦"; font.pixelSize: 11; color: Theme.accent }
+                            Text {
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                                text: (tab.busy ? "… " : "") + (tab.title !== "" ? tab.title : (tab.address === "about:blank" ? Tr.s("br_new_tab") : root.hostOf(tab.address)))
+                                font.pixelSize: 12
+                                color: tab.active ? Theme.text : Theme.textSecondary
+                            }
+                            Text {
+                                text: "✕"
+                                font.pixelSize: 11
+                                color: Theme.textDisabled
+                                MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: root.closeTab(tab.index) }
+                            }
+                        }
+                        MouseArea { id: tabMouse; anchors.fill: parent; z: -1; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.cur = tab.index }
+                    }
+                }
+                MButton { objectName: "brNewTab"; variant: "ghost"; compact: true; text: "+"; font.pixelSize: 16; onClicked: root.newTab("about:blank", true, false); Accessible.name: Tr.s("br_new_tab") }
+            }
+        }
+
         // ---- address bar ----------------------------------------------------------------------------------------------------------------
         Rectangle {
             Layout.fillWidth: true
@@ -117,15 +247,15 @@ Item {
                 anchors.leftMargin: 14
                 anchors.rightMargin: 14
                 spacing: 8
-                MButton { objectName: "brBack"; variant: "ghost"; compact: true; text: "‹"; font.pixelSize: 18; enabled: view.canGoBack; onClicked: view.goBack(); Accessible.name: Tr.s("br_back") }
-                MButton { objectName: "brForward"; variant: "ghost"; compact: true; text: "›"; font.pixelSize: 18; enabled: view.canGoForward; onClicked: view.goForward(); Accessible.name: Tr.s("br_forward") }
+                MButton { objectName: "brBack"; variant: "ghost"; compact: true; text: "‹"; font.pixelSize: 18; enabled: root.view ? root.view.canGoBack : false; onClicked: root.view.goBack(); Accessible.name: Tr.s("br_back") }
+                MButton { objectName: "brForward"; variant: "ghost"; compact: true; text: "›"; font.pixelSize: 18; enabled: root.view ? root.view.canGoForward : false; onClicked: root.view.goForward(); Accessible.name: Tr.s("br_forward") }
                 MButton {
                     objectName: "brReload"
                     variant: "ghost"
                     compact: true
-                    text: view.loading ? "✕" : "↻"
-                    onClicked: view.loading ? view.stop() : view.reload()
-                    Accessible.name: Tr.s(view.loading ? "br_stop" : "br_reload")
+                    text: root.loading ? "✕" : "↻"
+                    onClicked: root.loading ? root.view.stop() : root.view.reload()
+                    Accessible.name: Tr.s(root.loading ? "br_stop" : "br_reload")
                 }
                 // the lock: what this site may do (permissions) - like the site information of Chrome
                 MButton {
@@ -133,7 +263,7 @@ Item {
                     objectName: "brSite"
                     variant: "secondary"
                     compact: true
-                    text: (view.url.toString().indexOf("https:") === 0 ? "🔒 " : "ⓘ ") + root.hostOf(view.url)
+                    text: (root.curUrl.indexOf("https:") === 0 ? "🔒 " : "ⓘ ") + root.hostOf(root.curUrl)
                     visible: !root.isStart
                     Layout.maximumWidth: 240
                     onClicked: { siteMenu.refresh(); siteMenu.open() }
@@ -144,12 +274,12 @@ Item {
                     objectName: "brAddress"
                     Layout.fillWidth: true
                     placeholderText: Tr.s("br_address_placeholder")
-                    text: root.isStart ? "" : view.url.toString()
-                    onAccepted: { root.go(text); view.forceActiveFocus() }
+                    text: root.isStart ? "" : root.curUrl
+                    onAccepted: { root.go(text); if (root.view) root.view.forceActiveFocus() }
                     onActiveFocusChanged: if (activeFocus) selectAll()
                     Connections {
-                        target: view
-                        function onUrlChanged() { if (!addressField.activeFocus) addressField.text = root.isStart ? "" : view.url.toString() }
+                        target: root
+                        function onCurUrlChanged() { if (!addressField.activeFocus) addressField.text = root.isStart ? "" : root.curUrl }
                     }
                 }
                 MButton { objectName: "brAllSites"; variant: "ghost"; compact: true; text: Tr.s("br_all_sites"); onClicked: allSites.show() }
@@ -158,8 +288,8 @@ Item {
             Rectangle {                                                       // load progress
                 anchors.bottom: parent.bottom
                 height: 2
-                width: parent.width * view.loadProgress / 100
-                visible: view.loading
+                width: parent.width * (root.view ? root.view.loadProgress : 0) / 100
+                visible: root.loading
                 color: Theme.accent
             }
         }
@@ -215,17 +345,64 @@ Item {
             Text { anchors.verticalCenter: parent.verticalCenter; x: 16; text: Tr.s("br_ai_using"); font.pixelSize: 12; color: Theme.accent }
         }
 
-        WebEngineView {
-            id: view
-            objectName: "brView"
+        // ---- the pages: one web view per tab; the AI's cursor and the start page are drawn above them -------------------------------------
+        Item {
+            id: stage
             Layout.fillWidth: true
             Layout.fillHeight: true
-            profile: profile
-            url: "about:blank"
-            settings.javascriptCanOpenWindows: true
-            settings.fullScreenSupportEnabled: false
+            clip: true
 
-            // the start page (nothing open yet): a native page in the style of the program instead of a white sheet
+            Repeater {
+                id: views
+                model: tabs
+                delegate: WebEngineView {
+                    id: wv
+                    required property int index
+                    anchors.fill: parent
+                    visible: index === root.cur
+                    profile: profile
+                    Component.onCompleted: url = model.address                  // the first address of the tab (no binding: a redirect must not start a new load)
+                    settings.javascriptCanOpenWindows: true
+                    settings.fullScreenSupportEnabled: false
+                    property var consoleErrors: []                              // what this page logged since it started loading (for the AI)
+
+                    onUrlChanged: { if (index < tabs.count) tabs.setProperty(index, "address", url.toString()) }
+                    onTitleChanged: { if (index < tabs.count) tabs.setProperty(index, "title", title) }
+                    onPermissionRequested: permission => {
+                        if (permission.state === WebEnginePermission.State.Granted || permission.state === WebEnginePermission.State.Denied) {
+                            permission.state === WebEnginePermission.State.Granted ? permission.grant() : permission.deny()   // already decided by the user earlier
+                            return
+                        }
+                        const p = root.pending.slice()
+                        p.push(permission)
+                        root.pending = p                                          // the bar asks; nothing is granted before the user answers
+                    }
+                    onNewWindowRequested: request => { root.newTab(request.requestedUrl.toString(), true, false) }   // a link that wants a new window: a new tab
+                    onJavaScriptConsoleMessage: (level, message, lineNumber, sourceID) => {
+                        if (level === WebEngineView.ErrorMessageLevel) {
+                            const e = consoleErrors.slice(0, 19)
+                            e.push((sourceID ? sourceID.split("/").pop() + ":" + lineNumber + " " : "") + message)
+                            consoleErrors = e
+                        }
+                    }
+                    onLoadingChanged: loadingInfo => {
+                        if (index < tabs.count)
+                            tabs.setProperty(index, "busy", loading)
+                        if (loadingInfo.status === WebEngineView.LoadStartedStatus) {
+                            consoleErrors = []
+                        } else if (loadingInfo.status === WebEngineView.LoadFailedStatus) {
+                            if (root.openId !== 0 && root.openTab === index)
+                                root.finishOpen(false, loadingInfo.errorString)
+                        } else if (loadingInfo.status === WebEngineView.LoadSucceededStatus) {
+                            root.watchTab(index)                                  // a page of this computer: its folder is watched, the tab follows the files
+                            if (root.openId !== 0 && root.openTab === index)
+                                settle.restart()
+                        }
+                    }
+                }
+            }
+
+            // the start page (nothing open in this tab): a native page in the style of the program instead of a white sheet
             Rectangle {
                 objectName: "brStartPage"
                 z: 10                                                     // above the web content (the white sheet of an empty page)
@@ -311,33 +488,55 @@ Item {
                 }
             }
 
-            onPermissionRequested: permission => {                if (permission.state === WebEnginePermission.State.Granted || permission.state === WebEnginePermission.State.Denied) {
-                    permission.state === WebEnginePermission.State.Granted ? permission.grant() : permission.deny()   // already decided by the user earlier
-                    return
+            // the AI's cursor: it moves to the element, presses, and lets go (the page gets real mouse events; this is what the user sees of them)
+            Item {
+                id: aiCursor
+                objectName: "brAiCursor"
+                z: 60
+                property real tx: stage.width / 2
+                property real ty: stage.height / 2
+                x: tx
+                y: ty
+                width: 28
+                height: 34
+                opacity: 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: 260 } }
+                Behavior on x { NumberAnimation { id: moveX; duration: 560; easing.type: Easing.InOutCubic } }
+                Behavior on y { NumberAnimation { duration: 560; easing.type: Easing.InOutCubic } }
+                Rectangle {                                                       // the click: a ring that grows and fades
+                    id: ripple
+                    width: 10; height: 10; radius: 5
+                    x: -5; y: -5
+                    color: "transparent"
+                    border.width: 3
+                    border.color: Theme.accent
+                    opacity: 0
+                    scale: 1
+                    ParallelAnimation {
+                        id: rippleAnim
+                        NumberAnimation { target: ripple; property: "scale"; from: 1; to: 5; duration: 480; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: ripple; property: "opacity"; from: 0.95; to: 0; duration: 480 }
+                    }
                 }
-                const p = root.pending.slice()
-                p.push(permission)
-                root.pending = p                                              // the bar asks; nothing is granted before the user answers
-            }
-            onNewWindowRequested: request => { view.url = request.requestedUrl }   // no pop-up windows: the page opens here
-            onJavaScriptConsoleMessage: (level, message, lineNumber, sourceID) => {
-                if (level === WebEngineView.ErrorMessageLevel) {
-                    const e = root.consoleErrors.slice(0, 19)
-                    e.push((sourceID ? sourceID.split("/").pop() + ":" + lineNumber + " " : "") + message)
-                    root.consoleErrors = e
+                Canvas {                                                          // an arrow like a mouse pointer, the tip at (0, 0)
+                    width: 28; height: 34
+                    onPaint: {
+                        const c = getContext("2d")
+                        c.reset()
+                        c.beginPath()
+                        c.moveTo(1, 1); c.lineTo(1, 24); c.lineTo(7, 18); c.lineTo(12, 30); c.lineTo(16, 28); c.lineTo(11, 17); c.lineTo(19, 17); c.closePath()
+                        c.fillStyle = "#FFFFFF"
+                        c.fill()
+                        c.lineWidth = 2
+                        c.strokeStyle = "#14161B"
+                        c.stroke()
+                    }
                 }
+                Rectangle { x: 20; y: 24; width: pill.implicitWidth + 14; height: 20; radius: 10; color: Theme.accent                    // a small label: this is the AI
+                    Text { id: pill; anchors.centerIn: parent; text: "AI"; font.pixelSize: 11; font.weight: Font.Bold; color: Theme.readableOn(Theme.accent) } }
             }
-            onLoadingChanged: loadingInfo => {
-                if (loadingInfo.status === WebEngineView.LoadStartedStatus) {
-                    root.consoleErrors = []
-                } else if (loadingInfo.status === WebEngineView.LoadFailedStatus) {
-                    if (root.openId !== 0)
-                        root.finishOpen(false, loadingInfo.errorString)
-                } else if (loadingInfo.status === WebEngineView.LoadSucceededStatus) {
-                    if (root.openId !== 0)
-                        settle.restart()
-                }
-            }
+            Timer { id: cursorHide; interval: 4500; onTriggered: aiCursor.opacity = 0 }
         }
     }
 
@@ -370,7 +569,7 @@ Item {
         function refresh() {
             const r = []
             for (const p of root.permissionTypes) {
-                const q = profile.queryPermission(view.url, p.type)
+                const q = profile.queryPermission(root.curUrl, p.type)
                 r.push({ type: p.type, key: p.key, state: q.state, permission: q })
             }
             rows = r
@@ -378,7 +577,7 @@ Item {
         background: Rectangle { radius: 14; color: Theme.surface; border.width: 1; border.color: Theme.border }
         contentItem: ColumnLayout {
             spacing: 10
-            Text { text: root.hostOf(view.url); font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.text; elide: Text.ElideRight; Layout.fillWidth: true }
+            Text { text: root.hostOf(root.curUrl); font.pixelSize: 15; font.weight: Font.DemiBold; color: Theme.text; elide: Text.ElideRight; Layout.fillWidth: true }
             Text { text: Tr.s("br_site_what"); font.pixelSize: 12; color: Theme.textSecondary; wrapMode: Text.Wrap; Layout.fillWidth: true }
             Repeater {
                 model: siteMenu.rows
@@ -473,15 +672,24 @@ Item {
         }
     }
 
-    // ---- commands of the AI (BrowserBridge): open | read | look ---------------------------------------------------------------------------
+    // ---- commands of the AI (BrowserBridge): open | read | look | click | type | scroll | drag | tab ------------------------------------------
     property bool aiBusy: false
     Timer { id: busyOff; interval: 4000; onTriggered: root.aiBusy = false }
+
+    // a one-shot timer: later(ms, fn)
+    function later(ms, fn) {
+        const t = Qt.createQmlObject('import QtQuick; Timer { repeat: false }', root)
+        t.interval = ms
+        t.triggered.connect(function() { t.destroy(); fn() })
+        t.start()
+    }
 
     // the page is "ready" a moment after the load ended (fonts, images, scripts that build the page)
     Timer { id: settle; interval: 900; onTriggered: root.finishOpen(true, "") }
     Timer { id: openLimit; interval: 25000; onTriggered: if (root.openId !== 0) root.finishOpen(true, "", true) }
     function finishOpen(ok, error, slow) {
         const id = root.openId
+        const v = views.itemAt(root.openTab)
         root.openId = 0
         settle.stop()
         openLimit.stop()
@@ -491,7 +699,8 @@ Item {
             root.bridge.reply(id, { ok: false, error: "The page could not be loaded: " + error })
             return
         }
-        root.bridge.reply(id, { ok: true, text: "Opened " + view.url + " (title: " + view.title + ")" + (slow ? ". The page was still loading after 25 seconds." : ".") })
+        root.bridge.reply(id, { ok: true, text: "Opened " + (v ? v.url : "") + " (title: " + (v ? v.title : "") + ")" + (slow ? ". The page was still loading after 25 seconds." : ".")
+                                                + " It is tab " + (root.openTab + 1) + " of " + tabs.count + "." })
     }
 
     // fixed scripts only: the AI never sends code into a page
@@ -505,10 +714,27 @@ Item {
         + "scripts:document.scripts.length,styleSheets:document.styleSheets.length,inlineStyles:document.querySelectorAll('[style]').length,pageHeight:document.documentElement.scrollHeight,"
         + "viewport:window.innerHeight,viewportWidth:window.innerWidth,horizontalScroll:document.documentElement.scrollWidth>window.innerWidth+1,font:cs?cs.fontFamily:'',background:cs?cs.backgroundColor:''})})()"
     readonly property string posScript: "JSON.stringify({y:Math.round(window.scrollY),h:document.documentElement.scrollHeight,v:window.innerHeight})"
+    // find an element by CSS selector or by its visible text, scroll it to the middle of the window and measure it (the argument is DATA: a JSON string)
+    readonly property string findScript: "(function(t,doScroll){var el=null;try{el=document.querySelector(t)}catch(e){}"
+        + "if(!el){var low=String(t).toLowerCase().trim();var all=[].slice.call(document.querySelectorAll('a,button,input,select,textarea,summary,label,[role=button],[onclick],li,h1,h2,h3,h4,p,span,div,img'));"
+        + "var txt=function(e){return String(e.innerText||e.value||e.placeholder||e.alt||e.getAttribute('aria-label')||e.title||'').trim().toLowerCase()};"
+        + "el=all.find(function(e){return txt(e)===low})||all.find(function(e){return txt(e).indexOf(low)>=0&&e.children.length<4})}"
+        + "if(!el)return JSON.stringify({ok:false});"
+        + "if(doScroll)el.scrollIntoView({block:'center',inline:'center',behavior:'instant'});"
+        + "var r=el.getBoundingClientRect();"
+        + "return JSON.stringify({ok:true,x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height,tag:el.tagName.toLowerCase(),text:String(el.innerText||el.value||el.alt||'').trim().slice(0,60),href:el.getAttribute('href')||'',"
+        + "inside:r.right>0&&r.bottom>0&&r.left<window.innerWidth&&r.top<window.innerHeight})})"
+    function find(target, doScroll, cb) {
+        root.view.runJavaScript(root.findScript + "(" + JSON.stringify(target) + "," + (doScroll ? "true" : "false") + ")", function(r) {
+            let o = { ok: false }
+            try { o = JSON.parse(r) } catch (e) {}
+            cb(o)
+        })
+    }
 
     function describeRead(r) {
         const o = JSON.parse(r)
-        let s = "Page: " + o.title + " (" + view.url + ")\n"
+        let s = "Page: " + o.title + " (" + root.curUrl + ")\n"
         s += "Size: " + o.viewportWidth + " px wide window, the page is " + o.pageHeight + " px high" + (o.horizontalScroll ? " and scrolls sideways (something is wider than the window)" : "") + ".\n"
         s += "Counts: " + o.headings.length + " headings, " + o.sections + " sections (header, footer, nav, main, section, article), " + o.images + " images, " + o.links + " links, "
              + o.buttons + " buttons, " + o.forms + " forms, " + o.scripts + " scripts.\n"
@@ -520,33 +746,163 @@ Item {
             s += "WARNING: stylesheets that did not load: " + o.badStylesheets.join(", ") + "\n"
         if (o.brokenImages.length > 0)
             s += "WARNING: images that did not load: " + o.brokenImages.join(", ") + "\n"
-        if (root.consoleErrors.length > 0)
-            s += "Errors the page logged:\n- " + root.consoleErrors.join("\n- ") + "\n"
+        const errors = root.view ? root.view.consoleErrors : []
+        if (errors.length > 0)
+            s += "Errors the page logged:\n- " + errors.join("\n- ") + "\n"
         if (o.headings.length > 0)
             s += "Headings:\n" + o.headings.join("\n") + "\n"
         s += "Visible text (" + o.textLength + " characters" + (o.textLength > 4000 ? ", cut at 4000" : "") + "):\n" + o.text
         return s
     }
 
+    // ---- the cursor and the input it makes ---------------------------------------------------------------------------------------------------
+    function cursorTo(x, y) {
+        aiCursor.opacity = 1
+        aiCursor.tx = x
+        aiCursor.ty = y
+        cursorHide.restart()
+    }
+    function clickRipple() { rippleAnim.restart() }
+    function mouse(kind, x, y) { root.bridge.mouse(root.view, kind, x, y) }
+    // the AI works only in pages of this computer
+    function mayInteract() { return root.view && root.bridge.aiMayInteract(root.curUrl) }
+    readonly property string denyInteract: "the AI may click, type and drag only in pages of this computer (your own work), not on websites; use browser_read to read this page"
+
+    function doClick(id, target, then) {                                      // locate -> cursor -> real press and release
+        find(target, true, function(o) {
+            if (!o.ok) { root.bridge.reply(id, { ok: false, error: "no element matches \"" + target + "\": use a CSS selector or the visible text; browser_read lists the headings and text" }); return }
+            later(120, function() {
+                cursorTo(o.x, o.y)
+                later(640, function() {
+                    mouse("move", o.x, o.y)
+                    later(120, function() {
+                        mouse("press", o.x, o.y)
+                        clickRipple()
+                        later(110, function() {
+                            mouse("release", o.x, o.y)
+                            later(450, function() { then(o) })
+                        })
+                    })
+                })
+            })
+        })
+    }
+
     function run(id, op, args) {
         root.aiBusy = true
         busyOff.restart()
+        if (tabs.count === 0)
+            newTab("about:blank", true, false)
         if (op === "open") {
+            if (args.newTab === true)
+                newTab(args.url, true, true)
+            else if (root.curUrl === args.url)
+                root.view.reload()
+            else
+                root.view.url = args.url
+            if (!(tabs.get(root.cur).agent === true)) tabs.setProperty(root.cur, "agent", true)   // the page the AI opened is its tab: later previews go there
+            root.openTab = root.cur
             root.openId = id
             openLimit.restart()
-            if (view.url.toString() === args.url)
-                view.reload()
-            else
-                view.url = args.url
+        } else if (op === "tab") {
+            const i = args.index - 1
+            if (args.action === "list") {
+                let s = "Tabs (" + tabs.count + "):"
+                for (let k = 0; k < tabs.count; ++k)
+                    s += "\n" + (k + 1) + (k === root.cur ? "*" : " ") + " " + (tabs.get(k).title || "(no title)") + " - " + views.itemAt(k).url
+                root.bridge.reply(id, { ok: true, text: s + "\n(* = the tab that is shown)" })
+            } else if (i < 0 || i >= tabs.count) {
+                root.bridge.reply(id, { ok: false, error: "there is no tab " + args.index + " (use browser_tab list)" })
+            } else if (args.action === "switch") {
+                root.cur = i
+                root.bridge.reply(id, { ok: true, text: "Now showing tab " + args.index + ": " + views.itemAt(i).url })
+            } else {
+                closeTab(i)
+                root.bridge.reply(id, { ok: true, text: "Closed tab " + args.index + ". " + tabs.count + " tab(s) left." })
+            }
         } else if (op === "read") {
-            view.runJavaScript(root.readScript, function(r) {
+            root.view.runJavaScript(root.readScript, function(r) {
                 if (r === undefined || r === null || r === "")
                     root.bridge.reply(id, { ok: false, error: "no page is open yet: use browser_open first" })
                 else
                     root.bridge.reply(id, { ok: true, text: root.describeRead(r) })
             })
+        } else if (op === "click") {
+            if (!mayInteract()) { root.bridge.reply(id, { ok: false, error: root.denyInteract }); return }
+            const before = root.curUrl
+            doClick(id, args.target, function(o) {
+                root.bridge.reply(id, { ok: true, text: "Clicked " + o.tag + (o.text ? " \"" + o.text + "\"" : "") + (o.href ? " (link to " + o.href + ")" : "")
+                                                       + ". " + (root.curUrl !== before ? "The page went to " + root.curUrl + "." : "The page stayed at " + root.curUrl + ".") })
+            })
+        } else if (op === "type") {
+            if (!mayInteract()) { root.bridge.reply(id, { ok: false, error: root.denyInteract }); return }
+            doClick(id, args.target, function(o) {
+                const script = "(function(v){var el=document.activeElement;if(!el)return 'nofocus';"
+                    + "if(el.isContentEditable){el.textContent=v}else if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){var d=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el),'value');d.set.call(el,v)}else{return 'notabox'}"
+                    + "el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));return 'ok'})(" + JSON.stringify(args.text) + ")"
+                root.view.runJavaScript(script, function(r) {
+                    if (r === "ok")
+                        root.bridge.reply(id, { ok: true, text: "Typed " + args.text.length + " characters into " + o.tag + (o.text ? " \"" + o.text + "\"" : "") + "." })
+                    else
+                        root.bridge.reply(id, { ok: false, error: "that element is not a text box that can take typing (" + r + ")" })
+                })
+            })
+        } else if (op === "scroll") {
+            if (!root.view) { root.bridge.reply(id, { ok: false, error: "no page is open yet: use browser_open first" }); return }
+            root.view.runJavaScript(root.posScript, function(p) {
+                if (p === undefined || p === null) { root.bridge.reply(id, { ok: false, error: "no page is open yet: use browser_open first" }); return }
+                const pos = JSON.parse(p)
+                const step = Math.max(200, Math.round(pos.v * 0.9))
+                const max = Math.max(0, pos.h - pos.v)
+                const to = args.direction === "top" ? 0 : args.direction === "bottom" ? max : args.direction === "up" ? Math.max(0, pos.y - step) : Math.min(max, pos.y + step)
+                cursorTo(stage.width * 0.55, stage.height * 0.55)
+                later(450, function() {
+                    root.view.runJavaScript("window.scrollTo({top:" + to + ",behavior:'smooth'})", function() {
+                        later(900, function() {
+                            root.view.runJavaScript(root.posScript, function(q) {
+                                const n = JSON.parse(q)
+                                root.bridge.reply(id, { ok: true, text: "Scrolled " + args.direction + ": now at " + n.y + " px of " + n.h + " px" + (n.y + n.v >= n.h - 2 ? " (the end of the page)." : ".") })
+                            })
+                        })
+                    })
+                })
+            })
+        } else if (op === "drag") {
+            if (!mayInteract()) { root.bridge.reply(id, { ok: false, error: root.denyInteract }); return }
+            find(args.from, true, function(a) {
+                if (!a.ok) { root.bridge.reply(id, { ok: false, error: "no element matches \"" + args.from + "\"" }); return }
+                find(args.to, false, function(b) {
+                    if (!b.ok || !b.inside) { root.bridge.reply(id, { ok: false, error: "the target \"" + args.to + "\" is not found or not visible together with the start; scroll so that both are on screen" }); return }
+                    cursorTo(a.x, a.y)
+                    later(700, function() {
+                        mouse("move", a.x, a.y)
+                        later(100, function() {
+                            mouse("press", a.x, a.y)
+                            let n = 0
+                            const steps = 16
+                            const t = Qt.createQmlObject('import QtQuick; Timer { repeat: true }', root)
+                            t.interval = 45
+                            t.triggered.connect(function() {
+                                ++n
+                                const f = n / steps, e = f * f * (3 - 2 * f)
+                                const x = a.x + (b.x - a.x) * e, y = a.y + (b.y - a.y) * e
+                                aiCursor.opacity = 1
+                                aiCursor.tx = x; aiCursor.ty = y
+                                mouse("move", x, y)
+                                if (n >= steps) {
+                                    t.stop(); t.destroy()
+                                    mouse("release", b.x, b.y)
+                                    clickRipple()
+                                    later(450, function() { root.bridge.reply(id, { ok: true, text: "Dragged from " + a.tag + (a.text ? " \"" + a.text + "\"" : "") + " to " + b.tag + (b.text ? " \"" + b.text + "\"" : "") + "." }) })
+                                }
+                            })
+                            t.start()
+                        })
+                    })
+                })
+            })
         } else if (op === "look") {
-            view.runJavaScript(root.posScript, function(p) {
+            root.view.runJavaScript(root.posScript, function(p) {
                 if (p === undefined || p === null) {
                     root.bridge.reply(id, { ok: false, error: "no page is open yet: use browser_open first" })
                     return
@@ -558,7 +914,7 @@ Item {
                 else if (args.scroll === "bottom") y = Math.max(0, pos.h - pos.v)
                 else if (args.scroll === "up") y = Math.max(0, pos.y - step)
                 else y = Math.min(Math.max(0, pos.h - pos.v), pos.y + step)
-                view.runJavaScript("window.scrollTo(0," + y + ");" + root.posScript, function(q) {
+                root.view.runJavaScript("window.scrollTo(0," + y + ");" + root.posScript, function(q) {
                     lookDelay.pendingId = id
                     lookDelay.pos = JSON.parse(q)
                     lookDelay.restart()
@@ -574,7 +930,7 @@ Item {
         onTriggered: {
             const id = pendingId
             pendingId = 0
-            view.grabToImage(function(result) {
+            root.view.grabToImage(function(result) {
                 const data = root.bridge.encodeImage(result.image, 1024)
                 if (data === "") {
                     root.bridge.reply(id, { ok: false, error: "the picture of the page could not be taken" })
@@ -592,6 +948,10 @@ Item {
         target: root.bridge
         function onCommand(id, op, args) { root.run(id, op, args) }
     }
-    Component.onCompleted: root.bridge.viewReady = true
-    Component.onDestruction: root.bridge.viewReady = false
+    Component.onCompleted: {
+        if (tabs.count === 0)
+            newTab("about:blank", true, false)
+        root.bridge.viewReady = true
+    }
+    Component.onDestruction: { root.bridge.viewReady = false; root.bridge.unwatchAll() }
 }

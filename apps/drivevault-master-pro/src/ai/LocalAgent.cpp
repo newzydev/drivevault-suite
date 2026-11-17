@@ -73,7 +73,30 @@ QJsonArray browserSpecs(bool vision)
                       QStringLiteral("Opens a page in the browser of this program and waits until it has loaded: a file of the working folder (file:///C:/folder/index.html, the full path) "
                                      "or a page on this computer (http://localhost:3000). Use it after you wrote a web page, then check it with browser_read%1.")
                           .arg(vision ? QStringLiteral(" and browser_look") : QString()),
-                      QJsonObject{{"url", QJsonObject{{"type", "string"}, {"description", QStringLiteral("the address")}}}}, {QStringLiteral("url")}));
+                      QJsonObject{{"url", QJsonObject{{"type", "string"}, {"description", QStringLiteral("the address")}}},
+                                  {"new_tab", QJsonObject{{"type", "boolean"}, {"description", QStringLiteral("open it in a new tab instead of the current one")}}}},
+                      {QStringLiteral("url")}));
+    const QJsonObject target{{"type", "string"}, {"description", QStringLiteral("a CSS selector (#start, .button, nav a) or the visible text of the element")}};
+    a.append(toolSpec("browser_click",
+                      QStringLiteral("Clicks an element of the page that is open (a link, a button, a card): the user sees a cursor move to it and click. Only in pages of this "
+                                     "computer (your own work), not on websites. Tell it what to click by CSS selector or by its visible text."),
+                      QJsonObject{{"target", target}}, {QStringLiteral("target")}));
+    a.append(toolSpec("browser_type",
+                      QStringLiteral("Types text into an input or text box of the page (the cursor clicks it first). Only in pages of this computer."),
+                      QJsonObject{{"target", target}, {"text", QJsonObject{{"type", "string"}, {"description", QStringLiteral("the text to type")}}}},
+                      {QStringLiteral("target"), QStringLiteral("text")}));
+    a.append(toolSpec("browser_scroll",
+                      QStringLiteral("Scrolls the page that is open, smoothly, so that the user sees it move (down = one screen down)."),
+                      QJsonObject{{"direction", QJsonObject{{"type", "string"}, {"enum", QJsonArray{"down", "up", "top", "bottom"}}}}}, {QStringLiteral("direction")}));
+    a.append(toolSpec("browser_drag",
+                      QStringLiteral("Drags with the mouse from one element to another (a slider, a card, a handle): the cursor presses on the first, moves, and lets go on the second. "
+                                     "Only in pages of this computer."),
+                      QJsonObject{{"from", target}, {"to", target}}, {QStringLiteral("from"), QStringLiteral("to")}));
+    a.append(toolSpec("browser_tab",
+                      QStringLiteral("Lists the tabs of the browser, switches to one or closes one."),
+                      QJsonObject{{"action", QJsonObject{{"type", "string"}, {"enum", QJsonArray{"list", "switch", "close"}}}},
+                                  {"index", QJsonObject{{"type", "integer"}, {"description", QStringLiteral("the number of the tab (from list, starting at 1)")}}}},
+                      {QStringLiteral("action")}));
     a.append(toolSpec("browser_read",
                       QStringLiteral("Reads the page that is open in the browser: its title, the visible text, how many headings / images / links / sections it has, images that "
                                      "did not load, and the errors that the page logged. Use it to find missing or broken parts."),
@@ -145,6 +168,8 @@ QString LocalAgent::start(const Config& c)
     m_reviewed = false;
     m_pendingImages = QJsonArray();
     m_looks = 0;
+    m_previewed.clear();
+    m_browserActions = 0;
     m_lastCall.clear();
     m_sameCall = 0;
     m_taskIndex = int(m_messages.size()) - 1;                   // the user's new message: the task
@@ -774,6 +799,11 @@ void LocalAgent::runNextCall()
         else if (name == QLatin1String("stop_command")) { kind = QStringLiteral("taskstop"); target = QString::number(args.value(QLatin1String("task_id")).toInt()); }
         else if (name == QLatin1String("browser_open")) { kind = QStringLiteral("browser"); target = args.value(QLatin1String("url")).toString(); }
         else if (name == QLatin1String("browser_read")) { kind = QStringLiteral("browserread"); }
+        else if (name == QLatin1String("browser_click")) { kind = QStringLiteral("browserclick"); target = args.value(QLatin1String("target")).toString(); }
+        else if (name == QLatin1String("browser_type")) { kind = QStringLiteral("browsertype"); target = args.value(QLatin1String("target")).toString(); }
+        else if (name == QLatin1String("browser_scroll")) { kind = QStringLiteral("browserscroll"); target = args.value(QLatin1String("direction")).toString(); }
+        else if (name == QLatin1String("browser_drag")) { kind = QStringLiteral("browserdrag"); target = args.value(QLatin1String("from")).toString() + QStringLiteral(" -> ") + args.value(QLatin1String("to")).toString(); }
+        else if (name == QLatin1String("browser_tab")) { kind = QStringLiteral("browsertab"); target = args.value(QLatin1String("action")).toString(); }
         else if (name == QLatin1String("browser_look")) { kind = QStringLiteral("browserlook"); target = args.value(QLatin1String("scroll")).toString(); }
         else if (name == QLatin1String("todo_write")) { kind = QStringLiteral("todo"); }
         else if (name == QLatin1String("exit_plan_mode")) { kind = QStringLiteral("plan"); }
@@ -785,6 +815,14 @@ void LocalAgent::runNextCall()
         m_lastResultError = isError;
         if (!isError && !changedPath.isEmpty() && !m_changedFiles.contains(changedPath))
             m_changedFiles << changedPath;
+        if (!isError && !changedPath.isEmpty() && m_config.browser && m_config.browser->compiledIn()
+            && (changedPath.endsWith(QLatin1String(".html"), Qt::CaseInsensitive) || changedPath.endsWith(QLatin1String(".htm"), Qt::CaseInsensitive))) {
+            const QString full = QDir(m_config.folder).absoluteFilePath(changedPath);
+            if (!m_previewed.contains(full)) {                    // the browser shows the page the AI is writing, live: once per page, then it follows the file
+                m_previewed.insert(full);
+                m_config.browser->previewFile(full);
+            }
+        }
         stepEnd(isError ? QStringLiteral("error") : QStringLiteral("done"), text);
         m_messages.append(QJsonObject{{"role", "tool"}, {"tool_call_id", id}, {"content", isError ? QStringLiteral("Error: ") + text : text}});
         runNextCall();
@@ -816,7 +854,8 @@ void LocalAgent::runNextCall()
         m_web->run(name, args, result);
         return;
     }
-    if (name == QLatin1String("browser_open") || name == QLatin1String("browser_read") || name == QLatin1String("browser_look")) {
+    if (name == QLatin1String("browser_open") || name == QLatin1String("browser_read") || name == QLatin1String("browser_look") || name == QLatin1String("browser_click")
+        || name == QLatin1String("browser_type") || name == QLatin1String("browser_scroll") || name == QLatin1String("browser_drag") || name == QLatin1String("browser_tab")) {
         runBrowserCall(name, args, result);                            // scrolling with the same call again and again is normal here: no "stuck" check, its own limits
         return;
     }
@@ -935,6 +974,42 @@ void LocalAgent::runBrowserCall(const QString& name, const QJsonObject& args, co
             return;
         }
         request.insert(QStringLiteral("url"), url.toString());
+        request.insert(QStringLiteral("newTab"), args.value(QLatin1String("new_tab")).toBool());
+    } else if (name == QLatin1String("browser_click") || name == QLatin1String("browser_type") || name == QLatin1String("browser_scroll")
+               || name == QLatin1String("browser_drag") || name == QLatin1String("browser_tab")) {
+        constexpr int kMaxActions = 80;
+        if (++m_browserActions > kMaxActions) {
+            result(QStringLiteral("that is enough clicking for one job (%1 actions): use what you saw and finish").arg(kMaxActions), true);
+            return;
+        }
+        auto text = [&args](const char* key) { return args.value(QLatin1String(key)).toString().trimmed().left(300); };
+        if (name == QLatin1String("browser_click")) {
+            if (text("target").isEmpty()) { result(QStringLiteral("target is empty: give a CSS selector or the visible text of the element"), true); return; }
+            request.insert(QStringLiteral("target"), text("target"));
+        } else if (name == QLatin1String("browser_type")) {
+            if (text("target").isEmpty()) { result(QStringLiteral("target is empty: give a CSS selector or the visible text of the box"), true); return; }
+            request.insert(QStringLiteral("target"), text("target"));
+            request.insert(QStringLiteral("text"), args.value(QLatin1String("text")).toString().left(2000));
+        } else if (name == QLatin1String("browser_scroll")) {
+            const QString d = text("direction");
+            if (!QStringList{QStringLiteral("down"), QStringLiteral("up"), QStringLiteral("top"), QStringLiteral("bottom")}.contains(d)) {
+                result(QStringLiteral("direction must be down, up, top or bottom"), true);
+                return;
+            }
+            request.insert(QStringLiteral("direction"), d);
+        } else if (name == QLatin1String("browser_drag")) {
+            if (text("from").isEmpty() || text("to").isEmpty()) { result(QStringLiteral("from and to are needed: a CSS selector or the visible text of each element"), true); return; }
+            request.insert(QStringLiteral("from"), text("from"));
+            request.insert(QStringLiteral("to"), text("to"));
+        } else {
+            const QString action = text("action");
+            if (!QStringList{QStringLiteral("list"), QStringLiteral("switch"), QStringLiteral("close")}.contains(action)) {
+                result(QStringLiteral("action must be list, switch or close"), true);
+                return;
+            }
+            request.insert(QStringLiteral("action"), action);
+            request.insert(QStringLiteral("index"), args.value(QLatin1String("index")).toInt());
+        }
     } else if (name == QLatin1String("browser_look")) {
         QString scroll = args.value(QLatin1String("scroll")).toString();
         if (!QStringList{QStringLiteral("top"), QStringLiteral("down"), QStringLiteral("up"), QStringLiteral("bottom")}.contains(scroll))

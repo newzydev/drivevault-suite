@@ -152,7 +152,9 @@ private:
     int m_parseRetries = 0;                                // answers cut off inside a tool call, asked again
     int m_emptyNudges = 0;                                 // "you sent no answer"
     void runBrowserCall(const QString& name, const QJsonObject& args, const std::function<void(const QString&, bool)>& result);
-    QJsonArray m_pendingImages;                           // screenshots the tools made: sent to the model as a user message after the tool results
+    QSet<QString> m_previewed;                             // web pages the browser was asked to show in this job (once each: the page then follows the file by itself)
+    int m_browserActions = 0;                              // clicks, typing, scrolling, dragging and tab changes of this job
+    QJsonArray m_pendingImages;                          // screenshots the tools made: sent to the model as a user message after the tool results
     int m_looks = 0;                                       // browser_look calls of this job
     QStringList m_changedFiles;                           // files this job wrote / edited / appended (for the final check)
     bool m_reviewed = false;                               // the final check was asked for

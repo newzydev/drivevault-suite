@@ -1,6 +1,12 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.24.0 (2026-11-17): A live browser with tabs, and an AI that uses it with a cursor
+  - New: the browser has tabs (a + button, a close button on each tab; a link that wants a new window opens a tab).
+  - New: live preview. When the AI writes a web page, the browser opens by itself and shows it, and the page follows the file while the AI writes: you watch it grow. A change to any html / css / js / svg / json file of the page reloads the tab.
+  - New: the AI can try the page like a user: it clicks (a link, a button), types into a box, scrolls and drags (a slider, a handle), with a visible cursor that moves and clicks, and it can switch between tabs. It does this only in pages on your computer (your own files, localhost), never on websites.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.23.5 (2026-11-17): The line beside the browser matches the others
   - Changed: the line between the conversation and the browser is the same thin line as the one beside the list of conversations (it was thicker and lighter).
   - Not code-signed (Windows SmartScreen may warn).

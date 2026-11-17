@@ -46,6 +46,18 @@ public:
     QString storagePath() const { return m_storagePath; }
     void setStoragePath(const QString& path);
 
+    // ---- live preview: the page of the AI's work follows the files while the AI writes them ----
+    // The agent tells the bridge which web page it just wrote / changed (previewFile: the browser opens it once per job and file); the page asks the bridge to watch
+    // the folder of the pages it shows (the html / css / js / svg / json files of that folder are checked twice a second) and reloads when something changed.
+    void previewFile(const QString& path);                              // C++ side (the agent): emits previewRequested
+    Q_INVOKABLE void watchFolder(const QString& folder);                // QML: start watching (the same folder twice is one)
+    Q_INVOKABLE void unwatchAll();
+    Q_INVOKABLE QString toLocalFile(const QString& url) const;          // file:///C:/x/y.html -> C:/x/y.html, "" for another address
+    // May the AI click, type and drag in a page with this address? Only in pages on this computer (files, localhost): never on a website.
+    Q_INVOKABLE bool aiMayInteract(const QString& url) const;
+    // Real mouse input into a Qt Quick item (the web view): kind move | press | release | wheel at x, y (item coordinates). The page sees an ordinary trusted event.
+    Q_INVOKABLE bool mouse(QObject* item, const QString& kind, qreal x, qreal y, qreal wheelDelta = 0);
+
     Q_INVOKABLE void reply(int id, const QVariantMap& result);          // QML side: the answer to `command`
     // A picture of the page (an image the QML grab made) as base64 JPEG, at most `maxWidth` wide: small enough for the model's window. "" when it is not an image.
     Q_INVOKABLE QString encodeImage(const QVariant& image, int maxWidth) const;
@@ -54,6 +66,8 @@ signals:
     void viewReadyChanged();
     void storagePathChanged();
     void viewWanted();                                                  // the page must show / create the browser view now
+    void previewRequested(const QString& url);                          // the AI wrote a web page: show it (file:/// address)
+    void liveFilesChanged(const QString& folder);                       // something in a watched folder changed: reload the tabs that show a file of it
     void command(int id, const QString& op, const QVariantMap& args);
 
 private:
@@ -66,6 +80,7 @@ private:
     };
     void flush();
     void finish(int id, const QVariantMap& result);
+    QString signatureOf(const QString& folder) const;                   // names, sizes and times of the watched kinds of files of a folder
 
     QHash<int, Pending> m_pending;
     QList<int> m_order;
@@ -73,6 +88,9 @@ private:
     bool m_viewReady = false;
     bool m_compiledIn = false;
     QString m_storagePath;
+    QHash<QString, QString> m_watched;                                  // folder -> signature
+    QTimer* m_poll = nullptr;
+    bool m_buttonDown = false;
 };
 
 } // namespace dm::browser

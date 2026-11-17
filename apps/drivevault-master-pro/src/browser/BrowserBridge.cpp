@@ -3,6 +3,11 @@
 #include "WebTools.h"
 
 #include <QBuffer>
+#include <QCoreApplication>
+#include <QMouseEvent>
+#include <QQuickItem>
+#include <QQuickWindow>
+#include <QWheelEvent>
 #include <QDir>
 #include <QFileInfo>
 #include <QHostAddress>
@@ -74,6 +79,93 @@ void BrowserBridge::flush()
 void BrowserBridge::reply(int id, const QVariantMap& result)
 {
     finish(id, result);
+}
+
+void BrowserBridge::previewFile(const QString& path)
+{
+    emit previewRequested(QUrl::fromLocalFile(path).toString());
+}
+
+QString BrowserBridge::toLocalFile(const QString& url) const
+{
+    const QUrl u(url);
+    return u.isLocalFile() ? u.toLocalFile() : QString();
+}
+
+bool BrowserBridge::aiMayInteract(const QString& url) const
+{
+    const QUrl u(url);
+    if (u.isLocalFile())
+        return true;
+    return (u.scheme() == QLatin1String("http") || u.scheme() == QLatin1String("https")) && isThisComputer(u.host());
+}
+
+QString BrowserBridge::signatureOf(const QString& folder) const
+{
+    static const QStringList filters{QStringLiteral("*.html"), QStringLiteral("*.htm"), QStringLiteral("*.css"), QStringLiteral("*.js"), QStringLiteral("*.mjs"),
+                                     QStringLiteral("*.svg"), QStringLiteral("*.json")};
+    QString sig;
+    int n = 0;
+    for (const QFileInfo& f : QDir(folder).entryInfoList(filters, QDir::Files, QDir::Name)) {
+        sig += f.fileName() + QLatin1Char('|') + QString::number(f.size()) + QLatin1Char('|') + QString::number(f.lastModified().toMSecsSinceEpoch()) + QLatin1Char(';');
+        if (++n >= 300)
+            break;
+    }
+    return sig;
+}
+
+void BrowserBridge::watchFolder(const QString& folder)
+{
+    const QString dir = QDir::cleanPath(folder);
+    if (dir.isEmpty() || !QFileInfo(dir).isDir() || m_watched.contains(dir))
+        return;
+    m_watched.insert(dir, signatureOf(dir));
+    if (!m_poll) {
+        m_poll = new QTimer(this);
+        m_poll->setInterval(500);
+        connect(m_poll, &QTimer::timeout, this, [this] {
+            for (auto it = m_watched.begin(); it != m_watched.end(); ++it) {
+                const QString now = signatureOf(it.key());
+                if (now != it.value()) {
+                    it.value() = now;
+                    emit liveFilesChanged(it.key());
+                }
+            }
+        });
+    }
+    m_poll->start();
+}
+
+void BrowserBridge::unwatchAll()
+{
+    m_watched.clear();
+    if (m_poll)
+        m_poll->stop();
+}
+
+bool BrowserBridge::mouse(QObject* object, const QString& kind, qreal x, qreal y, qreal wheelDelta)
+{
+    auto* item = qobject_cast<QQuickItem*>(object);
+    if (!item || !item->window())
+        return false;
+    QQuickWindow* window = item->window();
+    const QPointF scene = item->mapToScene(QPointF(x, y));
+    const QPointF global = window->mapToGlobal(scene);
+    if (kind == QLatin1String("wheel")) {
+        QWheelEvent ev(scene, global, QPoint(), QPoint(0, int(wheelDelta)), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        QCoreApplication::sendEvent(window, &ev);
+        return true;
+    }
+    const bool press = kind == QLatin1String("press"), release = kind == QLatin1String("release");
+    const QEvent::Type type = press ? QEvent::MouseButtonPress : release ? QEvent::MouseButtonRelease : QEvent::MouseMove;
+    if (press)
+        m_buttonDown = true;
+    const bool held = m_buttonDown && !release;
+    if (release)
+        m_buttonDown = false;
+    QMouseEvent ev(type, scene, scene, global, press || release ? Qt::LeftButton : Qt::NoButton, held ? Qt::LeftButton : Qt::NoButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(window, &ev);
+    return true;
 }
 
 void BrowserBridge::setStoragePath(const QString& path)
