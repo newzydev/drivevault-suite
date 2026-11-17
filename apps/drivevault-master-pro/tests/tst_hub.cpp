@@ -96,7 +96,7 @@ private slots:
     {
         Hub hub(options());
         hub.setLanguage("en");
-        QCOMPARE(hub.products().size(), 7);                                 // 3 multimedia + 4 office programs
+        QCOMPARE(hub.products().size(), 8);                                 // 4 multimedia + 4 office programs
         const QVariantMap video = find(hub, "drivevault.videoeditor");
         QCOMPARE(video.value("section").toString(), QStringLiteral("multimedia"));
         QCOMPARE(video.value("glyph").toString(), QStringLiteral("V"));
@@ -116,7 +116,7 @@ private slots:
         QCOMPARE(video.value("accent").toString(), QStringLiteral("#8B5CF6"));
         QVERIFY(!video.value("installed").toBool());
         QVERIFY(!video.value("canInstall").toBool());                  // no setup file anywhere
-        for (const QString& id : {"drivevault.imageeditor", "drivevault.audioeditor"}) {
+        for (const QString& id : {"drivevault.imageeditor", "drivevault.audioeditor", "drivevault.remotedesktop"}) {
             const QVariantMap m = find(hub, id);
             QCOMPARE(m.value("status").toString(), QStringLiteral("comingSoon"));
             QVERIFY(!m.value("installed").toBool());
@@ -155,7 +155,7 @@ private slots:
         QVERIFY(!extra.isEmpty());
         QCOMPARE(extra.value("status").toString(), QStringLiteral("installed"));
         QCOMPARE(extra.value("accent").toString(), QStringLiteral("#EC4899"));
-        QCOMPARE(hub.products().size(), 8);
+        QCOMPARE(hub.products().size(), 9);
         QCOMPARE(extra.value("section").toString(), QStringLiteral("other"));       // a program the hub does not know gets its own section
     }
 

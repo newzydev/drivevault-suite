@@ -96,4 +96,4 @@ The accent colour appears in the product icon, the installer artwork (`scripts\m
 3. Give the setup exe a version resource with `CompanyName = DriveVault` and `ProductName` equal to the product's name: the hub only offers / starts such files.
 4. Never delete the suite folder; remove only your own folder, shortcuts and keys. The hub removes the suite folder itself when it is the last one and the folder is empty.
 
-Master Pro knows the planned products (Image Editor Pro `ImageEditorPro` #3B82F6, Audio Editor Pro `AudioEditorPro` #10B981) as "Coming soon"; their registry keys must use these names to be recognised, other keys are listed generically.
+Master Pro knows the planned products (Image Editor Pro `ImageEditorPro` #3B82F6, Audio Editor Pro `AudioEditorPro` #10B981, Remote Desktop Pro `RemoteDesktopPro` #06B6D4) as "Coming soon"; their registry keys must use these names to be recognised, other keys are listed generically.

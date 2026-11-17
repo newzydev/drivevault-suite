@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.28.0 (2026-11-17): Remote Desktop Pro on the list (coming soon)
+  - New: the Programs page lists DriveVault Remote Desktop Pro (see and control another Windows PC from far away) as "Coming soon". It does not exist yet: only the plan is written, nothing can be installed.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.27.1 (2026-11-17): The vision file button shows up after you choose a model
   - Fixed: after choosing another model in the AI settings (for example Qwen3.5 4B after a model that has no vision file) the page kept saying "no vision file to download" and showed no download button until the program was restarted.
   - Not code-signed (Windows SmartScreen may warn).
