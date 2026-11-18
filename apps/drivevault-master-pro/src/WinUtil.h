@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QByteArray>
 #include <QString>
 
 namespace dm::win {
@@ -14,10 +13,5 @@ int runAndWait(const QString& file, const QString& arguments, const QString& wor
 
 // "1.2.3.4" style comparison: <0, 0, >0.
 int compareVersions(const QString& a, const QString& b);
-
-// Windows DPAPI (CryptProtectData, this user on this PC only): the AI keeps the Hugging Face token this way instead of as plain text.
-// Both return an empty array on failure (and always off Windows).
-QByteArray protectForUser(const QByteArray& plain);
-QByteArray unprotectForUser(const QByteArray& sealed);
 
 } // namespace dm::win

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultMasterPro
-    VERSION 1.32.0
+    VERSION 1.33.0
     DESCRIPTION "DriveVault Master Pro - installs, launches and updates the DriveVault programs"
     LANGUAGES CXX)
 
@@ -34,7 +34,7 @@ add_library(master_core STATIC src/Hub.cpp src/Hub.h src/WinUtil.cpp src/WinUtil
 target_include_directories(master_core PUBLIC src src/ai src/browser ${CMAKE_BINARY_DIR}/generated)
 target_link_libraries(master_core PUBLIC Qt6::Core Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick)
 if(WIN32)
-    target_link_libraries(master_core PUBLIC shell32 version advapi32 user32 crypt32)
+    target_link_libraries(master_core PUBLIC shell32 version advapi32 user32)
 endif()
 
 # ---- application ------------------------------------------------------------------------------------------------

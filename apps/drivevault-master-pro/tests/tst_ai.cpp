@@ -1858,14 +1858,16 @@ private slots:
             QCOMPARE(ask->conversations().size(), 0);
         }
     }
-    // An online model (Hugging Face Inference Providers): chosen in the menu, needs the user's key, the request carries the key and the model id (and none of the
-    // llama.cpp-only fields), the key is only on disk sealed by Windows, and choosing a model of this PC leaves the online one. The service is a fake one on this computer.
-    void anOnlineModelIsAskedWithTheKey()
+    // The online models (free models of NVIDIA, the key is built into the program): chosen in the menu without any key from the user, the request carries the
+    // built-in key and the model id (and none of the llama.cpp-only fields), the key is never saved, the choice comes back after a restart, and choosing a model of
+    // this PC leaves the online one. The service is a fake one on this computer.
+    void anOnlineModelUsesTheBuiltInKey()
     {
         FakeServer server;
         server.body = sse({R"({"choices":[{"delta":{"content":"Online answer"}}]})", "[DONE]"});
         const QString dataDir = m_dir.filePath("hub-remote");
-        const QString token = QStringLiteral("gsk_TestTokenabcdefghijklmnop1234");       // Groq (free); the other services have their own key shapes
+        const QString builtIn = AiService::embeddedNvidiaKey();
+        QVERIFY2(QRegularExpression("^nvapi-[A-Za-z0-9_\\-]{30,120}$").match(builtIn).hasMatch(), "the built-in key does not decode to a key of the right shape");
         {
             dm::Hub::Options o;
             o.registryRoot = kRoot;
@@ -1875,82 +1877,55 @@ private slots:
             ai.setRemoteBaseUrl(server.base() + "/v1");
             ai.setWebEnabled(false);
             auto* ask = qobject_cast<AiChannel*>(ai.ask());
-            QCOMPARE(ai.remoteProviders().size(), 4);                      // Groq, Google and NVIDIA (free) and Hugging Face
-            QCOMPARE(ai.setRemoteKey("nvidia", "gsk_TestTokenabcdefghijklmnop1234"), QString("badFormat"));      // a key of another service
-            QCOMPARE(ai.setRemoteKey("nvidia", "nvapi-TestTokenabcdefghijklmnopqrstuvwxyz0123456789"), QString());
-            QVERIFY(!ai.remoteModels().isEmpty());
-            ai.clearRemoteKey("nvidia");
-            QVERIFY(ai.remoteModels().isEmpty());                          // no key yet: no online model can be used
+            QVERIFY(ai.remoteModels().size() >= 3);
             QVERIFY(!ai.useRemote());
-            ai.selectRemoteModel("groq:openai/gpt-oss-120b");              // ... so it cannot be chosen
+            ai.selectRemoteModel("not/in-the-list");                       // only the catalogue can be chosen
             QVERIFY(!ai.useRemote());
-            QCOMPARE(ai.setRemoteKey("nobody", token), QString("unknown"));
-            QCOMPARE(ai.setRemoteKey("groq", "  "), QString("empty"));
-            QCOMPARE(ai.setRemoteKey("groq", "not a token"), QString("badFormat"));
-            QCOMPARE(ai.setRemoteKey("groq", "hf_abcdefghijklmnopqrstuvwx"), QString("badFormat"));      // a key of another service
-            QVERIFY(ai.remoteModels().isEmpty());
-            QCOMPARE(ai.setRemoteKey("groq", token), QString());
-            QVERIFY(!ai.remoteModels().isEmpty());                         // only the models of Groq
-            for (const QVariant& m : ai.remoteModels())
-                QCOMPARE(m.toMap().value("provider").toString(), QString("groq"));
-            QVariantMap groq;
-            for (const QVariant& p : ai.remoteProviders())
-                if (p.toMap().value("id").toString() == "groq")
-                    groq = p.toMap();
-            QVERIFY(groq.value("keySet").toBool() && groq.value("free").toBool());
-            QVERIFY(groq.value("keyHint").toString().endsWith("1234") && !groq.value("keyHint").toString().contains("TestToken"));
-            ai.selectRemoteModel("not:in-the-list");                       // only the catalogue can be chosen
-            QVERIFY(!ai.useRemote());
-            ai.selectRemoteModel("groq:openai/gpt-oss-120b");
+            ai.selectRemoteModel("nvidia/nemotron-3-ultra-550b-a55b");
             QVERIFY(ai.useRemote());
-            QVERIFY(ai.remoteKeySet());
-            QCOMPARE(ask->notReady(), QString());
-            QCOMPARE(ai.activeModelLabel(), QString("GPT-OSS 120B (Groq)"));
+            QCOMPARE(ask->notReady(), QString());                          // no engine, no file and no key of the user are needed
+            QCOMPARE(ai.activeModelLabel(), QString("Nemotron 3 Ultra 550B"));
             QCOMPARE(ask->send("hello"), QString());
             QTRY_VERIFY_WITH_TIMEOUT(!ask->busy(), 10000);
             QCOMPARE(ask->messages().at(1).toMap().value("text").toString(), QString("Online answer"));
             QCOMPARE(ask->messages().at(1).toMap().value("errorCode").toString(), QString());
-            QVERIFY(server.lastRequest.contains("Bearer " + token.toUtf8()));
+            QVERIFY(server.lastRequest.contains("Bearer " + builtIn.toUtf8()));
             const QJsonObject body = requestBody(server.lastRequest);
-            QCOMPARE(body.value("model").toString(), QString("openai/gpt-oss-120b"));
+            QCOMPARE(body.value("model").toString(), QString("nvidia/nemotron-3-ultra-550b-a55b"));
             QVERIFY(!body.contains("chat_template_kwargs"));
-            QFile f(dataDir + "/ai/settings.json");                        // the token is never on disk as text
+            QFile f(dataDir + "/ai/settings.json");                        // the key is not written to the settings
             QVERIFY(f.open(QIODevice::ReadOnly));
             const QByteArray saved = f.readAll();
-            QVERIFY(!saved.contains("TestToken"));
-            QVERIFY(saved.contains("groq:openai/gpt-oss-120b"));
+            QVERIFY(!saved.contains("nvapi") && !saved.contains(builtIn.toUtf8()));
+            QVERIFY(saved.contains("nvidia/nemotron-3-ultra-550b-a55b"));
         }
-        {   // a new start: the choice and the key come back; a model of this PC leaves the online one; removing the key forgets it
+        {   // a new start: the choice comes back; a model of this PC leaves the online one
             dm::Hub::Options o;
             o.registryRoot = kRoot;
             o.dataDir = dataDir;
             dm::Hub hub(o);
             AiService ai(&hub);
-            QVERIFY(ai.useRemote() && ai.remoteKeySet());
-            QCOMPARE(ai.remoteModel(), QString("groq:openai/gpt-oss-120b"));
+            QVERIFY(ai.useRemote());
+            QCOMPARE(ai.remoteModel(), QString("nvidia/nemotron-3-ultra-550b-a55b"));
             QFile gguf(m_dir.filePath("local-after-remote.gguf"));
             QVERIFY(gguf.open(QIODevice::WriteOnly));
             gguf.write("x");
             gguf.close();
             ai.selectLocalModel(gguf.fileName());
             QVERIFY(!ai.useRemote());
-            QVERIFY(!ai.remoteModels().isEmpty());                         // the key stays for the next time
-            ai.clearRemoteKey("groq");
-            QVERIFY(ai.remoteModels().isEmpty());
-            QVERIFY(!ai.useRemote() && ai.remoteModel().isEmpty());       // (it was already back on the local model: the test chose one above)
         }
-        {   // the 1.30.0 settings file (one Hugging Face key, a model id without a service) is still read: it becomes the Hugging Face entry
+        {   // the settings of 1.30.0 - 1.32.0 (other services, keys the user pasted) are not understood any more: nothing is chosen, nothing breaks
             QFile f(dataDir + "/ai/settings.json");
             QVERIFY(f.open(QIODevice::WriteOnly | QIODevice::Truncate));
-            f.write(R"({"remote":{"use":true,"model":"openai/gpt-oss-120b","key":""}})");
+            f.write(R"({"remote":{"use":true,"model":"groq:openai/gpt-oss-120b","keys":{"groq":"AAAA"}}})");
             f.close();
             dm::Hub::Options o;
             o.registryRoot = kRoot;
             o.dataDir = dataDir;
             dm::Hub hub(o);
             AiService ai(&hub);
-            QCOMPARE(ai.remoteModel(), QString());                         // no key came along, so nothing is usable - but nothing breaks
-            QVERIFY(!ai.remoteKeySet());
+            QVERIFY(!ai.useRemote());
+            QCOMPARE(ai.remoteModel(), QString());
         }
     }
     void anErrorStaysInTheConversation()

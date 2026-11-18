@@ -1,9 +1,10 @@
 #include "AiService.h"
 
+#include "EmbeddedKey.h"
 #include "Hub.h"
-#include "WinUtil.h"
 
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QClipboard>
 #include <QDir>
@@ -180,8 +181,8 @@ static QString localFolder(const QString& folder)
 
 QString AiChannel::notReady() const
 {
-    if (m_service->remoteActive()) {                           // an online model: no engine and no file, but the key
-        if (!m_service->remoteKeySet())
+    if (m_service->remoteActive()) {                           // an online model: no engine and no file, but the key that is built into the program
+        if (AiService::embeddedNvidiaKey().isEmpty())
             return QStringLiteral("noKey");
     } else {
         if (!m_service->engineFound())
@@ -1515,23 +1516,11 @@ void AiService::loadSettings()
     m_agent->applySettings(o.value(QLatin1String("agent")).toObject().toVariantMap());
     m_localModel = o.value(QLatin1String("local")).toObject().value(QLatin1String("model")).toString();
     const QJsonObject remote = o.value(QLatin1String("remote")).toObject();
-    QJsonObject sealedKeys = remote.value(QLatin1String("keys")).toObject();
-    if (remote.contains(QLatin1String("key")) && !sealedKeys.contains(QStringLiteral("hf")))      // 1.30.0 kept one Hugging Face key
-        sealedKeys[QStringLiteral("hf")] = remote.value(QLatin1String("key")).toString();
-    m_remoteKeys.clear();
-    for (const QVariant& v : remoteProviders()) {
-        const QString id = v.toMap().value(QStringLiteral("id")).toString();
-        const QString key = QString::fromUtf8(dm::win::unprotectForUser(QByteArray::fromBase64(sealedKeys.value(id).toString().toLatin1())));
-        if (!key.isEmpty())
-            m_remoteKeys.insert(id, key);
-    }
     m_remoteModel = remote.value(QLatin1String("model")).toString();
-    if (!m_remoteModel.contains(QLatin1Char(':')) && !m_remoteModel.isEmpty())
-        m_remoteModel = QStringLiteral("hf:") + m_remoteModel;
-    bool known = false;                                      // only an id of the catalogue is accepted from the file
-    for (const QVariant& v : allRemoteModels())
+    bool known = false;                                      // only an id of the catalogue is accepted from the file (1.30.0 - 1.32.0 saved other services: they are gone)
+    for (const QVariant& v : remoteModels())
         known = known || v.toMap().value(QStringLiteral("id")).toString() == m_remoteModel;
-    if (!known || !m_remoteKeys.contains(m_remoteModel.section(QLatin1Char(':'), 0, 0)))       // unknown, or its service has no key (any more)
+    if (!known)
         m_remoteModel.clear();
     m_useRemote = remote.value(QLatin1String("use")).toBool(false) && !m_remoteModel.isEmpty();
     m_web = o.value(QLatin1String("web")).toBool(true);
@@ -1543,11 +1532,7 @@ void AiService::saveSettings()
     o["ask"] = QJsonObject::fromVariantMap(m_ask->settingsValues());
     o["agent"] = QJsonObject::fromVariantMap(m_agent->settingsValues());
     o["local"] = QJsonObject{{"model", m_localModel}};
-    // the token is never written as text: sealed by Windows (DPAPI, this user on this PC only), then base64
-    QJsonObject sealedKeys;
-    for (auto it = m_remoteKeys.constBegin(); it != m_remoteKeys.constEnd(); ++it)
-        sealedKeys[it.key()] = QString::fromLatin1(dm::win::protectForUser(it.value().toUtf8()).toBase64());
-    o["remote"] = QJsonObject{{"use", m_useRemote}, {"model", m_remoteModel}, {"keys", sealedKeys}};
+    o["remote"] = QJsonObject{{"use", m_useRemote}, {"model", m_remoteModel}};              // (the key is built into the program: it is never saved)
     o["web"] = m_web;
 
     writeJson(m_dir + QStringLiteral("/settings.json"), o);
@@ -1575,88 +1560,46 @@ void AiService::selectLocalModel(const QString& path)
 }
 
 // ---- online models ------------------------------------------------------------------------------------------------------------------------------
-// The owner asked on 2026-11-19 for good, smart and fast models of OpenAI / Google, and then for FREE ones: Groq and Google AI Studio have free tiers (no card),
-// Hugging Face Inference Providers is kept for people who have credits there. Every service speaks the OpenAI chat API; the user brings the key.
-// The model ids were read from the services' documentation on 2026-11-19 (Hugging Face: from https://router.huggingface.co/v1/models, every one has providers with tool
-// calling, which the agent page needs). Free-tier limits change without notice - the pages show the service's own error (429 / 413 ...) when one is reached.
+// Owner's decision of 2026-11-19: the online models are the FREE endpoints of NVIDIA (build.nvidia.com, NVIDIA NIM, OpenAI-style chat API) and the key is built into
+// the program, so that nobody needs a key of their own (EmbeddedKey.h, made by scripts\make-embedded-key.ps1 - the scrambling only hides the key from a casual look).
+// Chosen on 2026-11-19 by trying every free chat model with the key (an answer in Thai, a calculation, and a tool call): these four answered correctly, with
+// tool calling, in 1 to 9 seconds; the others were slower than a minute (Kimi K3.1 Pro, GLM 5.3 Flash, Gemma 4 31B), 14 s (Mistral Large 4) or spent their tokens
+// on reasoning (Nemotron 3.5 Lightning). build.nvidia.com marks all of them "Free Endpoint"; NVIDIA sets the limits and may change them.
 namespace {
-struct RemoteProvider { const char* id; const char* name; const char* base; const char* keyShape; const char* keyHost; bool free; };
-const RemoteProvider kProviders[] = {
-    {"groq", "Groq", "https://api.groq.com/openai/v1", "^gsk_[A-Za-z0-9]{20,200}$", "console.groq.com/keys", true},
-    {"google", "Google AI Studio", "https://generativelanguage.googleapis.com/v1beta/openai", "^AIza[A-Za-z0-9_\\-]{30,60}$", "aistudio.google.com/apikey", true},
-    {"nvidia", "NVIDIA", "https://integrate.api.nvidia.com/v1", "^nvapi-[A-Za-z0-9_\\-]{30,120}$", "build.nvidia.com/settings/api-keys", true},
-    {"hf", "Hugging Face", "https://router.huggingface.co/v1","^hf_[A-Za-z0-9]{10,200}$", "huggingface.co/settings/tokens", false},
-};
-struct RemoteModel { const char* provider; const char* model; const char* title; const char* maker; };
+const char kNvidiaBase[] = "https://integrate.api.nvidia.com/v1";
+struct RemoteModel { const char* id; const char* title; const char* maker; };
 const RemoteModel kRemoteModels[] = {
-    {"groq", "openai/gpt-oss-120b", "GPT-OSS 120B", "OpenAI"},
-    {"groq", "openai/gpt-oss-20b", "GPT-OSS 20B", "OpenAI"},
-    {"google", "gemini-3-flash-preview", "Gemini 3 Flash", "Google"},
-    {"google", "gemini-3.1-flash-lite", "Gemini 3.1 Flash-Lite", "Google"},
-    {"nvidia", "moonshotai/kimi-k3.1-pro", "Kimi K3.1 Pro", "Moonshot"},           // the four that build.nvidia.com marked "Free Endpoint" on 2026-11-19 (ids from /v1/models)
-    {"nvidia", "mistralai/mistral-large-4-1t-a52b", "Mistral Large 4", "Mistral AI"},
-    {"nvidia", "nvidia/nemotron-3.5-bolt-e4b", "Nemotron 3.5 Bolt", "NVIDIA"},
-    {"nvidia", "minimaxai/minimax-m3.1-flash", "MiniMax M3.1 Flash", "MiniMax"},
-    {"hf", "openai/gpt-oss-120b", "GPT-OSS 120B", "OpenAI"},
-    {"hf", "google/gemma-4-31B-it", "Gemma 4 31B", "Google"},
-    {"hf", "Qwen/Qwen3-235B-A22B-Instruct-2507", "Qwen3 235B", "Alibaba"},
+    {"nvidia/nemotron-3-ultra-550b-a55b", "Nemotron 3 Ultra 550B", "NVIDIA"},          // the biggest and still fast (about 2 s): the default
+    {"nvidia/nemotron-3.5-super-vl-120b-a12b", "Nemotron 3.5 Super 120B", "NVIDIA"},
+    {"nvidia/nemotron-3.5-bolt-e4b", "Nemotron 3.5 Bolt", "NVIDIA"},                    // small and the fastest (about 1 s)
+    {"minimaxai/minimax-m3.1-flash", "MiniMax M3.1 Flash", "MiniMax"},                  // made for coding and agent work, slower (about 9 s)
 };
-const RemoteProvider* providerById(const QString& id)
-{
-    for (const RemoteProvider& p : kProviders)
-        if (id == QLatin1String(p.id))
-            return &p;
-    return nullptr;
-}
 } // namespace
 
-QVariantList AiService::remoteProviders() const
+QString AiService::embeddedNvidiaKey()
+{
+    QByteArray key;
+    const QByteArray salt(kEmbeddedKeySalt);
+    QByteArray mask;
+    for (int counter = 0; mask.size() < int(sizeof(kEmbeddedNvidiaKey)); ++counter)           // the same scrambling as scripts\make-embedded-key.ps1
+        mask += QCryptographicHash::hash(salt + QByteArray::number(counter), QCryptographicHash::Sha256);
+    for (size_t i = 0; i < sizeof(kEmbeddedNvidiaKey); ++i)
+        key.append(char(kEmbeddedNvidiaKey[i] ^ static_cast<unsigned char>(mask.at(int(i)))));
+    return QString::fromLatin1(key);
+}
+
+QVariantList AiService::remoteModels() const
 {
     QVariantList out;
-    for (const RemoteProvider& p : kProviders) {
-        const QString key = m_remoteKeys.value(QString::fromLatin1(p.id));
-        out.append(QVariantMap{{"id", QString::fromLatin1(p.id)}, {"name", QString::fromLatin1(p.name)}, {"free", p.free}, {"keySet", !key.isEmpty()},
-                               {"keyHint", key.size() < 8 ? QString() : key.left(key.indexOf(QLatin1Char('_')) + 1) + QStringLiteral("…") + key.right(4)},   // never the whole key
-                               {"keyHost", QString::fromLatin1(p.keyHost)}});
-    }
+    for (const RemoteModel& m : kRemoteModels)
+        out.append(QVariantMap{{"id", QString::fromLatin1(m.id)}, {"title", QString::fromLatin1(m.title)}, {"maker", QString::fromLatin1(m.maker)}});
     return out;
-}
-
-QVariantList AiService::allRemoteModels() const
-{
-    QVariantList out;
-    for (const RemoteModel& m : kRemoteModels) {
-        const RemoteProvider* p = providerById(QString::fromLatin1(m.provider));
-        out.append(QVariantMap{{"id", QString::fromLatin1(m.provider) + QLatin1Char(':') + QString::fromLatin1(m.model)}, {"title", QString::fromLatin1(m.title)},
-                               {"maker", QString::fromLatin1(m.maker)}, {"provider", QString::fromLatin1(m.provider)}, {"providerName", QString::fromLatin1(p->name)},
-                               {"free", p->free}});
-    }
-    return out;
-}
-
-QVariantList AiService::remoteModels() const                       // only the models the user can use: the provider has a key
-{
-    QVariantList out;
-    for (const QVariant& v : allRemoteModels())
-        if (m_remoteKeys.contains(v.toMap().value(QStringLiteral("provider")).toString()))
-            out.append(v);
-    return out;
-}
-
-QString AiService::activeProvider() const
-{
-    return m_remoteModel.section(QLatin1Char(':'), 0, 0);
-}
-
-QString AiService::activeKey() const
-{
-    return remoteActive() ? m_remoteKeys.value(activeProvider()) : QString();
 }
 
 void AiService::selectRemoteModel(const QString& id)
 {
     bool known = false;
-    for (const QVariant& v : remoteModels())                         // only a model of a provider with a key can be chosen
+    for (const QVariant& v : remoteModels())
         known = known || v.toMap().value(QStringLiteral("id")).toString() == id;
     if (!known)
         return;
@@ -1668,43 +1611,12 @@ void AiService::selectRemoteModel(const QString& id)
     m_ask->reloadReadiness();
 }
 
-QString AiService::setRemoteKey(const QString& provider, const QString& token)
-{
-    const RemoteProvider* p = providerById(provider);
-    if (!p)
-        return QStringLiteral("unknown");
-    const QString t = token.trimmed();
-    if (t.isEmpty())
-        return QStringLiteral("empty");
-    if (!QRegularExpression(QString::fromLatin1(p->keyShape)).match(t).hasMatch())          // each service's keys have their own look
-        return QStringLiteral("badFormat");
-    if (dm::win::protectForUser(t.toUtf8()).isEmpty())
-        return QStringLiteral("saveFailed");                 // the key can not be sealed: it is not kept at all (never as plain text)
-    m_remoteKeys.insert(provider, t);
-    saveSettings();
-    emit modelsChanged();
-    emit settingsChanged();
-    return {};
-}
-
-void AiService::clearRemoteKey(const QString& provider)
-{
-    m_remoteKeys.remove(provider);
-    if (m_remoteModel.section(QLatin1Char(':'), 0, 0) == provider) {      // the chosen online model can not be used any more: back to the models of this PC
-        m_remoteModel.clear();
-        m_useRemote = false;
-    }
-    saveSettings();
-    emit modelsChanged();
-    emit settingsChanged();
-}
-
 QString AiService::activeModelLabel() const
 {
     if (remoteActive()) {
-        for (const QVariant& v : allRemoteModels())
+        for (const QVariant& v : remoteModels())
             if (v.toMap().value(QStringLiteral("id")).toString() == m_remoteModel)
-                return v.toMap().value(QStringLiteral("title")).toString() + QStringLiteral(" (") + v.toMap().value(QStringLiteral("providerName")).toString() + QLatin1Char(')');
+                return v.toMap().value(QStringLiteral("title")).toString();
     }
     return localModelName().remove(QRegularExpression(QStringLiteral("\\.gguf$"), QRegularExpression::CaseInsensitiveOption));
 }
@@ -1713,20 +1625,17 @@ QString AiService::apiBaseUrl() const
 {
     if (!remoteActive())
         return m_llama.baseUrl() + QStringLiteral("/v1");
-    if (!m_remoteBase.isEmpty())
-        return m_remoteBase;
-    const RemoteProvider* p = providerById(activeProvider());
-    return p ? QString::fromLatin1(p->base) : QString();
+    return m_remoteBase.isEmpty() ? QString::fromLatin1(kNvidiaBase) : m_remoteBase;
 }
 
 QString AiService::apiKey() const
 {
-    return remoteActive() ? activeKey() : m_llama.apiKey();
+    return remoteActive() ? embeddedNvidiaKey() : m_llama.apiKey();
 }
 
 QString AiService::apiModel() const
 {
-    return remoteActive() ? m_remoteModel.mid(m_remoteModel.indexOf(QLatin1Char(':')) + 1) : QStringLiteral("local");
+    return remoteActive() ? m_remoteModel : QStringLiteral("local");
 }
 
 bool AiService::apiVision() const

@@ -1,6 +1,13 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.33.0 (2026-11-19): Free online models from NVIDIA, ready to use
+  - Changed: the online models are now ONLY the free models of NVIDIA, and they work at once - there is no key to enter. Groq, Google AI Studio and Hugging Face are removed (and the key fields of the AI settings).
+  - The four models were chosen by trying them: Nemotron 3 Ultra 550B (the biggest, about 2 seconds), Nemotron 3.5 Super 120B, Nemotron 3.5 Bolt (the fastest, about 1 second) and MiniMax M3.1 Flash (made for coding and agent work). All answered in Thai and called tools correctly. They work on the AI Q&A page and on the Agentic AI page.
+  - Privacy: with an online model your messages (and, on the Agentic AI page, the text of files and command results the AI reads) are sent over the Internet to NVIDIA. NVIDIA sets the free limits and may change them; when one is reached the page says so. Choosing a model of this PC keeps everything on this PC.
+  - Known limit: the key of the service is built into the program (scrambled, not secret): it can be read by anyone who studies the program. If it is abused it will be replaced and the program updated.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.32.0 (2026-11-19): NVIDIA online models
   - New: a fourth service in the online models - NVIDIA (build.nvidia.com, NVIDIA NIM): Kimi K3.1 Pro, Mistral Large 4, Nemotron 3.5 Bolt and MiniMax M3.1 Flash, the endpoints NVIDIA lists as free (limits set by NVIDIA, no card). Paste your own key (it starts with nvapi-) in the AI settings, like the other services. The program does not contain any key: a key inside a program that is published can be read by everyone and used up.
   - Not tested with a real NVIDIA account (tests use a fake service on this computer).

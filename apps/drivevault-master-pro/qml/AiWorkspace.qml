@@ -500,19 +500,10 @@ Item {
             delegate: MMenuItem {
                 required property var modelData
                 objectName: "remoteItem"
-                text: modelData.title + "   ·   " + modelData.maker + "   ·   " + modelData.providerName + (modelData.free ? "   ·   " + Tr.s("remote_free") : "")
+                text: modelData.title + "   ·   " + modelData.maker + "   ·   " + Tr.s("remote_free")
                 checkable: true
                 checked: Ai.useRemote && Ai.remoteModel === modelData.id
                 onTriggered: Ai.selectRemoteModel(modelData.id)
-            }
-        }
-        Repeater {                                                 // a service without a key: one entry that leads to its key field
-            model: Ai.remoteProviders.filter(p => !p.keySet)
-            delegate: MMenuItem {
-                required property var modelData
-                objectName: "remoteSetKey_" + modelData.id
-                text: Tr.s("menu_remote_setkey").replace("%1", modelData.name) + (modelData.free ? "  (" + Tr.s("remote_free") + ")" : "")
-                onTriggered: settings.open()
             }
         }
         MenuSeparator { padding: 4; contentItem: Rectangle { implicitHeight: 1; color: Theme.border } }

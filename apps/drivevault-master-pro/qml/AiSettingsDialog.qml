@@ -83,54 +83,10 @@ Popup {
                         Text { Layout.fillWidth: true; text: Tr.s("set_web_note"); font.pixelSize: 12; color: Theme.textSecondary; wrapMode: Text.Wrap }
                     }
 
-                    // online models: the user's own Hugging Face token (kept sealed by Windows, never shown again); a model is chosen in the menu of the message box
+                    // online models: free models of NVIDIA with the key that is built into the program (nothing to enter); chosen in the model menu of the message box
                     Heading { text: Tr.s("set_remote") }
-                    Note { text: Tr.s("set_remote_intro") }
-                    Repeater {
-                        model: Ai.remoteProviders
-                        delegate: Card {
-                            id: providerCard
-                            required property var modelData
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 8
-                                Text { text: providerCard.modelData.name; font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.text }
-                                Rectangle {
-                                    radius: 8; color: Qt.alpha(providerCard.modelData.free ? Theme.success : Theme.warning, 0.16)
-                                    implicitWidth: freeTag.implicitWidth + 14; implicitHeight: 20
-                                    Text { id: freeTag; anchors.centerIn: parent; font.pixelSize: 11; color: providerCard.modelData.free ? Theme.success : Theme.warning
-                                           text: Tr.s(providerCard.modelData.free ? "remote_free" : "remote_paid") }
-                                }
-                                Item { Layout.fillWidth: true }
-                                Text { text: providerCard.modelData.keyHost; font.pixelSize: 11; color: Theme.textSecondary }
-                            }
-                            Text { Layout.fillWidth: true; text: Tr.s("set_remote_help_" + providerCard.modelData.id); font.pixelSize: 12; color: Theme.textSecondary; wrapMode: Text.Wrap }
-                            RowLayout {
-                                Layout.fillWidth: true
-                                visible: providerCard.modelData.keySet
-                                spacing: 8
-                                Rectangle { width: 8; height: 8; radius: 4; color: Theme.success }
-                                Text { Layout.fillWidth: true; text: Tr.s("set_remote_saved").replace("%1", providerCard.modelData.keyHint); font.pixelSize: 13; color: Theme.text; wrapMode: Text.Wrap }
-                                MButton { objectName: "remoteKeyClear_" + providerCard.modelData.id; compact: true; text: Tr.s("set_remote_clear"); onClicked: Ai.clearRemoteKey(providerCard.modelData.id) }
-                            }
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 8
-                                MField { id: keyField; objectName: "remoteKeyField_" + providerCard.modelData.id; Layout.fillWidth: true; secret: true; placeholderText: Tr.s("set_remote_ph"); onAccepted: keySave.clicked() }
-                                MButton {
-                                    id: keySave
-                                    objectName: "remoteKeySave_" + providerCard.modelData.id
-                                    variant: "primary"
-                                    text: Tr.s("set_remote_save")
-                                    enabled: keyField.text.trim() !== ""
-                                    onClicked: {
-                                        const e = Ai.setRemoteKey(providerCard.modelData.id, keyField.text)
-                                        if (e === "") { keyField.clear(); dlg.say(Tr.s("set_remote_ok")) }
-                                        else dlg.say(Tr.s("set_remote_err_" + e))
-                                    }
-                                }
-                            }
-                        }
+                    Card {
+                        Text { Layout.fillWidth: true; text: Tr.s("set_remote_help"); font.pixelSize: 12; color: Theme.textSecondary; wrapMode: Text.Wrap }
                     }
 
                     Heading { text: Tr.s("set_engine") }

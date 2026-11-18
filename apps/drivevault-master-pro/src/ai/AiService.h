@@ -6,7 +6,6 @@
 #include "LlamaServer.h"
 #include "LocalAgent.h"
 #include "MessageModel.h"
-#include <QMap>
 #include "ModelDownloader.h"
 #include "ModelStore.h"
 
@@ -230,12 +229,11 @@ class AiService : public QObject {
     Q_PROPERTY(QVariantList installedModels READ installedModels NOTIFY modelsChanged FINAL)    // [{name, path, sizeText}]
     Q_PROPERTY(QString localModel READ localModel NOTIFY settingsChanged FINAL)        // path of the chosen model
     Q_PROPERTY(QString localModelName READ localModelName NOTIFY settingsChanged FINAL)   // its file name ("" when none)
-    // Online models (owner's decision 2026-11-19): models of a service the user has a key for - Groq and Google AI Studio (free tiers, owner's request) and Hugging
-    // Inference Providers - asked with the user's own key. Only when the user chose one; the messages (and, on the agent page, what the tools read) then leave this PC.
-    Q_PROPERTY(QVariantList remoteProviders READ remoteProviders NOTIFY settingsChanged FINAL)   // [{id, name, free, keySet, keyHint, keyHost}]
-    Q_PROPERTY(QVariantList remoteModels READ remoteModels NOTIFY settingsChanged FINAL)         // the models of the providers that have a key: [{id, title, maker, provider, providerName, free}]
+    // Online models (owner's decision 2026-11-19): free models of NVIDIA (build.nvidia.com, NIM) with the key that is built into the program (EmbeddedKey.h) - the
+    // user needs no key. Only when the user chose one; the messages (and, on the agent page, what the tools read) then leave this PC.
+    Q_PROPERTY(QVariantList remoteModels READ remoteModels CONSTANT FINAL)             // [{id, title, maker, hint}]
     Q_PROPERTY(bool useRemote READ useRemote NOTIFY settingsChanged FINAL)             // the chosen model is an online one
-    Q_PROPERTY(QString remoteModel READ remoteModel NOTIFY settingsChanged FINAL)      // id ("provider:model") of the chosen online model ("" = none yet)
+    Q_PROPERTY(QString remoteModel READ remoteModel NOTIFY settingsChanged FINAL)      // id of the chosen online model ("" = none yet)
     Q_PROPERTY(QString activeModelLabel READ activeModelLabel NOTIFY settingsChanged FINAL)   // what the model button shows ("" = no model)
     Q_PROPERTY(QString modelsFolder READ modelsFolder CONSTANT FINAL)
     Q_PROPERTY(bool webEnabled READ webEnabled WRITE setWebEnabled NOTIFY settingsChanged FINAL)   // the AI may search the web (web_search, fetch_page)
@@ -281,14 +279,13 @@ public:
     QVariantMap probe() const { return m_probe; }
 
     static constexpr int kRemoteContextTokens = 65536;                  // the window the program plans with for an online model (they have more; this keeps requests small and fast)
-    QVariantList remoteProviders() const;
     QVariantList remoteModels() const;
     bool useRemote() const { return m_useRemote; }
     QString remoteModel() const { return m_remoteModel; }
-    bool remoteKeySet() const { return !activeKey().isEmpty(); }        // the key of the provider of the chosen online model
     QString activeModelLabel() const;
     bool remoteActive() const { return m_useRemote && !m_remoteModel.isEmpty(); }
-    void setRemoteBaseUrl(const QString& url) { m_remoteBase = url; }   // tests: a fake service on this computer (replaces the address of every provider)
+    static QString embeddedNvidiaKey();                                 // the key built into the program ("" when this build has none)
+    void setRemoteBaseUrl(const QString& url) { m_remoteBase = url; }   // tests: a fake service on this computer
     // What a request goes to: the llama-server of this PC, or the online service when an online model is chosen.
     QString apiBaseUrl() const;                                         // ends before /chat/completions
     QString apiKey() const;
@@ -297,9 +294,7 @@ public:
     int contextWindow() const;
 
     Q_INVOKABLE void selectLocalModel(const QString& path);
-    Q_INVOKABLE void selectRemoteModel(const QString& id);              // "provider:model" of remoteModels(); the choice is saved
-    Q_INVOKABLE QString setRemoteKey(const QString& provider, const QString& token);   // "" = saved (encrypted for this Windows user); unknown | empty | badFormat | saveFailed
-    Q_INVOKABLE void clearRemoteKey(const QString& provider);
+    Q_INVOKABLE void selectRemoteModel(const QString& id);              // an id of remoteModels(); the choice is saved
     Q_INVOKABLE QString downloadCatalog(const QString& id);             // "" = started
     Q_INVOKABLE void probeLink(const QString& link);                    // asks Hugging Face about a pasted link (size, checksum); downloads nothing
     Q_INVOKABLE QString downloadProbed();                               // downloads the file the last probe found
@@ -337,12 +332,8 @@ private:
     QStringList m_installDirs;                             // install folders of the programs found by the hub (they may carry the engine and models)
     QString m_localModel;
     bool m_useRemote = false;                              // the chosen model is the online one (m_remoteModel)
-    QString m_remoteModel;                                 // "provider:model"
-    QMap<QString, QString> m_remoteKeys;                   // provider id -> the user's key, in memory; on disk only sealed by DPAPI (WinUtil)
-    QString m_remoteBase;                                  // tests only: replaces the address of the provider
-    QVariantList allRemoteModels() const;                  // the whole catalogue (remoteModels() = only those whose provider has a key)
-    QString activeProvider() const;                      // provider id of the chosen online model ("" = none)
-    QString activeKey() const;
+    QString m_remoteModel;
+    QString m_remoteBase;                                  // tests only: replaces the address of the service
     bool m_web = true;                                    // the AI may use the web tools (the owner asked for it; the switch is in the settings and on the page)
     QString m_downloadTitle;
     QString m_downloadFile;                                // where the running download will be
