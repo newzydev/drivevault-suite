@@ -53,6 +53,16 @@ Item {
     function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : status === "waiting" ? "ai_waiting" : status === "working" ? "ai_working" : status === "compacting" ? "ai_compacting" : "ai_writing") }
     readonly property string modelLabel: Ai.activeModelLabel === "" ? Tr.s("ai_model_none") : (Ai.useRemote ? Ai.activeModelLabel + "  ·  " + Tr.s("remote_tag") : Ai.activeModelLabel)
     function why(code) { return Tr.s("why_" + code) }
+    // what a model of this PC is good for (a short line in the model menu); a model the user added by hand gets none
+    function localHint(fileName) {
+        const n = fileName.toLowerCase()
+        if (n.indexOf("typhoon") >= 0) return Tr.s("mh_typhoon")
+        if (n.indexOf("qwen3.5-0.8b") >= 0) return Tr.s("mh_q08")
+        if (n.indexOf("qwen3.5-2b") >= 0) return Tr.s("mh_q2")
+        if (n.indexOf("qwen3.5-4b") >= 0) return Tr.s("mh_q4")
+        if (n.indexOf("qwen3.5-9b") >= 0) return Tr.s("mh_q9")
+        return ""
+    }
     // the text of an error of a reply: what happened, in words, plus what the service said
     function errorText(code, detail) {
         let text
@@ -480,13 +490,14 @@ Item {
             }
             background: Item {}
         }
-        SectionLabel { objectName: "menuLocalLabel"; text: Tr.s("menu_local") }
+        SectionLabel { objectName: "menuLocalLabel"; text: Tr.s("menu_local"); note: Tr.s("menu_local_note") }
         Repeater {
             model: Ai.installedModels
             delegate: MMenuItem {
                 required property var modelData
                 objectName: "modelItem"
                 text: modelData.name.replace(/\.gguf$/i, "") + "   (" + modelData.sizeText + ")"
+                hint: root.localHint(modelData.name)
                 checkable: true
                 checked: !Ai.useRemote && Ai.localModel === modelData.path
                 onTriggered: Ai.selectLocalModel(modelData.path)
@@ -501,6 +512,7 @@ Item {
                 required property var modelData
                 objectName: "remoteItem"
                 text: modelData.title + "   ·   " + modelData.maker + "   ·   " + Tr.s("remote_free")
+                hint: Tr.s(modelData.hintKey)
                 checkable: true
                 checked: Ai.useRemote && Ai.remoteModel === modelData.id
                 onTriggered: Ai.selectRemoteModel(modelData.id)

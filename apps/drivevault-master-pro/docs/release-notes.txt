@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.33.1 (2026-11-19): The model menu says what each model is good for
+  - New: every model in the model menu has a short line saying what it suits (the models of this PC and the online ones), and the heading of the models of this PC says that they run on your own PC.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.33.0 (2026-11-19): Free online models from NVIDIA, ready to use
   - Changed: the online models are now ONLY the free models of NVIDIA, and they work at once - there is no key to enter. Groq, Google AI Studio and Hugging Face are removed (and the key fields of the AI settings).
   - The four models were chosen by trying them: Nemotron 3 Ultra 550B (the biggest, about 2 seconds), Nemotron 3.5 Super 120B, Nemotron 3.5 Bolt (the fastest, about 1 second) and MiniMax M3.1 Flash (made for coding and agent work). All answered in Thai and called tools correctly. They work on the AI Q&A page and on the Agentic AI page.

@@ -1567,12 +1567,12 @@ void AiService::selectLocalModel(const QString& path)
 // on reasoning (Nemotron 3.5 Lightning). build.nvidia.com marks all of them "Free Endpoint"; NVIDIA sets the limits and may change them.
 namespace {
 const char kNvidiaBase[] = "https://integrate.api.nvidia.com/v1";
-struct RemoteModel { const char* id; const char* title; const char* maker; };
+struct RemoteModel { const char* id; const char* title; const char* maker; const char* hintKey; };    // hintKey: the "what is it good for" line in Tr.qml
 const RemoteModel kRemoteModels[] = {
-    {"nvidia/nemotron-3-ultra-550b-a55b", "Nemotron 3 Ultra 550B", "NVIDIA"},          // the biggest and still fast (about 2 s): the default
-    {"nvidia/nemotron-3.5-super-vl-120b-a12b", "Nemotron 3.5 Super 120B", "NVIDIA"},
-    {"nvidia/nemotron-3.5-bolt-e4b", "Nemotron 3.5 Bolt", "NVIDIA"},                    // small and the fastest (about 1 s)
-    {"minimaxai/minimax-m3.1-flash", "MiniMax M3.1 Flash", "MiniMax"},                  // made for coding and agent work, slower (about 9 s)
+    {"nvidia/nemotron-3-ultra-550b-a55b", "Nemotron 3 Ultra 550B", "NVIDIA", "mh_ultra"},          // the biggest and still fast (about 2 s): the default
+    {"nvidia/nemotron-3.5-super-vl-120b-a12b", "Nemotron 3.5 Super 120B", "NVIDIA", "mh_super"},
+    {"nvidia/nemotron-3.5-bolt-e4b", "Nemotron 3.5 Bolt", "NVIDIA", "mh_bolt"},                    // small and the fastest (about 1 s)
+    {"minimaxai/minimax-m3.1-flash", "MiniMax M3.1 Flash", "MiniMax", "mh_minimax"},               // made for coding and agent work, slower (about 9 s)
 };
 } // namespace
 
@@ -1592,7 +1592,8 @@ QVariantList AiService::remoteModels() const
 {
     QVariantList out;
     for (const RemoteModel& m : kRemoteModels)
-        out.append(QVariantMap{{"id", QString::fromLatin1(m.id)}, {"title", QString::fromLatin1(m.title)}, {"maker", QString::fromLatin1(m.maker)}});
+        out.append(QVariantMap{{"id", QString::fromLatin1(m.id)}, {"title", QString::fromLatin1(m.title)}, {"maker", QString::fromLatin1(m.maker)},
+                               {"hintKey", QString::fromLatin1(m.hintKey)}});
     return out;
 }
 

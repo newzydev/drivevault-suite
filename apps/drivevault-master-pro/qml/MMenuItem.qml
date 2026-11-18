@@ -6,8 +6,9 @@ MenuItem {
     id: item
 
     property bool danger: false
+    property string hint: ""                       // an optional second line (what the entry is good for): smaller, grey, wraps
 
-    implicitHeight: 38
+    implicitHeight: hint === "" ? 38 : Math.max(38, contentItem.implicitHeight + 16)
     leftPadding: 14
     rightPadding: 14
     font.pixelSize: 13
@@ -25,12 +26,25 @@ MenuItem {
             verticalAlignment: Text.AlignVCenter
             anchors.verticalCenter: parent.verticalCenter
         }
-        Text {
-            text: item.text
-            font: item.font
-            color: !item.enabled ? Theme.textDisabled : item.danger ? Theme.errorSoft : Theme.text
-            verticalAlignment: Text.AlignVCenter
+        Column {
+            width: item.availableWidth - (item.checkable ? 26 : 0)
+            spacing: 2
             anchors.verticalCenter: parent.verticalCenter
+            Text {
+                width: parent.width
+                text: item.text
+                font: item.font
+                color: !item.enabled ? Theme.textDisabled : item.danger ? Theme.errorSoft : Theme.text
+                verticalAlignment: Text.AlignVCenter
+            }
+            Text {
+                visible: item.hint !== ""
+                width: parent.width
+                text: item.hint
+                font.pixelSize: 11
+                color: Theme.textSecondary
+                wrapMode: Text.Wrap
+            }
         }
     }
     background: Rectangle {
