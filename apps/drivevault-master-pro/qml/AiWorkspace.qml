@@ -57,7 +57,7 @@ Item {
     function errorText(code, detail) {
         let text
         if (Ai.useRemote && code.indexOf("http") === 0)                // an online model: the key, the credits and the limits are the usual reasons
-            text = Tr.s(["401", "402", "403", "429"].indexOf(code.substring(4)) >= 0 ? "err_remote_" + code.substring(4) : "err_http_remote").replace("%1", code.substring(4))
+            text = Tr.s(["401", "402", "403", "413", "429"].indexOf(code.substring(4)) >= 0 ? "err_remote_" + code.substring(4) : "err_http_remote").replace("%1", code.substring(4))
         else if (Ai.useRemote && code === "network")
             text = Tr.s("err_network_remote")
         else if (Tr.s("err_" + code) !== "err_" + code)
@@ -496,21 +496,22 @@ Item {
         // online models: asked with the user's own Hugging Face key; shown as choices only when there is a key, otherwise one entry that leads to the key field
         SectionLabel { objectName: "menuRemoteLabel"; text: Tr.s("menu_remote"); note: Tr.s("menu_remote_note") }
         Repeater {
-            model: Ai.remoteKeySet ? Ai.remoteModels : []
+            model: Ai.remoteModels
             delegate: MMenuItem {
                 required property var modelData
                 objectName: "remoteItem"
-                text: modelData.title + "   ·   " + modelData.maker
+                text: modelData.title + "   ·   " + modelData.maker + "   ·   " + modelData.providerName + (modelData.free ? "   ·   " + Tr.s("remote_free") : "")
                 checkable: true
                 checked: Ai.useRemote && Ai.remoteModel === modelData.id
                 onTriggered: Ai.selectRemoteModel(modelData.id)
             }
         }
-        Repeater {
-            model: Ai.remoteKeySet ? [] : [1]
+        Repeater {                                                 // a service without a key: one entry that leads to its key field
+            model: Ai.remoteProviders.filter(p => !p.keySet)
             delegate: MMenuItem {
-                objectName: "remoteSetKey"
-                text: Tr.s("menu_remote_setkey")
+                required property var modelData
+                objectName: "remoteSetKey_" + modelData.id
+                text: Tr.s("menu_remote_setkey").replace("%1", modelData.name) + (modelData.free ? "  (" + Tr.s("remote_free") + ")" : "")
                 onTriggered: settings.open()
             }
         }

@@ -1,6 +1,13 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.31.0 (2026-11-19): Free online models: Groq and Google AI Studio
+  - New: the online models of the model menu now come from three services - Groq (GPT-OSS 120B and 20B of OpenAI) and Google AI Studio (Gemini 3 Flash, Gemini 3.1 Flash-Lite) have FREE plans and need no credit card; Hugging Face stays for people who have credits there (its free monthly credit was reported ended in October 2026). Each service has its own key field in the AI settings (get a key at console.groq.com/keys, aistudio.google.com/apikey, huggingface.co/settings/tokens); a key is stored encrypted for your Windows user and a service without a key shows one menu entry that leads to its key field.
+  - Free plans have limits set by the service (Groq: about 30 requests and 8,000 tokens per minute for GPT-OSS 120B; Google: set in AI Studio and changed from time to time; on its free plan Google may use your prompts to improve its products). When a limit is reached the page shows the service's error (429 / 413) in words. A long job on the Agentic AI page may hit the token limit of a free plan.
+  - Changed: choosing a model of this PC or removing the key of the chosen service leaves the online model; settings of 1.30.0 (one Hugging Face key) are read as before.
+  - Not tested with a real Groq / Google / Hugging Face account (tests use a fake service on this computer).
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.30.0 (2026-11-19): Online models (Hugging Face API) on both AI pages
   - New: the model menu of the message box has two headed groups, "Models on this PC" and "Online models (API · Hugging Face)": GPT-OSS 120B and 20B (OpenAI), Gemma 4 31B (Google) and Qwen3 235B (Alibaba), run by Hugging Face Inference Providers - often smarter and faster than a small model on this PC. Works on the AI Q&A page and on the Agentic AI page (files, commands and the browser as before).
   - You use your own Hugging Face token: paste it in the AI settings (huggingface.co/settings/tokens, permission "Make calls to Inference Providers"). It is stored encrypted for your Windows user on this PC and never shown again. Without a key the menu has one entry that leads to the key field.

@@ -1865,7 +1865,7 @@ private slots:
         FakeServer server;
         server.body = sse({R"({"choices":[{"delta":{"content":"Online answer"}}]})", "[DONE]"});
         const QString dataDir = m_dir.filePath("hub-remote");
-        const QString token = QStringLiteral("hf_TestTokenabcdefghijklmnop1234");
+        const QString token = QStringLiteral("gsk_TestTokenabcdefghijklmnop1234");       // Groq (free); the other services have their own key shapes
         {
             dm::Hub::Options o;
             o.registryRoot = kRoot;
@@ -1875,21 +1875,33 @@ private slots:
             ai.setRemoteBaseUrl(server.base() + "/v1");
             ai.setWebEnabled(false);
             auto* ask = qobject_cast<AiChannel*>(ai.ask());
-            QVERIFY(ai.remoteModels().size() >= 3);
+            QCOMPARE(ai.remoteProviders().size(), 3);                      // Groq and Google (free) and Hugging Face
+            QVERIFY(ai.remoteModels().isEmpty());                          // no key yet: no online model can be used
             QVERIFY(!ai.useRemote());
-            ai.selectRemoteModel("not/in-the-list");                       // only the catalogue can be chosen
+            ai.selectRemoteModel("groq:openai/gpt-oss-120b");              // ... so it cannot be chosen
             QVERIFY(!ai.useRemote());
-            ai.selectRemoteModel("openai/gpt-oss-120b");
+            QCOMPARE(ai.setRemoteKey("nobody", token), QString("unknown"));
+            QCOMPARE(ai.setRemoteKey("groq", "  "), QString("empty"));
+            QCOMPARE(ai.setRemoteKey("groq", "not a token"), QString("badFormat"));
+            QCOMPARE(ai.setRemoteKey("groq", "hf_abcdefghijklmnopqrstuvwx"), QString("badFormat"));      // a key of another service
+            QVERIFY(ai.remoteModels().isEmpty());
+            QCOMPARE(ai.setRemoteKey("groq", token), QString());
+            QVERIFY(!ai.remoteModels().isEmpty());                         // only the models of Groq
+            for (const QVariant& m : ai.remoteModels())
+                QCOMPARE(m.toMap().value("provider").toString(), QString("groq"));
+            QVariantMap groq;
+            for (const QVariant& p : ai.remoteProviders())
+                if (p.toMap().value("id").toString() == "groq")
+                    groq = p.toMap();
+            QVERIFY(groq.value("keySet").toBool() && groq.value("free").toBool());
+            QVERIFY(groq.value("keyHint").toString().endsWith("1234") && !groq.value("keyHint").toString().contains("TestToken"));
+            ai.selectRemoteModel("not:in-the-list");                       // only the catalogue can be chosen
+            QVERIFY(!ai.useRemote());
+            ai.selectRemoteModel("groq:openai/gpt-oss-120b");
             QVERIFY(ai.useRemote());
-            QCOMPARE(ask->notReady(), QString("noKey"));                   // no key, no engine needed: the key is what is missing
-            QCOMPARE(ai.setRemoteKey("  "), QString("empty"));
-            QCOMPARE(ai.setRemoteKey("not a token"), QString("badFormat"));
-            QVERIFY(!ai.remoteKeySet());
-            QCOMPARE(ai.setRemoteKey(token), QString());
             QVERIFY(ai.remoteKeySet());
-            QVERIFY(ai.remoteKeyHint().endsWith("1234") && !ai.remoteKeyHint().contains("TestToken"));
             QCOMPARE(ask->notReady(), QString());
-            QCOMPARE(ai.activeModelLabel(), QString("GPT-OSS 120B"));
+            QCOMPARE(ai.activeModelLabel(), QString("GPT-OSS 120B (Groq)"));
             QCOMPARE(ask->send("hello"), QString());
             QTRY_VERIFY_WITH_TIMEOUT(!ask->busy(), 10000);
             QCOMPARE(ask->messages().at(1).toMap().value("text").toString(), QString("Online answer"));
@@ -1902,7 +1914,7 @@ private slots:
             QVERIFY(f.open(QIODevice::ReadOnly));
             const QByteArray saved = f.readAll();
             QVERIFY(!saved.contains("TestToken"));
-            QVERIFY(saved.contains("openai/gpt-oss-120b"));
+            QVERIFY(saved.contains("groq:openai/gpt-oss-120b"));
         }
         {   // a new start: the choice and the key come back; a model of this PC leaves the online one; removing the key forgets it
             dm::Hub::Options o;
@@ -1911,15 +1923,29 @@ private slots:
             dm::Hub hub(o);
             AiService ai(&hub);
             QVERIFY(ai.useRemote() && ai.remoteKeySet());
-            QCOMPARE(ai.remoteModel(), QString("openai/gpt-oss-120b"));
+            QCOMPARE(ai.remoteModel(), QString("groq:openai/gpt-oss-120b"));
             QFile gguf(m_dir.filePath("local-after-remote.gguf"));
             QVERIFY(gguf.open(QIODevice::WriteOnly));
             gguf.write("x");
             gguf.close();
             ai.selectLocalModel(gguf.fileName());
             QVERIFY(!ai.useRemote());
-            QVERIFY(ai.remoteKeySet());                                    // the key stays for the next time
-            ai.clearRemoteKey();
+            QVERIFY(!ai.remoteModels().isEmpty());                         // the key stays for the next time
+            ai.clearRemoteKey("groq");
+            QVERIFY(ai.remoteModels().isEmpty());
+            QVERIFY(!ai.useRemote() && ai.remoteModel().isEmpty());       // (it was already back on the local model: the test chose one above)
+        }
+        {   // the 1.30.0 settings file (one Hugging Face key, a model id without a service) is still read: it becomes the Hugging Face entry
+            QFile f(dataDir + "/ai/settings.json");
+            QVERIFY(f.open(QIODevice::WriteOnly | QIODevice::Truncate));
+            f.write(R"({"remote":{"use":true,"model":"openai/gpt-oss-120b","key":""}})");
+            f.close();
+            dm::Hub::Options o;
+            o.registryRoot = kRoot;
+            o.dataDir = dataDir;
+            dm::Hub hub(o);
+            AiService ai(&hub);
+            QCOMPARE(ai.remoteModel(), QString());                         // no key came along, so nothing is usable - but nothing breaks
             QVERIFY(!ai.remoteKeySet());
         }
     }
