@@ -1875,7 +1875,11 @@ private slots:
             ai.setRemoteBaseUrl(server.base() + "/v1");
             ai.setWebEnabled(false);
             auto* ask = qobject_cast<AiChannel*>(ai.ask());
-            QCOMPARE(ai.remoteProviders().size(), 3);                      // Groq and Google (free) and Hugging Face
+            QCOMPARE(ai.remoteProviders().size(), 4);                      // Groq, Google and NVIDIA (free) and Hugging Face
+            QCOMPARE(ai.setRemoteKey("nvidia", "gsk_TestTokenabcdefghijklmnop1234"), QString("badFormat"));      // a key of another service
+            QCOMPARE(ai.setRemoteKey("nvidia", "nvapi-TestTokenabcdefghijklmnopqrstuvwxyz0123456789"), QString());
+            QVERIFY(!ai.remoteModels().isEmpty());
+            ai.clearRemoteKey("nvidia");
             QVERIFY(ai.remoteModels().isEmpty());                          // no key yet: no online model can be used
             QVERIFY(!ai.useRemote());
             ai.selectRemoteModel("groq:openai/gpt-oss-120b");              // ... so it cannot be chosen

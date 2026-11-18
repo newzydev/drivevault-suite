@@ -1584,7 +1584,8 @@ struct RemoteProvider { const char* id; const char* name; const char* base; cons
 const RemoteProvider kProviders[] = {
     {"groq", "Groq", "https://api.groq.com/openai/v1", "^gsk_[A-Za-z0-9]{20,200}$", "console.groq.com/keys", true},
     {"google", "Google AI Studio", "https://generativelanguage.googleapis.com/v1beta/openai", "^AIza[A-Za-z0-9_\\-]{30,60}$", "aistudio.google.com/apikey", true},
-    {"hf", "Hugging Face", "https://router.huggingface.co/v1", "^hf_[A-Za-z0-9]{10,200}$", "huggingface.co/settings/tokens", false},
+    {"nvidia", "NVIDIA", "https://integrate.api.nvidia.com/v1", "^nvapi-[A-Za-z0-9_\\-]{30,120}$", "build.nvidia.com/settings/api-keys", true},
+    {"hf", "Hugging Face", "https://router.huggingface.co/v1","^hf_[A-Za-z0-9]{10,200}$", "huggingface.co/settings/tokens", false},
 };
 struct RemoteModel { const char* provider; const char* model; const char* title; const char* maker; };
 const RemoteModel kRemoteModels[] = {
@@ -1592,6 +1593,10 @@ const RemoteModel kRemoteModels[] = {
     {"groq", "openai/gpt-oss-20b", "GPT-OSS 20B", "OpenAI"},
     {"google", "gemini-3-flash-preview", "Gemini 3 Flash", "Google"},
     {"google", "gemini-3.1-flash-lite", "Gemini 3.1 Flash-Lite", "Google"},
+    {"nvidia", "moonshotai/kimi-k3.1-pro", "Kimi K3.1 Pro", "Moonshot"},           // the four that build.nvidia.com marked "Free Endpoint" on 2026-11-19 (ids from /v1/models)
+    {"nvidia", "mistralai/mistral-large-4-1t-a52b", "Mistral Large 4", "Mistral AI"},
+    {"nvidia", "nvidia/nemotron-3.5-bolt-e4b", "Nemotron 3.5 Bolt", "NVIDIA"},
+    {"nvidia", "minimaxai/minimax-m3.1-flash", "MiniMax M3.1 Flash", "MiniMax"},
     {"hf", "openai/gpt-oss-120b", "GPT-OSS 120B", "OpenAI"},
     {"hf", "google/gemma-4-31B-it", "Gemma 4 31B", "Google"},
     {"hf", "Qwen/Qwen3-235B-A22B-Instruct-2507", "Qwen3 235B", "Alibaba"},
