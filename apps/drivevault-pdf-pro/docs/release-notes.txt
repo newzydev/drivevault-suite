@@ -2,6 +2,10 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.22.2 (2026-11-19): Smaller installer that downloads Master Pro
+  - Changed (installer): the installer no longer contains DriveVault Master Pro (the hub of the suite). When Master Pro is missing or older, the installer downloads the newest release from GitHub (checked with its SHA-256) and installs it first. Without an Internet connection the program is installed anyway and the last page says that Master Pro is not installed (before, the installation stopped); an installed Master Pro is kept. The program itself is unchanged.
+  - Note: the installer is not code-signed yet, so Windows SmartScreen may warn.
+
 v1.22.1 (2026-11-17): Drop-down lists are readable
   - Fixed: the lists of the drop-down boxes (printer, paper, fonts, page range, redaction and the other windows) were drawn with a white bar on the entry you pointed at, so the text could not be read. They are now one dark rounded list with a soft red highlight and a tick on the chosen entry (the new PComboBox).
   - Note: the installer is not code-signed yet, so Windows SmartScreen may warn.
