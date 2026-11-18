@@ -2,7 +2,6 @@
 
 #include "EmbeddedKey.h"
 #include "Hub.h"
-#include "MarkdownHtml.h"
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -1652,24 +1651,10 @@ int AiService::contextWindow() const
     return m_llama.isExternal() ? LlamaServer::kSmallContextTokens : m_llama.contextTokens();    // a server not started here (the tests): its window is unknown, assume the small one
 }
 
-QString AiService::markdownHtml(const QString& markdown, const QVariantMap& style) const
+void AiService::copyText(const QString& text) const
 {
-    MarkdownStyle st;
-    auto pick = [&](const char* key, QString& target) {
-        const QString v = style.value(QLatin1String(key)).toString();
-        if (!v.isEmpty())
-            target = v;
-    };
-    pick("text", st.text);
-    pick("muted", st.muted);
-    pick("codeBg", st.codeBg);
-    pick("codeHeadBg", st.codeHeadBg);
-    pick("bg", st.bg);
-    pick("border", st.border);
-    pick("link", st.link);
-    st.fontPx = style.value(QStringLiteral("fontPx"), st.fontPx).toInt();
-    st.linePercent = style.value(QStringLiteral("linePercent"), st.linePercent).toInt();
-    return markdownToHtml(markdown, st);
+    if (QClipboard* cb = QGuiApplication::clipboard())
+        cb->setText(text);
 }
 
 QVariantMap AiService::vision() const

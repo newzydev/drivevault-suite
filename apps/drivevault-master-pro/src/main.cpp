@@ -1,5 +1,6 @@
 #include "Hub.h"
 #include "ai/AiService.h"
+#include "ai/MarkdownModel.h"
 
 #include <QCommandLineParser>
 #include <functional>
@@ -91,6 +92,7 @@ int main(int argc, char* argv[])
     QQmlApplicationEngine engine;
     qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Hub", &hub);
     qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Ai", &ai);
+    qmlRegisterType<dm::ai::MarkdownModel>("DriveVault.Master.Backend", 1, 0, "MarkdownModel");      // one per answer on the page (the blocks of its Markdown)
     engine.loadFromModule("DriveVault.Master", "Main");
     if (engine.rootObjects().isEmpty())
         return 1;

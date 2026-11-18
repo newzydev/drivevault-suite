@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultMasterPro
-    VERSION 1.34.0
+    VERSION 1.35.0
     DESCRIPTION "DriveVault Master Pro - installs, launches and updates the DriveVault programs"
     LANGUAGES CXX)
 
@@ -28,7 +28,7 @@ add_library(master_core STATIC src/Hub.cpp src/Hub.h src/WinUtil.cpp src/WinUtil
     src/ai/Streams.cpp src/ai/Streams.h src/ai/HttpChat.cpp src/ai/HttpChat.h
     src/ai/ProcessUtil.cpp src/ai/ProcessUtil.h src/ai/LlamaServer.cpp src/ai/LlamaServer.h
     src/ai/ModelDownloader.cpp src/ai/ModelDownloader.h src/ai/ModelStore.cpp src/ai/ModelStore.h
-    src/ai/AiService.cpp src/ai/AiService.h src/ai/MarkdownHtml.cpp src/ai/MarkdownHtml.h
+    src/ai/AiService.cpp src/ai/AiService.h src/ai/MarkdownHtml.cpp src/ai/MarkdownHtml.h src/ai/MarkdownModel.cpp src/ai/MarkdownModel.h
     src/ai/AgentTools.cpp src/ai/AgentTools.h src/ai/Compactor.cpp src/ai/Compactor.h src/ai/GitInfo.cpp src/ai/GitInfo.h src/ai/CommandRunner.cpp src/ai/CommandRunner.h src/ai/CommandPool.cpp src/ai/CommandPool.h src/ai/MessageModel.cpp src/ai/MessageModel.h src/ai/LocalAgent.cpp src/ai/LocalAgent.h src/ai/WebTools.cpp src/ai/WebTools.h
     src/browser/BrowserBridge.cpp src/browser/BrowserBridge.h)
 target_include_directories(master_core PUBLIC src src/ai src/browser ${CMAKE_BINARY_DIR}/generated)
@@ -50,6 +50,7 @@ qt_add_qml_module(DriveVaultMasterPro
         qml/ProductCard.qml
         qml/TabSwitcher.qml
         qml/AiWorkspace.qml
+        qml/AnswerView.qml
         qml/BrowserView.qml
         qml/AiSettingsDialog.qml
         qml/MField.qml

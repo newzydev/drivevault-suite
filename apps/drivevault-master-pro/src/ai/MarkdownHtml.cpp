@@ -2,6 +2,7 @@
 
 #include <QRegularExpression>
 #include <QStringList>
+#include <QVariantMap>
 #include <QVector>
 
 namespace dm::ai {
@@ -72,23 +73,9 @@ QString inlineHtml(const QString& raw, const MarkdownStyle& st)
     return s;
 }
 
-QString paragraph(const QStringList& lines, const MarkdownStyle& st)
+QVariantMap block(const QString& type, int quote)
 {
-    QStringList parts;
-    for (const QString& l : lines)
-        parts << inlineHtml(l.trimmed(), st);
-    return QStringLiteral("<p style=\"margin-top:0px; margin-bottom:12px; line-height:%1%\">%2</p>").arg(st.linePercent).arg(parts.join(QStringLiteral("<br>")));
-}
-
-QString codeBlock(const QStringList& lines, const QString& lang, const MarkdownStyle& st)
-{
-    const QString body = esc(lines.join(QLatin1Char('\n')));
-    // one cell: the language (small, grey) above the code
-    const QString head = lang.isEmpty() ? QString() : QStringLiteral("<p style=\"margin:0px 0px 4px 0px; font-size:%1px; color:%2\">%3</p>").arg(qMax(10, st.fontPx - 4)).arg(st.muted, esc(lang));
-    // Qt paints the colour of a table (bgcolor on the <table>) behind everything including the padding of the cells, but the colour of a cell only behind its content
-    return QStringLiteral("<table width=\"100%\" cellspacing=\"0\" cellpadding=\"12\" bgcolor=\"%1\"><tr><td>%2<pre style=\"margin:0px; white-space:pre-wrap; font-family:%3; font-size:%4px; color:%5\">%6</pre></td></tr></table>"
-                          "<p style=\"margin:0px; font-size:6px\">&nbsp;</p>")
-        .arg(st.codeBg, head, kMono).arg(qMax(11, st.fontPx - 2)).arg(st.text, body);
+    return QVariantMap{{"type", type}, {"quote", quote}};
 }
 
 QVector<QString> splitRow(const QString& line)
@@ -155,27 +142,19 @@ bool startsBlock(const QString& line, const QString& next)
            || quoteRx().match(line).hasMatch() || (line.contains(QLatin1Char('|')) && tableSepRx().match(next).hasMatch() && next.contains(QLatin1Char('-')));
 }
 
-QString convert(const QStringList& lines, const MarkdownStyle& st);
+void convert(const QStringList& lines, const MarkdownStyle& st, int quote, QVariantList& out);
 
-QString listHtml(const QStringList& lines, int& at, const MarkdownStyle& st)
+// the rows of one list (items and what continues them); `at` is moved past it
+void listRows(const QStringList& lines, int& at, const MarkdownStyle& st, int quote, QVariantList& out)
 {
-    struct Level { int indent; bool ordered; };
+    struct Level { int indent; bool ordered; int counter; };
     QVector<Level> stack;
-    QString out;
-    bool liOpen = false;                                        // the <li> of the deepest level is still open (a nested list may go inside)
-    auto closeLevel = [&] {
-        if (liOpen)
-            out += QStringLiteral("</li>");
-        out += stack.last().ordered ? QStringLiteral("</ol>") : QStringLiteral("</ul>");
-        stack.removeLast();
-        liOpen = !stack.isEmpty();                              // the item of the parent that held the nested list
-    };
+    int last = -1;                                              // the index in `out` of the last row (a continuation line is added to it)
     while (at < lines.size()) {
         const QRegularExpressionMatch m = itemRx().match(lines.at(at));
         if (!m.hasMatch()) {
-            // a continuation of the last item: indented text right below it; a blank line only ends the list when no item follows
             const QString& l = lines.at(at);
-            if (l.trimmed().isEmpty()) {
+            if (l.trimmed().isEmpty()) {                        // a blank line only ends the list when no item follows
                 int k = at + 1;
                 while (k < lines.size() && lines.at(k).trimmed().isEmpty())
                     ++k;
@@ -185,8 +164,10 @@ QString listHtml(const QStringList& lines, int& at, const MarkdownStyle& st)
                 }
                 break;
             }
-            if (!stack.isEmpty() && indentOf(l) >= stack.last().indent + 2 && !startsBlock(l, QString())) {
-                out += QStringLiteral("<br>") + inlineHtml(l.trimmed(), st);
+            if (last >= 0 && !stack.isEmpty() && indentOf(l) >= stack.last().indent + 2 && !startsBlock(l, QString())) {
+                QVariantMap row = out.at(last).toMap();
+                row["html"] = row.value("html").toString() + QStringLiteral("<br>") + inlineHtml(l.trimmed(), st);
+                out[last] = row;
                 ++at;
                 continue;
             }
@@ -196,34 +177,26 @@ QString listHtml(const QStringList& lines, int& at, const MarkdownStyle& st)
         const QString marker = m.captured(2);
         const bool ordered = marker.at(0).isDigit();
         while (!stack.isEmpty() && indent < stack.last().indent)
-            closeLevel();
+            stack.removeLast();
         if (!stack.isEmpty() && indent == stack.last().indent && ordered != stack.last().ordered)
-            closeLevel();
-        if (stack.isEmpty() || indent > stack.last().indent + 1) {
-            const int number = ordered ? marker.left(marker.size() - 1).toInt() : 0;
-            const QString open = ordered ? QStringLiteral("<ol style=\"margin-top:0px; margin-bottom:%1px; margin-left:0px; -qt-list-indent:%3\"%2>")
-                                               .arg(stack.isEmpty() ? 10 : 2).arg(number > 1 ? QStringLiteral(" start=\"%1\"").arg(number) : QString()).arg(stack.size() + 1)
-                                         : QStringLiteral("<ul style=\"margin-top:0px; margin-bottom:%1px; margin-left:0px; -qt-list-indent:%2\">").arg(stack.isEmpty() ? 10 : 2).arg(stack.size() + 1);
-            if (!stack.isEmpty() && !liOpen)
-                out += QStringLiteral("<li>");
-            out += open;
-            stack.append({indent, ordered});
-            liOpen = false;
-        } else if (liOpen) {
-            out += QStringLiteral("</li>");
-        }
-        out += QStringLiteral("<li style=\"margin-top:0px; margin-bottom:5px; line-height:%1%\">").arg(st.linePercent) + inlineHtml(m.captured(3).trimmed(), st);
-        liOpen = true;
+            stack.removeLast();
+        if (stack.isEmpty() || indent > stack.last().indent + 1)
+            stack.append({indent, ordered, ordered ? marker.left(marker.size() - 1).toInt() : 0});
+        else if (ordered)
+            ++stack.last().counter;
+        const int depth = int(stack.size()) - 1;
+        QVariantMap row = block(QStringLiteral("li"), quote);
+        row["depth"] = depth;
+        row["marker"] = ordered ? QString::number(stack.last().counter) + QLatin1Char('.') : depth == 0 ? QStringLiteral("•") : depth == 1 ? QStringLiteral("◦") : QStringLiteral("▪");
+        row["html"] = inlineHtml(m.captured(3).trimmed(), st);
+        out.append(row);
+        last = int(out.size()) - 1;
         ++at;
     }
-    while (!stack.isEmpty())
-        closeLevel();
-    return out;
 }
 
-QString convert(const QStringList& lines, const MarkdownStyle& st)
+void convert(const QStringList& lines, const MarkdownStyle& st, int quote, QVariantList& out)
 {
-    QString out;
     int i = 0;
     const int n = lines.size();
     while (i < n) {
@@ -242,19 +215,22 @@ QString convert(const QStringList& lines, const MarkdownStyle& st)
                 code << lines.at(i++);
             if (i < n)
                 ++i;                                             // the closing fence
-            out += codeBlock(code, f.captured(2), st);
+            QVariantMap b = block(QStringLiteral("code"), quote);
+            b["lang"] = f.captured(2);
+            b["text"] = code.join(QLatin1Char('\n'));
+            out.append(b);
             continue;
         }
         if (const QRegularExpressionMatch h = headingRx().match(line); h.hasMatch()) {
-            const int level = h.captured(1).size();
-            const int size = level == 1 ? st.fontPx + 7 : level == 2 ? st.fontPx + 4 : level == 3 ? st.fontPx + 2 : st.fontPx;
-            out += QStringLiteral("<p style=\"margin-top:%1px; margin-bottom:6px; font-size:%2px; font-weight:600; line-height:%3%\">%4</p>")
-                       .arg(level <= 2 ? 22 : 14).arg(size).arg(st.linePercent - 15).arg(inlineHtml(h.captured(2), st));
+            QVariantMap b = block(QStringLiteral("h"), quote);
+            b["level"] = int(h.captured(1).size());
+            b["html"] = inlineHtml(h.captured(2), st);
+            out.append(b);
             ++i;
             continue;
         }
         if (ruleRx().match(line).hasMatch()) {
-            out += QStringLiteral("<table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"margin-top:8px; margin-bottom:14px\"><tr><td bgcolor=\"%1\" height=\"1\"><span style=\"font-size:1px\">&nbsp;</span></td></tr></table>").arg(st.border);
+            out.append(block(QStringLiteral("hr"), quote));
             ++i;
             continue;
         }
@@ -267,56 +243,61 @@ QString convert(const QStringList& lines, const MarkdownStyle& st)
                 inner << q.captured(1);
                 ++i;
             }
-            out += QStringLiteral("<table cellspacing=\"0\" cellpadding=\"0\" style=\"margin-top:2px; margin-bottom:10px\"><tr><td width=\"3\" bgcolor=\"%1\"></td><td width=\"12\"></td>"
-                                  "<td><span style=\"color:%2\">%3</span></td></tr></table>").arg(st.border, st.muted, convert(inner, st));
+            convert(inner, st, quote + 1, out);
             continue;
         }
         if (line.contains(QLatin1Char('|')) && tableSepRx().match(next).hasMatch() && next.contains(QLatin1Char('-'))) {
             const QVector<QString> head = splitRow(line);
-            QVector<QString> aligns;
+            QVariantList heads, aligns, rows;
+            for (const QString& c : head)
+                heads << inlineHtml(c, st);
             for (const QString& c : splitRow(next))
-                aligns.append(c.startsWith(QLatin1Char(':')) && c.endsWith(QLatin1Char(':')) ? QStringLiteral("center") : c.endsWith(QLatin1Char(':')) ? QStringLiteral("right") : QStringLiteral("left"));
-            // thin lines the plain way: the table has the colour of the lines and a gap of 1 px between the cells, every cell has the colour of the page
-            QString t = QStringLiteral("<table border=\"1\" bordercolor=\"%1\" cellspacing=\"0\" cellpadding=\"8\" style=\"border-collapse:collapse; border-color:%1\"><tr>").arg(st.border);
-            for (int c = 0; c < head.size(); ++c)
-                t += QStringLiteral("<th align=\"%1\">%2</th>").arg(c < aligns.size() ? aligns.at(c) : QStringLiteral("left"), inlineHtml(head.at(c), st));
-            t += QStringLiteral("</tr>");
+                aligns << (c.startsWith(QLatin1Char(':')) && c.endsWith(QLatin1Char(':')) ? QStringLiteral("center") : c.endsWith(QLatin1Char(':')) ? QStringLiteral("right") : QStringLiteral("left"));
+            while (aligns.size() < heads.size())
+                aligns << QStringLiteral("left");
             i += 2;
             while (i < n && lines.at(i).contains(QLatin1Char('|')) && !lines.at(i).trimmed().isEmpty()) {
                 const QVector<QString> cells = splitRow(lines.at(i));
-                t += QStringLiteral("<tr>");
+                QVariantList row;
                 for (int c = 0; c < head.size(); ++c)
-                    t += QStringLiteral("<td align=\"%1\">%2</td>").arg(c < aligns.size() ? aligns.at(c) : QStringLiteral("left"), c < cells.size() ? inlineHtml(cells.at(c), st) : QString());
-                t += QStringLiteral("</tr>");
+                    row << (c < cells.size() ? inlineHtml(cells.at(c), st) : QString());
+                rows << QVariant(row);
                 ++i;
             }
-            out += t + QStringLiteral("</table><p style=\"margin:0px; font-size:8px\">&nbsp;</p>");
+            QVariantMap b = block(QStringLiteral("table"), quote);
+            b["head"] = heads;
+            b["aligns"] = aligns;
+            b["rows"] = rows;
+            out.append(b);
             continue;
         }
         if (itemRx().match(line).hasMatch()) {
-            out += listHtml(lines, i, st);
+            listRows(lines, i, st, quote, out);
             continue;
         }
         // a paragraph: lines up to a blank line or the start of another block
-        QStringList para;
+        QStringList parts;
         while (i < n && !lines.at(i).trimmed().isEmpty()) {
-            if (!para.isEmpty() && startsBlock(lines.at(i), i + 1 < n ? lines.at(i + 1) : QString()))
+            if (!parts.isEmpty() && startsBlock(lines.at(i), i + 1 < n ? lines.at(i + 1) : QString()))
                 break;
-            para << lines.at(i++);
+            parts << inlineHtml(lines.at(i++).trimmed(), st);
         }
-        out += paragraph(para, st);
+        QVariantMap b = block(QStringLiteral("p"), quote);
+        b["html"] = parts.join(QStringLiteral("<br>"));
+        out.append(b);
     }
-    return out;
 }
 
 } // namespace
 
-QString markdownToHtml(const QString& markdown, const MarkdownStyle& style)
+QVariantList markdownBlocks(const QString& markdown, const MarkdownStyle& style)
 {
     QString text = markdown;
     text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
     text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
-    return convert(text.split(QLatin1Char('\n')), style);
+    QVariantList out;
+    convert(text.split(QLatin1Char('\n')), style, 0, out);
+    return out;
 }
 
 } // namespace dm::ai

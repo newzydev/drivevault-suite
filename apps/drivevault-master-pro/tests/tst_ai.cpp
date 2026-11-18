@@ -4,6 +4,7 @@
 #include "ai/AgentTools.h"
 #include "ai/AiService.h"
 #include "ai/MarkdownHtml.h"
+#include "ai/MarkdownModel.h"
 #include "ai/CommandPool.h"
 #include "ai/Compactor.h"
 #include "ai/CommandRunner.h"
@@ -1929,42 +1930,102 @@ private slots:
             QCOMPARE(ai.remoteModel(), QString());
         }
     }
-    // The answers of the AI: Markdown becomes the HTML that the page shows. Nothing the model writes may become a tag of its own.
-    void markdownBecomesHtml()
+    // The answers of the AI: Markdown becomes a list of blocks that the page draws. Nothing the model writes may become a tag of its own.
+    static QVariantMap blockAt(const QVariantList& l, int i) { return l.at(i).toMap(); }
+    void markdownBecomesBlocks()
     {
-        using dm::ai::markdownToHtml;
-        const QString h = markdownToHtml("# Title\n\nA **bold** and *slanted* and `code <b>` word, ~~old~~, [site](https://example.com/a?b=1) and [bad](javascript:alert(1)).\nSecond line");
-        QVERIFY(h.contains("Title</p>") && h.contains("font-weight:600"));
-        QVERIFY(h.contains("<b>bold</b>") && h.contains("<i>slanted</i>") && h.contains("<s>old</s>"));
-        QVERIFY(h.contains("href=\"https://example.com/a?b=1\""));
-        QVERIFY(!h.contains("javascript:alert(1)\">"));                          // only http(s) links are links
-        QVERIFY(h.contains("code &lt;b&gt;") && !h.contains("<b>&nbsp;"));      // the code is escaped and not formatted
-        QVERIFY(h.contains("<br>Second line"));                                  // a single line break stays a line break
+        using dm::ai::markdownBlocks;
+        const QVariantList a = markdownBlocks("# Title\n\nA **bold** and *slanted* and `code <b>` word, ~~old~~, [site](https://example.com/a?b=1) and [bad](javascript:alert(1)).\nSecond line");
+        QCOMPARE(a.size(), 2);
+        QCOMPARE(blockAt(a, 0).value("type").toString(), QString("h"));
+        QCOMPARE(blockAt(a, 0).value("level").toInt(), 1);
+        QCOMPARE(blockAt(a, 0).value("html").toString(), QString("Title"));
+        const QString p = blockAt(a, 1).value("html").toString();
+        QVERIFY(p.contains("<b>bold</b>") && p.contains("<i>slanted</i>") && p.contains("<s>old</s>"));
+        QVERIFY(p.contains("href=\"https://example.com/a?b=1\""));
+        QVERIFY(!p.contains("javascript:alert(1)\">"));                          // only http(s) links are links
+        QVERIFY(p.contains("code &lt;b&gt;") && !p.contains("<b>&nbsp;"));      // the code is escaped and not formatted
+        QVERIFY(p.contains("<br>Second line"));                                  // a single line break stays a line break
         // what the model writes can not make tags, and a "%2" of its text stays text
-        const QString evil = markdownToHtml("<script>alert(1)</script> <img src=x onerror=y> 100% %1 %2");
+        const QString evil = blockAt(markdownBlocks("<script>alert(1)</script> <img src=x onerror=y> 100% %1 %2"), 0).value("html").toString();
         QVERIFY(!evil.contains("<script") && !evil.contains("<img"));
         QVERIFY(evil.contains("&lt;script&gt;") && evil.contains("&#37;1 &#37;2") && evil.contains("100&#37;"));
-        // lists: bullets, numbers (they start where the text says) and a nested list
-        const QString l = markdownToHtml("1. one\n2. two\n   - sub a\n   - sub b\n3. three\n\n- x\n- y");
-        QCOMPARE(l.count("<ol"), 1);
-        QCOMPARE(l.count("<ul"), 2);
-        QVERIFY(l.indexOf("sub a") > l.indexOf("two") && l.indexOf("sub a") < l.indexOf("three"));
-        QVERIFY(l.indexOf("</ul>") < l.indexOf("three"));                        // the nested list is closed before item 3
-        QCOMPARE(l.count("<li"), l.count("</li>"));
-        QVERIFY(markdownToHtml("3. a\n4. b").contains("start=\"3\""));
-        // code: a block with its language, and an unclosed one (the answer is still being written) is shown as code
-        const QString c = markdownToHtml("Text\n\n```cpp\nint a = 1 < 2;\n```\n\nafter");
-        QVERIFY(c.contains(">cpp</p>") && c.contains("int a = 1 &lt; 2;") && c.contains("<pre"));
-        QVERIFY(c.indexOf("after") > c.indexOf("</pre>"));
-        const QString open = markdownToHtml("```py\nprint(1)\nprint(2)");
-        QVERIFY(open.contains("print(2)") && open.contains("<pre"));
+        // lists: one row per item with its marker and depth; numbers count on; a nested list is deeper
+        const QVariantList l = markdownBlocks("1. one\n2. two\n   - sub a\n   - sub b\n3. three\n\n- x\n- y");
+        QCOMPARE(l.size(), 7);
+        QCOMPARE(blockAt(l, 0).value("marker").toString(), QString("1."));
+        QCOMPARE(blockAt(l, 1).value("marker").toString(), QString("2."));
+        QCOMPARE(blockAt(l, 2).value("depth").toInt(), 1);
+        QCOMPARE(blockAt(l, 2).value("marker").toString(), QString("◦"));
+        QCOMPARE(blockAt(l, 4).value("marker").toString(), QString("3."));      // back on the first level: the count goes on
+        QCOMPARE(blockAt(l, 4).value("depth").toInt(), 0);
+        QCOMPARE(blockAt(l, 5).value("marker").toString(), QString("•"));
+        QCOMPARE(blockAt(markdownBlocks("3. a\n4. b"), 1).value("marker").toString(), QString("4."));     // it starts where the text says
+        QVERIFY(blockAt(markdownBlocks("- one\n  continued"), 0).value("html").toString().contains("<br>continued"));
+        // code: a block with its language and its plain text, and an unclosed one (the answer is still being written) is shown as code
+        const QVariantList c = markdownBlocks("Text\n\n```cpp\nint a = 1 < 2;\n```\n\nafter");
+        QCOMPARE(c.size(), 3);
+        QCOMPARE(blockAt(c, 1).value("type").toString(), QString("code"));
+        QCOMPARE(blockAt(c, 1).value("lang").toString(), QString("cpp"));
+        QCOMPARE(blockAt(c, 1).value("text").toString(), QString("int a = 1 < 2;"));        // plain text: the page shows it as text, not as HTML
+        QCOMPARE(blockAt(c, 2).value("html").toString(), QString("after"));
+        const QVariantList open = markdownBlocks("```py\nprint(1)\nprint(2)");
+        QCOMPARE(open.size(), 1);
+        QCOMPARE(blockAt(open, 0).value("text").toString(), QString("print(1)\nprint(2)"));
         // a table, a quote and a rule
-        const QString t = markdownToHtml("| a | b |\n|---|:-:|\n| 1 | **2** |\n\n> quoted\n\n---\n\nend");
-        QVERIFY(t.contains("<th") && t.contains("align=\"center\"") && t.contains("<b>2</b>"));
-        QVERIFY(t.contains("quoted") && t.contains("height=\"1\"") && t.contains(">end</p>"));
+        const QVariantList t = markdownBlocks("| a | b |\n|---|:-:|\n| 1 | **2** |\n\n> quoted\n\n---\n\nend");
+        QCOMPARE(t.size(), 4);
+        QCOMPARE(blockAt(t, 0).value("type").toString(), QString("table"));
+        QCOMPARE(blockAt(t, 0).value("head").toList().size(), 2);
+        QCOMPARE(blockAt(t, 0).value("aligns").toList().at(1).toString(), QString("center"));
+        QCOMPARE(blockAt(t, 0).value("rows").toList().at(0).toList().at(1).toString(), QString("<b>2</b>"));
+        QCOMPARE(blockAt(t, 1).value("quote").toInt(), 1);
+        QCOMPARE(blockAt(t, 1).value("html").toString(), QString("quoted"));
+        QCOMPARE(blockAt(t, 2).value("type").toString(), QString("hr"));
+        QCOMPARE(blockAt(t, 3).value("quote").toInt(), 0);
         // Thai text and an empty answer
-        QVERIFY(markdownToHtml("สวัสดีครับ **ทดสอบ**").contains("สวัสดีครับ <b>ทดสอบ</b>"));
-        QVERIFY(markdownToHtml("").isEmpty());
+        QCOMPARE(blockAt(markdownBlocks("สวัสดีครับ **ทดสอบ**"), 0).value("html").toString(), QString("สวัสดีครับ <b>ทดสอบ</b>"));
+        QVERIFY(markdownBlocks("").isEmpty());
+    }
+    // An answer that grows while it is written (many times a second): usually only its last block changes, and a long answer must stay quick.
+    void anAnswerThatGrowsOnlyChangesItsLastBlock()
+    {
+        dm::ai::MarkdownModel model;
+        QString full;
+        const int parts = 150;
+        for (int i = 0; i < parts; ++i)                                         // 150 parts: 1050 blocks of every kind, a very long answer
+            full += QString("## Part %1\n\nA paragraph with **bold** and `code` and a [link](https://example.com/%1) and some Thai: สวัสดีครับ ทดสอบการแสดงผลคำตอบ\n\n- first item\n- second item\n  - nested\n\n```cpp\nint x = %1;\nreturn x;\n```\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n").arg(i);
+        QVERIFY(full.size() > 30000);
+        int dataChanged = 0, inserted = 0;
+        connect(&model, &QAbstractItemModel::dataChanged, this, [&] { ++dataChanged; });
+        connect(&model, &QAbstractItemModel::rowsInserted, this, [&] { ++inserted; });
+        int worstTouched = 0, sumTouched = 0, updates = 0;
+        QElapsedTimer clock;
+        qint64 worstMs = 0, totalMs = 0;
+        const int step = 35;                                                     // a few words at a time (a real model sends a few characters; the cost per update is the same)
+        for (int n = step; n <= full.size(); n += step) {
+            clock.restart();
+            model.setMarkdown(full.left(n));
+            const qint64 ms = clock.elapsed();
+            totalMs += ms;
+            worstMs = qMax(worstMs, ms);
+            if (n > 400) {                                                       // (the first update of a block can add a row and change the one before it)
+                worstTouched = qMax(worstTouched, model.lastTouched());
+                sumTouched += model.lastTouched();
+                ++updates;
+            }
+        }
+        model.setMarkdown(full);
+        QCOMPARE(model.rowCount(), parts * 7);                                   // heading, paragraph, 3 list rows, code, table per part
+        QVERIFY2(worstTouched <= 6, qPrintable(QString("an update touched %1 rows").arg(worstTouched)));         // 35 characters can end a block and start two more
+        QVERIFY2(sumTouched < updates * 2, qPrintable(QString("%1 rows touched in %2 updates").arg(sumTouched).arg(updates)));       // usually only the last block changes
+        QVERIFY(dataChanged > 0 && inserted > 0);
+        qInfo() << "streaming" << full.size() << "chars in" << (full.size() / step) << "updates: total" << totalMs << "ms, slowest update" << worstMs << "ms";
+        QVERIFY2(worstMs < 300, qPrintable(QString("the slowest update took %1 ms").arg(worstMs)));      // (about 15 ms on the development PC, a frame is 16 ms: the limit only catches a real slowdown, not a busy PC)
+        // the same text again: nothing is reported
+        dataChanged = inserted = 0;
+        model.setMarkdown(full + "");
+        QCOMPARE(dataChanged + inserted, 0);
     }
     void anErrorStaysInTheConversation()
     {

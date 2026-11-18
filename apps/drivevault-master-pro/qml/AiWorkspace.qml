@@ -52,10 +52,6 @@ Item {
     }
     function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : status === "waiting" ? "ai_waiting" : status === "working" ? "ai_working" : status === "compacting" ? "ai_compacting" : "ai_writing") }
     readonly property string modelLabel: Ai.activeModelLabel === "" ? Tr.s("ai_model_none") : (Ai.useRemote ? Ai.activeModelLabel + "  ·  " + Tr.s("remote_tag") : Ai.activeModelLabel)
-    // the colours and sizes of the answers (Markdown -> HTML in the C++ code; Theme colours are plain "#rrggbb")
-    readonly property var answerStyle: ({ text: Theme.text.toString(), muted: Theme.textSecondary.toString(), codeBg: Theme.surface.toString(),
-                                          codeHeadBg: Theme.surfaceHover.toString(), bg: Theme.background.toString(), border: Theme.border.toString(), link: Theme.accent.toString(),
-                                          fontPx: 15, linePercent: 110 })
     function why(code) { return Tr.s("why_" + code) }
     // what a model of this PC is good for (a short line in the model menu); a model the user added by hand gets none
     function localHint(fileName) {
@@ -1175,19 +1171,13 @@ Item {
                                     }
                                 }
                             }
-                            TextEdit {                                              // the answer: Markdown shown as headings, lists, code blocks, tables ... (MarkdownHtml.cpp)
+                            AnswerView {                                            // the answer: Markdown drawn as headings, lists, code boxes with a copy button, tables ... (AnswerView.qml)
                                 objectName: "aiAnswer"
                                 visible: !msg.isUser && msg.modelData.text !== ""
                                 Layout.fillWidth: true
                                 Layout.topMargin: 2
-                                text: msg.isUser || msg.modelData.text === "" ? "" : Ai.markdownHtml(msg.modelData.text, root.answerStyle)
-                                readOnly: true
-                                selectByMouse: true
-                                wrapMode: TextEdit.Wrap
-                                textFormat: TextEdit.RichText
-                                font.pixelSize: 15
-                                color: Theme.text
-                                onLinkActivated: link => { if (link.indexOf("https://") === 0) Qt.openUrlExternally(link) }
+                                text: msg.isUser ? "" : msg.modelData.text
+                                onLinkActivated: link => { if (link.indexOf("https://") === 0 || link.indexOf("http://") === 0) Qt.openUrlExternally(link) }
                             }
                             RowLayout {
                                 visible: !msg.isUser && msg.modelData.streaming && msg.modelData.text === "" && msg.modelData.stepList.length === 0 && msg.modelData.compact !== true

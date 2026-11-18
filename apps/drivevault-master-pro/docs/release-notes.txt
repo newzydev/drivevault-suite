@@ -1,6 +1,11 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.35.0 (2026-11-19): Answers drawn piece by piece: rounded code boxes with a copy button, real tables
+  - New: every part of an answer is drawn as its own piece, like Claude - a code box with rounded corners, the language and a Copy button (it says Copied for a moment), a table with a rounded border and thin lines, lists with a bullet or number in front of each row and the right indent for nested lists, quotes with a bar, headings, rules. Text can still be selected in every piece.
+  - Faster while an answer is written: only the piece that is being written is redrawn, the finished pieces stay as they are (tested with an answer of 36,000 characters: the slowest update took 11 milliseconds).
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.34.0 (2026-11-19): Answers look like Claude's; the chosen model is easy to see
   - New: the answers of the AI are shown as formatted text - headings, paragraphs with room between lines, bold / italic / strike, bullet and numbered lists (also nested), code blocks with their language, inline code, tables, quotes, rules and links - instead of plain text with a few marks. A reading column (not wider than about 780 px, in the middle), a quiet grey bubble for your question, more space between messages. Works on the AI Q&A and the Agentic AI page, also while an answer is still being written. Nothing the model writes can become a tag of its own (it is all escaped).
   - Fixed: in the model menu you could not tell which model was chosen (the tick was small and missing on some PCs). The chosen model is now tinted with the accent colour, bold, with a tick, and it is found by its file name too.
