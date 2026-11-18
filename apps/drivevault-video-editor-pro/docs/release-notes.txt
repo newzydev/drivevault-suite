@@ -1,6 +1,11 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.16.2 (2026-11-19)
+--------------
+  - Changed (installer): the installer no longer contains DriveVault Master Pro (the hub of the suite). When Master Pro is missing or older, the installer downloads the newest release from GitHub (checked with its SHA-256) and installs it first. Without an Internet connection the program is installed anyway and the last page says that Master Pro is not installed; an installed Master Pro is kept. The installer is much smaller. The program itself is unchanged.
+  - Note: the installer is not code-signed yet, so Windows SmartScreen may warn.
+
 Version 1.16.1 (2026-11-15)
 --------------
   - The menu button in the title bar now shows a gear instead of three dots (the same gear in all DriveVault programs). It opens the same menu (Settings, About).
