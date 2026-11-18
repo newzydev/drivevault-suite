@@ -293,6 +293,8 @@ public:
     bool apiVision() const;                                             // the model can see pictures (online models: not used)
     int contextWindow() const;
 
+    // An answer of the AI (Markdown) as the HTML that TextEdit.RichText shows. style: {text, muted, codeBg, codeHeadBg, border, link: "#rrggbb", fontPx, linePercent}.
+    Q_INVOKABLE QString markdownHtml(const QString& markdown, const QVariantMap& style) const;
     Q_INVOKABLE void selectLocalModel(const QString& path);
     Q_INVOKABLE void selectRemoteModel(const QString& id);              // an id of remoteModels(); the choice is saved
     Q_INVOKABLE QString downloadCatalog(const QString& id);             // "" = started

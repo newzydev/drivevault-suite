@@ -3,6 +3,7 @@
 #include "Hub.h"
 #include "ai/AgentTools.h"
 #include "ai/AiService.h"
+#include "ai/MarkdownHtml.h"
 #include "ai/CommandPool.h"
 #include "ai/Compactor.h"
 #include "ai/CommandRunner.h"
@@ -1927,6 +1928,43 @@ private slots:
             QVERIFY(!ai.useRemote());
             QCOMPARE(ai.remoteModel(), QString());
         }
+    }
+    // The answers of the AI: Markdown becomes the HTML that the page shows. Nothing the model writes may become a tag of its own.
+    void markdownBecomesHtml()
+    {
+        using dm::ai::markdownToHtml;
+        const QString h = markdownToHtml("# Title\n\nA **bold** and *slanted* and `code <b>` word, ~~old~~, [site](https://example.com/a?b=1) and [bad](javascript:alert(1)).\nSecond line");
+        QVERIFY(h.contains("Title</p>") && h.contains("font-weight:600"));
+        QVERIFY(h.contains("<b>bold</b>") && h.contains("<i>slanted</i>") && h.contains("<s>old</s>"));
+        QVERIFY(h.contains("href=\"https://example.com/a?b=1\""));
+        QVERIFY(!h.contains("javascript:alert(1)\">"));                          // only http(s) links are links
+        QVERIFY(h.contains("code &lt;b&gt;") && !h.contains("<b>&nbsp;"));      // the code is escaped and not formatted
+        QVERIFY(h.contains("<br>Second line"));                                  // a single line break stays a line break
+        // what the model writes can not make tags, and a "%2" of its text stays text
+        const QString evil = markdownToHtml("<script>alert(1)</script> <img src=x onerror=y> 100% %1 %2");
+        QVERIFY(!evil.contains("<script") && !evil.contains("<img"));
+        QVERIFY(evil.contains("&lt;script&gt;") && evil.contains("&#37;1 &#37;2") && evil.contains("100&#37;"));
+        // lists: bullets, numbers (they start where the text says) and a nested list
+        const QString l = markdownToHtml("1. one\n2. two\n   - sub a\n   - sub b\n3. three\n\n- x\n- y");
+        QCOMPARE(l.count("<ol"), 1);
+        QCOMPARE(l.count("<ul"), 2);
+        QVERIFY(l.indexOf("sub a") > l.indexOf("two") && l.indexOf("sub a") < l.indexOf("three"));
+        QVERIFY(l.indexOf("</ul>") < l.indexOf("three"));                        // the nested list is closed before item 3
+        QCOMPARE(l.count("<li"), l.count("</li>"));
+        QVERIFY(markdownToHtml("3. a\n4. b").contains("start=\"3\""));
+        // code: a block with its language, and an unclosed one (the answer is still being written) is shown as code
+        const QString c = markdownToHtml("Text\n\n```cpp\nint a = 1 < 2;\n```\n\nafter");
+        QVERIFY(c.contains(">cpp</p>") && c.contains("int a = 1 &lt; 2;") && c.contains("<pre"));
+        QVERIFY(c.indexOf("after") > c.indexOf("</pre>"));
+        const QString open = markdownToHtml("```py\nprint(1)\nprint(2)");
+        QVERIFY(open.contains("print(2)") && open.contains("<pre"));
+        // a table, a quote and a rule
+        const QString t = markdownToHtml("| a | b |\n|---|:-:|\n| 1 | **2** |\n\n> quoted\n\n---\n\nend");
+        QVERIFY(t.contains("<th") && t.contains("align=\"center\"") && t.contains("<b>2</b>"));
+        QVERIFY(t.contains("quoted") && t.contains("height=\"1\"") && t.contains(">end</p>"));
+        // Thai text and an empty answer
+        QVERIFY(markdownToHtml("สวัสดีครับ **ทดสอบ**").contains("สวัสดีครับ <b>ทดสอบ</b>"));
+        QVERIFY(markdownToHtml("").isEmpty());
     }
     void anErrorStaysInTheConversation()
     {

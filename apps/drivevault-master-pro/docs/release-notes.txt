@@ -1,6 +1,11 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.34.0 (2026-11-19): Answers look like Claude's; the chosen model is easy to see
+  - New: the answers of the AI are shown as formatted text - headings, paragraphs with room between lines, bold / italic / strike, bullet and numbered lists (also nested), code blocks with their language, inline code, tables, quotes, rules and links - instead of plain text with a few marks. A reading column (not wider than about 780 px, in the middle), a quiet grey bubble for your question, more space between messages. Works on the AI Q&A and the Agentic AI page, also while an answer is still being written. Nothing the model writes can become a tag of its own (it is all escaped).
+  - Fixed: in the model menu you could not tell which model was chosen (the tick was small and missing on some PCs). The chosen model is now tinted with the accent colour, bold, with a tick, and it is found by its file name too.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.33.1 (2026-11-19): The model menu says what each model is good for
   - New: every model in the model menu has a short line saying what it suits (the models of this PC and the online ones), and the heading of the models of this PC says that they run on your own PC.
   - Not code-signed (Windows SmartScreen may warn).

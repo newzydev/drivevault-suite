@@ -52,6 +52,10 @@ Item {
     }
     function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : status === "waiting" ? "ai_waiting" : status === "working" ? "ai_working" : status === "compacting" ? "ai_compacting" : "ai_writing") }
     readonly property string modelLabel: Ai.activeModelLabel === "" ? Tr.s("ai_model_none") : (Ai.useRemote ? Ai.activeModelLabel + "  ·  " + Tr.s("remote_tag") : Ai.activeModelLabel)
+    // the colours and sizes of the answers (Markdown -> HTML in the C++ code; Theme colours are plain "#rrggbb")
+    readonly property var answerStyle: ({ text: Theme.text.toString(), muted: Theme.textSecondary.toString(), codeBg: Theme.surface.toString(),
+                                          codeHeadBg: Theme.surfaceHover.toString(), bg: Theme.background.toString(), border: Theme.border.toString(), link: Theme.accent.toString(),
+                                          fontPx: 15, linePercent: 110 })
     function why(code) { return Tr.s("why_" + code) }
     // what a model of this PC is good for (a short line in the model menu); a model the user added by hand gets none
     function localHint(fileName) {
@@ -499,7 +503,8 @@ Item {
                 text: modelData.name.replace(/\.gguf$/i, "") + "   (" + modelData.sizeText + ")"
                 hint: root.localHint(modelData.name)
                 checkable: true
-                checked: !Ai.useRemote && Ai.localModel === modelData.path
+                markSelected: true
+                checked: !Ai.useRemote && (Ai.localModel === modelData.path || Ai.localModelName.toLowerCase() === modelData.name.toLowerCase())
                 onTriggered: Ai.selectLocalModel(modelData.path)
             }
         }
@@ -514,6 +519,7 @@ Item {
                 text: modelData.title + "   ·   " + modelData.maker + "   ·   " + Tr.s("remote_free")
                 hint: Tr.s(modelData.hintKey)
                 checkable: true
+                markSelected: true
                 checked: Ai.useRemote && Ai.remoteModel === modelData.id
                 onTriggered: Ai.selectRemoteModel(modelData.id)
             }
@@ -925,8 +931,8 @@ Item {
                         anchors.topMargin: 12
                         visible: root.ch.messages.length > 0
                         clip: true
-                        spacing: 20
-                        model: root.ch.messageModel                 // a real list model: only the row that changed is updated, the boxes are not rebuilt (no flicker)
+                        spacing: 26
+                        model: root.ch.messageModel                // a real list model: only the row that changed is updated, the boxes are not rebuilt (no flicker)
                         // The list follows the newest text while it is written - until the user scrolls up (then it stays where they are), and again when they
                         // scroll back to the end or send a new message.
                         property bool follow: true
@@ -949,8 +955,9 @@ Item {
                             required property var modelData
                             required property int index
                             readonly property bool isUser: modelData.role === "user"
-                            width: list.width - 14
-                            spacing: 6
+                            width: Math.min(list.width - 14, 780)                 // a reading column like Claude's: not wider than about 780 px, in the middle
+                            x: Math.max(0, (list.width - 14 - width) / 2)
+                            spacing: 8
                             // a new message fades in and slides up; an old one that is only rebuilt stays as it is
                             transform: Translate { id: msgShift }
                             Component.onCompleted: {
@@ -970,19 +977,24 @@ Item {
                                 visible: msg.isUser
                                 Layout.alignment: Qt.AlignRight
                                 Layout.maximumWidth: msg.width * 0.82
-                                implicitWidth: Math.min(userText.implicitWidth + 28, msg.width * 0.82)
-                                implicitHeight: userText.implicitHeight + 20
-                                radius: 14
-                                color: Qt.alpha(Theme.accent, 0.16)
+                                implicitWidth: Math.min(userText.implicitWidth + 36, msg.width * 0.82)
+                                implicitHeight: userText.implicitHeight + 28
+                                radius: 18
+                                color: Theme.surface                                  // a quiet grey bubble (not the accent colour), like Claude
+                                border.width: 1
+                                border.color: Theme.borderSubtle
                                 TextEdit {
                                     id: userText
                                     anchors.fill: parent
-                                    anchors.margins: 12
+                                    anchors.leftMargin: 18
+                                    anchors.rightMargin: 18
+                                    anchors.topMargin: 14
+                                    anchors.bottomMargin: 14
                                     text: msg.isUser ? msg.modelData.text : ""
                                     readOnly: true
                                     selectByMouse: true
                                     wrapMode: TextEdit.Wrap
-                                    font.pixelSize: 14
+                                    font.pixelSize: 15
                                     color: Theme.text
                                 }
                             }
@@ -1163,15 +1175,17 @@ Item {
                                     }
                                 }
                             }
-                            TextEdit {
+                            TextEdit {                                              // the answer: Markdown shown as headings, lists, code blocks, tables ... (MarkdownHtml.cpp)
+                                objectName: "aiAnswer"
                                 visible: !msg.isUser && msg.modelData.text !== ""
                                 Layout.fillWidth: true
-                                text: msg.isUser ? "" : msg.modelData.text
+                                Layout.topMargin: 2
+                                text: msg.isUser || msg.modelData.text === "" ? "" : Ai.markdownHtml(msg.modelData.text, root.answerStyle)
                                 readOnly: true
                                 selectByMouse: true
                                 wrapMode: TextEdit.Wrap
-                                textFormat: TextEdit.MarkdownText
-                                font.pixelSize: 14
+                                textFormat: TextEdit.RichText
+                                font.pixelSize: 15
                                 color: Theme.text
                                 onLinkActivated: link => { if (link.indexOf("https://") === 0) Qt.openUrlExternally(link) }
                             }
