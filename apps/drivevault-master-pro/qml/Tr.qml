@@ -67,7 +67,7 @@ QtObject {
         "ai_sa1": ["Cut the silent parts of my video", "ตัดช่วงเงียบในวิดีโอของฉัน"],
         "ai_sa2": ["Add subtitles to the open project", "ใส่คำบรรยายให้โปรเจกต์ที่เปิดอยู่"],
         "ai_sa3": ["Merge these PDF files", "รวมไฟล์ PDF เหล่านี้"],
-        "ai_ph_ask": ["Ask about your DriveVault programs…", "ถามเกี่ยวกับโปรแกรม DriveVault ของคุณ…"],
+        "ai_ph_ask": ["Ask anything - about your DriveVault programs or anything else…", "ถามได้ทุกเรื่อง ทั้งโปรแกรม DriveVault หรืออย่างอื่น…"],
         "ai_ph_agent": ["Describe the task…  (/help for commands, Shift+Tab changes the mode, Esc stops)", "อธิบายงานที่ต้องการ…  (/help ดูคำสั่ง, Shift+Tab สลับโหมด, Esc หยุดงาน)"],
         "ai_send": ["Send", "ส่ง"],
         "ai_stop": ["Stop", "หยุด"],

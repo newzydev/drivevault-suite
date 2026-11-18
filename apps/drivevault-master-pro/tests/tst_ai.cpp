@@ -1827,7 +1827,10 @@ private slots:
             QVERIFY(!msgs.at(1).toMap().value("streaming").toBool());
             QCOMPARE(msgs.at(1).toMap().value("errorCode").toString(), QString());
             // the system prompt knows the suite
-            QVERIFY(requestBody(server.lastRequest).value("messages").toArray().first().toObject().value("content").toString().contains("DriveVault"));
+            const QString sysText = requestBody(server.lastRequest).value("messages").toArray().first().toObject().value("content").toString();
+            QVERIFY(sysText.contains("DriveVault"));
+            // ... and it allows general questions (a 4B model refused "Thai alphabet" when the prompt only spoke of DriveVault)
+            QVERIFY(sysText.contains("ANY question"));
             QCOMPARE(ask->conversations().size(), 1);
             firstId = ask->currentId();
             QVERIFY(!firstId.isEmpty());

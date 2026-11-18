@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.29.1 (2026-11-19): The AI Q&A answers general questions
+  - Fixed: the small model refused simple requests such as "write the Thai alphabet and A-Z" ("I am Master Pro, I cannot ..."), because its instructions only spoke of DriveVault. It is now told it may answer any question and that only acting on this computer is not possible. The message box no longer says "ask about your DriveVault programs".
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.29.0 (2026-11-17): The AI can test a page at other screen sizes
   - New: the AI tool browser_viewport (mobile 390 x 844, tablet 820 x 1180, laptop 1366 x 768, desktop 1920 x 1080, or its own width and height; "reset" ends it). The page gets a window of exactly that size (media queries, menus of a phone, columns that stack), shown scaled to fit the browser pane with a bar that says which size it is (a cross ends the test); browser_read and browser_look then show the page at that size, and clicks, typing and drags still work. The AI is told to check a page at mobile / tablet / laptop and fix what breaks.
   - Fixed: the program could crash when it was closed after the browser had been used (the browser profile was destroyed before its pages).
