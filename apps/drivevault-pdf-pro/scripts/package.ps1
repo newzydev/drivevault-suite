@@ -1,4 +1,4 @@
-param([switch]$SkipBuild, [switch]$Sign, [string]$MasterSetup)
+param([switch]$SkipBuild, [switch]$Sign)
 
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\..\..\..\shared\scripts\env.ps1"
@@ -11,19 +11,7 @@ function Read-Version([string]$project) {
     (Select-String -LiteralPath (Join-Path $project 'CMakeLists.txt') -Pattern '^\s+VERSION\s+(\d+\.\d+\.\d+)').Matches[0].Groups[1].Value
 }
 $version = Read-Version $DvRoot
-$hubRoot = Join-Path $SuiteRoot 'apps\drivevault-master-pro'
-$hubVersion = Read-Version $hubRoot
-if (-not $MasterSetup) { $MasterSetup = Join-Path $hubRoot 'dist\DriveVault-Master-Pro-Setup-x64.exe' }
-$MasterSetup = (Resolve-Path -LiteralPath $MasterSetup).Path
-$hubInfo = (Get-Item -LiteralPath $MasterSetup).VersionInfo
-if (([string]$hubInfo.ProductName).Trim() -ne 'DriveVault Master Pro' -or
-    ([string]$hubInfo.CompanyName).Trim() -ne 'DriveVault' -or ([string]$hubInfo.ProductVersion).Trim() -ne $hubVersion) {
-    throw "Build Master Pro $hubVersion first. The bundled setup has an unexpected version or publisher."
-}
-$hubHash = Get-Content -LiteralPath "$MasterSetup.sha256" -Raw
-$computedHubHash = & (Join-Path $sharedScripts 'file-sha256.ps1') -Path $MasterSetup
-if ($hubHash.Trim() -cne "$computedHubHash *$(Split-Path -Leaf $MasterSetup)") { throw 'Master Pro setup checksum does not match.' }
-if ($Sign -and (Get-AuthenticodeSignature -LiteralPath $MasterSetup).Status -ne 'Valid') { throw 'Build and sign Master Pro first.' }
+# DriveVault Master Pro is not inside this installer: the installer checks GitHub for the newest release and downloads it (shared\installer\master-hub-code.iss)
 
 if (-not $SkipBuild) {
     & "$PSScriptRoot\build.ps1" -Config Release -Test
@@ -193,8 +181,7 @@ if ($Sign) {
 }
 $art = Join-Path $dist 'wizard'
 & (Join-Path $sharedScripts 'make-brand-assets.ps1') -Accent '#EF4444' -Title 'PDF Pro' -Logo (Join-Path $DvRoot 'resources\icons\app.png') -Out $art
-$inno = @("/DAppVersion=$version", "/DStageDir=$stage", "/DOutputDir=$dist", "/DArtworkDir=$art",
-    "/DMasterSetup=$MasterSetup", "/DMasterVersion=$hubVersion", (Join-Path $DvRoot 'installer\windows\pdf.iss'))
+$inno = @("/DAppVersion=$version", "/DStageDir=$stage", "/DOutputDir=$dist", "/DArtworkDir=$art", (Join-Path $DvRoot 'installer\windows\pdf.iss'))
 & iscc @inno
 if ($LASTEXITCODE) { throw 'Inno Setup compilation failed.' }
 $setup = Join-Path $dist 'DriveVault-PDF-Pro-Setup-x64.exe'

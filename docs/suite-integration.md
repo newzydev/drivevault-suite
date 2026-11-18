@@ -5,8 +5,8 @@ the setup file `DriveVault-<Name>-Setup-x64.exe` and its `DriveVault-<Name>-Setu
 (`CompanyName` DriveVault, `ProductName` = the program, `ProductVersion` = the tag's version) must match. Master Pro reads it when the user presses "Check for updates" and once at start-up (setting, on by default). Master Pro's own release (`drivevault-master-pro-v...`) is offered through a banner and updates Master Pro itself.
 
 **DriveVault Master Pro** is the hub for Video Editor Pro and PDF Pro (image and audio editors are planned):
-it lists, opens, installs, updates and uninstalls the programs, in the spirit of Creative Cloud. **Every product installer installs Master Pro first** (it carries
-the hub's setup inside and runs it silently when the hub is missing or older). This page is the contract that every product - and the hub - follows.
+it lists, opens, installs, updates and uninstalls the programs, in the spirit of Creative Cloud. **Every product installer installs Master Pro first** (it checks GitHub for the newest hub release,
+downloads it and runs it silently when the hub is missing or older). This page is the contract that every product - and the hub - follows.
 
 ## Folder layout
 
@@ -91,8 +91,7 @@ The accent colour appears in the product icon, the installer artwork (`scripts\m
 ## What every new product installer must do for the hub
 
 1. Install into `<suite folder>\Common\DriveVault <Product Name>` and write `Software\DriveVault\Products\<ProductKey>` with `DisplayName, Version, InstallDir, Executable, Manifest, AccentColor, Publisher` **and `Uninstaller`** (`{uninstallexe}`).
-2. Carry `DriveVault-Master-Pro-Setup-x64.exe` and run it silently first when `Software\DriveVault\MasterPro` is missing or older: `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /ALLUSERS|/CURRENTUSER /DIR="<suite folder>" /LANG=<language>`
-   (see `installer\windows\drivevault.iss`, sections `[Files]`, `[Run]` and the `NeedMaster` code).
+2. Check GitHub for the newest Master Pro and run it silently first when `Software\DriveVault\MasterPro` is missing or older (Master Pro is **not** inside the program installers): the releases API `https://api.github.com/repos/newzydev/drivevault-suite/releases?per_page=100`, the highest `drivevault-master-pro-v<x.y.z>` that is not a draft / pre-release and has both `DriveVault-Master-Pro-Setup-x64.exe` and `.exe.sha256`; download the `.sha256`, then the setup from `https://github.com/newzydev/drivevault-suite/releases/download/<tag>/` with its SHA-256 checked (Inno `DownloadTemporaryFile`; 4 tries with growing pauses, 2 when a Master Pro is installed already); run it with `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /ALLUSERS|/CURRENTUSER /DIR="<suite folder>" /LANG=<language>`. All best effort: offline or a failure installs the program anyway and says so on the last page; an installed Master Pro is kept when GitHub is not reachable; `/NOMASTER` skips the step (tests, offline PCs). The code is shared: `shared\installer\master-hub-code.iss` + `master-hub-messages.iss`, included by `drivevault.iss` and `pdf.iss` (the function `PrepareToInstall`).
 3. Give the setup exe a version resource with `CompanyName = DriveVault` and `ProductName` equal to the product's name: the hub only offers / starts such files.
 4. Never delete the suite folder; remove only your own folder, shortcuts and keys. The hub removes the suite folder itself when it is the last one and the folder is empty.
 

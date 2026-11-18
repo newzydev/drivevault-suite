@@ -70,10 +70,9 @@ Name: "thai"; MessagesFile: "compiler:Languages\Thai.isl"; LicenseFile: "license
 [CustomMessages]
 english.AssocComponent=Associate .dvproj project files with {#AppName}
 english.DesktopTask=Create a &desktop shortcut
-english.InstallingMaster=Installing DriveVault Master Pro (the hub for all DriveVault programs)...
+#include "..\..\..\..\shared\installer\master-hub-messages.iss"
 english.KeepDataPrompt=Do you also want to delete your settings, logs, auto-save copies and cache?%n%nYour projects and exported videos are never deleted.%n%nChoose No to keep them (recommended if you plan to reinstall).
 thai.AssocComponent=เชื่อมโยงไฟล์โปรเจกต์ .dvproj กับ {#AppName}
-thai.InstallingMaster=กำลังติดตั้ง DriveVault Master Pro (ศูนย์รวมโปรแกรม DriveVault ทั้งหมด)...
 thai.DesktopTask=สร้างทางลัดบน&เดสก์ท็อป
 thai.KeepDataPrompt=ต้องการลบการตั้งค่า ไฟล์บันทึก สำเนาบันทึกอัตโนมัติ และแคช ด้วยหรือไม่?%n%nโปรเจกต์และวิดีโอที่ส่งออกของคุณจะไม่ถูกลบเด็ดขาด%n%nเลือก "No/ไม่" เพื่อเก็บไว้ (แนะนำหากจะติดตั้งใหม่)
 
@@ -111,10 +110,6 @@ Type: files; Name: "{app}\ai\models\ggml-small.bin"
 [Files]
 ; Everything produced by windeployqt, the executable and the license folder.
 Source: "{#StageDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: main
-#ifdef MasterSetup
-; DriveVault Master Pro (the hub of the suite) travels inside every program installer and is installed first when it is missing or older.
-Source: "{#MasterSetup}"; DestDir: "{tmp}"; DestName: "MasterProSetup.exe"; Flags: deleteafterinstall; Check: NeedMaster
-#endif
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
@@ -140,10 +135,6 @@ Root: HKA; Subkey: "Software\Classes\DriveVault.Project\DefaultIcon"; ValueType:
 Root: HKA; Subkey: "Software\Classes\DriveVault.Project\shell\open\command"; ValueType: string; ValueData: """{app}\{#AppExe}"" ""%1"""; Components: assoc
 
 [Run]
-#ifdef MasterSetup
-; Same scope (all users / current user) and language as this setup; the hub lives in the suite folder, the parent of this program's folder.
-Filename: "{tmp}\MasterProSetup.exe"; Parameters: "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART {code:ScopeSwitch} /DIR=""{code:SuiteDir}"" /LANG={language}"; StatusMsg: "{cm:InstallingMaster}"; Flags: waituntilterminated; Check: NeedMaster
-#endif
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
@@ -181,86 +172,8 @@ begin
   Result := IsUpdate() and ((PageID = wpWelcome) or (PageID = wpLicense) or (PageID = wpSelectComponents) or (PageID = wpSelectTasks) or (PageID = wpReady));
 end;
 
-// ---- DriveVault Master Pro (hub) -------------------------------------------------------------------------------------------------
-// The suite folder (where Master Pro lives) is the parent of the "Common" folder that holds every program:
-// <suite>\Common\<program>. If the user chose a folder that is not below a "Common" folder, its parent is used.
-function SuiteDir(Param: String): String;
-var
-  P: String;
-begin
-  P := ExtractFileDir(ExpandConstant('{app}'));
-  if CompareText(ExtractFileName(P), 'Common') = 0 then
-    P := ExtractFileDir(P);
-  Result := P;
-end;
-
-function ScopeSwitch(Param: String): String;
-begin
-  if IsAdminInstallMode then
-    Result := '/ALLUSERS'
-  else
-    Result := '/CURRENTUSER';
-end;
-
-function VersionPart(var S: String): Integer;
-var
-  P: Integer;
-begin
-  P := Pos('.', S);
-  if P = 0 then
-  begin
-    Result := StrToIntDef(S, 0);
-    S := '';
-  end
-  else
-  begin
-    Result := StrToIntDef(Copy(S, 1, P - 1), 0);
-    S := Copy(S, P + 1, Length(S));
-  end;
-end;
-
-function CompareVer(A, B: String): Integer;
-var
-  I, X, Y: Integer;
-begin
-  Result := 0;
-  for I := 1 to 4 do
-  begin
-    X := VersionPart(A);
-    Y := VersionPart(B);
-    if X <> Y then
-    begin
-      if X < Y then Result := -1 else Result := 1;
-      Exit;
-    end;
-  end;
-end;
-
-// Version of an installed, working Master Pro (all users or current user); '' when there is none.
-function InstalledMasterVersion(): String;
-var
-  Exe, V: String;
-begin
-  Result := '';
-  if RegQueryStringValue(HKLM64, 'Software\DriveVault\MasterPro', 'Executable', Exe) and FileExists(Exe) and
-     RegQueryStringValue(HKLM64, 'Software\DriveVault\MasterPro', 'Version', V) then
-    Result := V
-  else if RegQueryStringValue(HKCU64, 'Software\DriveVault\MasterPro', 'Executable', Exe) and FileExists(Exe) and
-          RegQueryStringValue(HKCU64, 'Software\DriveVault\MasterPro', 'Version', V) then
-    Result := V;
-end;
-
-function NeedMaster(): Boolean;
-var
-  V: String;
-begin
-  V := InstalledMasterVersion();
-#ifdef MasterVersion
-  Result := (V = '') or (CompareVer(V, '{#MasterVersion}') < 0);
-#else
-  Result := False;
-#endif
-end;
+// ---- DriveVault Master Pro (hub): the newest release is checked and downloaded from GitHub (shared code) ----
+#include "..\..\..\..\shared\installer\master-hub-code.iss"
 
 // ---- AI speech models (downloaded while installing) ------------------------------------------------------------------------------
 // One pinned revision per repository, fixed sizes and SHA-256 (the same values as src\ai\OpenThaiInstaller.cpp for OpenThai: change both together).
@@ -434,12 +347,12 @@ var
   Hub: String;
   Code: Integer;
 begin
-  if CurStep = ssInstall then
-    HubReplaced := NeedMaster();
   if CurStep = ssPostInstall then
     PlaceModels();
   if (CurStep = ssDone) and (ModelsNote <> '') then
     SuppressibleMsgBox(ModelsNote, mbInformation, MB_OK, IDOK);
+  if (CurStep = ssDone) and (MasterNote <> '') then
+    SuppressibleMsgBox(MasterNote, mbInformation, MB_OK, IDOK);
   // after "Finish": the hub that was closed by its own update is opened again, as the user had it
   if (CurStep = ssDone) and HubReplaced and CmdSwitch('/UPDATE') then
   begin

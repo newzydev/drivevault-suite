@@ -2,7 +2,7 @@
 #ifndef AppVersion
   #define AppVersion "1.22.1"
 #endif
-#if !Defined(StageDir) || !Defined(OutputDir) || !Defined(MasterSetup) || !Defined(MasterVersion) || !Defined(ArtworkDir)
+#if !Defined(StageDir) || !Defined(OutputDir) || !Defined(ArtworkDir)
   #error Build this installer with scripts\package.ps1
 #endif
 #define AppName "DriveVault PDF Pro"
@@ -52,7 +52,7 @@ Name: "thai"; MessagesFile: "compiler:Languages\Thai.isl"; LicenseFile: "license
 [CustomMessages]
 english.DesktopTask=Create a desktop shortcut
 english.UserGuide=PDF Pro User Guide
-english.HubFailure=DriveVault Master Pro setup did not complete (code %1).
+#include "..\..\..\..\shared\installer\master-hub-messages.iss"
 english.AiModelsTask=Download the AI assistant model now (about 2.7 GB, Qwen3.5-4B). Needs an Internet connection; skip it to download it later with the Download button in the AI assistant panel.
 english.AiModelsGroup=AI features:
 english.DownloadingModels=Downloading the AI assistant model...
@@ -61,7 +61,6 @@ english.ModelsCancelled=cancelled
 english.ModelsNoSpace=Not enough free disk space for the AI assistant model (about %1 MB needed).
 thai.DesktopTask=สร้างทางลัดบนเดสก์ท็อป
 thai.UserGuide=คู่มือ PDF Pro
-thai.HubFailure=ติดตั้ง DriveVault Master Pro ไม่สำเร็จ (รหัส %1)
 thai.AiModelsTask=ดาวน์โหลดโมเดลผู้ช่วย AI ตอนนี้ (ประมาณ 2.7 GB, Qwen3.5-4B) ต้องต่ออินเทอร์เน็ต ถ้าข้ามไปจะดาวน์โหลดทีหลังได้ด้วยปุ่มดาวน์โหลดในแผงผู้ช่วย AI
 thai.AiModelsGroup=ฟีเจอร์ AI:
 thai.DownloadingModels=กำลังดาวน์โหลดโมเดลผู้ช่วย AI...
@@ -80,7 +79,6 @@ Type: dirifempty; Name: "{app}\ai\models"
 
 [Files]
 Source: "{#StageDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#MasterSetup}"; DestName: "MasterProSetup.exe"; Flags: dontcopy
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
@@ -143,38 +141,8 @@ begin
   Result := IsUpdate() and ((PageID = wpWelcome) or (PageID = wpLicense) or (PageID = wpSelectComponents) or (PageID = wpSelectTasks) or (PageID = wpReady));
 end;
 
-function HasCurrentHub(Root: Cardinal): Boolean;
-var
-  Exe: String;
-  Actual, Required: Int64;
-begin
-  Result := RegQueryStringValue(Root, 'Software\DriveVault\MasterPro', 'Executable', Exe) and
-    FileExists(Exe) and GetPackedVersion(Exe, Actual) and
-    StrToVersion('{#MasterVersion}', Required) and (ComparePackedVersion(Actual, Required) >= 0);
-end;
-
-function PrepareToInstall(var NeedsRestart: Boolean): String;
-var
-  Target, Scope, Args: String;
-  Code: Integer;
-begin
-  Result := '';
-  if HasCurrentHub(HKLM64) or ((not IsAdminInstallMode) and HasCurrentHub(HKCU64)) then
-    Exit;
-  Target := ExtractFileDir(ExpandConstant('{app}'));
-  if CompareText(ExtractFileName(Target), 'Common') = 0 then
-    Target := ExtractFileDir(Target);
-  if IsAdminInstallMode then
-    Scope := '/ALLUSERS'
-  else
-    Scope := '/CURRENTUSER';
-  ExtractTemporaryFile('MasterProSetup.exe');
-  Args := '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART ' + Scope + ' /DIR="' + Target + '" /LANG=' +
-    ExpandConstant('{language}');
-  HubReplaced := True;
-  if not Exec(ExpandConstant('{tmp}\MasterProSetup.exe'), Args, '', SW_HIDE, ewWaitUntilTerminated, Code) or (Code <> 0) then
-    Result := FmtMessage(CustomMessage('HubFailure'), [IntToStr(Code)]);
-end;
+// ---- DriveVault Master Pro (hub): the newest release is checked and downloaded from GitHub (shared code) ----
+#include "..\..\..\..\shared\installer\master-hub-code.iss"
 
 // ---- AI assistant model (downloaded while installing) ------------------------------------------------------------------------------
 // Pinned revision, fixed size and SHA-256 (the same values as src\app\ModelDownloader.cpp: change both together).
@@ -291,6 +259,8 @@ begin
     PlaceModel();
   if (CurStep = ssDone) and (ModelsNote <> '') then
     SuppressibleMsgBox(ModelsNote, mbInformation, MB_OK, IDOK);
+  if (CurStep = ssDone) and (MasterNote <> '') then
+    SuppressibleMsgBox(MasterNote, mbInformation, MB_OK, IDOK);
   // after "Finish": the hub that was closed by its own update is opened again, as the user had it
   if (CurStep = ssDone) and HubReplaced and CmdSwitch('/UPDATE') then
   begin

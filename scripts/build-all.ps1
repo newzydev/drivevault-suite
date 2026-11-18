@@ -1,5 +1,5 @@
 <#
-.SYNOPSIS  Builds, tests and packages the whole suite: Master Pro first (its setup travels inside the Video Editor setup), then the Video Editor,
+.SYNOPSIS  Builds, tests and packages the whole suite: Master Pro, then the Video Editor (the program installers download Master Pro from GitHub, so the order does not matter),
            then the installer test that exercises both installers.
 .EXAMPLE   .\scripts\build-all.ps1
            .\scripts\build-all.ps1 -SkipBuild      (package the existing release builds)

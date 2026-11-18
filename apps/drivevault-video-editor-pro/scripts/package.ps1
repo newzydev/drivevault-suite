@@ -6,9 +6,7 @@
 param(
     [switch]$SkipBuild,
     [switch]$Sign,                        # Authenticode-sign with the certificate named in DV_SIGN_PFX / DV_SIGN_THUMBPRINT (see sign.ps1)
-    [string]$MasterSetup = '',            # setup of DriveVault Master Pro that travels inside this installer (default: apps\drivevault-master-pro\dist)
-    [ValidatePattern('^[a-zA-Z0-9_-]+$')][string]$ArtifactSubdir, # optional isolated output below dist for compatibility checks
-    [switch]$NoMaster                     # build without the hub (only for experiments: a product installer normally installs Master Pro first)
+    [ValidatePattern('^[a-zA-Z0-9_-]+$')][string]$ArtifactSubdir # optional isolated output below dist for compatibility checks
 )
 
 $ErrorActionPreference = 'Stop'
@@ -149,17 +147,7 @@ $size = (Get-ChildItem $stage -Recurse | Measure-Object Length -Sum).Sum / 1MB
 Write-Host ("Staged {0:N1} MB in {1}" -f $size, $stage)
 
 $isccArgs = @("/DAppVersion=$version", "/DStageDir=$stage", "/DOutputDir=$dist")
-if (-not $NoMaster) {
-    if (-not $MasterSetup) { $MasterSetup = Join-Path (Split-Path -Parent $DvRoot) 'drivevault-master-pro\dist\DriveVault-Master-Pro-Setup-x64.exe' }
-    if (-not (Test-Path $MasterSetup)) { throw "DriveVault Master Pro setup not found: $MasterSetup (build it first with its scripts\package.ps1, or pass -NoMaster)" }
-    $MasterSetup = (Resolve-Path $MasterSetup).Path
-    $masterVersion = ([string](Get-Item $MasterSetup).VersionInfo.FileVersion).Trim()
-    if (-not $masterVersion) { throw "Cannot read the version of $MasterSetup" }
-    Write-Host "Including DriveVault Master Pro $masterVersion from $MasterSetup" -ForegroundColor Cyan
-    $isccArgs += @("/DMasterSetup=$MasterSetup", "/DMasterVersion=$masterVersion")
-} else {
-    Write-Warning 'Building WITHOUT DriveVault Master Pro: this installer will not install the hub.'
-}
+# DriveVault Master Pro is not inside this installer: the installer checks GitHub for the newest release and downloads it (shared\installer\master-hub-code.iss)
 iscc @isccArgs (Join-Path $DvRoot 'installer\windows\drivevault.iss')
 if ($LASTEXITCODE) { throw "Inno Setup compilation failed" }
 

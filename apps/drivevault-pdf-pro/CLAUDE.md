@@ -22,7 +22,7 @@ Output: `build/release/bin/DriveVaultPdfPro.exe` (+ `pdfium.dll` copied next to 
 ```powershell
 .\scripts\build.ps1 -Test        # configure + build Release + 16 ctest suites
 ..\..\scripts\run-pdf-pro.bat    # smoke start / look at the program (no install)
-.\scripts\package.ps1            # release gates and installer, after building Master Pro's setup
+.\scripts\package.ps1            # release gates and installer (Master Pro is not inside: the installer downloads it from GitHub)
 ```
 
 ## Thai OCR
