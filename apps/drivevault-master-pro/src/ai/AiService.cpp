@@ -494,7 +494,8 @@ void AiChannel::sendTools()
         if (server->isExternal())                                 // a server that was not started here (the tests): its window is unknown, assume the small one
             c.contextTokens = LlamaServer::kSmallContextTokens;
         const QString web = c.web ? QStringLiteral("\n\nYou can look things up on the Internet with web_search and fetch_page. Search when the answer needs current or unknown "
-                                                   "facts (not for what you already know), open a page to read it, and say which pages you used (title and address).")
+                                                   "facts (not for what you already know), open a page to read it, and say which pages you used (title and address). Do the search yourself: never tell the user "
+                                                   "to search the web themselves.")
                                   : QString();
         if (isAgent()) {
             QString tools = QStringLiteral("list_files, read_file, search_text, glob_files, todo_write");

@@ -441,6 +441,22 @@ Item {
         }
     }
 
+    // the mode entry of the menu exists only on the agent page (one page object serves both tabs): taken out / put back after the effort entry
+    function syncModeEntry() {
+        var at = -1, effortAt = -1
+        for (var i = 0; i < mainMenu.count; ++i) {
+            var m = mainMenu.menuAt(i)
+            if (m === modeMenu) at = i
+            else if (m === effortMenu) effortAt = i
+        }
+        if (agent && at < 0 && effortAt >= 0)
+            mainMenu.insertMenu(effortAt + 1, modeMenu)
+        else if (!agent && at >= 0)
+            mainMenu.takeMenu(at)
+    }
+    onAgentChanged: syncModeEntry()
+    Component.onCompleted: Qt.callLater(syncModeEntry)
+
     // the one menu of the message box (like Claude's): the models of this PC, then the effort, the mode and the web as entries (the first two open a list)
     MMenu {
         id: mainMenu
@@ -478,7 +494,7 @@ Item {
             id: modeMenu
             title: Tr.s("mode_label") + "   ·   " + Tr.s("mode_" + root.ch.permission)
             implicitWidth: 520
-            enabled: root.agent
+            // the mode only exists on the agent page: on the Q&A page the entry is removed (a grey entry that cannot be used is not shown)
             Repeater {
                 model: ["read", "plan", "ask", "edit"]
                 delegate: MMenuItem {

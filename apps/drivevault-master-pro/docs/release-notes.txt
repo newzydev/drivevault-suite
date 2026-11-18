@@ -1,6 +1,11 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.29.2 (2026-11-19): No unusable Mode entry in AI Q&A; the AI searches for you
+  - Fixed: the AI Q&A page showed a grey "Mode" entry in its menu that cannot be used there (modes belong to the Agentic AI page); it is not shown any more.
+  - Changed: with the web switch on, the AI is told to do the search itself and not to send you to search.
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.29.1 (2026-11-19): The AI Q&A answers general questions
   - Fixed: the small model refused simple requests such as "write the Thai alphabet and A-Z" ("I am Master Pro, I cannot ..."), because its instructions only spoke of DriveVault. It is now told it may answer any question and that only acting on this computer is not possible. The message box no longer says "ask about your DriveVault programs".
   - Not code-signed (Windows SmartScreen may warn).
