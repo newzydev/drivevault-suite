@@ -23,6 +23,7 @@ having the rights to the material you edit and export. The Software works on you
 The Software works offline. It does not collect usage data, has no telemetry and does not send personal data or your files anywhere. Settings, logs, auto-save copies and
 caches are stored on your computer (in %LOCALAPPDATA%\DriveVault) and are removed on request when you uninstall. The only time the Software uses the internet is when you
 yourself press a button that downloads or checks something (for example a speech model, or "Check for updates" in DriveVault Master Pro, which contacts GitHub - also once when it opens, unless you switch that off); then the server you connect to can see your connection like any website.
+Exception: a function that section 6 describes, for a particular program, as using an online service (for example the optional online AI models of DriveVault Master Pro) sends what you give it to that service - but only after you choose to use it.
 
 5. UPDATES AND THE DRIVEVAULT SUITE
 We may offer new versions, but we are not obliged to. A newer installer replaces the installed version. DriveVault Master Pro, which is installed together with every
@@ -33,6 +34,12 @@ Master Pro lists, opens, installs, updates and uninstalls DriveVault programs on
 and, unless you switch "Check for updates on start" off, once when it opens; only when you then choose to download, it fetches that one setup file and compares its SHA-256 checksum with the one published in the release before it runs.
 It has no online store and never downloads anything by itself. It starts only setup files whose version information names DriveVault as the publisher. It does not verify digital signatures of setup files (installers may be unsigned),
 so install only setup files that you obtained from a source you trust. Uninstalling a program never deletes your projects or exported files.
+Online AI models (optional): the AI pages can use a model on your own computer (nothing leaves your computer) or, only when you choose one in the model menu, a free online model run by NVIDIA (build.nvidia.com).
+When you choose an online model, each message you send, the earlier messages of that conversation and - on the Agentic AI page - the text of the files, folders and command results that the AI reads for the job are sent over the internet to NVIDIA,
+which runs the model. NVIDIA may process and keep them under its own terms and privacy policy, which apply to that service and not to this agreement. Do not use an online model with content that you are not allowed to share.
+The service is reached with an access key that is built into the Software and shared by all users; it may be limited, changed or withdrawn at any time, and the Software may stop offering online models without notice.
+When "Web" is switched on, the AI may also send search words to DuckDuckGo and request web pages from other websites. AI answers can be wrong or incomplete: check them before you rely on them.
+The Agentic AI page can change files and run commands on your computer with your permissions when you allow it: review what it does before you allow it.
 
 7. THIRD-PARTY SOFTWARE
 The Software includes third-party components (for example Qt and FFmpeg under the GNU Lesser General Public Licence v3, whisper.cpp under the MIT licence, fonts under the

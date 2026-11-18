@@ -23,6 +23,7 @@ having the rights to the material you edit and export. The Software works on you
 The Software works offline. It does not collect usage data, has no telemetry and does not send personal data or your files anywhere. Settings, logs, auto-save copies and
 caches are stored on your computer (in %LOCALAPPDATA%\DriveVault) and are removed on request when you uninstall. The only time the Software uses the internet is when you
 yourself press a button that downloads or checks something (for example a speech model, or "Check for updates" in DriveVault Master Pro, which contacts GitHub - also once when it opens, unless you switch that off); then the server you connect to can see your connection like any website.
+Exception: a function that section 6 describes, for a particular program, as using an online service (for example the optional online AI models of DriveVault Master Pro) sends what you give it to that service - but only after you choose to use it.
 
 5. UPDATES AND THE DRIVEVAULT SUITE
 We may offer new versions, but we are not obliged to. A newer installer replaces the installed version. DriveVault Master Pro, which is installed together with every

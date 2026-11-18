@@ -44,12 +44,24 @@ Master Pro lists, opens, installs, updates and uninstalls DriveVault programs on
 and, unless you switch "Check for updates on start" off, once when it opens; only when you then choose to download, it fetches that one setup file and compares its SHA-256 checksum with the one published in the release before it runs.
 It has no online store and never downloads anything by itself. It starts only setup files whose version information names DriveVault as the publisher. It does not verify digital signatures of setup files (installers may be unsigned),
 so install only setup files that you obtained from a source you trust. Uninstalling a program never deletes your projects or exported files.
+Online AI models (optional): the AI pages can use a model on your own computer (nothing leaves your computer) or, only when you choose one in the model menu, a free online model run by NVIDIA (build.nvidia.com).
+When you choose an online model, each message you send, the earlier messages of that conversation and - on the Agentic AI page - the text of the files, folders and command results that the AI reads for the job are sent over the internet to NVIDIA,
+which runs the model. NVIDIA may process and keep them under its own terms and privacy policy, which apply to that service and not to this agreement. Do not use an online model with content that you are not allowed to share.
+The service is reached with an access key that is built into the Software and shared by all users; it may be limited, changed or withdrawn at any time, and the Software may stop offering online models without notice.
+When "Web" is switched on, the AI may also send search words to DuckDuckGo and request web pages from other websites. AI answers can be wrong or incomplete: check them before you rely on them.
+The Agentic AI page can change files and run commands on your computer with your permissions when you allow it: review what it does before you allow it.
 '@
         NotesTh = @'
 Master Pro แสดง เปิด ติดตั้ง อัปเดต และถอนการติดตั้งโปรแกรม DriveVault เฉพาะเมื่อคุณสั่ง โดยใช้ไฟล์ติดตั้งในเครื่องของคุณ จะติดต่อ GitHub (รุ่นที่เผยแพร่ของที่เก็บ DriveVault) เมื่อคุณกด "ตรวจหาอัปเดต" และเมื่อเปิดโปรแกรมหนึ่งครั้ง
 หากไม่ปิด "ตรวจหาอัปเดตเมื่อเปิดโปรแกรม" และเมื่อคุณเลือกดาวน์โหลด จะดึงไฟล์ติดตั้งนั้นไฟล์เดียวและเทียบค่า SHA-256 กับค่าที่ประกาศไว้ในรุ่นนั้นก่อนเปิด ไม่มีร้านค้าออนไลน์และไม่ดาวน์โหลดอะไรเองโดยอัตโนมัติ
 โดยจะเปิดเฉพาะไฟล์ติดตั้งที่ข้อมูลเวอร์ชันระบุว่าผู้เผยแพร่คือ DriveVault ไม่ตรวจลายเซ็นดิจิทัลของไฟล์ติดตั้ง (ตัวติดตั้งอาจยังไม่ได้เซ็น)
 ดังนั้นโปรดติดตั้งเฉพาะไฟล์ที่ได้จากแหล่งที่คุณเชื่อถือ การถอนการติดตั้งโปรแกรมจะไม่ลบโปรเจกต์หรือไฟล์ที่ส่งออกของคุณ
+โมเดล AI ออนไลน์ (ไม่บังคับ): หน้า AI ใช้โมเดลบนเครื่องของคุณเองได้ (ไม่มีอะไรออกจากเครื่อง) หรือ เฉพาะเมื่อคุณเลือกในเมนูโมเดล ใช้โมเดลออนไลน์ฟรีที่ NVIDIA เป็นผู้รัน (build.nvidia.com)
+เมื่อคุณเลือกโมเดลออนไลน์ ข้อความที่คุณส่งแต่ละข้อความ ข้อความก่อนหน้าของบทสนทนานั้น และ (ในหน้าเอเจนติกเอไอ) ข้อความในไฟล์ โฟลเดอร์ และผลคำสั่งที่ AI อ่านเพื่อทำงานนั้น จะถูกส่งทางอินเทอร์เน็ตไปที่ NVIDIA ซึ่งเป็นผู้รันโมเดล
+NVIDIA อาจประมวลผลและเก็บข้อมูลนั้นตามข้อกำหนดและนโยบายความเป็นส่วนตัวของ NVIDIA เอง ซึ่งใช้กับบริการนั้นและไม่ใช่ข้อตกลงนี้ โปรดอย่าใช้โมเดลออนไลน์กับเนื้อหาที่คุณไม่มีสิทธิ์เผยแพร่
+บริการนี้ใช้กุญแจเข้าถึง (access key) ที่ฝังอยู่ในซอฟต์แวร์และใช้ร่วมกันทุกคน อาจถูกจำกัด เปลี่ยน หรือยกเลิกเมื่อใดก็ได้ และซอฟต์แวร์อาจเลิกมีโมเดลออนไลน์โดยไม่แจ้งล่วงหน้า
+เมื่อเปิด "เว็บ" AI อาจส่งคำค้นไปที่ DuckDuckGo และขอหน้าเว็บจากเว็บไซต์อื่นด้วย คำตอบของ AI อาจผิดพลาดหรือไม่ครบถ้วน โปรดตรวจสอบก่อนนำไปใช้
+หน้าเอเจนติกเอไอแก้ไฟล์และรันคำสั่งบนเครื่องของคุณด้วยสิทธิ์ของคุณได้เมื่อคุณอนุญาต โปรดตรวจสิ่งที่มันจะทำก่อนอนุญาต
 '@
     }
 )

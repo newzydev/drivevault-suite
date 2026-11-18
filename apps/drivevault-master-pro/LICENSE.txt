@@ -23,6 +23,7 @@ having the rights to the material you edit and export. The Software works on you
 The Software works offline. It does not collect usage data, has no telemetry and does not send personal data or your files anywhere. Settings, logs, auto-save copies and
 caches are stored on your computer (in %LOCALAPPDATA%\DriveVault) and are removed on request when you uninstall. The only time the Software uses the internet is when you
 yourself press a button that downloads or checks something (for example a speech model, or "Check for updates" in DriveVault Master Pro, which contacts GitHub - also once when it opens, unless you switch that off); then the server you connect to can see your connection like any website.
+Exception: a function that section 6 describes, for a particular program, as using an online service (for example the optional online AI models of DriveVault Master Pro) sends what you give it to that service - but only after you choose to use it.
 
 5. UPDATES AND THE DRIVEVAULT SUITE
 We may offer new versions, but we are not obliged to. A newer installer replaces the installed version. DriveVault Master Pro, which is installed together with every
@@ -33,6 +34,12 @@ Master Pro lists, opens, installs, updates and uninstalls DriveVault programs on
 and, unless you switch "Check for updates on start" off, once when it opens; only when you then choose to download, it fetches that one setup file and compares its SHA-256 checksum with the one published in the release before it runs.
 It has no online store and never downloads anything by itself. It starts only setup files whose version information names DriveVault as the publisher. It does not verify digital signatures of setup files (installers may be unsigned),
 so install only setup files that you obtained from a source you trust. Uninstalling a program never deletes your projects or exported files.
+Online AI models (optional): the AI pages can use a model on your own computer (nothing leaves your computer) or, only when you choose one in the model menu, a free online model run by NVIDIA (build.nvidia.com).
+When you choose an online model, each message you send, the earlier messages of that conversation and - on the Agentic AI page - the text of the files, folders and command results that the AI reads for the job are sent over the internet to NVIDIA,
+which runs the model. NVIDIA may process and keep them under its own terms and privacy policy, which apply to that service and not to this agreement. Do not use an online model with content that you are not allowed to share.
+The service is reached with an access key that is built into the Software and shared by all users; it may be limited, changed or withdrawn at any time, and the Software may stop offering online models without notice.
+When "Web" is switched on, the AI may also send search words to DuckDuckGo and request web pages from other websites. AI answers can be wrong or incomplete: check them before you rely on them.
+The Agentic AI page can change files and run commands on your computer with your permissions when you allow it: review what it does before you allow it.
 
 7. THIRD-PARTY SOFTWARE
 The Software includes third-party components (for example Qt and FFmpeg under the GNU Lesser General Public Licence v3, whisper.cpp under the MIT licence, fonts under the
@@ -98,6 +105,7 @@ DriveVault Master Pro
 ซอฟต์แวร์ทำงานแบบออฟไลน์ ไม่เก็บข้อมูลการใช้งาน ไม่มี telemetry และไม่ส่งข้อมูลส่วนบุคคลหรือไฟล์ของคุณไปที่ใด การตั้งค่า ไฟล์บันทึก สำเนาบันทึกอัตโนมัติ และแคชถูกเก็บในเครื่องของคุณ
 (ที่ %LOCALAPPDATA%\DriveVault) และจะถูกลบเมื่อคุณสั่งลบตอนถอนการติดตั้ง ซอฟต์แวร์ใช้อินเทอร์เน็ตเฉพาะเมื่อคุณกดปุ่มที่ดาวน์โหลดสิ่งใดสิ่งหนึ่งเอง (เช่น โมเดลเสียง)
 หรือตรวจสอบสิ่งใดสิ่งหนึ่งเอง (เช่น ปุ่ม "ตรวจหาอัปเดต" ใน DriveVault Master Pro ซึ่งติดต่อ GitHub และติดต่อหนึ่งครั้งเมื่อเปิดโปรแกรม เว้นแต่คุณปิดไว้) ซึ่งเซิร์ฟเวอร์ที่คุณเชื่อมต่อจะเห็นการเชื่อมต่อของคุณเหมือนเว็บไซต์ทั่วไป
+ข้อยกเว้น: ฟังก์ชันที่ข้อ 6 ระบุว่าใช้บริการออนไลน์สำหรับโปรแกรมใดโปรแกรมหนึ่ง (เช่น โมเดล AI ออนไลน์แบบเลือกใช้ของ DriveVault Master Pro) จะส่งสิ่งที่คุณป้อนให้บริการนั้น แต่เฉพาะหลังจากที่คุณเลือกใช้ฟังก์ชันนั้นเท่านั้น
 
 5. การอัปเดตและชุดโปรแกรม DriveVault
 เราอาจออกรุ่นใหม่ แต่ไม่มีหน้าที่ต้องทำ ตัวติดตั้งรุ่นใหม่จะแทนที่รุ่นที่ติดตั้งอยู่ DriveVault Master Pro ซึ่งติดตั้งพร้อมกับโปรแกรม DriveVault ทุกตัว
@@ -108,6 +116,12 @@ Master Pro แสดง เปิด ติดตั้ง อัปเดต �
 หากไม่ปิด "ตรวจหาอัปเดตเมื่อเปิดโปรแกรม" และเมื่อคุณเลือกดาวน์โหลด จะดึงไฟล์ติดตั้งนั้นไฟล์เดียวและเทียบค่า SHA-256 กับค่าที่ประกาศไว้ในรุ่นนั้นก่อนเปิด ไม่มีร้านค้าออนไลน์และไม่ดาวน์โหลดอะไรเองโดยอัตโนมัติ
 โดยจะเปิดเฉพาะไฟล์ติดตั้งที่ข้อมูลเวอร์ชันระบุว่าผู้เผยแพร่คือ DriveVault ไม่ตรวจลายเซ็นดิจิทัลของไฟล์ติดตั้ง (ตัวติดตั้งอาจยังไม่ได้เซ็น)
 ดังนั้นโปรดติดตั้งเฉพาะไฟล์ที่ได้จากแหล่งที่คุณเชื่อถือ การถอนการติดตั้งโปรแกรมจะไม่ลบโปรเจกต์หรือไฟล์ที่ส่งออกของคุณ
+โมเดล AI ออนไลน์ (ไม่บังคับ): หน้า AI ใช้โมเดลบนเครื่องของคุณเองได้ (ไม่มีอะไรออกจากเครื่อง) หรือ เฉพาะเมื่อคุณเลือกในเมนูโมเดล ใช้โมเดลออนไลน์ฟรีที่ NVIDIA เป็นผู้รัน (build.nvidia.com)
+เมื่อคุณเลือกโมเดลออนไลน์ ข้อความที่คุณส่งแต่ละข้อความ ข้อความก่อนหน้าของบทสนทนานั้น และ (ในหน้าเอเจนติกเอไอ) ข้อความในไฟล์ โฟลเดอร์ และผลคำสั่งที่ AI อ่านเพื่อทำงานนั้น จะถูกส่งทางอินเทอร์เน็ตไปที่ NVIDIA ซึ่งเป็นผู้รันโมเดล
+NVIDIA อาจประมวลผลและเก็บข้อมูลนั้นตามข้อกำหนดและนโยบายความเป็นส่วนตัวของ NVIDIA เอง ซึ่งใช้กับบริการนั้นและไม่ใช่ข้อตกลงนี้ โปรดอย่าใช้โมเดลออนไลน์กับเนื้อหาที่คุณไม่มีสิทธิ์เผยแพร่
+บริการนี้ใช้กุญแจเข้าถึง (access key) ที่ฝังอยู่ในซอฟต์แวร์และใช้ร่วมกันทุกคน อาจถูกจำกัด เปลี่ยน หรือยกเลิกเมื่อใดก็ได้ และซอฟต์แวร์อาจเลิกมีโมเดลออนไลน์โดยไม่แจ้งล่วงหน้า
+เมื่อเปิด "เว็บ" AI อาจส่งคำค้นไปที่ DuckDuckGo และขอหน้าเว็บจากเว็บไซต์อื่นด้วย คำตอบของ AI อาจผิดพลาดหรือไม่ครบถ้วน โปรดตรวจสอบก่อนนำไปใช้
+หน้าเอเจนติกเอไอแก้ไฟล์และรันคำสั่งบนเครื่องของคุณด้วยสิทธิ์ของคุณได้เมื่อคุณอนุญาต โปรดตรวจสิ่งที่มันจะทำก่อนอนุญาต
 
 7. ซอฟต์แวร์ของบุคคลที่สาม
 ซอฟต์แวร์มีส่วนประกอบของบุคคลที่สาม (เช่น Qt และ FFmpeg ภายใต้ GNU Lesser General Public License v3, whisper.cpp ภายใต้สัญญาอนุญาต MIT, ฟอนต์ภายใต้ SIL Open Font License
