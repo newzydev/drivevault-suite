@@ -1,4 +1,5 @@
 #include "HttpChat.h"
+#include "RetryPolicy.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -13,6 +14,9 @@ HttpChat::HttpChat(QNetworkAccessManager* net, QObject* parent)
     : QObject(parent)
     , m_net(net)
 {
+    m_retryTimer = new QTimer(this);
+    m_retryTimer->setSingleShot(true);
+    connect(m_retryTimer, &QTimer::timeout, this, [this] { launch(); });
 }
 
 HttpChat::~HttpChat()
@@ -77,6 +81,18 @@ QString HttpChat::start(const Request& r)
         return QStringLiteral("badUrl");
     if (!urlAllowed(url))
         return QStringLiteral("insecureUrl");
+    m_request = r;
+    m_retries = 0;
+    m_retryTimer->stop();
+    launch();
+    return {};
+}
+
+void HttpChat::launch()
+{
+    const Request& r = m_request;
+    const QString url = endpoint(r);
+    m_emitted = 0;
     m_parser = SseParser();
     m_errorBody.clear();
     m_streamError.clear();
@@ -91,17 +107,36 @@ QString HttpChat::start(const Request& r)
     if (!r.apiKey.isEmpty()) {
         req.setRawHeader("Authorization", "Bearer " + r.apiKey.toUtf8());
     }
-    req.setTransferTimeout(120000);          // two minutes without any data
+    req.setTransferTimeout(r.timeoutMs);     // no data for this long (a try that hangs is given up)
     m_reply = m_net->post(req, body(r));
     connect(m_reply, &QNetworkReply::readyRead, this, &HttpChat::onReadyRead);
     connect(m_reply, &QNetworkReply::finished, this, &HttpChat::onFinished);
-    return {};
+}
+
+bool HttpChat::retryLater(const QString& why, int retryAfterMs, bool retryable)
+{
+    if (!m_request.retry || !retryable || m_retries >= RetryPolicy::kMaxRetries)
+        return false;
+    ++m_retries;
+    const int delay = RetryPolicy::delayMs(m_retries, retryAfterMs);
+    if (m_emitted > 0) {                                  // what this try showed is taken back: the next try writes the answer from its start
+        emit retracted(m_emitted);
+        m_emitted = 0;
+    }
+    emit retrying(why, m_retries, RetryPolicy::kMaxRetries, delay);
+    m_retryTimer->start(delay);
+    return true;
 }
 
 void HttpChat::cancel()
 {
-    if (!m_reply)
+    if (!m_reply) {
+        if (m_retryTimer->isActive()) {                   // cancelled while waiting for the next try
+            m_retryTimer->stop();
+            emit finished(false, QStringLiteral("cancelled"), {});
+        }
         return;
+    }
     m_cancelled = true;
     m_reply->abort();
 }
@@ -126,6 +161,7 @@ void HttpChat::onReadyRead()
             m_streamError = p.error;
         if (!p.text.isEmpty()) {
             m_sawText = true;
+            m_emitted += int(p.text.size());
             emit piece(p.text);
         }
         if (p.done)
@@ -143,6 +179,7 @@ void HttpChat::onFinished()
     const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     const QNetworkReply::NetworkError error = reply->error();
     const QString errorString = reply->errorString();
+    const int retryAfter = RetryPolicy::retryAfterMs(reply->rawHeader("Retry-After"));
     reply->deleteLater();
     if (m_cancelled) {
         emit finished(false, QStringLiteral("cancelled"), {});
@@ -154,18 +191,26 @@ void HttpChat::onFinished()
                                                                          : root.value(QLatin1String("error")).toString();
         if (message.isEmpty())
             message = QString::fromUtf8(m_errorBody.left(300)).trimmed();
+        if (retryLater(QStringLiteral("HTTP %1").arg(status), retryAfter, RetryPolicy::httpRetryable(status)))
+            return;
         emit finished(false, QStringLiteral("http%1").arg(status), message);
         return;
     }
     if (error != QNetworkReply::NoError && !m_done) {
+        if (retryLater(errorString, 0, RetryPolicy::networkRetryable(error)))
+            return;
         emit finished(false, QStringLiteral("network"), errorString);
         return;
     }
     if (!m_streamError.isEmpty()) {
+        if (!m_sawText && retryLater(m_streamError, 0, true))   // an error inside the stream before any text: the service had a hiccup
+            return;
         emit finished(false, QStringLiteral("stream"), m_streamError);
         return;
     }
     if (!m_sawText) {
+        if (retryLater(QStringLiteral("empty answer"), 0, true))
+            return;
         emit finished(false, QStringLiteral("empty"), {});
         return;
     }

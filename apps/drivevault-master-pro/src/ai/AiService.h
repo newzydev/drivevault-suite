@@ -186,6 +186,7 @@ private:
     void appendActivity(const QString& text);
     void onStep(int no, const QString& kind, const QString& target, const QString& state, const QString& note);
     void appendPiece(const QString& text);
+    void retractText(int chars);                           // takes back the text of a failed try of an online model
     void setStatus(const QString& status);
     void finish(bool ok, const QString& code, const QString& detail);
     QString systemPrompt() const;

@@ -5,6 +5,7 @@
 #include "ai/AiService.h"
 #include "ai/MarkdownHtml.h"
 #include "ai/MarkdownModel.h"
+#include "ai/RetryPolicy.h"
 #include "ai/CommandPool.h"
 #include "ai/Compactor.h"
 #include "ai/CommandRunner.h"
@@ -68,6 +69,12 @@ public:
                         s->abort();
                         return;
                     }
+                    if (answer.startsWith("CUT|")) {                          // the answer breaks off in the middle: the headers promise more than arrives
+                        const QByteArray part = answer.mid(4);
+                        s->write("HTTP/1.1 200 X\r\nContent-Type: " + contentType + "\r\nContent-Length: " + QByteArray::number(part.size() + 500) + "\r\nConnection: close\r\n\r\n" + part);
+                        s->disconnectFromHost();
+                        return;
+                    }
                     int code = status;
                     if (answer.size() > 4 && answer.at(3) == '|' && QByteArray(answer.left(3)).toInt() >= 200) {     // "400|{...}": one answer with its own status
                         code = answer.left(3).toInt();
@@ -92,6 +99,12 @@ QByteArray sse(const QStringList& datas)
         out += "data: " + d.toUtf8() + "\n\n";
     return out;
 }
+
+// the pauses between the tries of an online request are 200 times shorter while a test runs
+struct FastRetries {
+    FastRetries() { RetryPolicy::delayScale = 0.005; }
+    ~FastRetries() { RetryPolicy::delayScale = 1.0; }
+};
 
 QJsonObject requestBody(const QByteArray& request)
 {
@@ -1358,6 +1371,249 @@ private slots:
         QCOMPARE(model->data(model->index(0, 0), Qt::UserRole + 1).toMap().value("role").toString(), QString("user"));
         agent->newConversation();
         QCOMPARE(model->rowCount(), 0);
+    }
+    // ---- online models: a lost connection, a timeout or a busy service is asked again (RetryPolicy) ----------------------------------------------------------
+    void theRetryPolicyIsPatientAndPolite()
+    {
+        const int expected[] = {1000, 2000, 4000, 8000, 16000, 30000, 30000, 30000};      // 1 s, doubling, never more than 30 s (random 0.5 = the middle)
+        int total = 0;
+        for (int i = 0; i < RetryPolicy::kMaxRetries; ++i) {
+            QCOMPARE(RetryPolicy::delayMs(i + 1, 0, 0.5), expected[i]);
+            total += expected[i];
+        }
+        QVERIFY(total >= 100000 && total <= 130000);                                      // about two minutes of patience for a service that is down
+        QCOMPARE(RetryPolicy::delayMs(1, 0, 0.0), 750);                                   // -25 % ... +25 %: not all programs come back at the same moment
+        QCOMPARE(RetryPolicy::delayMs(1, 0, 1.0), 1250);
+        QCOMPARE(RetryPolicy::delayMs(1, 5000, 0.5), 5000);                               // the service asked for more
+        QCOMPARE(RetryPolicy::delayMs(1, 999000, 0.5), 60000);                            // ... but a minute is the most that is waited for
+        QCOMPARE(RetryPolicy::retryAfterMs("2"), 2000);
+        QCOMPARE(RetryPolicy::retryAfterMs(" 0.5 "), 500);
+        QCOMPARE(RetryPolicy::retryAfterMs("Wed, 21 Oct 2026 07:28:00 GMT"), 0);          // a date is not understood
+        QCOMPARE(RetryPolicy::retryAfterMs(""), 0);
+        QCOMPARE(RetryPolicy::retryAfterMs("500"), 60000);
+        for (int code : {408, 425, 429, 500, 502, 503, 504, 522, 529})
+            QVERIFY2(RetryPolicy::httpRetryable(code), qPrintable(QString::number(code)));
+        for (int code : {400, 401, 402, 403, 404, 413, 422})
+            QVERIFY2(!RetryPolicy::httpRetryable(code), qPrintable(QString::number(code)));      // asking again does not help
+        QVERIFY(RetryPolicy::networkRetryable(QNetworkReply::RemoteHostClosedError));
+        QVERIFY(RetryPolicy::networkRetryable(QNetworkReply::TimeoutError));
+        QVERIFY(RetryPolicy::networkRetryable(QNetworkReply::HostNotFoundError));
+        QVERIFY(!RetryPolicy::networkRetryable(QNetworkReply::AuthenticationRequiredError));
+        QVERIFY(!RetryPolicy::networkRetryable(QNetworkReply::ContentNotFoundError));
+    }
+    void anOnlineChatSurvivesAFlakyService()
+    {
+        FastRetries fast;
+        const QByteArray good = sse({R"({"choices":[{"delta":{"content":"Hello world"}}]})", "[DONE]"});
+        const QByteArray cut = "CUT|" + sse({R"({"choices":[{"delta":{"content":"Hel"}}]})"});         // the connection breaks after three letters
+        QNetworkAccessManager net;
+        auto run = [&](FakeServer& server, bool retry, QString* text, int* retracted, int* retrying) {
+            HttpChat chat(&net);
+            QSignalSpy done(&chat, &HttpChat::finished);
+            QObject::connect(&chat, &HttpChat::piece, this, [text](const QString& t) { *text += t; });
+            QObject::connect(&chat, &HttpChat::retracted, this, [text, retracted](int n) { text->chop(n); *retracted += n; });
+            QObject::connect(&chat, &HttpChat::retrying, this, [retrying] { ++*retrying; });
+            HttpChat::Request r;
+            r.baseUrl = server.base() + "/v1";
+            r.model = "m";
+            r.messages = {{"user", "hi"}};
+            r.retry = retry;
+            const QString error = chat.start(r);
+            if (!error.isEmpty())
+                return QVariantList{false, error, QString()};
+            if (!done.wait(20000))
+                return QVariantList{false, QStringLiteral("timeout"), QString()};
+            return QVariantList(done.at(0));
+        };
+        {   // a dropped connection, a busy service, a limit per minute, a cut answer, a bad gateway - and then it works: the user sees one clean answer
+            FakeServer server;
+            server.queue = {"DROP", "503|{\"error\":{\"message\":\"busy\"}}", "429|{}", cut, "502|{}", good, good, good};
+            QString text;
+            int retracted = 0, retrying = 0;
+            const QVariantList result = run(server, true, &text, &retracted, &retrying);
+            QVERIFY2(result.at(0).toBool(), qPrintable(result.at(1).toString() + " " + result.at(2).toString()));
+            QCOMPARE(text, QString("Hello world"));
+            QCOMPARE(retracted, 3);                                                       // "Hel" of the cut try was taken back
+            QVERIFY2(retrying >= 4, qPrintable(QString::number(retrying)));
+        }
+        {   // a wrong key is not asked again
+            FakeServer server;
+            server.queue = {"401|{\"error\":{\"message\":\"bad key\"}}", good};
+            QString text;
+            int retracted = 0, retrying = 0;
+            const QVariantList result = run(server, true, &text, &retracted, &retrying);
+            QVERIFY(!result.at(0).toBool());
+            QCOMPARE(result.at(1).toString(), QString("http401"));
+            QCOMPARE(server.requests, 1);
+            QCOMPARE(retrying, 0);
+        }
+        {   // the model of this PC is never asked again by this (its server is started again by the page)
+            FakeServer server;
+            server.queue = {"503|{}", good};
+            QString text;
+            int retracted = 0, retrying = 0;
+            const QVariantList result = run(server, false, &text, &retracted, &retrying);
+            QCOMPARE(result.at(1).toString(), QString("http503"));
+            QCOMPARE(server.requests, 1);
+        }
+        {   // a service that stays down: kMaxRetries tries, then the error is shown
+            FakeServer server;
+            server.status = 503;
+            server.contentType = "application/json";
+            server.body = "{\"error\":{\"message\":\"down\"}}";
+            QString text;
+            int retracted = 0, retrying = 0;
+            const QVariantList result = run(server, true, &text, &retracted, &retrying);
+            QVERIFY(!result.at(0).toBool());
+            QCOMPARE(result.at(1).toString(), QString("http503"));
+            QCOMPARE(retrying, RetryPolicy::kMaxRetries);
+            QCOMPARE(server.requests, RetryPolicy::kMaxRetries + 1);
+        }
+        {   // Stop while it waits for the next try ends it at once and asks nothing more (real pauses here)
+            RetryPolicy::delayScale = 1.0;
+            FakeServer server;
+            server.status = 503;
+            server.contentType = "application/json";
+            server.body = "{}";
+            HttpChat chat(&net);
+            QSignalSpy retryingSpy(&chat, &HttpChat::retrying);
+            QSignalSpy done(&chat, &HttpChat::finished);
+            HttpChat::Request r;
+            r.baseUrl = server.base() + "/v1";
+            r.model = "m";
+            r.messages = {{"user", "hi"}};
+            r.retry = true;
+            QCOMPARE(chat.start(r), QString());
+            QVERIFY(retryingSpy.wait(10000));
+            QVERIFY(chat.running());
+            chat.cancel();
+            QCOMPARE(done.count(), 1);
+            QCOMPARE(done.at(0).at(1).toString(), QString("cancelled"));
+            QVERIFY(!chat.running());
+            const int seen = server.requests;
+            QTest::qWait(1800);
+            QCOMPARE(server.requests, seen);                                              // nothing was asked after Stop
+            RetryPolicy::delayScale = 0.005;
+        }
+    }
+    void anOnlineAgentSurvivesAFlakyService()
+    {
+        FastRetries fast;
+        QNetworkAccessManager net;
+        // a dropped connection and a gateway error, then the answer
+        {
+            FakeServer server;
+            server.contentType = "application/json";
+            server.queue = {"DROP", "502|{}", "503|{}", agentReply({}, QStringLiteral("Recovered.")), agentReply({}, QStringLiteral("Recovered."))};
+            LocalAgent agent(&net);
+            QStringList notes;
+            QObject::connect(&agent, &LocalAgent::activity, this, [&](const QString& t) { notes << t; });
+            QSignalSpy done(&agent, &LocalAgent::finished);
+            QSignalSpy pieces(&agent, &LocalAgent::piece);
+            LocalAgent::Config c;
+            c.baseUrl = server.base() + "/v1";
+            c.folder = m_dir.path();
+            c.history = {{"user", "hello"}};
+            c.remote = true;
+            c.localServer = false;
+            QCOMPARE(agent.start(c), QString());
+            QVERIFY(done.wait(20000));
+            QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+            QStringList said;
+            for (const QList<QVariant>& p : pieces)
+                said << p.at(0).toString();
+            QCOMPARE(said.join(QString()), QString("Recovered."));
+            int problems = 0;
+            for (const QString& n : notes)
+                problems += n.startsWith("Connection problem") ? 1 : 0;
+            QVERIFY2(problems >= 2, qPrintable(notes.join(" | ")));                       // every try that failed is on the page: nothing happens silently
+            QVERIFY(server.requests >= 3);
+        }
+        // a streamed answer that breaks off in the middle: the text of the failed try is taken back, the next try writes it all
+        {
+            FakeServer server;
+            server.contentType = "text/event-stream";
+            const QByteArray good = sseDelta(QJsonObject{{"content", "Fine and complete."}}) + sseEnd("stop", 10, 4);
+            server.queue = {"CUT|" + sseDelta(QJsonObject{{"content", "Fine and"}}), good, good};
+            LocalAgent agent(&net);
+            QString text;
+            QObject::connect(&agent, &LocalAgent::piece, this, [&](const QString& t) { text += t; });
+            QObject::connect(&agent, &LocalAgent::textRetracted, this, [&](int n) { text.chop(n); });
+            QSignalSpy done(&agent, &LocalAgent::finished);
+            LocalAgent::Config c;
+            c.baseUrl = server.base() + "/v1";
+            c.folder = m_dir.path();
+            c.history = {{"user", "hello"}};
+            c.remote = true;
+            c.localServer = false;
+            QCOMPARE(agent.start(c), QString());
+            QVERIFY(done.wait(20000));
+            QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(1).toString()));
+            QCOMPARE(text, QString("Fine and complete."));
+        }
+        // a wrong key ends the job at once with the service's own error
+        {
+            FakeServer server;
+            server.contentType = "application/json";
+            server.queue = {"401|{\"error\":{\"message\":\"bad key\"}}", agentReply({}, QStringLiteral("never"))};
+            LocalAgent agent(&net);
+            QSignalSpy done(&agent, &LocalAgent::finished);
+            LocalAgent::Config c;
+            c.baseUrl = server.base() + "/v1";
+            c.folder = m_dir.path();
+            c.history = {{"user", "hello"}};
+            c.remote = true;
+            c.localServer = false;
+            QCOMPARE(agent.start(c), QString());
+            QVERIFY(done.wait(20000));
+            QVERIFY(!done.at(0).at(0).toBool());
+            QCOMPARE(done.at(0).at(1).toString(), QString("http401"));
+            QCOMPARE(server.requests, 1);
+        }
+        // a service that stays down: the tries run out and the job ends with the error
+        {
+            FakeServer server;
+            server.contentType = "application/json";
+            server.status = 503;
+            server.body = "{}";
+            LocalAgent agent(&net);
+            QSignalSpy done(&agent, &LocalAgent::finished);
+            LocalAgent::Config c;
+            c.baseUrl = server.base() + "/v1";
+            c.folder = m_dir.path();
+            c.history = {{"user", "hello"}};
+            c.remote = true;
+            c.localServer = false;
+            QCOMPARE(agent.start(c), QString());
+            QVERIFY(done.wait(30000));
+            QVERIFY(!done.at(0).at(0).toBool());
+            QCOMPARE(done.at(0).at(1).toString(), QString("http503"));
+            QCOMPARE(server.requests, RetryPolicy::kMaxRetries + 1);
+        }
+    }
+    void anOnlineSummaryIsAskedAgainToo()
+    {
+        FastRetries fast;
+        FakeServer server;
+        server.contentType = "application/json";
+        server.queue = {"503|{}", "DROP", "{\"choices\":[{\"message\":{\"content\":\"The summary.\"}}]}", "{\"choices\":[{\"message\":{\"content\":\"The summary.\"}}]}"};
+        QNetworkAccessManager net;
+        Compactor compactor(&net);
+        QSignalSpy done(&compactor, &Compactor::finished);
+        QCOMPARE(compactor.start(server.base() + "/v1", "key", "a long conversation", {}, 500, "model", true), QString());
+        QVERIFY(done.wait(20000));
+        QVERIFY2(done.at(0).at(0).toBool(), qPrintable(done.at(0).at(2).toString()));
+        QCOMPARE(done.at(0).at(1).toString(), QString("The summary."));
+        // the model of this PC is asked once
+        FakeServer local;
+        local.contentType = "application/json";
+        local.queue = {"503|{}", "{\"choices\":[{\"message\":{\"content\":\"x\"}}]}"};
+        Compactor compactor2(&net);
+        QSignalSpy done2(&compactor2, &Compactor::finished);
+        QCOMPARE(compactor2.start(local.base() + "/v1", "", "text", {}, 500), QString());
+        QVERIFY(done2.wait(10000));
+        QVERIFY(!done2.at(0).at(0).toBool());
+        QCOMPARE(local.requests, 1);
     }
     void theModelServerThatStoppedIsStartedAgainAndTheQuestionAskedAgain()
     {

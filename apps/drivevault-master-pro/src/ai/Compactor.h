@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QObject>
+#include <QByteArray>
 #include <QString>
+#include <QTimer>
 
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -18,9 +20,10 @@ public:
     ~Compactor() override;
 
     // "" when started, otherwise badUrl | busy
-    QString start(const QString& baseUrl, const QString& apiKey, const QString& transcript, const QString& focus, int maxTokens, const QString& model = QStringLiteral("local"));
+    // retry: an online model - a lost connection, a timeout or a busy service is asked again with growing pauses (RetryPolicy)
+    QString start(const QString& baseUrl, const QString& apiKey, const QString& transcript, const QString& focus, int maxTokens, const QString& model = QStringLiteral("local"), bool retry = false);
     void cancel();
-    bool running() const { return m_reply != nullptr; }
+    bool running() const { return m_reply != nullptr || (m_retryTimer && m_retryTimer->isActive()); }
 
     static QString systemPrompt(const QString& focus);              // pure, tested
     static constexpr int kSummaryTokens = 1800;                     // the longest summary
@@ -29,9 +32,16 @@ signals:
     void finished(bool ok, const QString& summary, const QString& error);   // error: cancelled | http<status> | network | empty | badReply (+ the server's words in `summary`)
 
 private:
+    void send();                                                    // posts the request (also for a retry)
+    bool retryLater(int retryAfterMs, bool retryable);
     QNetworkAccessManager* m_net;
     QNetworkReply* m_reply = nullptr;
     bool m_cancelled = false;
+    QString m_url, m_apiKey;
+    QByteArray m_body;
+    bool m_retry = false;
+    int m_retries = 0;
+    QTimer* m_retryTimer = nullptr;
 };
 
 } // namespace dm::ai

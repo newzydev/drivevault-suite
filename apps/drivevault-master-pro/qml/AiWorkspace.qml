@@ -50,7 +50,7 @@ Item {
         } else if (part === "conversation" && ch.conversations.length > 0)       // open the newest saved conversation (to look at its step list and plan)
             ch.select(ch.conversations[0].id)
     }
-    function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : status === "waiting" ? "ai_waiting" : status === "working" ? "ai_working" : status === "compacting" ? "ai_compacting" : "ai_writing") }
+    function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : status === "waiting" ? "ai_waiting" : status === "working" ? "ai_working" : status === "compacting" ? "ai_compacting" : status === "retrying" ? "ai_retrying" : "ai_writing") }
     readonly property string modelLabel: Ai.activeModelLabel === "" ? Tr.s("ai_model_none") : (Ai.useRemote ? Ai.activeModelLabel + "  ·  " + Tr.s("remote_tag") : Ai.activeModelLabel)
     function why(code) { return Tr.s("why_" + code) }
     // what a model of this PC is good for (a short line in the model menu); a model the user added by hand gets none
@@ -347,7 +347,9 @@ Item {
         let text = root.statusText(root.ch.status)
         if (live && live.phase !== undefined) {
             const n = Number(live.chars).toLocaleString(Qt.locale("en_US"), "f", 0)
-            if (live.phase === "waiting")
+            if (live.phase === "retrying")                       // an online model: the connection failed, the same request is sent again (live.target = seconds, live.chars = the try)
+                text = Tr.s("live_retrying").replace("%1", live.chars).replace("%2", live.target)
+            else if (live.phase === "waiting")
                 text = Tr.s("live_waiting")
             else if (live.phase === "thinking")
                 text = Tr.s("live_thinking").replace("%1", n)

@@ -13,6 +13,7 @@
 #include <QMap>
 #include <QSet>
 #include <QObject>
+#include <QTimer>
 #include <QPair>
 #include <QString>
 #include <QStringList>
@@ -36,6 +37,8 @@ public:
         QString apiKey;
         QString model = QStringLiteral("local");
         bool templateKwargs = true;                        // send chat_template_kwargs (llama.cpp); off for an online model
+        bool remote = false;                               // an online model: a lost connection, a timeout or a busy service is asked again with growing pauses (RetryPolicy)
+        int requestTimeoutMs = 600000;                     // no data for this long: the request is given up (an online model: RetryPolicy::kTimeoutMs, then asked again)
         bool localServer = true;                           // the model is the llama-server of this PC: a lost connection starts it again (serverLost); off for an online model
         QString folder;                                   // "" = no file tools
         bool allowEdits = false;                           // write_file is offered
@@ -92,6 +95,7 @@ signals:
     // While the model answers (the answer is read as a stream): phase waiting (the prompt is read) | thinking | writing (text) | tool (the arguments of a tool call
     // grow: `tool` is its name, `target` the file / command when it is already known, `chars` how much was written). An empty phase: the answer is complete.
     void generating(const QString& phase, const QString& tool, const QString& target, int chars);
+    void textRetracted(int chars);                         // an online try failed after chars characters of text were shown: take them back (the answer starts again)
     void stepEvent(int no, const QString& kind, const QString& target, const QString& state, const QString& note);
     void finished(bool ok, const QString& code, const QString& detail);   // code: "" | cancelled | tooManySteps | http<status> | network | badReply | empty
 
@@ -129,8 +133,14 @@ private:
         bool abortedLong = false;                          // we stopped the answer: a tool call grew too long
         QString lastPhase;                                 // what `generating` showed last (a change is shown at once)
         QElapsedTimer progress;
+        int emitted = 0;                                   // characters of text this try showed (taken back when the try is repeated)
     };
     Stream m_stream;
+    bool retryRemote(const QString& why, int retryAfterMs, bool retryable);   // an online model failed in a way that goes away: ask again after a pause (true = scheduled)
+    void retractPartial();                                 // takes back the text of a failed try
+    QTimer* m_retryTimer = nullptr;
+    int m_retries = 0;                                     // tries after the first one for the request that is repeated now (0 again after an answer)
+    bool m_wroteTextAtStart = false, m_joinNextAtStart = false;
     QString m_afterCalls;                                  // a note for the model, added after the result of a kept (cut) write
     bool m_lastResultError = false;
     int m_salvages = 0;                                    // parts of cut files kept in this job

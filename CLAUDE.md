@@ -11,7 +11,7 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 | Folder | Program |
 |---|---|
 | `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.16.1 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
-| `apps/drivevault-master-pro` | DriveVault Master Pro 1.35.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
+| `apps/drivevault-master-pro` | DriveVault Master Pro 1.36.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
 | `apps/drivevault-pdf-pro` | DriveVault PDF Pro 1.22.1 (plan in `apps/drivevault-pdf-pro/docs/PDF-Pro-Plan.md`). PDFium + qpdf, Thai OCR with ONNX Runtime. Accent colour red `#EF4444`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
 | `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md), `run-master-pro.bat` / `run-video-editor.bat` / `run-pdf-pro.bat` (open the Release build without installing: Qt on PATH, then start the exe; extra arguments are passed on - use these for the smoke start). |
@@ -32,7 +32,7 @@ Planned (do not pretend they exist): Image Editor Pro, Audio Editor Pro. New pro
 - **Verify before you say "done" - only what the change needs** (tests are slow and their output costs context):
   1. Docs / agent files / comments only: no build. Run `check-agent-files.ps1` if a CLAUDE.md changed.
   2. Code or QML of **one** app: that app's `scripts\build.ps1 -Test` only (never the other app, never packaging). A smoke start (exe `--screenshot` exits 0 and writes a picture) is enough proof that the program opens; do not drive long UI / export scenarios by hand.
-  3. Installer, packaging, `shared/scripts`, version resource or licence changes, and before a release the owner announces: build the installers with the app's `package.ps1` (Master Pro first, then Video Editor). **Not** before every commit.
+  3. Installer, packaging, `shared/scripts`, version resource or licence changes, and before a release the owner announces: build the installers with each app's `package.ps1` (any order: the program installers do not carry Master Pro, they download it). **Not** before every commit.
   3a. **Do not test the installer / uninstaller.** The installer and uninstaller already work, and running them touches the owner's installed DriveVault programs and raises Windows notifications. Never run `test-installer.ps1` or `scripts\build-all.ps1` (it ends with the installer test), never install / uninstall / reinstall any DriveVault program as a check, unless the owner asks for it in that message. Verify an installer or packaging change by building it (`package.ps1` with its gates), then open the program from `build\release\bin` (smoke start) and try its main functions (open, a short use of the feature you changed) without installing anything. Say in the summary that the installer was built but not install-tested.
   4. Redirect long output to a file (`cmd /c "... > %TEMP%\x.log 2>&1"`) and read only the tail or the failing lines. Run slow steps in the background.
   5. **Silent**: tests and smoke starts must never play sound (`DV_NO_AUDIO=1`, already set by CMake for every test; set it yourself when starting an exe or test binary by hand).
@@ -47,7 +47,7 @@ Planned (do not pretend they exist): Image Editor Pro, Audio Editor Pro. New pro
 .\apps\<app>\scripts\build.ps1 -Test          # one app: configure + build Release + ctest
 ```
 
-Order matters: the Video Editor installer carries the Master Pro installer, so Master Pro is packaged first.
+The program installers (Video Editor, PDF Pro) do not carry Master Pro: each one checks GitHub for the newest Master Pro release and downloads it, so the order of packaging does not matter - but a clean PC only gets the hub once a Master Pro Release is published.
 
 ## Platform quirks that cost time before
 
@@ -61,7 +61,7 @@ Order matters: the Video Editor installer carries the Master Pro installer, so M
 
 - Install layout: Master Pro in `C:\Program Files\DriveVault`, every program in `C:\Program Files\DriveVault\Common\DriveVault <Name>` (per-user: `%LOCALAPPDATA%\Programs\DriveVault\...`).
 - Registry `Software\DriveVault\Products\<Key>` (DisplayName, Version, InstallDir, Executable, Manifest, AccentColor, Publisher, Uninstaller) + `product.json` in each program folder;
-  `Software\DriveVault\MasterPro` for the hub. Every program installer carries and silently runs the Master Pro setup first when it is missing / older.
+  `Software\DriveVault\MasterPro` for the hub. Every program installer checks GitHub (releases of `newzydev/drivevault-suite`, tag `drivevault-master-pro-v<x.y.z>`) for the newest Master Pro, downloads it (SHA-256 checked, retried) and silently runs it first when it is missing / older; offline or a failure never blocks the install of the program (`/NOMASTER` skips the step).
 - Inno Setup `AppId` values never change once released: Video Editor `{6E1B7A52-4C3D-4F7E-9A3B-D17E5A0C2F11}`, Master Pro `{B3A7C1D4-5E2F-4A86-9C10-7D2E8F4A6B35}`.
 - Setup exes carry a version resource with `CompanyName = DriveVault` and `ProductName = <program name>`.
 - Release gates (run by each `package.ps1`): clean-machine import check, license audit (FFmpeg LGPL-only, no GPL-only Qt, every file has an owner), notices present. Do not bypass them.
@@ -104,7 +104,7 @@ Edit the templates (or the per-product section 6 in the script), run the script,
 | not compatible with what users have (project file or settings cannot be read any more, install layout / registry contract changes) | major | 1.1.0 -> 2.0.0 |
 - Any commit that changes what the program does bumps that program's version **in the same commit**. Docs / agent files / scripts / comments / tests only: no bump.
 - There is no bump script yet, so update **every** place by hand and check with a search for the old number (exclude `build/`, `dist/`, `.tools/`): `CMakeLists.txt` (`project(... VERSION ...)`, the single source for the exe / version resource where used), `src/**/app.rc`, `installer/windows/*.iss` (the `#define AppVersion` default - the Video Editor one is only a fallback, `package.ps1` passes the real number; Master Pro's is the real one), the app's `README.md`, the **download table of the root `README.md`** (one plain Markdown table, a row per program incl. the planned ones; per released program: the version cell, the badge `Download-<version>` / `alt` text and the two links: `releases/download/<tag>/<setup file>` and `releases/tag/<tag>`; the links work once the owner publishes the Release), user guides, `docs/release-notes.txt`, and the tests / `scripts/test-installer.ps1` that assert the number. Keep the Inno `AppId` unchanged.
-- The Video Editor installer carries Master Pro: when Master Pro's version changes, the installers must be rebuilt with each app's `package.ps1` (Master Pro first) before the owner publishes a release, so both agree (`NeedMaster` installs the newer one) - not on every commit.
+- The program installers do not carry Master Pro (they download the newest release from GitHub): a new Master Pro version needs no rebuild of the other installers.
 - Add an entry at the **top** of the program's `docs/release-notes.txt` (`vX.Y.Z (YYYY-MM-DD): ...`) in the same commit; Keep the unsigned-installer note while installers are unsigned.
 - **Publishing a release** (what Master Pro's "Check for updates" reads; contract in `docs/suite-integration.md`). The owner does it on GitHub (Releases > Draft a new release; the `gh` CLI is not installed), after the version commit is pushed and `package.ps1` passed:
   1. Tag `<slug>-v<x.y.z>` on `main`, one per program release: `drivevault-video-editor-pro-v1.0.1`, `drivevault-master-pro-v1.1.0` (the program folder name below `apps/` + `-v` + version) (not `v1.0.1` alone, because two programs share the repository). Title = program name + version; description = the new `release-notes.txt` entry.

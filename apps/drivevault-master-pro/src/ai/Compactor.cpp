@@ -1,4 +1,5 @@
 #include "Compactor.h"
+#include "RetryPolicy.h"
 
 #include "HttpChat.h"
 
@@ -8,6 +9,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QTimer>
 
 namespace dm::ai {
 
@@ -15,6 +17,9 @@ Compactor::Compactor(QNetworkAccessManager* net, QObject* parent)
     : QObject(parent)
     , m_net(net)
 {
+    m_retryTimer = new QTimer(this);
+    m_retryTimer->setSingleShot(true);
+    connect(m_retryTimer, &QTimer::timeout, this, [this] { send(); });
 }
 
 Compactor::~Compactor()
@@ -40,9 +45,9 @@ QString Compactor::systemPrompt(const QString& focus)
     return s;
 }
 
-QString Compactor::start(const QString& baseUrl, const QString& apiKey, const QString& transcript, const QString& focus, int maxTokens, const QString& model)
+QString Compactor::start(const QString& baseUrl, const QString& apiKey, const QString& transcript, const QString& focus, int maxTokens, const QString& model, bool retry)
 {
-    if (m_reply)
+    if (running())
         return QStringLiteral("busy");
     if (!HttpChat::urlAllowed(baseUrl + QStringLiteral("/chat/completions")))
         return QStringLiteral("badUrl");
@@ -52,12 +57,24 @@ QString Compactor::start(const QString& baseUrl, const QString& apiKey, const QS
     QJsonObject body{{"model", model}, {"messages", messages}, {"stream", false}, {"max_tokens", maxTokens > 0 ? maxTokens : kSummaryTokens}};
     if (model == QLatin1String("local"))                     // llama.cpp only (an online service may refuse a field it does not know)
         body["chat_template_kwargs"] = QJsonObject{{"enable_thinking", false}};
-    QNetworkRequest req{QUrl(baseUrl + QStringLiteral("/chat/completions"))};
+    m_url = baseUrl + QStringLiteral("/chat/completions");
+    m_apiKey = apiKey;
+    m_body = QJsonDocument(body).toJson(QJsonDocument::Compact);
+    m_retry = retry;
+    m_retries = 0;
+    m_retryTimer->stop();
+    send();
+    return {};
+}
+
+void Compactor::send()
+{
+    QNetworkRequest req{QUrl(m_url)};
     req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
-    if (!apiKey.isEmpty())
-        req.setRawHeader("Authorization", "Bearer " + apiKey.toUtf8());
-    req.setTransferTimeout(600000);
-    m_reply = m_net->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
+    if (!m_apiKey.isEmpty())
+        req.setRawHeader("Authorization", "Bearer " + m_apiKey.toUtf8());
+    req.setTransferTimeout(m_retry ? RetryPolicy::kTimeoutMs : 600000);        // an online model that sends nothing for two minutes is given up and asked again
+    m_reply = m_net->post(req, m_body);
     connect(m_reply, &QNetworkReply::finished, this, [this] {
         QNetworkReply* reply = m_reply;
         m_reply = nullptr;
@@ -65,6 +82,7 @@ QString Compactor::start(const QString& baseUrl, const QString& apiKey, const QS
         const QByteArray data = reply->readAll();
         const QNetworkReply::NetworkError error = reply->error();
         const QString errorString = reply->errorString();
+        const int retryAfter = RetryPolicy::retryAfterMs(reply->rawHeader("Retry-After"));
         reply->deleteLater();
         if (m_cancelled) {
             emit finished(false, {}, QStringLiteral("cancelled"));
@@ -72,32 +90,54 @@ QString Compactor::start(const QString& baseUrl, const QString& apiKey, const QS
         }
         const QJsonObject root = QJsonDocument::fromJson(data).object();
         if (status >= 400) {
+            if (retryLater(retryAfter, RetryPolicy::httpRetryable(status)))
+                return;
             emit finished(false, root.value(QLatin1String("error")).toObject().value(QLatin1String("message")).toString(), QStringLiteral("http%1").arg(status));
             return;
         }
         if (error != QNetworkReply::NoError) {
+            if (retryLater(0, RetryPolicy::networkRetryable(error)))
+                return;
             emit finished(false, errorString, QStringLiteral("network"));
             return;
         }
         const QJsonObject message = root.value(QLatin1String("choices")).toArray().first().toObject().value(QLatin1String("message")).toObject();
         if (message.isEmpty()) {
+            if (retryLater(0, true))                          // an answer that is not an answer: the service had a hiccup
+                return;
             emit finished(false, {}, QStringLiteral("badReply"));
             return;
         }
         const QString text = message.value(QLatin1String("content")).toString().trimmed();
         if (text.isEmpty()) {
+            if (retryLater(0, true))
+                return;
             emit finished(false, {}, QStringLiteral("empty"));
             return;
         }
         emit finished(true, text, {});
     });
-    return {};
+}
+
+// An online model failed in a way that goes away by itself: the same request is sent again after a pause that grows (RetryPolicy). false = no more tries.
+bool Compactor::retryLater(int retryAfterMs, bool retryable)
+{
+    if (!m_retry || !retryable || m_retries >= RetryPolicy::kMaxRetries)
+        return false;
+    ++m_retries;
+    m_retryTimer->start(RetryPolicy::delayMs(m_retries, retryAfterMs));
+    return true;
 }
 
 void Compactor::cancel()
 {
-    if (!m_reply)
+    if (!m_reply) {
+        if (m_retryTimer->isActive()) {                       // cancelled while waiting for the next try
+            m_retryTimer->stop();
+            emit finished(false, {}, QStringLiteral("cancelled"));
+        }
         return;
+    }
     m_cancelled = true;
     m_reply->abort();
 }

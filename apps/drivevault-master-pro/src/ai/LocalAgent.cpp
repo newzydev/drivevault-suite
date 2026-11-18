@@ -1,6 +1,7 @@
 #include "LocalAgent.h"
 
 #include "HttpChat.h"
+#include "RetryPolicy.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -126,6 +127,14 @@ LocalAgent::LocalAgent(QNetworkAccessManager* net, QObject* parent)
     , m_net(net)
     , m_web(new WebTools(net, this))
 {
+    m_retryTimer = new QTimer(this);
+    m_retryTimer->setSingleShot(true);
+    connect(m_retryTimer, &QTimer::timeout, this, [this] {          // the pause is over: the same request is sent again
+        if (!m_running || m_cancelled)
+            return;
+        --m_steps;                                                 // (a repeated request is not a new round of the job)
+        step();
+    });
 }
 
 LocalAgent::~LocalAgent()
@@ -194,6 +203,8 @@ QString LocalAgent::start(const Config& c)
     m_salvages = 0;
     m_serverRetries = 0;
     m_awaitingServer = false;
+    m_retryTimer->stop();
+    m_retries = 0;
     m_cancelled = false;
     m_wroteText = false;
     m_running = true;
@@ -212,6 +223,7 @@ void LocalAgent::resume()
 void LocalAgent::cancel()
 {
     m_awaitingServer = false;
+    m_retryTimer->stop();                                   // (cancelled while waiting for the next try)
     if (!m_running)
         return;
     m_cancelled = true;
@@ -288,13 +300,41 @@ void LocalAgent::step()
     req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
     if (!m_config.apiKey.isEmpty())
         req.setRawHeader("Authorization", "Bearer " + m_config.apiKey.toUtf8());
-    req.setTransferTimeout(600000);                          // no data for ten minutes (a long prompt on a slow processor)
+    req.setTransferTimeout(m_config.requestTimeoutMs);       // no data for ten minutes (a long prompt on a slow processor); an online model: two minutes, then asked again
     m_stream = Stream();
+    m_wroteTextAtStart = m_wroteText;
+    m_joinNextAtStart = m_joinNext;
     m_stream.progress.start();
     m_reply = m_net->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
     connect(m_reply, &QNetworkReply::readyRead, this, &LocalAgent::onReadyRead);
     connect(m_reply, &QNetworkReply::finished, this, &LocalAgent::onReply);
     emit generating(QStringLiteral("waiting"), {}, {}, 0);   // the prompt is being read
+}
+
+// An online model failed in a way that goes away by itself (the connection dropped, a timeout, a busy or restarting service, a limit per minute): the same request is
+// asked again after a pause that grows (RetryPolicy), up to kMaxRetries times - nothing of the failed try is kept (its text is taken back), nothing is done twice (a try that
+// failed did not run any tool). The page shows a line each time, so nothing happens silently.
+void LocalAgent::retractPartial()
+{
+    if (m_stream.emitted > 0) {
+        emit textRetracted(m_stream.emitted);
+        m_stream.emitted = 0;
+    }
+    m_wroteText = m_wroteTextAtStart;
+    m_joinNext = m_joinNextAtStart;
+}
+
+bool LocalAgent::retryRemote(const QString& why, int retryAfterMs, bool retryable)
+{
+    if (!m_config.remote || !retryable || m_cancelled || m_retries >= RetryPolicy::kMaxRetries)
+        return false;
+    ++m_retries;
+    const int delay = RetryPolicy::delayMs(m_retries, retryAfterMs);
+    retractPartial();
+    note(QStringLiteral("Connection problem (%1): trying again in %2 s (%3 of %4)").arg(why.simplified().left(80)).arg(qMax(1, (delay + 500) / 1000)).arg(m_retries).arg(RetryPolicy::kMaxRetries));
+    emit generating(QStringLiteral("retrying"), {}, QString::number(qMax(1, (delay + 500) / 1000)), m_retries);
+    m_retryTimer->start(delay);
+    return true;
 }
 
 // ---- the streamed answer -------------------------------------------------------------------------------------------------------------------
@@ -368,17 +408,21 @@ void LocalAgent::processEvent(const QByteArray& event)
                 m_stream.content += text;                                   // white space at the start waits for the first real character
                 if (!m_stream.content.trimmed().isEmpty()) {
                     m_stream.contentStarted = true;
-                    if (m_wroteText && !m_joinNext)
+                    if (m_wroteText && !m_joinNext) {
                         emit piece(QStringLiteral("\n\n"));
+                        m_stream.emitted += 2;
+                    }
                     m_joinNext = false;
                     m_wroteText = true;
                     QString first = m_stream.content;
                     first.remove(QRegularExpression(QStringLiteral("^\\s+")));
                     emit piece(first);
+                    m_stream.emitted += int(first.size());
                 }
             } else {
                 m_stream.content += text;
                 emit piece(text);
+                m_stream.emitted += int(text.size());
             }
         }
         m_stream.reasoningChars += delta.value(QLatin1String("reasoning_content")).toString().size() + delta.value(QLatin1String("reasoning")).toString().size();
@@ -440,6 +484,7 @@ void LocalAgent::onReply()
     const QByteArray data = reply->readAll();
     const QNetworkReply::NetworkError error = reply->error();
     const QString errorString = reply->errorString();
+    const int retryAfter = RetryPolicy::retryAfterMs(reply->rawHeader("Retry-After"));
     const bool eventStream = reply->header(QNetworkRequest::ContentTypeHeader).toString().contains(QLatin1String("event-stream"), Qt::CaseInsensitive) && status < 400;
     reply->deleteLater();
     emit generating({}, {}, {}, 0);                                   // the answer is complete
@@ -518,10 +563,16 @@ void LocalAgent::onReply()
             step();
             return;
         }
+        if (retryRemote(QStringLiteral("HTTP %1").arg(status), retryAfter, RetryPolicy::httpRetryable(status)))
+            return;
         end(false, QStringLiteral("http%1").arg(status), message);
         return;
     }
-    if (error != QNetworkReply::NoError && !m_stream.abortedLong) {
+    // An online model whose answer was complete (it said why it stopped) is complete even when the connection broke at the very end.
+    const bool completeOnline = m_config.remote && !m_stream.finish.isEmpty();
+    if (error != QNetworkReply::NoError && !m_stream.abortedLong && !completeOnline) {
+        if (retryRemote(errorString, 0, RetryPolicy::networkRetryable(error)))
+            return;
         const bool lost = error == QNetworkReply::RemoteHostClosedError || error == QNetworkReply::ConnectionRefusedError || error == QNetworkReply::UnknownNetworkError;
         const bool nothing = m_stream.calls.isEmpty() && m_stream.content.trimmed().isEmpty();
         if (lost && nothing && m_serverRetries < 2 && m_config.localServer) {                 // the server stopped or crashed: it is started again and the same question asked again
@@ -537,6 +588,7 @@ void LocalAgent::onReply()
         }
         cutError = true;
     }
+    m_retries = 0;                                                    // an answer arrived: the next failure starts counting again
     const QJsonObject usageObject = root.value(QLatin1String("usage")).toObject();
     if (usageObject.contains(QLatin1String("prompt_tokens")))
         emit usage(usageObject.value(QLatin1String("prompt_tokens")).toInt(), usageObject.value(QLatin1String("completion_tokens")).toInt());

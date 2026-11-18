@@ -2,6 +2,7 @@
 
 #include "EmbeddedKey.h"
 #include "Hub.h"
+#include "RetryPolicy.h"
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -463,12 +464,19 @@ void AiChannel::sendChat()
         if (const Conversation* cur = find(m_runId); cur && cur->messages.size() >= 2 && m_service->apiVision())
             r.images = cur->messages.at(cur->messages.size() - 2).images;              // the pictures the user attached to this question
         r.extraBody = QJsonObject{{"max_tokens", effort.maxTokens}};
+        r.retry = m_service->remoteActive();                                          // an online model: a lost connection, a timeout or a busy service is asked again (RetryPolicy)
+        r.timeoutMs = r.retry ? RetryPolicy::kTimeoutMs : 600000;
         if (!m_service->remoteActive())                                                // llama.cpp only: an online service may refuse a field it does not know
             r.extraBody["chat_template_kwargs"] = QJsonObject{{"enable_thinking", effort.thinking}};
         if (!m_http) {
             m_http = new HttpChat(m_service->net(), this);
             connect(m_http, &HttpChat::piece, this, &AiChannel::appendPiece);
             connect(m_http, &HttpChat::thinking, this, [this] { setStatus(QStringLiteral("thinking")); });
+            connect(m_http, &HttpChat::retracted, this, &AiChannel::retractText);
+            connect(m_http, &HttpChat::retrying, this, [this](const QString& why, int retry, int maxRetries, int delayMs) {
+                appendActivity(QStringLiteral("Connection problem (%1): trying again in %2 s (%3 of %4)").arg(why.simplified().left(80)).arg(qMax(1, (delayMs + 500) / 1000)).arg(retry).arg(maxRetries));
+                setStatus(QStringLiteral("retrying"));
+            });
             connect(m_http, &HttpChat::finished, this, &AiChannel::finish);
         }
         const QString err = m_http->start(r);
@@ -491,6 +499,8 @@ void AiChannel::sendTools()
         c.apiKey = m_service->apiKey();
         c.model = m_service->apiModel();
         c.templateKwargs = c.localServer = !m_service->remoteActive();
+        c.remote = m_service->remoteActive();                      // an online model: a lost connection, a timeout or a busy service is asked again (RetryPolicy)
+        c.requestTimeoutMs = c.remote ? RetryPolicy::kTimeoutMs : 600000;
         c.folder = isAgent() ? m_folder : QString();
         c.allowEdits = isAgent() && canWrite();
         c.approveWrites = isAgent() && m_permission == QLatin1String("ask");
@@ -583,6 +593,7 @@ void AiChannel::sendTools()
                         m_localAgent->resume();
                 });
             });
+            connect(m_localAgent, &LocalAgent::textRetracted, this, &AiChannel::retractText);
             connect(m_localAgent, &LocalAgent::generating, this, [this](const QString& phase, const QString& tool, const QString& target, int chars) {   // the live line
                 Conversation* conv = find(m_runId);
                 if (!conv || conv->messages.isEmpty())
@@ -686,6 +697,19 @@ void AiChannel::appendPiece(const QString& text)
     c->messages.last().text += text;
     if (m_status != QLatin1String("writing"))
         setBusy(true, QStringLiteral("writing"));
+    scheduleView();
+}
+
+// A try of an online model failed after some text was shown and is repeated: the text of the failed try is taken back (the answer starts again).
+void AiChannel::retractText(int chars)
+{
+    if (!m_busy || chars <= 0)
+        return;
+    Conversation* c = find(m_runId);
+    if (!c || c->messages.isEmpty())
+        return;
+    QString& text = c->messages.last().text;
+    text.chop(qMin(chars, int(text.size())));
     scheduleView();
 }
 
@@ -1189,7 +1213,7 @@ void AiChannel::startCompaction(const QString& focus, bool automatic, const QStr
             m_compactor = new Compactor(m_service->net(), this);
             connect(m_compactor, &Compactor::finished, this, &AiChannel::finishCompaction);
         }
-        const QString err = m_compactor->start(m_service->apiBaseUrl(), m_service->apiKey(), transcript, focus, Compactor::kSummaryTokens, m_service->apiModel());
+        const QString err = m_compactor->start(m_service->apiBaseUrl(), m_service->apiKey(), transcript, focus, Compactor::kSummaryTokens, m_service->apiModel(), m_service->remoteActive());
         if (!err.isEmpty())
             finishCompaction(false, {}, err);
         server->touch();
