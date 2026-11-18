@@ -7,6 +7,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include <shellapi.h>
+#include <wincrypt.h>
 #endif
 
 #include <algorithm>
@@ -94,6 +95,43 @@ int compareVersions(const QString& a, const QString& b)
             return xi < yi ? -1 : 1;
     }
     return 0;
+}
+
+QByteArray protectForUser(const QByteArray& plain)
+{
+#ifdef Q_OS_WIN
+    if (plain.isEmpty())
+        return {};
+    DATA_BLOB in{DWORD(plain.size()), reinterpret_cast<BYTE*>(const_cast<char*>(plain.constData()))};
+    DATA_BLOB out{};
+    if (!CryptProtectData(&in, L"DriveVault AI key", nullptr, nullptr, nullptr, CRYPTPROTECT_UI_FORBIDDEN, &out))
+        return {};
+    const QByteArray sealed(reinterpret_cast<const char*>(out.pbData), int(out.cbData));
+    LocalFree(out.pbData);
+    return sealed;
+#else
+    Q_UNUSED(plain)
+    return {};
+#endif
+}
+
+QByteArray unprotectForUser(const QByteArray& sealed)
+{
+#ifdef Q_OS_WIN
+    if (sealed.isEmpty())
+        return {};
+    DATA_BLOB in{DWORD(sealed.size()), reinterpret_cast<BYTE*>(const_cast<char*>(sealed.constData()))};
+    DATA_BLOB out{};
+    if (!CryptUnprotectData(&in, nullptr, nullptr, nullptr, nullptr, CRYPTPROTECT_UI_FORBIDDEN, &out))
+        return {};
+    const QByteArray plain(reinterpret_cast<const char*>(out.pbData), int(out.cbData));
+    SecureZeroMemory(out.pbData, out.cbData);
+    LocalFree(out.pbData);
+    return plain;
+#else
+    Q_UNUSED(sealed)
+    return {};
+#endif
 }
 
 } // namespace dm::win

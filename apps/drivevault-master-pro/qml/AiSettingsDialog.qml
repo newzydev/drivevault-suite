@@ -71,7 +71,7 @@ Popup {
                     Layout.fillWidth: true
                     spacing: 8
 
-                    Note { text: Tr.s(Ai.webEnabled ? "privacy_local_web" : "privacy_local") }
+                    Note { text: Tr.s(Ai.useRemote ? (Ai.webEnabled ? "privacy_remote_web" : "privacy_remote") : (Ai.webEnabled ? "privacy_local_web" : "privacy_local")) }
                     Heading { text: Tr.s("set_web") }
                     Card {
                         RowLayout {
@@ -81,6 +81,37 @@ Popup {
                             AiSwitch { objectName: "webSwitch"; checked: Ai.webEnabled; onToggled: Ai.webEnabled = checked }
                         }
                         Text { Layout.fillWidth: true; text: Tr.s("set_web_note"); font.pixelSize: 12; color: Theme.textSecondary; wrapMode: Text.Wrap }
+                    }
+
+                    // online models: the user's own Hugging Face token (kept sealed by Windows, never shown again); a model is chosen in the menu of the message box
+                    Heading { text: Tr.s("set_remote") }
+                    Card {
+                        Text { Layout.fillWidth: true; text: Tr.s("set_remote_help"); font.pixelSize: 12; color: Theme.textSecondary; wrapMode: Text.Wrap }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            visible: Ai.remoteKeySet
+                            spacing: 8
+                            Rectangle { width: 8; height: 8; radius: 4; color: Theme.success }
+                            Text { Layout.fillWidth: true; text: Tr.s("set_remote_saved").replace("%1", Ai.remoteKeyHint); font.pixelSize: 13; color: Theme.text; wrapMode: Text.Wrap }
+                            MButton { objectName: "remoteKeyClear"; compact: true; text: Tr.s("set_remote_clear"); onClicked: Ai.clearRemoteKey() }
+                        }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+                            MField { id: keyField; objectName: "remoteKeyField"; Layout.fillWidth: true; secret: true; placeholderText: Tr.s("set_remote_ph"); onAccepted: keySave.clicked() }
+                            MButton {
+                                id: keySave
+                                objectName: "remoteKeySave"
+                                variant: "primary"
+                                text: Tr.s("set_remote_save")
+                                enabled: keyField.text.trim() !== ""
+                                onClicked: {
+                                    const e = Ai.setRemoteKey(keyField.text)
+                                    if (e === "") { keyField.clear(); dlg.say(Tr.s("set_remote_ok")) }
+                                    else dlg.say(Tr.s("set_remote_err_" + e))
+                                }
+                            }
+                        }
                     }
 
                     Heading { text: Tr.s("set_engine") }

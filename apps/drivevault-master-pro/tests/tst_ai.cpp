@@ -1840,7 +1840,9 @@ private slots:
             QFile f(dataDir + "/ai/settings.json");
             QVERIFY(f.open(QIODevice::ReadOnly));
             const QByteArray settings = f.readAll();
-            QVERIFY(!settings.contains("openai") && !settings.contains("anthropic") && !settings.contains("key"));
+            QVERIFY(!settings.contains("openai") && !settings.contains("anthropic"));
+            const QJsonObject remote = QJsonDocument::fromJson(settings).object().value("remote").toObject();    // (since 1.30.0: the online model; nothing chosen, no key)
+            QVERIFY(remote.value("key").toString().isEmpty() && remote.value("model").toString().isEmpty() && !remote.value("use").toBool());
         }
         {   // a new start: the conversation comes back
             dm::Hub::Options o;
@@ -1854,6 +1856,71 @@ private slots:
             QCOMPARE(ask->messages().size(), 2);
             ask->remove(firstId);
             QCOMPARE(ask->conversations().size(), 0);
+        }
+    }
+    // An online model (Hugging Face Inference Providers): chosen in the menu, needs the user's key, the request carries the key and the model id (and none of the
+    // llama.cpp-only fields), the key is only on disk sealed by Windows, and choosing a model of this PC leaves the online one. The service is a fake one on this computer.
+    void anOnlineModelIsAskedWithTheKey()
+    {
+        FakeServer server;
+        server.body = sse({R"({"choices":[{"delta":{"content":"Online answer"}}]})", "[DONE]"});
+        const QString dataDir = m_dir.filePath("hub-remote");
+        const QString token = QStringLiteral("hf_TestTokenabcdefghijklmnop1234");
+        {
+            dm::Hub::Options o;
+            o.registryRoot = kRoot;
+            o.dataDir = dataDir;
+            dm::Hub hub(o);
+            AiService ai(&hub);
+            ai.setRemoteBaseUrl(server.base() + "/v1");
+            ai.setWebEnabled(false);
+            auto* ask = qobject_cast<AiChannel*>(ai.ask());
+            QVERIFY(ai.remoteModels().size() >= 3);
+            QVERIFY(!ai.useRemote());
+            ai.selectRemoteModel("not/in-the-list");                       // only the catalogue can be chosen
+            QVERIFY(!ai.useRemote());
+            ai.selectRemoteModel("openai/gpt-oss-120b");
+            QVERIFY(ai.useRemote());
+            QCOMPARE(ask->notReady(), QString("noKey"));                   // no key, no engine needed: the key is what is missing
+            QCOMPARE(ai.setRemoteKey("  "), QString("empty"));
+            QCOMPARE(ai.setRemoteKey("not a token"), QString("badFormat"));
+            QVERIFY(!ai.remoteKeySet());
+            QCOMPARE(ai.setRemoteKey(token), QString());
+            QVERIFY(ai.remoteKeySet());
+            QVERIFY(ai.remoteKeyHint().endsWith("1234") && !ai.remoteKeyHint().contains("TestToken"));
+            QCOMPARE(ask->notReady(), QString());
+            QCOMPARE(ai.activeModelLabel(), QString("GPT-OSS 120B"));
+            QCOMPARE(ask->send("hello"), QString());
+            QTRY_VERIFY_WITH_TIMEOUT(!ask->busy(), 10000);
+            QCOMPARE(ask->messages().at(1).toMap().value("text").toString(), QString("Online answer"));
+            QCOMPARE(ask->messages().at(1).toMap().value("errorCode").toString(), QString());
+            QVERIFY(server.lastRequest.contains("Bearer " + token.toUtf8()));
+            const QJsonObject body = requestBody(server.lastRequest);
+            QCOMPARE(body.value("model").toString(), QString("openai/gpt-oss-120b"));
+            QVERIFY(!body.contains("chat_template_kwargs"));
+            QFile f(dataDir + "/ai/settings.json");                        // the token is never on disk as text
+            QVERIFY(f.open(QIODevice::ReadOnly));
+            const QByteArray saved = f.readAll();
+            QVERIFY(!saved.contains("TestToken"));
+            QVERIFY(saved.contains("openai/gpt-oss-120b"));
+        }
+        {   // a new start: the choice and the key come back; a model of this PC leaves the online one; removing the key forgets it
+            dm::Hub::Options o;
+            o.registryRoot = kRoot;
+            o.dataDir = dataDir;
+            dm::Hub hub(o);
+            AiService ai(&hub);
+            QVERIFY(ai.useRemote() && ai.remoteKeySet());
+            QCOMPARE(ai.remoteModel(), QString("openai/gpt-oss-120b"));
+            QFile gguf(m_dir.filePath("local-after-remote.gguf"));
+            QVERIFY(gguf.open(QIODevice::WriteOnly));
+            gguf.write("x");
+            gguf.close();
+            ai.selectLocalModel(gguf.fileName());
+            QVERIFY(!ai.useRemote());
+            QVERIFY(ai.remoteKeySet());                                    // the key stays for the next time
+            ai.clearRemoteKey();
+            QVERIFY(!ai.remoteKeySet());
         }
     }
     void anErrorStaysInTheConversation()

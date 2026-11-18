@@ -40,7 +40,7 @@ QString Compactor::systemPrompt(const QString& focus)
     return s;
 }
 
-QString Compactor::start(const QString& baseUrl, const QString& apiKey, const QString& transcript, const QString& focus, int maxTokens)
+QString Compactor::start(const QString& baseUrl, const QString& apiKey, const QString& transcript, const QString& focus, int maxTokens, const QString& model)
 {
     if (m_reply)
         return QStringLiteral("busy");
@@ -49,8 +49,9 @@ QString Compactor::start(const QString& baseUrl, const QString& apiKey, const QS
     m_cancelled = false;
     const QJsonArray messages{QJsonObject{{"role", "system"}, {"content", systemPrompt(focus)}},
                               QJsonObject{{"role", "user"}, {"content", QStringLiteral("The conversation to summarize:\n\n") + transcript}}};
-    QJsonObject body{{"model", "local"}, {"messages", messages}, {"stream", false}, {"max_tokens", maxTokens > 0 ? maxTokens : kSummaryTokens},
-                     {"chat_template_kwargs", QJsonObject{{"enable_thinking", false}}}};
+    QJsonObject body{{"model", model}, {"messages", messages}, {"stream", false}, {"max_tokens", maxTokens > 0 ? maxTokens : kSummaryTokens}};
+    if (model == QLatin1String("local"))                     // llama.cpp only (an online service may refuse a field it does not know)
+        body["chat_template_kwargs"] = QJsonObject{{"enable_thinking", false}};
     QNetworkRequest req{QUrl(baseUrl + QStringLiteral("/chat/completions"))};
     req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
     if (!apiKey.isEmpty())

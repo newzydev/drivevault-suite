@@ -51,12 +51,16 @@ Item {
             ch.select(ch.conversations[0].id)
     }
     function statusText(status) { return Tr.s(status === "thinking" ? "ai_thinking" : status === "starting" ? "ai_starting" : status === "waiting" ? "ai_waiting" : status === "working" ? "ai_working" : status === "compacting" ? "ai_compacting" : "ai_writing") }
-    readonly property string modelLabel: Ai.localModelName === "" ? Tr.s("ai_model_none") : Ai.localModelName.replace(/\.gguf$/i, "")
+    readonly property string modelLabel: Ai.activeModelLabel === "" ? Tr.s("ai_model_none") : (Ai.useRemote ? Ai.activeModelLabel + "  ·  " + Tr.s("remote_tag") : Ai.activeModelLabel)
     function why(code) { return Tr.s("why_" + code) }
     // the text of an error of a reply: what happened, in words, plus what the service said
     function errorText(code, detail) {
         let text
-        if (Tr.s("err_" + code) !== "err_" + code)
+        if (Ai.useRemote && code.indexOf("http") === 0)                // an online model: the key, the credits and the limits are the usual reasons
+            text = Tr.s(["401", "402", "403", "429"].indexOf(code.substring(4)) >= 0 ? "err_remote_" + code.substring(4) : "err_http_remote").replace("%1", code.substring(4))
+        else if (Ai.useRemote && code === "network")
+            text = Tr.s("err_network_remote")
+        else if (Tr.s("err_" + code) !== "err_" + code)
             text = Tr.s("err_" + code)
         else if (code.indexOf("http") === 0)
             text = Tr.s("err_http").replace("%1", code.substring(4))
@@ -462,6 +466,21 @@ Item {
         id: mainMenu
         implicitWidth: 380
         delegate: MMenuItem {}
+        // a heading of the list (not an entry: no hover, no grey button look)
+        component SectionLabel: MenuItem {
+            property string note: ""
+            enabled: false
+            implicitHeight: note === "" ? 30 : 46
+            leftPadding: 14
+            rightPadding: 14
+            contentItem: Column {
+                spacing: 1
+                Text { text: parent.parent.text; font.pixelSize: 11; font.weight: Font.DemiBold; font.letterSpacing: 0.4; color: Theme.textSecondary }
+                Text { visible: parent.parent.note !== ""; width: parent.width; text: parent.parent.note; font.pixelSize: 11; color: Theme.textDisabled; wrapMode: Text.Wrap }
+            }
+            background: Item {}
+        }
+        SectionLabel { objectName: "menuLocalLabel"; text: Tr.s("menu_local") }
         Repeater {
             model: Ai.installedModels
             delegate: MMenuItem {
@@ -469,8 +488,30 @@ Item {
                 objectName: "modelItem"
                 text: modelData.name.replace(/\.gguf$/i, "") + "   (" + modelData.sizeText + ")"
                 checkable: true
-                checked: Ai.localModel === modelData.path
+                checked: !Ai.useRemote && Ai.localModel === modelData.path
                 onTriggered: Ai.selectLocalModel(modelData.path)
+            }
+        }
+        MenuSeparator { padding: 4; contentItem: Rectangle { implicitHeight: 1; color: Theme.border } }
+        // online models: asked with the user's own Hugging Face key; shown as choices only when there is a key, otherwise one entry that leads to the key field
+        SectionLabel { objectName: "menuRemoteLabel"; text: Tr.s("menu_remote"); note: Tr.s("menu_remote_note") }
+        Repeater {
+            model: Ai.remoteKeySet ? Ai.remoteModels : []
+            delegate: MMenuItem {
+                required property var modelData
+                objectName: "remoteItem"
+                text: modelData.title + "   ·   " + modelData.maker
+                checkable: true
+                checked: Ai.useRemote && Ai.remoteModel === modelData.id
+                onTriggered: Ai.selectRemoteModel(modelData.id)
+            }
+        }
+        Repeater {
+            model: Ai.remoteKeySet ? [] : [1]
+            delegate: MMenuItem {
+                objectName: "remoteSetKey"
+                text: Tr.s("menu_remote_setkey")
+                onTriggered: settings.open()
             }
         }
         MenuSeparator { padding: 4; contentItem: Rectangle { implicitHeight: 1; color: Theme.border } }
@@ -1294,7 +1335,7 @@ Item {
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: Tr.s(root.agent ? "ai_sub_agent" : "ai_sub_ask")
+                            text: Tr.s((root.agent ? "ai_sub_agent" : "ai_sub_ask") + (Ai.useRemote ? "_remote" : ""))
                             font.pixelSize: 14
                             color: Theme.textSecondary
                             horizontalAlignment: Text.AlignHCenter
@@ -1609,7 +1650,7 @@ Item {
                         SideTitle { visible: !root.agent; text: Tr.s("ai_side_model") }
                         Text { visible: !root.agent; Layout.fillWidth: true; text: root.modelLabel; font.pixelSize: 13; color: Theme.text; wrapMode: Text.WrapAnywhere }
                         SideTitle { visible: !root.agent; Layout.topMargin: 14; text: Tr.s("ai_side_privacy") }
-                        Text { visible: !root.agent; Layout.fillWidth: true; text: Tr.s(Ai.webEnabled ? "privacy_local_web" : "privacy_local"); font.pixelSize: 13; color: Theme.textSecondary; wrapMode: Text.Wrap }
+                        Text { visible: !root.agent || Ai.useRemote; Layout.fillWidth: true; text: Tr.s(Ai.useRemote ? (Ai.webEnabled ? "privacy_remote_web" : "privacy_remote") : (Ai.webEnabled ? "privacy_local_web" : "privacy_local")); font.pixelSize: 13; color: Theme.textSecondary; wrapMode: Text.Wrap }
 
                         // ---- environment: where the work happens ----
                         SideTitle { visible: root.agent; text: Tr.s("env_title") }

@@ -1,6 +1,7 @@
 #include "AiService.h"
 
 #include "Hub.h"
+#include "WinUtil.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -179,11 +180,16 @@ static QString localFolder(const QString& folder)
 
 QString AiChannel::notReady() const
 {
-    if (!m_service->engineFound())
-        return QStringLiteral("noEngine");
-    const QString model = m_service->localModel();
-    if (model.isEmpty() || !QFileInfo::exists(model))
-        return QStringLiteral("noModel");
+    if (m_service->remoteActive()) {                           // an online model: no engine and no file, but the key
+        if (!m_service->remoteKeySet())
+            return QStringLiteral("noKey");
+    } else {
+        if (!m_service->engineFound())
+            return QStringLiteral("noEngine");
+        const QString model = m_service->localModel();
+        if (model.isEmpty() || !QFileInfo::exists(model))
+            return QStringLiteral("noModel");
+    }
     if (isAgent() && (m_folder.isEmpty() || !QFileInfo(m_folder).isDir()))
         return QStringLiteral("noFolder");
     return {};
@@ -414,6 +420,10 @@ void AiChannel::withLocalServer(const std::function<void()>& run)
             return;
         run();
     };
+    if (m_service->remoteActive()) {                           // an online model: nothing to start here
+        go();
+        return;
+    }
     if (server->state() == LlamaServer::State::Ready && (server->isExternal() || server->modelPath() == model)) {
         go();
         return;
@@ -442,16 +452,18 @@ void AiChannel::sendChat()
         LlamaServer* server = m_service->llama();
         const Effort effort = Effort::of(m_effort);
         HttpChat::Request r;
-        r.baseUrl = server->baseUrl() + QStringLiteral("/v1");
-        r.apiKey = server->apiKey();
-        r.model = QStringLiteral("local");
+        r.baseUrl = m_service->apiBaseUrl();
+        r.apiKey = m_service->apiKey();
+        r.model = m_service->apiModel();
         r.system = systemPrompt() + summaryNote();
         QList<Message> past = find(m_runId)->messages;
         past.removeLast();                                         // the empty reply that is being written
         r.messages = historyFor(afterLastCompact(past), effort.historyChars);          // only what came after the last compaction (its summary is in the system prompt)
-        if (const Conversation* cur = find(m_runId); cur && cur->messages.size() >= 2 && server->visionActive())
+        if (const Conversation* cur = find(m_runId); cur && cur->messages.size() >= 2 && m_service->apiVision())
             r.images = cur->messages.at(cur->messages.size() - 2).images;              // the pictures the user attached to this question
-        r.extraBody = QJsonObject{{"chat_template_kwargs", QJsonObject{{"enable_thinking", effort.thinking}}}, {"max_tokens", effort.maxTokens}};
+        r.extraBody = QJsonObject{{"max_tokens", effort.maxTokens}};
+        if (!m_service->remoteActive())                                                // llama.cpp only: an online service may refuse a field it does not know
+            r.extraBody["chat_template_kwargs"] = QJsonObject{{"enable_thinking", effort.thinking}};
         if (!m_http) {
             m_http = new HttpChat(m_service->net(), this);
             connect(m_http, &HttpChat::piece, this, &AiChannel::appendPiece);
@@ -474,8 +486,10 @@ void AiChannel::sendTools()
         LlamaServer* server = m_service->llama();
         const Effort effort = Effort::of(m_effort);
         LocalAgent::Config c;
-        c.baseUrl = server->baseUrl() + QStringLiteral("/v1");
-        c.apiKey = server->apiKey();
+        c.baseUrl = m_service->apiBaseUrl();
+        c.apiKey = m_service->apiKey();
+        c.model = m_service->apiModel();
+        c.templateKwargs = c.localServer = !m_service->remoteActive();
         c.folder = isAgent() ? m_folder : QString();
         c.allowEdits = isAgent() && canWrite();
         c.approveWrites = isAgent() && m_permission == QLatin1String("ask");
@@ -485,14 +499,12 @@ void AiChannel::sendTools()
         c.web = m_service->webEnabled();
         if (isAgent() && !m_folder.isEmpty() && m_service->browserBridge()->compiledIn()) {
             c.browser = m_service->browserBridge();               // the browser of the program: the AI looks at the page it wrote
-            c.vision = server->visionActive();
+            c.vision = m_service->apiVision();
         }
         c.thinking = effort.thinking;
         c.maxTokens = effort.maxTokens;
         c.maxSteps = effort.maxSteps;
-        c.contextTokens = server->contextTokens();                // the window the running server really has (it falls back to the small one when memory is short)
-        if (server->isExternal())                                 // a server that was not started here (the tests): its window is unknown, assume the small one
-            c.contextTokens = LlamaServer::kSmallContextTokens;
+        c.contextTokens = m_service->contextWindow();             // the window the running server really has (it falls back to the small one when memory is short)
         const QString web = c.web ? QStringLiteral("\n\nYou can look things up on the Internet with web_search and fetch_page. Search when the answer needs current or unknown "
                                                    "facts (not for what you already know), open a page to read it, and say which pages you used (title and address). Do the search yourself: never tell the user "
                                                    "to search the web themselves.")
@@ -555,8 +567,8 @@ void AiChannel::sendTools()
         past.removeLast();
         c.history = historyFor(afterLastCompact(past), effort.historyChars);
         c.system += summaryNote();                                 // a compacted conversation: what happened before, in the model's own summary
-        if (const Conversation* cur = find(m_runId); cur && cur->messages.size() >= 2 && server->visionActive())
-            c.images = cur->messages.at(cur->messages.size() - 2).images;       // the pictures the user attached to this question (the model can see them)
+        if (const Conversation* cur = find(m_runId); cur && cur->messages.size() >= 2 && m_service->apiVision())
+            c.images =cur->messages.at(cur->messages.size() - 2).images;       // the pictures the user attached to this question (the model can see them)
         if (!m_localAgent) {
             m_localAgent = new LocalAgent(m_service->net(), this);
             if (m_pool)
@@ -1003,7 +1015,7 @@ void AiChannel::scheduleGit()
 // from the text (about 2.5 characters to a token).
 QVariantMap AiChannel::context() const
 {
-    int window = m_service->llama()->isExternal() ? LlamaServer::kSmallContextTokens : m_service->llama()->contextTokens();
+    int window = m_service->contextWindow();
     int used = 0, history = 0;
     bool exact = false, canCompact = false;
     for (const Conversation& c : m_conversations) {
@@ -1119,7 +1131,7 @@ QString AiChannel::transcriptFor(const Conversation& conversation) const
         out += QStringLiteral("Plan of the assistant now: ") + plan.join(QStringLiteral("; ")) + QStringLiteral("\n");
     }
     // it must fit in the window together with the answer: a longer text keeps its beginning and (more of) its end
-    const int window = m_service->llama()->isExternal() ? LlamaServer::kSmallContextTokens : m_service->llama()->contextTokens();
+    const int window = m_service->contextWindow();
     const int budget = qMax(6000, (window - Compactor::kSummaryTokens - 1500) * 5 / 2);
     if (out.size() > budget) {
         const int head = budget / 5;
@@ -1176,7 +1188,7 @@ void AiChannel::startCompaction(const QString& focus, bool automatic, const QStr
             m_compactor = new Compactor(m_service->net(), this);
             connect(m_compactor, &Compactor::finished, this, &AiChannel::finishCompaction);
         }
-        const QString err = m_compactor->start(server->baseUrl() + QStringLiteral("/v1"), server->apiKey(), transcript, focus, Compactor::kSummaryTokens);
+        const QString err = m_compactor->start(m_service->apiBaseUrl(), m_service->apiKey(), transcript, focus, Compactor::kSummaryTokens, m_service->apiModel());
         if (!err.isEmpty())
             finishCompaction(false, {}, err);
         server->touch();
@@ -1404,7 +1416,7 @@ AiService::AiService(Hub* hub, QObject* parent)
             return;
         }
         refreshModels();
-        if (ok && m_localModel.isEmpty())
+        if (ok && m_localModel.isEmpty() && !m_useRemote)
             selectLocalModel(m_downloadFile);                // the first model becomes the chosen one
     });
     connect(m_ask, &AiChannel::changed, this, &AiService::saveSettings);
@@ -1502,6 +1514,15 @@ void AiService::loadSettings()
     m_ask->applySettings(o.value(QLatin1String("ask")).toObject().toVariantMap());
     m_agent->applySettings(o.value(QLatin1String("agent")).toObject().toVariantMap());
     m_localModel = o.value(QLatin1String("local")).toObject().value(QLatin1String("model")).toString();
+    const QJsonObject remote = o.value(QLatin1String("remote")).toObject();
+    m_remoteModel = remote.value(QLatin1String("model")).toString();
+    bool known = false;                                      // only an id of the catalogue is accepted from the file
+    for (const QVariant& v : remoteModels())
+        known = known || v.toMap().value(QStringLiteral("id")).toString() == m_remoteModel;
+    if (!known)
+        m_remoteModel.clear();
+    m_useRemote = remote.value(QLatin1String("use")).toBool(false) && !m_remoteModel.isEmpty();
+    m_remoteKey = QString::fromUtf8(dm::win::unprotectForUser(QByteArray::fromBase64(remote.value(QLatin1String("key")).toString().toLatin1())));
     m_web = o.value(QLatin1String("web")).toBool(true);
 }
 
@@ -1511,8 +1532,10 @@ void AiService::saveSettings()
     o["ask"] = QJsonObject::fromVariantMap(m_ask->settingsValues());
     o["agent"] = QJsonObject::fromVariantMap(m_agent->settingsValues());
     o["local"] = QJsonObject{{"model", m_localModel}};
+    // the token is never written as text: sealed by Windows (DPAPI, this user on this PC only), then base64
+    o["remote"] = QJsonObject{{"use", m_useRemote}, {"model", m_remoteModel},
+                              {"key", m_remoteKey.isEmpty() ? QString() : QString::fromLatin1(dm::win::protectForUser(m_remoteKey.toUtf8()).toBase64())}};
     o["web"] = m_web;
-
 
     writeJson(m_dir + QStringLiteral("/settings.json"), o);
 }
@@ -1531,10 +1554,108 @@ void AiService::selectLocalModel(const QString& path)
     if (!path.endsWith(QLatin1String(".gguf"), Qt::CaseInsensitive) || !QFileInfo::exists(path))
         return;
     m_localModel = QDir::cleanPath(path);
+    m_useRemote = false;                                     // choosing a model of this PC leaves the online one
     saveSettings();
     emit modelsChanged();                                    // `vision` (the file of the chosen model) hangs on this signal: without it the settings kept showing the old model's answer
     emit settingsChanged();
     m_ask->reloadReadiness();
+}
+
+// ---- online models (Hugging Face Inference Providers) ---------------------------------------------------------------------------------------------
+// Pinned by the owner's request of 2026-11-19 ("good, clever and fast, e.g. OpenAI and Google"): the ids below were read from
+// https://router.huggingface.co/v1/models that day - every one has providers with tool calling (the agent page needs it). The router picks a provider.
+QVariantList AiService::remoteModels() const
+{
+    static const struct { const char* id; const char* title; const char* maker; } list[] = {
+        {"openai/gpt-oss-120b", "GPT-OSS 120B", "OpenAI"},
+        {"openai/gpt-oss-20b", "GPT-OSS 20B", "OpenAI"},
+        {"google/gemma-4-31B-it", "Gemma 4 31B", "Google"},
+        {"Qwen/Qwen3-235B-A22B-Instruct-2507", "Qwen3 235B", "Alibaba"},
+    };
+    QVariantList out;
+    for (const auto& e : list)
+        out.append(QVariantMap{{"id", QString::fromLatin1(e.id)}, {"title", QString::fromLatin1(e.title)}, {"maker", QString::fromLatin1(e.maker)}});
+    return out;
+}
+
+void AiService::selectRemoteModel(const QString& id)
+{
+    bool known = false;
+    for (const QVariant& v : remoteModels())
+        known = known || v.toMap().value(QStringLiteral("id")).toString() == id;
+    if (!known)
+        return;
+    m_remoteModel = id;
+    m_useRemote = true;
+    saveSettings();
+    emit modelsChanged();
+    emit settingsChanged();
+    m_ask->reloadReadiness();
+}
+
+QString AiService::setRemoteKey(const QString& token)
+{
+    const QString t = token.trimmed();
+    if (t.isEmpty())
+        return QStringLiteral("empty");
+    static const QRegularExpression shape(QStringLiteral("^hf_[A-Za-z0-9]{10,200}$"));      // a Hugging Face token looks like hf_ and letters / digits
+    if (!shape.match(t).hasMatch())
+        return QStringLiteral("badFormat");
+    if (dm::win::protectForUser(t.toUtf8()).isEmpty())
+        return QStringLiteral("saveFailed");                 // the key can not be sealed: it is not kept at all (never as plain text)
+    m_remoteKey = t;
+    saveSettings();
+    emit settingsChanged();
+    return {};
+}
+
+void AiService::clearRemoteKey()
+{
+    m_remoteKey.clear();
+    saveSettings();
+    emit settingsChanged();
+}
+
+QString AiService::remoteKeyHint() const
+{
+    return m_remoteKey.size() < 8 ? QString() : QStringLiteral("hf_…") + m_remoteKey.right(4);
+}
+
+QString AiService::activeModelLabel() const
+{
+    if (remoteActive()) {
+        for (const QVariant& v : remoteModels())
+            if (v.toMap().value(QStringLiteral("id")).toString() == m_remoteModel)
+                return v.toMap().value(QStringLiteral("title")).toString();
+    }
+    return localModelName().remove(QRegularExpression(QStringLiteral("\\.gguf$"), QRegularExpression::CaseInsensitiveOption));
+}
+
+QString AiService::apiBaseUrl() const
+{
+    return remoteActive() ? m_remoteBase : m_llama.baseUrl() + QStringLiteral("/v1");
+}
+
+QString AiService::apiKey() const
+{
+    return remoteActive() ? m_remoteKey : m_llama.apiKey();
+}
+
+QString AiService::apiModel() const
+{
+    return remoteActive() ? m_remoteModel : QStringLiteral("local");
+}
+
+bool AiService::apiVision() const
+{
+    return !remoteActive() && m_llama.visionActive();
+}
+
+int AiService::contextWindow() const
+{
+    if (remoteActive())
+        return kRemoteContextTokens;
+    return m_llama.isExternal() ? LlamaServer::kSmallContextTokens : m_llama.contextTokens();    // a server not started here (the tests): its window is unknown, assume the small one
 }
 
 QVariantMap AiService::vision() const

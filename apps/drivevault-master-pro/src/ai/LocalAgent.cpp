@@ -277,8 +277,9 @@ void LocalAgent::step()
     }
     // The answer is read as a stream: the page shows what is being written while it is written (a slow model needs minutes for a long answer), a tool call that
     // grows too long is stopped at once, and the part of a file that was written is not lost.
-    QJsonObject body{{"model", m_config.model}, {"messages", m_messages}, {"stream", true}, {"stream_options", QJsonObject{{"include_usage", true}}},
-                     {"chat_template_kwargs", QJsonObject{{"enable_thinking", m_config.thinking}}}};
+    QJsonObject body{{"model", m_config.model}, {"messages", m_messages}, {"stream", true}, {"stream_options", QJsonObject{{"include_usage", true}}}};
+    if (m_config.templateKwargs)                             // llama.cpp only: an online service may refuse a field it does not know
+        body["chat_template_kwargs"] = QJsonObject{{"enable_thinking", m_config.thinking}};
     if (!tools.isEmpty())
         body["tools"] = tools;
     if (m_config.maxTokens > 0)
@@ -523,7 +524,7 @@ void LocalAgent::onReply()
     if (error != QNetworkReply::NoError && !m_stream.abortedLong) {
         const bool lost = error == QNetworkReply::RemoteHostClosedError || error == QNetworkReply::ConnectionRefusedError || error == QNetworkReply::UnknownNetworkError;
         const bool nothing = m_stream.calls.isEmpty() && m_stream.content.trimmed().isEmpty();
-        if (lost && nothing && m_serverRetries < 2) {                   // the server stopped or crashed: it is started again and the same question asked again
+        if (lost && nothing && m_serverRetries < 2 && m_config.localServer) {                 // the server stopped or crashed: it is started again and the same question asked again
             ++m_serverRetries;
             m_awaitingServer = true;
             note(QStringLiteral("The model server stopped: starting it again"));

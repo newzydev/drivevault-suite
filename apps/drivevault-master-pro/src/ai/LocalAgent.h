@@ -35,7 +35,9 @@ public:
         QString baseUrl;                                   // http://127.0.0.1:port/v1 (this computer only)
         QString apiKey;
         QString model = QStringLiteral("local");
-        QString folder;                                    // "" = no file tools
+        bool templateKwargs = true;                        // send chat_template_kwargs (llama.cpp); off for an online model
+        bool localServer = true;                           // the model is the llama-server of this PC: a lost connection starts it again (serverLost); off for an online model
+        QString folder;                                   // "" = no file tools
         bool allowEdits = false;                           // write_file is offered
         bool reviewWork = true;                            // before a job that changed files ends, ask the model once to check its own work
         bool approveWrites = false;                       // ...but every write waits for the user (approvalNeeded / answerApproval)

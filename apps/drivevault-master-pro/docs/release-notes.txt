@@ -1,6 +1,13 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.30.0 (2026-11-19): Online models (Hugging Face API) on both AI pages
+  - New: the model menu of the message box has two headed groups, "Models on this PC" and "Online models (API · Hugging Face)": GPT-OSS 120B and 20B (OpenAI), Gemma 4 31B (Google) and Qwen3 235B (Alibaba), run by Hugging Face Inference Providers - often smarter and faster than a small model on this PC. Works on the AI Q&A page and on the Agentic AI page (files, commands and the browser as before).
+  - You use your own Hugging Face token: paste it in the AI settings (huggingface.co/settings/tokens, permission "Make calls to Inference Providers"). It is stored encrypted for your Windows user on this PC and never shown again. Without a key the menu has one entry that leads to the key field.
+  - Privacy: with an online model your messages (and, on the Agentic AI page, the text of files and command results the AI reads) are sent over the Internet to Hugging Face and the company that runs the model; usage may be billed to your Hugging Face account. The model button says "online", and the pages say so. Nothing is sent until you choose an online model and press Send; choosing a model of this PC keeps everything on this PC as before.
+  - Not tested with a real Hugging Face account (tests use a fake service on this computer).
+  - Not code-signed (Windows SmartScreen may warn).
+
 v1.29.2 (2026-11-19): No unusable Mode entry in AI Q&A; the AI searches for you
   - Fixed: the AI Q&A page showed a grey "Mode" entry in its menu that cannot be used there (modes belong to the Agentic AI page); it is not shown any more.
   - Changed: with the web switch on, the AI is told to do the search itself and not to send you to search.

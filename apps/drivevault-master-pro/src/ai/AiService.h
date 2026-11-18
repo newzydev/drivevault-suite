@@ -229,6 +229,14 @@ class AiService : public QObject {
     Q_PROPERTY(QVariantList installedModels READ installedModels NOTIFY modelsChanged FINAL)    // [{name, path, sizeText}]
     Q_PROPERTY(QString localModel READ localModel NOTIFY settingsChanged FINAL)        // path of the chosen model
     Q_PROPERTY(QString localModelName READ localModelName NOTIFY settingsChanged FINAL)   // its file name ("" when none)
+    // Online models (owner's decision 2026-11-19): models of Hugging Face Inference Providers, asked with the user's own Hugging Face token. Only when the user
+    // chose one; the messages (and, on the agent page, what the tools read) then leave this PC.
+    Q_PROPERTY(QVariantList remoteModels READ remoteModels CONSTANT FINAL)             // [{id, title, maker}]
+    Q_PROPERTY(bool useRemote READ useRemote NOTIFY settingsChanged FINAL)             // the chosen model is an online one
+    Q_PROPERTY(QString remoteModel READ remoteModel NOTIFY settingsChanged FINAL)      // id of the chosen online model ("" = none yet)
+    Q_PROPERTY(bool remoteKeySet READ remoteKeySet NOTIFY settingsChanged FINAL)
+    Q_PROPERTY(QString remoteKeyHint READ remoteKeyHint NOTIFY settingsChanged FINAL)  // "hf_...a1b2" (never the whole token)
+    Q_PROPERTY(QString activeModelLabel READ activeModelLabel NOTIFY settingsChanged FINAL)   // what the model button shows ("" = no model)
     Q_PROPERTY(QString modelsFolder READ modelsFolder CONSTANT FINAL)
     Q_PROPERTY(bool webEnabled READ webEnabled WRITE setWebEnabled NOTIFY settingsChanged FINAL)   // the AI may search the web (web_search, fetch_page)
     Q_PROPERTY(QObject* browser READ browser CONSTANT FINAL)                           // the link to the browser view (BrowserBridge)
@@ -272,7 +280,26 @@ public:
     QString downloadTitle() const { return m_downloadTitle; }
     QVariantMap probe() const { return m_probe; }
 
+    static constexpr int kRemoteContextTokens = 65536;                  // the window the program plans with for an online model (they have more; this keeps requests small and fast)
+    QVariantList remoteModels() const;
+    bool useRemote() const { return m_useRemote; }
+    QString remoteModel() const { return m_remoteModel; }
+    bool remoteKeySet() const { return !m_remoteKey.isEmpty(); }
+    QString remoteKeyHint() const;
+    QString activeModelLabel() const;
+    bool remoteActive() const { return m_useRemote && !m_remoteModel.isEmpty(); }
+    void setRemoteBaseUrl(const QString& url) { m_remoteBase = url; }   // tests: a fake service on this computer
+    // What a request goes to: the llama-server of this PC, or the online service when an online model is chosen.
+    QString apiBaseUrl() const;                                         // ends before /chat/completions
+    QString apiKey() const;
+    QString apiModel() const;
+    bool apiVision() const;                                             // the model can see pictures (online models: not used)
+    int contextWindow() const;
+
     Q_INVOKABLE void selectLocalModel(const QString& path);
+    Q_INVOKABLE void selectRemoteModel(const QString& id);              // one of remoteModels(); the choice is saved
+    Q_INVOKABLE QString setRemoteKey(const QString& token);             // "" = saved (encrypted for this Windows user); empty | badFormat | saveFailed
+    Q_INVOKABLE void clearRemoteKey();
     Q_INVOKABLE QString downloadCatalog(const QString& id);             // "" = started
     Q_INVOKABLE void probeLink(const QString& link);                    // asks Hugging Face about a pasted link (size, checksum); downloads nothing
     Q_INVOKABLE QString downloadProbed();                               // downloads the file the last probe found
@@ -309,7 +336,11 @@ private:
     QString m_dir;
     QStringList m_installDirs;                             // install folders of the programs found by the hub (they may carry the engine and models)
     QString m_localModel;
-    bool m_web = true;                                     // the AI may use the web tools (the owner asked for it; the switch is in the settings and on the page)
+    bool m_useRemote = false;                              // the chosen model is the online one (m_remoteModel)
+    QString m_remoteModel;
+    QString m_remoteKey;                                   // the Hugging Face token, in memory; on disk only sealed by DPAPI (WinUtil)
+    QString m_remoteBase = QStringLiteral("https://router.huggingface.co/v1");
+    bool m_web = true;                                    // the AI may use the web tools (the owner asked for it; the switch is in the settings and on the page)
     QString m_downloadTitle;
     QString m_downloadFile;                                // where the running download will be
     QVariantMap m_probe;

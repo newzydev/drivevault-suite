@@ -18,7 +18,7 @@ public:
     ~Compactor() override;
 
     // "" when started, otherwise badUrl | busy
-    QString start(const QString& baseUrl, const QString& apiKey, const QString& transcript, const QString& focus, int maxTokens);
+    QString start(const QString& baseUrl, const QString& apiKey, const QString& transcript, const QString& focus, int maxTokens, const QString& model = QStringLiteral("local"));
     void cancel();
     bool running() const { return m_reply != nullptr; }
 
