@@ -2,9 +2,9 @@
 
 A Chrome-like web browser for Windows (Qt 6.8, Qt WebEngine / Chromium) with a built-in ad blocker (network filters only so far). Accent colour cyan `#06B6D4`.
 
-**Status: version 0.4.1, in development. There is no installer and no Release yet.** The plan is `docs/Browser-Pro-Plan.md`; the first tests of the engine are in `docs/Phase0b-Results.md`.
+**Status: version 0.5.0, in development. There is no installer and no Release yet.** The plan is `docs/Browser-Pro-Plan.md`; the first tests of the engine are in `docs/Phase0b-Results.md`.
 
-## What works in 0.4.1 (Phases 1 - 4)
+## What works in 0.5.0 (Phases 1 - 5)
 Tabs (new, close, duplicate, pin, close others / to the right, reopen closed), address bar with suggestions from bookmarks and history (anything that is not an address becomes a search), back / forward / reload / home,
 bookmarks (star, bookmarks bar, panel, import / export as HTML), history (search, remove, clear), downloads (pause / resume / cancel, show in folder, warning for program files), find in page, zoom per site, full screen,
 save a page as PDF, view source, developer tools, private window, website permissions that ask (notifications are refused by default), restore of the tabs of last time (setting), Thai + English.
@@ -15,8 +15,10 @@ save a page as PDF, view source, developer tools, private window, website permis
 
 **Defence against ad block detection (Phase 4):** empty "bait" boxes are not hidden, detector libraries (FuckAdBlock / BlockAdBlock style) are answered "no ad blocker", walls that say "turn off your ad blocker" are hidden and scrolling is released, and fetch / picture tests of ad addresses succeed. Shown to work on test pages made for it (each with the defence on and off: `docs/anti-adblock-results.md`). On 20 real news and portal sites the blocker kept the page text (96 - 102 % on 15 of 16 loadable sites), stopped 3 - 79 requests per page and removed most advertising frames. **On real websites (20 sites opened) no ad block wall showed up, so it has only been shown on test pages; it cannot beat every site**: pages that check on their server, or keep their content hidden until an ad was shown, can still refuse to work.
 
+**Picture in picture and saving videos (Phase 5):** the video of a page can be popped out into a small always-on-top window (button or Alt+P; the page moves with it and the video keeps playing; videos in the main frame of the page, not inside embedded frames). When a page loads a video / audio file or an HLS / DASH playlist a button with a count appears and the file can be saved (a stream is copied into an .mp4 with FFmpeg, which is not included yet). YouTube and subscription streaming sites are never offered, DRM-protected streams are refused, and the browser's log-in cookies are not used. Tested on test pages and local servers only.
+
 ## Not available yet
-A test of the defence against a real ad block wall, hiding and scripts inside embedded frames, filters that need page analysis, Picture-in-Picture and video download (Phase 5), tab dragging, import from Chrome, printing to a printer, clearing cookies, extensions, Google sign-in / sync (dropped by the owner), the installer and the card in Master Pro (Phase 6).
+A test of the defence against a real ad block wall, hiding and scripts inside embedded frames, filters that need page analysis, FFmpeg in the installer (needed to save streams), picture in picture for videos in embedded frames, tab dragging, import from Chrome, printing to a printer, clearing cookies, extensions, Google sign-in / sync (dropped by the owner), the installer and the card in Master Pro (Phase 6).
 Video encoded with H.264 / AAC does not play (the Qt binaries have no proprietary codecs).
 
 ## Build (developers)

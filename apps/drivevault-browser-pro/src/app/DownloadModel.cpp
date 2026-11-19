@@ -3,6 +3,7 @@
 #include "UrlUtil.h"
 
 #include <QDir>
+#include <QFileInfo>
 #include <QProcess>
 #include <QStandardPaths>
 #include <QtWebEngineQuick/QQuickWebEngineDownloadRequest>
@@ -31,13 +32,16 @@ QVariant DownloadModel::data(const QModelIndex& index, int role) const
     case TotalRole: return e.total;
     case StateRole: return e.state;
     case RiskyRole: return e.risky;
+    case UnitRole: return e.unit;
+    case PausableRole: return !e.external;
+    case ErrorRole: return e.error;
     }
     return {};
 }
 
 QHash<int, QByteArray> DownloadModel::roleNames() const
 {
-    return {{IdRole, "id"}, {NameRole, "name"}, {PathRole, "path"}, {ReceivedRole, "received"}, {TotalRole, "total"}, {StateRole, "state"}, {RiskyRole, "risky"}};
+    return {{IdRole, "id"}, {NameRole, "name"}, {PathRole, "path"}, {ReceivedRole, "received"}, {TotalRole, "total"}, {StateRole, "state"}, {RiskyRole, "risky"}, {UnitRole, "unit"}, {PausableRole, "pausable"}, {ErrorRole, "error"}};
 }
 
 int DownloadModel::activeCount() const
@@ -112,8 +116,66 @@ void DownloadModel::refresh(int id)
 
 void DownloadModel::cancel(int row)
 {
-    if (row >= 0 && row < m_entries.size() && m_entries.at(row).request)
+    if (row < 0 || row >= m_entries.size())
+        return;
+    if (m_entries.at(row).request)
         m_entries.at(row).request->cancel();
+    else if (m_entries.at(row).cancelFn)
+        m_entries.at(row).cancelFn();
+}
+
+QVariantMap DownloadModel::get(int row) const
+{
+    if (row < 0 || row >= m_entries.size())
+        return {};
+    const Entry& e = m_entries.at(row);
+    return {{QStringLiteral("name"), e.name}, {QStringLiteral("path"), e.path}, {QStringLiteral("state"), e.state}, {QStringLiteral("received"), e.received},
+            {QStringLiteral("total"), e.total}, {QStringLiteral("unit"), e.unit}, {QStringLiteral("error"), e.error}};
+}
+
+int DownloadModel::addExternal(const QString& name, const QString& path, std::function<void()> cancel)
+{
+    Entry e;
+    e.id = m_nextId++;
+    e.name = name;
+    e.path = path;
+    e.state = QStringLiteral("running");
+    e.external = true;
+    e.cancelFn = std::move(cancel);
+    beginInsertRows({}, 0, 0);
+    m_entries.prepend(e);
+    endInsertRows();
+    emit activeCountChanged();
+    return e.id;
+}
+
+void DownloadModel::updateExternal(int id, qint64 received, qint64 total, const QString& unit)
+{
+    const int row = rowOfId(id);
+    if (row < 0)
+        return;
+    Entry& e = m_entries[row];
+    e.received = received;
+    e.total = total;
+    e.unit = unit;
+    emit dataChanged(index(row), index(row));
+}
+
+void DownloadModel::finishExternal(int id, bool ok, const QString& path, const QString& error)
+{
+    const int row = rowOfId(id);
+    if (row < 0)
+        return;
+    Entry& e = m_entries[row];
+    e.state = ok ? QStringLiteral("done") : (error == QLatin1String("cancelled") ? QStringLiteral("cancelled") : QStringLiteral("failed"));
+    e.error = ok ? QString() : error;
+    if (ok && !path.isEmpty()) {
+        e.path = path;
+        e.name = QFileInfo(path).fileName();
+    }
+    e.cancelFn = nullptr;
+    emit dataChanged(index(row), index(row));
+    emit activeCountChanged();
 }
 
 void DownloadModel::pause(int row)

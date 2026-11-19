@@ -1,4 +1,5 @@
 #include <QDir>
+#include <QFileInfo>
 #include <QElapsedTimer>
 #include <QFile>
 #include <QJsonArray>
@@ -156,6 +157,18 @@ setTimeout(function () {
     s.files[QStringLiteral("/adsbygoogle.js")] = {"application/javascript", "window.REAL_ABG = 1;"};
     s.files[QStringLiteral("/plain-blocked.js")] = {"application/javascript", "window.REAL_PLAIN = 1;"};
     s.files[QStringLiteral("/px.gif")] = {"image/gif", QByteArray::fromBase64("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")};
+    s.files[QStringLiteral("/pip.html")] = {"text/html", R"HTML(<!doctype html><meta charset=utf-8><title>Video page</title>
+<style>body{margin:20px;font-family:sans-serif} video{width:320px;height:180px;background:#222}</style>
+<body><h1>A page with a video</h1><div id="other">Some text of the page that must be hidden while the video is popped out.</div>
+<video id="v" muted autoplay playsinline></video>
+<canvas id="c" width="320" height="180" style="display:none"></canvas>
+<script>
+var c = document.getElementById('c'), x = c.getContext('2d'), n = 0;
+setInterval(function () { n++; x.fillStyle = 'hsl(' + (n * 7 % 360) + ',70%,45%)'; x.fillRect(0, 0, 320, 180); x.fillStyle = '#fff'; x.font = '40px sans-serif'; x.fillText('frame ' + n, 60, 100); }, 40);
+var v = document.getElementById('v'); window.__video = v;
+v.srcObject = c.captureStream(25);
+v.play().catch(function () {});
+</script>)HTML"};
     s.files[QStringLiteral("/detect.html")] = {"text/html", R"HTML(<!doctype html><meta charset=utf-8><title>Detect</title>
 <style>body{margin:0;font-family:sans-serif} #article{padding:20px} .tiny-bait{width:1px;height:1px;position:absolute;left:-9999px}</style>
 <script>
@@ -373,6 +386,104 @@ private slots:
                 QVERIFY(is(r.res, "scrollLocked", true));
             }
         }
+    }
+
+    // Picture in picture, in the real program: the tab goes into a small always-on-top window, the video fills it and keeps playing, then everything comes back.
+    void pictureInPictureInTheRealEngine()
+    {
+        for (int privateMode = 0; privateMode <= 1; ++privateMode) {
+            LabServer server;
+            QVERIFY(server.isListening());
+            fillPages(server);
+            QTemporaryDir dir;
+            const QString data = dir.filePath(QStringLiteral("data"));
+            QDir().mkpath(data);
+            const QString report = dir.filePath(QStringLiteral("pip.json"));
+            QProcess p;
+            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+            env.insert(QStringLiteral("DV_NO_AUDIO"), QStringLiteral("1"));
+            p.setProcessEnvironment(env);
+            QStringList args{QStringLiteral("--data-dir"), data, QStringLiteral("--lang"), QStringLiteral("en"), QStringLiteral("--pip-test"), report, QStringLiteral("--wait"), QStringLiteral("3500")};
+            if (privateMode)
+                args << QStringLiteral("--private");
+            args << server.url(QStringLiteral("/pip.html"));
+            p.start(QStringLiteral(BROWSER_EXE_PATH), args);
+            QElapsedTimer waited;
+            waited.start();
+            while (p.state() != QProcess::NotRunning && waited.elapsed() < 90000)
+                QTest::qWait(50);
+            QVERIFY(p.state() == QProcess::NotRunning);
+            QFile r(report);
+            QVERIFY(r.open(QIODevice::ReadOnly));
+            const QByteArray text = r.readAll();
+            qInfo().noquote() << "PIP" << (privateMode ? "private" : "normal") << "exit" << p.exitCode() << "checks" << QJsonDocument::fromJson(text).array().size();
+            QVERIFY2(p.exitCode() == 0, text.constData());
+            QVERIFY2(!text.contains("\"ok\": false") && text.contains("\"ok\": true"), text.constData());
+            QVERIFY(QJsonDocument::fromJson(text).array().size() >= 12);
+        }
+    }
+
+    // Saving videos in the real program: the page loads a video file and an HLS playlist; the program notices both (not the pieces), shows the button, saves both into the
+    // downloads list, and refuses a YouTube address. The HLS part needs FFmpeg (found like the program finds it) and is skipped without it.
+    void videosOfAPageAreNoticedAndSaved()
+    {
+        QFile clip(QStringLiteral(TEST_DATA_DIR "/clip.webm"));
+        QVERIFY2(clip.open(QIODevice::ReadOnly), "tests/data/clip.webm is missing");
+        const QByteArray clipData = clip.readAll();
+        QString ffmpeg = qEnvironmentVariable("DV_FFMPEG");
+        if (ffmpeg.isEmpty() || !QFileInfo::exists(ffmpeg))
+            ffmpeg = QFileInfo(QStringLiteral(DV_TOOLS_FFMPEG)).exists() ? QStringLiteral(DV_TOOLS_FFMPEG) : QString();
+
+        LabServer server;
+        QVERIFY(server.isListening());
+        fillPages(server);
+        server.files[QStringLiteral("/media/clip.webm")] = {"video/webm", clipData};
+        QTemporaryDir hls;
+        if (!ffmpeg.isEmpty()) {
+            QProcess gen;
+            gen.setWorkingDirectory(hls.path());
+            gen.start(ffmpeg, {QStringLiteral("-hide_banner"), QStringLiteral("-loglevel"), QStringLiteral("error"), QStringLiteral("-y"), QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                               QStringLiteral("testsrc=size=160x90:rate=10:duration=3"), QStringLiteral("-c:v"), QStringLiteral("libopenh264"), QStringLiteral("-f"), QStringLiteral("hls"),
+                               QStringLiteral("-hls_time"), QStringLiteral("1"), QStringLiteral("-hls_list_size"), QStringLiteral("0"), QStringLiteral("-hls_segment_filename"), QStringLiteral("seg%d.ts"),
+                               QStringLiteral("index.m3u8")});
+            QVERIFY(gen.waitForFinished(60000));
+            for (const QString& name : QDir(hls.path()).entryList(QDir::Files)) {
+                QFile f(hls.filePath(name));
+                QVERIFY(f.open(QIODevice::ReadOnly));
+                server.files[QStringLiteral("/media/live/") + name] = {name.endsWith(QLatin1String(".m3u8")) ? "application/vnd.apple.mpegurl" : "video/mp2t", f.readAll()};
+            }
+        } else {
+            server.files[QStringLiteral("/media/live/index.m3u8")] = {"application/vnd.apple.mpegurl", "#EXTM3U\n#EXTINF:1,\nseg0.ts\n#EXT-X-ENDLIST\n"};      // noticed, but no FFmpeg to save it
+        }
+        server.files[QStringLiteral("/media.html")] = {"text/html", R"HTML(<!doctype html><meta charset=utf-8><title>Media</title>
+<video src="/media/clip.webm" muted autoplay loop width="320"></video>
+<script>fetch('/media/live/index.m3u8').then(function (r) { return r.text(); }).then(function (t) { window.__res = { m3u8: t.length }; });</script>)HTML"};
+
+        QTemporaryDir dir;
+        const QString data = dir.filePath(QStringLiteral("data"));
+        QDir().mkpath(data);
+        const QString report = dir.filePath(QStringLiteral("media.json"));
+        QProcess p;
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert(QStringLiteral("DV_NO_AUDIO"), QStringLiteral("1"));
+        p.setProcessEnvironment(env);
+        p.start(QStringLiteral(BROWSER_EXE_PATH), {QStringLiteral("--data-dir"), data, QStringLiteral("--lang"), QStringLiteral("en"), QStringLiteral("--media-test"), report, QStringLiteral("--wait"), QStringLiteral("4000"),
+                                                   server.url(QStringLiteral("/media.html"))});
+        QElapsedTimer waited;
+        waited.start();
+        while (p.state() != QProcess::NotRunning && waited.elapsed() < 120000)
+            QTest::qWait(50);
+        QVERIFY(p.state() == QProcess::NotRunning);
+        QFile r(report);
+        QVERIFY(r.open(QIODevice::ReadOnly));
+        const QByteArray text = r.readAll();
+        qInfo().noquote() << "MEDIA exit" << p.exitCode() << "ffmpeg" << (ffmpeg.isEmpty() ? "no" : "yes") << "checks" << QJsonDocument::fromJson(text).array().size();
+        QVERIFY2(p.exitCode() == 0, text.constData());
+        QVERIFY2(!text.contains("\"ok\": false") && text.contains("\"ok\": true"), text.constData());
+        QVERIFY(QDir(data + QStringLiteral("/downloads")).entryList(QStringList{QStringLiteral("clip*.webm")}, QDir::Files).size() == 1);
+        if (!ffmpeg.isEmpty())
+            QVERIFY(QDir(data + QStringLiteral("/downloads")).entryList(QStringList{QStringLiteral("*.mp4")}, QDir::Files).size() == 1);
+        QVERIFY2(QDir(data + QStringLiteral("/downloads")).entryList(QStringList{QStringLiteral("*.part")}, QDir::Files).isEmpty(), "no half file is left");
     }
 };
 

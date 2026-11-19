@@ -4,6 +4,8 @@
 #include <QMutex>
 #include <QSet>
 #include <QString>
+#include <QVariantList>
+#include <QVector>
 #include <QWebEngineUrlRequestInterceptor>
 #include <atomic>
 
@@ -28,7 +30,18 @@ public:
     int blockedOn(const QString& host) const;       // blocked requests of the page now shown for this host (starts again at every navigation)
     int blockedTotal() const { return m_total.load(); }
 
+    // The videos / audio files / playlists a page has loaded (not blocked ones), for "save this video": [{url, kind, pageUrl, name}], newest last. Starts again at every navigation.
+    QVariantList mediaFor(const QString& host) const;
+    int mediaVersion() const { return m_mediaVersion.load(); }
+
 private:
+    bool filter(QWebEngineUrlRequestInfo& info, const QUrl& url, quint16 type, const QString& pageHost);      // true: the request was stopped or answered by a stand-in
+    void noteMedia(const QWebEngineUrlRequestInfo& info, const QUrl& url, bool fromMediaElement, const QString& pageHost);
+    struct MediaItem {
+        QString url, kind, pageUrl;
+    };
+    QHash<QString, QVector<MediaItem>> m_media;
+    std::atomic<int> m_mediaVersion{0};
     std::atomic<ab::ListManager*> m_manager{nullptr};
     std::atomic<bool> m_enabled{true};
     std::atomic<int> m_total{0};

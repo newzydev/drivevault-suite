@@ -50,7 +50,9 @@ int main(int argc, char* argv[])
     QCommandLineOption updateOpt(QStringLiteral("update-lists"), QStringLiteral("Do what the button \"Update filter lists\" does (download the switched-on lists from their official addresses), write the result (JSON) to <file>, exit (diagnostics; downloads only because this option was given)."), QStringLiteral("file"));
     QCommandLineOption surveyOpt(QStringLiteral("survey"), QStringLiteral("Open the page given as address, wait (--wait), look at it (title, text length, frames, walls that talk about ad blockers, scroll lock) and how many requests the ad blocker stopped, write that (JSON) to <file> and exit (diagnostics: tests on real websites, only when the owner has allowed network use)."), QStringLiteral("file"));
     QCommandLineOption waitOpt(QStringLiteral("wait"), QStringLiteral("Milliseconds to wait before --probe / --survey / --screenshot act (default 2500 / 2500 / 3500)."), QStringLiteral("ms"));
-    parser.addOptions({dataDirOpt, langOpt, shotOpt, sizeOpt, panelOpt, privateOpt, selfTestOpt, probeOpt, updateOpt, surveyOpt, waitOpt});
+    QCommandLineOption pipTestOpt(QStringLiteral("pip-test"), QStringLiteral("Open the page given as address (it plays a video as window.__video), pop the video out into the small window and back (button path and close path), write the checks (JSON) to <file>, exit 0 when all passed (diagnostics)."), QStringLiteral("file"));
+    QCommandLineOption mediaTestOpt(QStringLiteral("media-test"), QStringLiteral("Open the page given as address (it loads a video file and an HLS playlist), check that both are noticed, save them through the program's own path into <data>\downloads, write the checks (JSON) to <file>, exit 0 when all passed (diagnostics)."), QStringLiteral("file"));
+    parser.addOptions({dataDirOpt, langOpt, shotOpt, sizeOpt, panelOpt, privateOpt, selfTestOpt, probeOpt, updateOpt, surveyOpt, waitOpt, pipTestOpt, mediaTestOpt});
     parser.process(app);
 
     for (const char* font : {":/qt/qml/DriveVault/Browser/resources/fonts/Inter-Variable.ttf", ":/qt/qml/DriveVault/Browser/resources/fonts/NotoSansThai-Variable.ttf"})
@@ -95,6 +97,7 @@ int main(int argc, char* argv[])
     qmlRegisterUncreatableType<dv::br::BookmarkStore>("DriveVault.Browser.Backend", 1, 0, "BookmarkStore", QStringLiteral("owned by Browser"));
     qmlRegisterUncreatableType<dv::br::HistoryStore>("DriveVault.Browser.Backend", 1, 0, "HistoryStore", QStringLiteral("owned by Browser"));
     qmlRegisterUncreatableType<dv::br::DownloadModel>("DriveVault.Browser.Backend", 1, 0, "DownloadModel", QStringLiteral("owned by Browser"));
+    qmlRegisterUncreatableType<dv::br::MediaController>("DriveVault.Browser.Backend", 1, 0, "MediaController", QStringLiteral("owned by Browser"));
     qmlRegisterUncreatableType<dv::br::AdBlockController>("DriveVault.Browser.Backend", 1, 0, "AdBlockController", QStringLiteral("owned by Browser"));
     qmlRegisterUncreatableType<dv::br::ab::ListManager>("DriveVault.Browser.Backend", 1, 0, "ListManager", QStringLiteral("owned by AdBlockController"));
     engine.loadFromModule("DriveVault.Browser", "Main");
@@ -124,13 +127,13 @@ int main(int argc, char* argv[])
         QTimer::singleShot(500, &app, [browserPtr = &browser] { browserPtr->adblock()->updateLists(); });
     }
     const int waitMs = parser.isSet(waitOpt) ? qBound(500, parser.value(waitOpt).toInt(), 120000) : 0;
-    const bool inspect = parser.isSet(selfTestOpt) || parser.isSet(probeOpt) || parser.isSet(surveyOpt);
+    const bool inspect = parser.isSet(selfTestOpt) || parser.isSet(probeOpt) || parser.isSet(surveyOpt) || parser.isSet(pipTestOpt) || parser.isSet(mediaTestOpt);
     if (inspect) {
         QObject* win = root->property("firstWindow").value<QObject*>();
         if (!win)
             return 3;
-        const QString file = parser.isSet(selfTestOpt) ? parser.value(selfTestOpt) : parser.isSet(surveyOpt) ? parser.value(surveyOpt) : parser.value(probeOpt);
-        const char* method = parser.isSet(selfTestOpt) ? "selfTest" : parser.isSet(surveyOpt) ? "survey" : "probe";
+        const QString file = parser.isSet(selfTestOpt) ? parser.value(selfTestOpt) : parser.isSet(pipTestOpt) ? parser.value(pipTestOpt) : parser.isSet(mediaTestOpt) ? parser.value(mediaTestOpt) : parser.isSet(surveyOpt) ? parser.value(surveyOpt) : parser.value(probeOpt);
+        const char* method = parser.isSet(selfTestOpt) ? "selfTest" : parser.isSet(pipTestOpt) ? "pipTest" : parser.isSet(mediaTestOpt) ? "mediaTest" : parser.isSet(surveyOpt) ? "survey" : "probe";
         const int delay = waitMs > 0 ? waitMs : 2500;
         QTimer::singleShot(delay, win, [win, method] { QMetaObject::invokeMethod(win, method); });         // the page has started loading
         auto* poll = new QTimer(&app);

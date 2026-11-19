@@ -78,6 +78,20 @@ QtObject {
         "perm_mouselock": ["lock the mouse pointer", "ล็อกตัวชี้เมาส์"],
         "perm_fonts": ["the fonts on this PC", "ฟอนต์ในเครื่องนี้"],
         "perm_other": ["a permission", "สิทธิ์บางอย่าง"],
+        // picture in picture
+        "pip_tip": ["Picture in picture: pop the video out (Alt+P)", "ภาพซ้อนภาพ: ดึงวิดีโอออกเป็นหน้าต่างเล็ก (Alt+P)"],
+        "pip_back": ["Bring the video back to the tab", "ส่งวิดีโอกลับเข้าแท็บ"],
+        "pip_none": ["No video found on this page (videos inside embedded frames are not supported).", "ไม่พบวิดีโอในหน้านี้ (วิดีโอที่อยู่ในเฟรมฝังยังไม่รองรับ)"],
+        "pip_placeholder": ["The video of this tab is in the small window.", "วิดีโอของแท็บนี้อยู่ในหน้าต่างเล็ก"],
+        "pip_title": ["Picture in picture", "ภาพซ้อนภาพ"],
+        // saving videos
+        "media_tip": ["Videos of this page: save one", "วิดีโอของหน้านี้: บันทึกไฟล์"],
+        "media_save_file": ["Save video file", "บันทึกไฟล์วิดีโอ"],
+        "media_save_stream": ["Save stream (HLS / DASH)", "บันทึกสตรีม (HLS / DASH)"],
+        "media_started": ["Saving started. See the downloads.", "เริ่มบันทึกแล้ว ดูได้ในรายการดาวน์โหลด"],
+        "media_excluded": ["Videos of this site are not offered (video platforms and subscription services forbid saving).", "ไม่เสนอให้บันทึกวิดีโอของเว็บนี้ (แพลตฟอร์มวิดีโอและบริการสมัครสมาชิกห้ามบันทึก)"],
+        "media_noffmpeg": ["Saving a stream needs FFmpeg, which was not found.", "การบันทึกสตรีมต้องใช้ FFmpeg ซึ่งไม่พบในเครื่อง"],
+        "media_failed": ["Could not start saving: %1", "เริ่มบันทึกไม่ได้: %1"],
         // new tab page
         "ntp_search": ["Search the web or type an address", "ค้นหาเว็บหรือพิมพ์ที่อยู่เว็บ"],
         "ntp_top": ["Most visited", "เข้าบ่อยที่สุด"],

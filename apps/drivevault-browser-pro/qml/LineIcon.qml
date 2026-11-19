@@ -78,6 +78,11 @@ Canvas {
             c.arc(6.8, 6.8, 3.8, 0, Math.PI * 2); c.moveTo(9.6, 9.6); c.lineTo(13, 13); c.moveTo(5.2, 6.8); c.lineTo(8.4, 6.8)
         } else if (kind === "mask") {                           // the private window: a mask
             c.moveTo(2, 6); c.quadraticCurveTo(8, 3, 14, 6); c.lineTo(13, 9.5); c.quadraticCurveTo(10.5, 11, 8.6, 9.2); c.lineTo(7.4, 9.2); c.quadraticCurveTo(5.5, 11, 3, 9.5); c.closePath()
+        } else if (kind === "pip") {                            // a window with a small window inside it (picture in picture)
+            c.rect(2, 3, 12, 10); c.rect(7.6, 7.6, 5, 3.6)
+            fill = false
+        } else if (kind === "video") {                          // a film frame with a play triangle (the videos of this page)
+            c.rect(2, 3, 12, 10); c.moveTo(6.8, 5.6); c.lineTo(10.6, 8); c.lineTo(6.8, 10.4); c.closePath()
         } else if (kind === "warning") {
             c.moveTo(8, 2.5); c.lineTo(14, 13); c.lineTo(2, 13); c.closePath(); c.moveTo(8, 6.5); c.lineTo(8, 9.5); c.moveTo(8, 11.3); c.lineTo(8, 11.5)
         }

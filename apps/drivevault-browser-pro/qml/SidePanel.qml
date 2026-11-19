@@ -281,6 +281,13 @@ Rectangle {
                     required property double received
                     required property double total
                     required property bool risky
+                    required property string unit
+                    required property bool pausable
+                    required property string error
+                    function fmt(v) {                                  // a size in MB, or a time (a stream that is copied is measured in milliseconds)
+                        if (item.unit === "ms") { const s = Math.round(v / 1000); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2) }
+                        return (v / 1048576).toFixed(1) + " MB"
+                    }
                     width: ListView.view.width
                     height: col.implicitHeight + 20
                     color: "transparent"
@@ -302,7 +309,9 @@ Rectangle {
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: Tr.t("dl_" + item.state) + (item.total > 0 ? "  ·  " + (item.received / 1048576).toFixed(1) + " / " + (item.total / 1048576).toFixed(1) + " MB" : "")
+                            text: Tr.t("dl_" + item.state)
+                                  + (item.total > 0 ? "  ·  " + item.fmt(item.received) + " / " + item.fmt(item.total) : (item.state === "running" && item.received > 0 ? "  ·  " + item.fmt(item.received) : ""))
+                                  + (item.state === "failed" && item.error !== "" ? "  ·  " + item.error : "")
                             color: item.state === "failed" ? Theme.errorSoft : Theme.textSecondary
                             font.pixelSize: 11
                         }
@@ -316,7 +325,7 @@ Rectangle {
                         }
                         RowLayout {
                             spacing: 4
-                            IconButton { visible: item.state === "running"; kind: "stop"; box: 28; tip: Tr.t("dl_pause"); onClicked: Browser.downloads.pause(item.index) }
+                            IconButton { visible: item.state === "running" && item.pausable; kind: "stop"; box: 28; tip: Tr.t("dl_pause"); onClicked: Browser.downloads.pause(item.index) }
                             IconButton { visible: item.state === "paused"; kind: "forward"; box: 28; tip: Tr.t("dl_resume"); onClicked: Browser.downloads.resume(item.index) }
                             IconButton { visible: item.state === "running" || item.state === "paused"; kind: "close"; box: 28; tip: Tr.t("dl_cancel"); onClicked: Browser.downloads.cancel(item.index) }
                             IconButton { visible: item.state === "done"; kind: "folder"; box: 28; tip: Tr.t("dl_show"); onClicked: Browser.downloads.showInFolder(item.index) }

@@ -1,4 +1,4 @@
-﻿#include "BrowserApp.h"
+#include "BrowserApp.h"
 
 #include "UrlUtil.h"
 #include "Version.h"
@@ -6,6 +6,7 @@
 #include <QClipboard>
 #include <QCoreApplication>
 #include <QFile>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -21,11 +22,19 @@ BrowserApp::BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, 
     : QObject(parent), m_dataDir(dataDir), m_profile(profile),
       m_settings(dataDir + QStringLiteral("/settings.json")), m_bookmarks(dataDir + QStringLiteral("/bookmarks.json")),
       m_history(dataDir + QStringLiteral("/history.jsonl")),
-      m_adblock(&m_settings, interceptor, standIns, dataDir, QCoreApplication::applicationDirPath() + QStringLiteral("/filters"))
+      m_adblock(&m_settings, interceptor, standIns, dataDir, QCoreApplication::applicationDirPath() + QStringLiteral("/filters")),
+      m_media(interceptor, &m_downloads)
 {
+    m_media.setUserAgent(profile ? profile->httpUserAgent() : QString());
     QFile library(QStringLiteral(":/qt/qml/DriveVault/Browser/resources/adblock-page.js"));       // the script that runs inside pages (hiding, scriptlets)
     if (library.open(QIODevice::ReadOnly))
         m_adblock.setPageLibrary(QString::fromUtf8(library.readAll()));
+    auto readResource = [](const char* name) {
+        QFile f(QStringLiteral(":/qt/qml/DriveVault/Browser/resources/") + QString::fromLatin1(name));
+        return f.open(QIODevice::ReadOnly) ? QString::fromUtf8(f.readAll()) : QString();
+    };
+    m_pipOn = readResource("pip-on.js");
+    m_pipOff = readResource("pip-off.js");
 }
 
 QString BrowserApp::version() const { return QString::fromLatin1(version::kVersion); }
@@ -65,6 +74,11 @@ QVariantList BrowserApp::suggest(const QString& text, int limit) const
 }
 
 QString BrowserApp::localPath(const QUrl& url) const { return url.toLocalFile(); }
+qint64 BrowserApp::fileSize(const QString& path) const
+{
+    const QFileInfo fi(path);
+    return fi.exists() ? fi.size() : -1;
+}
 
 void BrowserApp::openWindow(bool privateMode, const QString& url) { emit windowRequested(privateMode, url); }
 

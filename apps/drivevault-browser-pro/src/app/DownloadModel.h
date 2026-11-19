@@ -3,6 +3,8 @@
 #include <QAbstractListModel>
 #include <QList>
 #include <QPointer>
+#include <QVariantMap>
+#include <functional>
 
 class QQuickWebEngineDownloadRequest;
 
@@ -15,7 +17,7 @@ class DownloadModel : public QAbstractListModel {
     Q_PROPERTY(int activeCount READ activeCount NOTIFY activeCountChanged)
     Q_PROPERTY(QString folder READ folder CONSTANT)
 public:
-    enum Roles { IdRole = Qt::UserRole + 1, NameRole, PathRole, ReceivedRole, TotalRole, StateRole, RiskyRole };
+    enum Roles { IdRole = Qt::UserRole + 1, NameRole, PathRole, ReceivedRole, TotalRole, StateRole, RiskyRole, UnitRole, PausableRole, ErrorRole };
 
     explicit DownloadModel(QObject* parent = nullptr);
 
@@ -34,6 +36,12 @@ public:
     Q_INVOKABLE void showInFolder(int row);
     Q_INVOKABLE void remove(int row);                                       // from the list only, never the file
     Q_INVOKABLE void clearFinished();
+    Q_INVOKABLE QVariantMap get(int row) const;                              // {name, path, state, received, total, unit, error}
+
+    // downloads made by this program itself (a saved video), not by the engine: the entry is listed like any other
+    int addExternal(const QString& name, const QString& path, std::function<void()> cancel);          // the id
+    void updateExternal(int id, qint64 received, qint64 total, const QString& unit);
+    void finishExternal(int id, bool ok, const QString& path, const QString& error);
 
 signals:
     void activeCountChanged();
@@ -44,6 +52,9 @@ private:
         QString name, path, state;       // state: running | paused | done | failed | cancelled
         qint64 received = 0, total = 0;
         bool risky = false;
+        QString unit = QStringLiteral("bytes"), error;
+        bool external = false;
+        std::function<void()> cancelFn;
         QPointer<QQuickWebEngineDownloadRequest> request;
     };
     int rowOfId(int id) const;

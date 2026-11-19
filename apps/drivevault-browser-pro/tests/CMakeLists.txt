@@ -28,6 +28,13 @@ set_tests_properties(tst_cosmetic PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscr
 add_executable(tst_lab tst_lab.cpp)
 target_link_libraries(tst_lab PRIVATE Qt6::Test Qt6::Network)
 target_compile_definitions(tst_lab PRIVATE BROWSER_EXE_PATH="$<TARGET_FILE:DriveVaultBrowserPro>")
+target_compile_definitions(tst_lab PRIVATE TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data" DV_TOOLS_FFMPEG="${CMAKE_SOURCE_DIR}/../../.tools/ffmpeg/bin/ffmpeg.exe")
 add_dependencies(tst_lab DriveVaultBrowserPro)
 add_test(NAME tst_lab COMMAND tst_lab)
 set_tests_properties(tst_lab PROPERTIES ENVIRONMENT "DV_NO_AUDIO=1" TIMEOUT 900)
+
+# Saving videos: what is offered (policy, DRM refusal), saving a file from a server on this computer, saving an HLS stream through FFmpeg.
+add_executable(tst_media tst_media.cpp)
+target_link_libraries(tst_media PRIVATE browser_core Qt6::Test Qt6::Network)
+add_test(NAME tst_media COMMAND tst_media)
+set_tests_properties(tst_media PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;DV_NO_AUDIO=1" TIMEOUT 300)

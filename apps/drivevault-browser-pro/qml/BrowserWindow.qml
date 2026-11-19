@@ -27,6 +27,9 @@ ApplicationWindow {
     property bool isFull: false
     property int beforeFull: Window.Windowed
     property var currentView: null
+    property var pipView: null                      // the page (WebEngineView) that is in the small picture-in-picture window, or null
+    property var pipWindow: null
+    property string noteText: ""                    // a short message at the bottom of the page area
     property var suggestions: []
     property int suggestIndex: -1
     property var barItems: []
@@ -63,9 +66,42 @@ ApplicationWindow {
         if (activate !== false) currentIndex = tabs.count - 1
         if (!url && activate !== false) Qt.callLater(focusOmnibox)
     }
+    // ---- picture in picture ------------------------------------------------------------------------------------------------
+    // The engine's own picture-in-picture is switched off (document.pictureInPictureEnabled is false), so the tab itself is moved into a small window that stays on top
+    // and the video of the page is made to fill it (resources/pip-on.js: style only, the video keeps playing). Closing the small window moves the tab back.
+    function showNote(text) { noteText = text; noteTimer.restart() }
+    function popOutVideo() {
+        const v = currentView
+        if (!v || pipView) return
+        v.runJavaScript(Browser.pipOnScript, function (r) {
+            let info = null
+            try { info = JSON.parse(r) } catch (e) { info = null }
+            if (!info || !info.ok) { showNote(Tr.t("pip_none")); return }
+            const w = 480
+            const h = Math.max(140, Math.min(720, Math.round(w * (info.w > 0 && info.h > 0 ? info.h / info.w : 9 / 16))))
+            pipWindow = pipComponent.createObject(null, { width: w, height: h, title: (privateMode ? "[" + Tr.t("privateBadge") + "] " : "") + Tr.t("pip_title") + " - " + (info.title || "") })
+            pipView = v
+            v.poppedOut = true
+            v.parent = pipWindow.contentItem
+            pipWindow.show()
+        })
+    }
+    function bringBackVideo() {
+        const v = pipView
+        if (!v) return
+        pipView = null
+        v.runJavaScript(Browser.pipOffScript)
+        v.poppedOut = false
+        v.parent = stage
+        const w = pipWindow
+        pipWindow = null
+        if (w) { w.visible = false; w.destroy(1500) }
+    }
+
     function closeTab(i) {
         if (i < 0 || i >= tabs.count) return
         const v = views.itemAt(i)
+        if (v && v === pipView) bringBackVideo()
         if (v) { const u = v.url.toString(); if (u !== "" && u !== "about:blank" && !privateMode) closedUrls = closedUrls.concat([u]) }
         if (tabs.count === 1) { win.close(); return }
         const cur = currentIndex
@@ -213,6 +249,7 @@ ApplicationWindow {
             for (let i = 0; i < views.count; ++i) { const v = views.itemAt(i); if (v) urls.push(v.url.toString()) }
             Browser.saveSession(urls)
         }
+        bringBackVideo()
         // the pages are taken down one by one while the window and its model are still alive (a page that is still loading would otherwise call into a half destroyed window)
         for (let i = 0; i < views.count; ++i) { const v = views.itemAt(i); if (v) v.stop() }
         currentView = null
@@ -295,6 +332,98 @@ ApplicationWindow {
             selfTestResult = JSON.stringify([{ name: "survey", ok: true, detail: r === undefined ? "null" : r, blocked: Browser.adblock.blockedOn(curHost), host: curHost, url: curUrl, loading: currentView.loading, rules: Browser.adblock.lists.totalRules }])
         })
     }
+    // --media-test: the videos the page loaded are noticed, the button shows, a video file and an HLS stream are saved through the program's own path
+    property var mediaTestList: []
+    property int mediaTestId: 0
+    function mediaTest() {
+        stChecks = []
+        const list = Browser.media.listFor(curHost)
+        mediaTestList = list
+        check("the video file of the page was noticed", list.some(function (m) { return m.kind === "file" && m.url.indexOf("/media/clip.webm") >= 0 }), JSON.stringify(list))
+        check("the HLS playlist of the page was noticed", list.some(function (m) { return m.kind === "hls" && m.url.indexOf("/media/live/index.m3u8") >= 0 }), "")
+        check("no piece of the stream (.ts) is offered", !list.some(function (m) { return m.url.indexOf(".ts") >= 0 }), "")
+        check("the video button is shown with the count", videoButton.visible && videoButton.count === list.length, videoButton.count)
+        check("a video of YouTube is never offered for saving", Browser.media.save("https://rr1---sn-x.googlevideo.com/videoplayback/clip.mp4", "file", "https://www.youtube.com/watch?v=x") === false, "")
+        const f = list.filter(function (m) { return m.kind === "file" })[0]
+        const h = list.filter(function (m) { return m.kind === "hls" })[0]
+        check("saving the video file starts", f !== undefined && Browser.media.save(f.url, f.kind, f.pageUrl) === true, "")
+        if (h !== undefined && Browser.media.ffmpegAvailable) check("saving the stream starts", Browser.media.save(h.url, h.kind, h.pageUrl) === true, "")
+        pipStep = 100
+        pipTimer.interval = 7000
+        pipTimer.start()
+    }
+    function mediaTestFinish() {
+        const rows = []
+        for (let i = 0; i < 4; ++i) { const d = Browser.downloads.get(i); if (d && d.name) rows.push(d) }
+        const file = rows.filter(function (d) { return d.name.indexOf("clip") === 0 && d.name.indexOf(".webm") > 0 })[0]
+        check("the video file is in the downloads list as done", file !== undefined && file.state === "done", JSON.stringify(rows))
+        check("the saved video file has the size of the original", file !== undefined && Browser.fileSize(file.path) > 5000, file ? Browser.fileSize(file.path) : -1)
+        if (Browser.media.ffmpegAvailable) {
+            const st = rows.filter(function (d) { return d.name.indexOf(".mp4") > 0 })[0]
+            check("the stream is saved as an mp4", st !== undefined && st.state === "done" && Browser.fileSize(st.path) > 1000, JSON.stringify(st))
+        }
+        selfTestResult = JSON.stringify(stChecks)
+    }
+    // --pip-test: pops the video of the loaded page out and back (button path, close-the-small-window path) and checks what really happens
+    property int pipStep: 0
+    property real pipT0: 0
+    function pipTest() {
+        stChecks = []
+        pipStep = 0
+        if (!currentView) { check("a page is open", false); selfTestResult = JSON.stringify(stChecks); return }
+        currentView.runJavaScript("JSON.stringify({t: window.__video ? window.__video.currentTime : -1, paused: window.__video ? window.__video.paused : null})", function (r) {
+            const o = JSON.parse(r)
+            pipT0 = o.t
+            check("the page plays its video before the pop-out", o.t >= 0 && o.paused === false, r)
+            popOutVideo()
+            pipStep = 1
+            pipTimer.start()
+        })
+    }
+    function pipQuery(cb) {
+        currentView.runJavaScript("(function(){var v=window.__video,o=document.getElementById('other');return JSON.stringify({pos:getComputedStyle(v).position,w:Math.round(v.getBoundingClientRect().width),vw:innerWidth,paused:v.paused,t:v.currentTime,ctl:v.controls,"
+                                  + "otherVis:o?getComputedStyle(o).visibility:null,style:!!document.getElementById('__dv_pip'),cls:v.classList.contains('__dv_pip_v')})})()", function (r) { cb(JSON.parse(r), r) })
+    }
+    function pipTestStep() {
+        if (pipStep === 100) { pipStep = 0; mediaTestFinish(); return }
+        if (pipStep === 1) {                                    // the video is in the small window
+            check("the tab is in the small window", pipView !== null && pipWindow !== null && pipWindow.visible && pipView.parent === pipWindow.contentItem, "")
+            check("the small window stays on top", pipWindow !== null && (pipWindow.flags & Qt.WindowStaysOnTopHint) !== 0, "")
+            check("the tab shows the 'video is in the small window' note", currentView === pipView, "")
+            pipQuery(function (o, raw) {
+                check("the video fills the small window", o.pos === "fixed" && Math.abs(o.w - o.vw) <= 2, raw)
+                check("the video has its controls", o.ctl === true, raw)
+                check("the rest of the page is hidden", o.otherVis === "hidden", raw)
+                check("the video keeps playing in the small window", o.paused === false && o.t > pipT0, raw)
+                pipT0 = o.t
+                bringBackVideo()
+                pipStep = 2
+                pipTimer.start()
+            })
+        } else if (pipStep === 2) {                             // brought back with the button path
+            check("the tab is back in the window", pipView === null && currentView.parent === stage, "")
+            pipQuery(function (o, raw) {
+                check("the page looks as before (style and class removed)", o.style === false && o.cls === false && o.otherVis === "visible", raw)
+                check("the video kept playing and kept its position", o.paused === false && o.t > pipT0, raw)
+                pipT0 = o.t
+                popOutVideo()
+                pipStep = 3
+                pipTimer.start()
+            })
+        } else if (pipStep === 3) {                             // second pop-out: closed with the small window's own close button
+            check("popping out a second time works", pipView !== null && pipWindow !== null && pipWindow.visible, "")
+            pipWindow.close()
+            pipStep = 4
+            pipTimer.start()
+        } else if (pipStep === 4) {
+            check("closing the small window brings the tab back", pipView === null && currentView.parent === stage, "")
+            pipQuery(function (o, raw) {
+                check("the page is as before after the second round", o.style === false && o.cls === false && o.paused === false && o.t > pipT0, raw)
+                selfTestResult = JSON.stringify(stChecks)
+            })
+        }
+    }
+    Timer { id: pipTimer; interval: 1800; onTriggered: win.pipTestStep() }
     // --probe: what the loaded page recorded (window.__res) and how many requests the ad blocker stopped for its host
     function probe() {
         if (!currentView) { selfTestResult = "[]"; return }
@@ -325,6 +454,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+0"; onActivated: win.zoomBy(0) }
     Shortcut { sequence: "F11"; onActivated: win.setFull(!win.isFull) }
     Shortcut { sequence: "F12"; onActivated: win.openDevTools() }
+    Shortcut { sequence: "Alt+P"; onActivated: win.pipView ? win.bringBackVideo() : win.popOutVideo() }
     Shortcut { sequence: "Ctrl+U"; onActivated: if (!win.curBlank) win.addTab("view-source:" + win.curUrl, true) }
     Shortcut { sequence: "Ctrl+Tab"; onActivated: win.currentIndex = (win.currentIndex + 1) % tabs.count }
     Shortcut { sequence: "Ctrl+Shift+Tab"; onActivated: win.currentIndex = (win.currentIndex + tabs.count - 1) % tabs.count }
@@ -571,6 +701,30 @@ ApplicationWindow {
                     }
                 }
                 IconButton {
+                    id: videoButton
+                    objectName: "videoButton"
+                    kind: "video"
+                    tip: Tr.t("media_tip")
+                    readonly property int count: { Browser.media.tick; return Browser.media.countFor(win.curHost) }
+                    visible: count > 0
+                    onClicked: { mediaMenu.entries = Browser.media.listFor(win.curHost); mediaMenu.popup(x, y + height) }
+                    Rectangle {
+                        x: parent.width - width + 2; y: 0
+                        width: Math.max(14, mediaCount.implicitWidth + 6); height: 14; radius: 7
+                        color: win.accent
+                        Text { id: mediaCount; anchors.centerIn: parent; text: videoButton.count; color: Theme.readableOn(win.accent); font.pixelSize: 9; font.weight: Font.DemiBold }
+                    }
+                }
+                IconButton {
+                    objectName: "pipButton"
+                    kind: "pip"
+                    tip: win.pipView ? Tr.t("pip_back") : Tr.t("pip_tip")
+                    active: win.pipView !== null
+                    activeColor: win.accent
+                    enabled: !win.curBlank || win.pipView !== null
+                    onClicked: win.pipView ? win.bringBackVideo() : win.popOutVideo()
+                }
+                IconButton {
                     objectName: "downloadsButton"
                     kind: "download"
                     tip: Tr.t("downloads")
@@ -699,8 +853,9 @@ ApplicationWindow {
                         id: wv
                         required property int index
                         required property string startUrl
+                        property bool poppedOut: false                   // the page is in the picture-in-picture window (it must stay visible there)
                         anchors.fill: parent
-                        visible: index === win.currentIndex
+                        visible: poppedOut || index === win.currentIndex
                         profile: win.privateMode ? privateProfile : Browser.profile
                         url: "about:blank"
                         backgroundColor: Theme.background
@@ -793,6 +948,36 @@ ApplicationWindow {
                         IconButton { kind: "forward"; box: 28; tip: Tr.t("forward"); onClicked: win.doFind(false); rotation: 90 }
                         IconButton { kind: "close"; box: 28; tip: Tr.t("close"); onClicked: win.closeFind() }
                     }
+                }
+
+                Rectangle {                           // the tab whose video is in the small window
+                    objectName: "pipPlaceholder"
+                    visible: win.pipView !== null && win.pipView === win.currentView
+                    anchors.fill: parent
+                    z: 5
+                    color: Theme.background
+                    ColumnLayout {
+                        anchors.centerIn: parent
+                        spacing: 14
+                        LineIcon { Layout.alignment: Qt.AlignHCenter; kind: "pip"; size: 40; color: win.accent }
+                        Text { Layout.alignment: Qt.AlignHCenter; text: Tr.t("pip_placeholder"); color: Theme.text; font.pixelSize: 15 }
+                        BButton { Layout.alignment: Qt.AlignHCenter; text: Tr.t("pip_back"); variant: "primary"; onClicked: win.bringBackVideo() }
+                    }
+                }
+
+                Rectangle {                           // a short message
+                    visible: win.noteText !== ""
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 24
+                    z: 30
+                    width: noteLabel.implicitWidth + 28
+                    height: 34
+                    radius: 17
+                    color: Theme.surface
+                    border.width: 1
+                    border.color: Theme.border
+                    Text { id: noteLabel; anchors.centerIn: parent; text: win.noteText; color: Theme.text; font.pixelSize: 13 }
                 }
 
                 Rectangle {                           // the address of a link under the pointer
@@ -893,6 +1078,27 @@ ApplicationWindow {
         DItem { text: Tr.t("tab_reopen"); enabled: win.closedUrls.length > 0; onTriggered: win.reopenClosed() }
     }
     DMenu {
+        id: mediaMenu
+        objectName: "mediaMenu"
+        property var entries: []
+        Repeater {
+            model: mediaMenu.entries
+            delegate: DItem {
+                required property var modelData
+                text: (modelData.kind === "file" ? Tr.t("media_save_file") : Tr.t("media_save_stream")) + "  -  " + modelData.name
+                onTriggered: {
+                    if (Browser.media.save(modelData.url, modelData.kind, modelData.pageUrl || win.curUrl)) { win.panel = "downloads"; win.showNote(Tr.t("media_started")) }
+                }
+            }
+        }
+    }
+    Connections {
+        target: Browser.media
+        function onRefused(code, detail) {
+            win.showNote(code === "excluded" ? Tr.t("media_excluded") : code === "noffmpeg" ? Tr.t("media_noffmpeg") : Tr.t("media_failed", detail))
+        }
+    }
+    DMenu {
         id: shieldMenu
         objectName: "shieldMenu"
         DItem {
@@ -956,6 +1162,19 @@ ApplicationWindow {
                 anchors.fill: parent
                 profile: win.privateMode ? privateProfile : Browser.profile
             }
+        }
+    }
+
+    Timer { id: noteTimer; interval: 3500; onTriggered: win.noteText = "" }
+    Component {
+        id: pipComponent
+        Window {                                          // the small window of the picture in picture: always on top, the page's video fills it
+            objectName: "pipWindow"
+            flags: Qt.Window | Qt.WindowStaysOnTopHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowMinMaxButtonsHint
+            minimumWidth: 200
+            minimumHeight: 120
+            color: "black"
+            onClosing: win.bringBackVideo()
         }
     }
 
