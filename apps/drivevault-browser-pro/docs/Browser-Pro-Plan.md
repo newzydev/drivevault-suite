@@ -75,7 +75,8 @@ Phase 1 scope, built on what Master Pro's `BrowserView.qml` already solved (tabs
 - Bookmarks (bar + manager, import / export HTML), history (page + clear), downloads page with pause / resume / show in folder, Settings (privacy, ad blocking, appearance, search, languages, about).
 - Private window (off-the-record profile; no history, no cookies kept).
 - Permissions as in Master Pro (ask, remember, reset). Notifications default **Block**.
-- Not planned: sync, Chrome extensions / Web Store, a built-in password manager (storing passwords needs its own security design; if wanted, a separate decision with Windows DPAPI), Google account sign-in features.
+- Google account, extensions and sync: **added by the owner's request 2026-11-19, see section 11** (it changes what section 2 says about extensions).
+- Not planned: a built-in password manager (storing passwords needs its own security design; if wanted, a separate decision with Windows DPAPI).
 
 ## 6. Other features
 
@@ -130,3 +131,25 @@ Master Pro's `docs/suite-integration.md` currently lists only Video Editor, PDF 
 - Chromium security updates arrive only with a new Qt release: keep a Qt update routine and show the Chromium version in About.
 - Installer size (about 150 MB for WebEngine, more with lists) and memory use per tab; measure in Phase 1.
 - Qt WebEngine gaps (PiP, DevTools, extension APIs, some media codecs: proprietary codecs such as H.264 need a build option that may not be in the Qt binaries in `.tools`): checked in Phase 0 before promising them.
+
+## 11. Google sign-in, Chrome extensions, Google sync (owner's request 2026-11-19)
+
+What was found (web search 2026-11-19; each point is re-verified in Phase 0 on the real build):
+
+| Wish | What is possible | What is not |
+|---|---|---|
+| **Sign in to Google** | (a) Sign in **inside a page** (gmail.com, youtube.com): Google blocks sign-in from embedded browser frameworks ("Couldn't sign you in. This browser or app may not be secure", policy since 2021, [Google's note](https://developers.googleblog.com/2020/08/guidance-for-our-effort-to-block-less-secure-browser-and-apps.html)). It may or may not work for Qt WebEngine today: Phase 0 tries it with the plain Chrome-like user agent and reports. We do **not** build on a user-agent trick, which breaks without notice and is against what Google asks of embedded browsers. (b) **"Sign in with Google" for the program itself** through Google's official OAuth 2.0 installed-app flow: the sign-in opens in the user's system browser, the program receives the token on `127.0.0.1` (PKCE). This is the method Google recommends and it works. | A guarantee that gmail.com / YouTube sign-in works inside the program's own pages. |
+| **Extensions from Google** | Qt WebEngine **6.10 and later** has `QWebEngineExtensionManager` (install a zipped / unpacked extension, loaded at start). Only **Manifest V3** extensions; not in private windows; the installed ones start disabled until the program enables them. The project is on Qt 6.8.3, so this needs a Qt upgrade (a download, owner's permission, and a re-check of Master Pro, which uses the same Qt). | The Chrome Web Store "Add to Chrome" button is Chrome's own code: the program needs its own "Install from the Web Store" step (fetch the CRX from the Store address with the user pressing the button, check it, hand it to the manager). Whether the Store terms allow it for a non-Chrome browser, and how much of the extension API the Qt layer implements (e.g. `webRequest` blocking, `declarativeNetRequest`, popups, `chrome.storage`), is unverified: Phase 0 tests with 3 real extensions chosen by the owner. Manifest V2 extensions (old uBlock Origin) will not load. Many extensions will only partly work. |
+| **Sync with Google** (history, profile, bookmarks, ...) | **Own sync through the user's Google Drive** (`drive.appdata` scope = a hidden app folder, no access to the user's other files): bookmarks, history (bounded), settings, my filters, open tabs list, encrypted on this PC before upload (key from a user passphrase; Google cannot read it). Conflict rule: per-item last-write-wins with timestamps, deletions kept as tombstones. Works across PCs with DriveVault Browser Pro. | **Real Chrome Sync.** It is a private Google service reserved for Google Chrome builds (access needs Google's Chrome API keys); a third-party browser cannot connect to it, and our bookmarks will **not** appear in Google Chrome or the other way round. Passwords and payment cards are not synced (no password manager, section 5). |
+
+Prerequisites the owner must provide: a Google Cloud project with an OAuth client (type "Desktop app") and the consent screen; `drive.appdata` is a non-sensitive scope (no verification needed for it, but the project must be set up by the owner's Google account). The client ID goes into the program (a desktop client secret is not secret; treat it as public, unlike the NVIDIA key rule in Master Pro: nothing else is embedded).
+
+New phases (after the engine phases; Qt upgrade first):
+| Phase | Content | Done when |
+|---|---|---|
+| 0b | on Qt 6.10+ (separate build folder, no change to Master Pro): load 3 MV3 extensions through `QWebEngineExtensionManager`; try Google sign-in inside a page; list what works | written result |
+| 7 Google account | OAuth installed-app flow in the system browser, token in Windows Credential Manager (never in settings), sign-out | sign in and out verified by hand |
+| 8 Sync | Drive appdata store, encryption, merge rules, "Sync now" + a switch per data type, status text that says the last real sync time | two profiles on one PC sync bookmarks both ways in a test; real Drive tested by hand with the owner's account |
+| 9 Extensions | Qt upgrade done, extensions page (install from file, from Web Store address, enable / disable / remove, permissions shown), compatibility notes per tested extension | the 3 test extensions run; failures listed in the UI as "may not work fully" |
+
+Honest labels in the UI: "Signed in to Google (sync only)" and "Extensions (Manifest V3, partial)". The program never says "Chrome Sync" and never implies that gmail.com sign-in works unless Phase 0b showed it.
