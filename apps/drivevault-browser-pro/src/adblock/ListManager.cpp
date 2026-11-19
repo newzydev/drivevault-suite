@@ -94,8 +94,8 @@ ListManager::Built ListManager::build(const QVector<ListDef>& catalog, const QSt
         st.present = true;
         st.bytes = f.size();
         st.date = QFileInfo(f).lastModified().toString(Qt::ISODate);
-        QFile meta(dataDir + QStringLiteral("/filters/") + def.id + QStringLiteral(".meta.json"));
-        if (meta.open(QIODevice::ReadOnly) && path.startsWith(dataDir))
+        QFile meta(path.left(path.size() - 4) + QStringLiteral(".meta.json"));      // next to the list that was read (the installer's snapshot has one too)
+        if (meta.open(QIODevice::ReadOnly))
             st.date = QJsonDocument::fromJson(meta.readAll()).object().value(QStringLiteral("date")).toString(st.date);
         while (!f.atEnd()) {
             const QString line = QString::fromUtf8(f.readLine());

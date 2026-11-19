@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.38.0 (2026-11-19): DriveVault Browser Pro in the program list
+  - New: a card for DriveVault Browser Pro (cyan, section "Other programs"): shows it, opens it, updates it from its GitHub releases (slug drivevault-browser-pro) and uninstalls it like the other programs. Browser Pro is a beta; until a Release is published the card offers an install only from a setup file on this PC.
+  - Tested: tst_hub (the card, its colour, section and status). The installer of Browser Pro was built but not install-tested.
+
 v1.37.0 (2026-11-19): A shorter list of online models that really finish a job, and a fairer web limit
   - Changed: the online models are now Nemotron 3.5 Super 120B (the best, listed first) and Laguna XS 2.1 (Poolside, a little faster). Nemotron 3 Ultra 550B, Nemotron 3.5 Bolt and MiniMax M3.1 Flash are removed (a saved choice of one of them is forgotten and the program goes back to the model of this PC).
   - Why: the same Thai landing-page job was given to each model on the Agentic AI page (web off, one run each, so this is a hint and not a statistical test): Super 108 s and a 26 KB page that checked itself on three screen sizes; Laguna 81 s and 21 KB; Ultra 550B 957 s and an empty file; Kimi K3.1 Pro, GLM 5.3 Flash, Mistral Large 4, Muse Glimmer 30B and Step 5 Preview did not finish in 8 minutes; Bolt, Lightning, Gemma 4 31B and Nano Omni finished but gave plainer or smaller pages, or took longer.

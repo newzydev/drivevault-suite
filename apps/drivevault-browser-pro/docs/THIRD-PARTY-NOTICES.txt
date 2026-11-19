@@ -1,0 +1,36 @@
+DriveVault Browser Pro - Third-party notices
+============================================
+
+DriveVault Browser Pro itself is proprietary software (see LICENSE.txt). It includes:
+
+1. Qt 6.8 (Core, Gui, Qml, Quick, Quick Controls 2, Quick Dialogs 2, Quick Layouts, Quick Templates 2, Network, WebEngine (Core, Quick), WebChannel, Positioning and plug-ins)
+   GNU Lesser General Public License v3 (LGPL-3.0)                              licenses\LGPL-3.0.txt
+   The Qt libraries are used as shared libraries (DLLs) and are not modified: you may replace them with another build of the same Qt version.
+   LGPL-3.0 incorporates the GNU GPL v3 terms by reference: licenses\GPL-3.0.txt.
+   Qt source code: https://download.qt.io/archive/qt/6.8/6.8.3/  (a written offer for the source is available from DriveVault on request).
+
+2. Chromium (inside Qt WebEngine, the web pages) - Copyright The Chromium Authors, BSD-3-Clause and the licences of the components it contains
+   (FFmpeg - LGPL-2.1 build without proprietary codecs, V8, Skia, ICU, ANGLE, Brotli, zlib and others)              licenses\Chromium-LICENSE.txt
+   Qt WebEngine is LGPL-3.0 (licenses\LGPL-3.0.txt). The list of the components with their licences and the source code are published by The Qt Company:
+   https://code.qt.io/cgit/qt/qtwebengine-chromium.git/ (a written offer for the source is available from DriveVault on request).
+   Because this build of Chromium has no proprietary codecs, some video formats (H.264, AAC) do not play on some websites.
+
+3. FFmpeg 8.1 (LGPL-3.0 shared build, no GPL and no non-free parts) - the FFmpeg developers          licenses\FFmpeg-LICENSE.txt, licenses\LGPL-3.0.txt
+   Used only by the video saver, as a separate program (ffmpeg\ffmpeg.exe with its DLLs in the same folder), to join the pieces of an HLS / DASH stream that has
+   no copy protection into one mp4 file without re-encoding. Source: https://ffmpeg.org/ (a written offer for the source is available from DriveVault on request).
+   The DLLs are not modified: you may replace them with another build of the same FFmpeg version.
+
+4. Filter lists (data, a snapshot: EasyList, EasyPrivacy, Fanboy's Social Blocking List, Fanboy's Annoyance List) - the EasyList authors,
+   CC BY-SA 3.0 or GPL-3.0-or-later at the recipient's choice                                  licenses\EasyList-NOTICE.txt, licenses\GPL-3.0.txt, filters\*.meta.json
+   Shipped unchanged in the folder "filters"; the program reads them as text. The scriptlets and stand-in files of the page layer are DriveVault's own code
+   (written for this program; no code of uBlock Origin or Adblock Plus is included).
+
+5. Inter font and Noto Sans Thai font - SIL Open Font License 1.1               licenses\OFL-Inter.txt, licenses\OFL-NotoSansThai.txt
+
+6. Microsoft Visual C++ runtime (msvcp140*.dll, vcruntime140*.dll) - redistributed under the Microsoft Visual Studio license terms for
+   redistributable files. Installed next to the program (app-local).
+
+7. Inno Setup - used to create the installer; the installer carries Inno Setup's runtime (https://jrsoftware.org/files/is/license.txt).
+
+Trademarks belong to their owners. Qt is a registered trademark of The Qt Company Ltd. Chromium and Chrome are trademarks of Google LLC; this program is not made by or
+endorsed by Google.

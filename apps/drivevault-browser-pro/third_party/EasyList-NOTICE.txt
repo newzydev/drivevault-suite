@@ -1,0 +1,19 @@
+Filter lists shipped with DriveVault Browser Pro (a snapshot; the program can update them when the user presses "Update filter lists")
+=====================================================================================================================================
+
+  EasyList                      https://easylist.to/easylist/easylist.txt
+  EasyPrivacy                   https://easylist.to/easylist/easyprivacy.txt
+  Fanboy's Social Blocking List https://easylist.to/easylist/fanboy-social.txt
+  Fanboy's Annoyance List       https://easylist.to/easylist/fanboy-annoyance.txt
+
+Copyright The EasyList authors (https://easylist.to/). Each list says in its own header: "Licence: https://easylist.to/pages/licence.html".
+That page offers the lists under two licences, to be chosen by the recipient:
+
+  * the Creative Commons Attribution-ShareAlike 3.0 Unported licence (https://creativecommons.org/licenses/by-sa/3.0/), or
+  * the GNU General Public License, version 3 or (at your option) any later version (the text is in GPL-3.0.txt next to this file).
+
+DriveVault Browser Pro uses the lists as DATA files (text read at run time); they are not linked into the program. The files in the "filters" folder are shipped
+unchanged, exactly as downloaded on the date written in the matching <list>.meta.json file (date, size and SHA-256 of the file). They may be copied, changed and
+redistributed under the terms above. The lists the program downloads later are saved in the user's own data folder and replace the snapshot for that user only.
+
+Not a part of DriveVault Browser Pro's own licence (LICENSE.txt), which covers the program, not these lists.
