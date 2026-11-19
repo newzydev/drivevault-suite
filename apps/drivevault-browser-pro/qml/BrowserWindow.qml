@@ -370,8 +370,14 @@ ApplicationWindow {
             stTimer.start()
         } else if (step === 3) {
             check("typed address is opened", curUrl.indexOf("http://localhost:1/x") === 0, curUrl)
-            panel = "settings"
-            check("settings panel is shown", sidePanel.visible, "")
+            const originalLanguage = Tr.lang
+            languageChoices.itemAt(0).clicked()
+            const thaiSelected = Tr.lang === "th" && languageChoices.itemAt(0).current
+            languageChoices.itemAt(1).clicked()
+            check("title bar language switch selects Thai and English", thaiSelected && Tr.lang === "en" && languageChoices.itemAt(1).current, "")
+            Browser.settings.language = originalLanguage
+            settingsButton.clicked()
+            check("title bar settings button opens settings", panel === "settings" && sidePanel.visible, "")
             panel = ""
             selfTestResult = JSON.stringify(stChecks)
         }
@@ -585,6 +591,69 @@ ApplicationWindow {
                     font.weight: Font.DemiBold
                 }
                 Item { Layout.fillWidth: true }
+                Rectangle {
+                    implicitHeight: 32
+                    implicitWidth: languages.implicitWidth + 6
+                    radius: 16
+                    color: Theme.surface
+                    border.width: 1
+                    border.color: Theme.border
+
+                    Row {
+                        id: languages
+                        anchors.centerIn: parent
+                        spacing: 2
+                        Repeater {
+                            id: languageChoices
+                            model: ["th", "en"]
+                            delegate: AbstractButton {
+                                id: languageButton
+                                required property string modelData
+                                readonly property bool current: Tr.lang === modelData
+                                implicitWidth: 46
+                                implicitHeight: 26
+                                hoverEnabled: true
+                                text: modelData === "th" ? Tr.t("language_th") : "EN"
+                                Accessible.name: text
+                                onClicked: Browser.settings.language = modelData
+
+                                HoverHandler { cursorShape: Qt.PointingHandCursor }
+                                contentItem: Text {
+                                    text: languageButton.text
+                                    font.pixelSize: 12
+                                    font.weight: Font.DemiBold
+                                    color: languageButton.current ? Theme.readableOn(win.accent) : Theme.textSecondary
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                background: Rectangle {
+                                    radius: 13
+                                    color: languageButton.current ? win.accent : languageButton.hovered ? Theme.surfaceHover : "transparent"
+                                    border.width: languageButton.visualFocus ? 1 : 0
+                                    border.color: Theme.text
+                                }
+                            }
+                        }
+                    }
+                }
+                BButton {
+                    id: settingsButton
+                    Layout.preferredWidth: 34
+                    Layout.rightMargin: 4
+                    leftPadding: 0
+                    rightPadding: 0
+                    Accessible.name: Tr.t("settings")
+                    checkable: true
+                    checked: win.panel === "settings"
+                    onClicked: win.togglePanel("settings")
+                    ToolTip.visible: hovered
+                    ToolTip.delay: 500
+                    ToolTip.text: Tr.t("settings")
+                    GearIcon {
+                        anchors.centerIn: parent
+                        color: settingsButton.checked ? win.accent : Theme.text
+                    }
+                }
                 Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; color: Theme.border }
                 RowLayout {
                     spacing: 2

@@ -14,7 +14,7 @@
 | DriveVault Document Pro<br>เอกสาร / documents | - | เร็วๆ นี้ / coming soon |
 | DriveVault Presentation Pro<br>งานนำเสนอ / presentations | - | เร็วๆ นี้ / coming soon |
 | DriveVault Spreadsheet Pro<br>ตาราง / spreadsheets | - | เร็วๆ นี้ / coming soon |
-| DriveVault Browser Pro<br>เว็บเบราว์เซอร์ / web browser | 0.6.1 (รุ่นทดลอง / beta) | [![Download Browser Pro 0.6.1](https://img.shields.io/badge/Download-0.6.1-06B6D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/newzydev/drivevault-suite/releases/download/drivevault-browser-pro-v0.6.1/DriveVault-Browser-Pro-Setup-x64.exe)<br>[รายละเอียดรุ่น / release page](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-browser-pro-v0.6.1) |
+| DriveVault Browser Pro<br>เว็บเบราว์เซอร์ / web browser | 0.6.2 (รุ่นทดลอง / beta) | [![Download Browser Pro 0.6.2](https://img.shields.io/badge/Download-0.6.2-06B6D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/newzydev/drivevault-suite/releases/download/drivevault-browser-pro-v0.6.2/DriveVault-Browser-Pro-Setup-x64.exe)<br>[รายละเอียดรุ่น / release page](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-browser-pro-v0.6.2) |
 | **DriveVault PDF Pro**<br>จัดการ PDF / PDF tools | 1.22.2 | [![Download PDF Pro 1.22.2](https://img.shields.io/badge/Download-1.22.2-EF4444?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/newzydev/drivevault-suite/releases/download/drivevault-pdf-pro-v1.22.2/DriveVault-PDF-Pro-Setup-x64.exe)<br>[รายละเอียดรุ่น / release page](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.22.2) |
 
 ต้องใช้ Windows 10 หรือ 11 (64 บิต) · *Windows 10 or 11, 64-bit.*
