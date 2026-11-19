@@ -16,7 +16,7 @@ ApplicationWindow {
     property bool privateMode: false
     property bool primary: true
     property var startUrls: []
-    property string panel: ""                       // "" | history | bookmarks | downloads | settings
+    property string panel: ""                       // "" | history | bookmarks | downloads
     property int currentIndex: 0
     property int pinnedCount: 0
     property var closedUrls: []
@@ -218,7 +218,11 @@ ApplicationWindow {
             injectionPoint: WebEngineScript.DocumentCreation, worldId: WebEngineScript.MainWorld, runsOnSubFrames: false
         }]
     }
-    function togglePanel(kind) { panel = panel === kind ? "" : kind }
+    function showPanel(kind) {
+        if (kind === "settings") settingsModal.open()
+        else panel = kind
+    }
+    function togglePanel(kind) { showPanel(panel === kind ? "" : kind) }
     function focusOmnibox() { omnibox.forceActiveFocus(); omnibox.selectAll() }
     function zoomBy(delta) {
         const v = currentView
@@ -377,8 +381,8 @@ ApplicationWindow {
             check("title bar language switch selects Thai and English", thaiSelected && Tr.lang === "en" && languageChoices.itemAt(1).current, "")
             Browser.settings.language = originalLanguage
             settingsButton.clicked()
-            check("title bar settings button opens settings", panel === "settings" && sidePanel.visible, "")
-            panel = ""
+            check("title bar settings button opens settings", settingsModal.visible && settingsModal.modal, "")
+            settingsModal.close()
             check("Home uses Google by default and respects a custom page",
                   homeAddress("") === "https://www.google.com"
                   && homeAddress("https://example.com/").toString() === "https://example.com/", "")
@@ -670,8 +674,8 @@ ApplicationWindow {
                     rightPadding: 0
                     Accessible.name: Tr.t("settings")
                     checkable: true
-                    checked: win.panel === "settings"
-                    onClicked: win.togglePanel("settings")
+                    checked: settingsModal.visible
+                    onClicked: settingsModal.open()
                     ToolTip.visible: hovered
                     ToolTip.delay: 500
                     ToolTip.text: Tr.t("settings")
@@ -955,7 +959,7 @@ ApplicationWindow {
                     objectName: "menuButton"
                     kind: "menu"
                     tip: Tr.t("menu")
-                    onClicked: mainMenu.popup(x, y + height)
+                    onClicked: mainMenu.open()
                 }
             }
             Rectangle {                           // load progress
@@ -1338,7 +1342,7 @@ ApplicationWindow {
             onTriggered: Browser.adblock.setPaused(win.curHost, !shieldButton.paused)
         }
         DSep {}
-        DItem { text: Tr.t("shield_settings"); onTriggered: win.panel = "settings" }
+        DItem { text: Tr.t("shield_settings"); onTriggered: settingsModal.open() }
     }
     DMenu {
         id: pageMenu
@@ -1356,30 +1360,123 @@ ApplicationWindow {
         DSep {}
         PageMenuItem { text: Tr.t("settings"); onTriggered: win.togglePanel("settings") }
     }
-    DMenu {
-        id: mainMenu
-        objectName: "mainMenu"
-        DItem { text: Tr.t("newTab"); onTriggered: win.addTab("", true) }
-        DItem { text: Tr.t("newWindow"); onTriggered: Browser.openWindow(false, "") }
-        DItem { text: Tr.t("newPrivate"); onTriggered: Browser.openWindow(true, "") }
-        DSep {}
-        DItem { text: Tr.t("history"); onTriggered: win.togglePanel("history") }
-        DItem { text: Tr.t("bookmarks"); onTriggered: win.togglePanel("bookmarks") }
-        DItem { text: Tr.t("downloads"); onTriggered: win.togglePanel("downloads") }
-        DSep {}
-        DItem { text: Tr.t("find"); onTriggered: win.openFind() }
-        DItem { text: Tr.t("zoomIn"); onTriggered: win.zoomBy(0.1) }
-        DItem { text: Tr.t("zoomOut"); onTriggered: win.zoomBy(-0.1) }
-        DItem { text: Tr.t("zoomReset"); onTriggered: win.zoomBy(0) }
-        DItem { text: Tr.t("savePdf"); enabled: !win.curBlank; onTriggered: pdfDialog.open() }
-        DItem { text: Tr.t("viewSource"); enabled: !win.curBlank; onTriggered: win.addTab("view-source:" + win.curUrl, true) }
-        DItem { text: Tr.t("devtools"); onTriggered: win.openDevTools() }
-        DItem { text: Tr.t("fullscreen"); onTriggered: win.setFull(true) }
-        DSep {}
-        DItem { text: Tr.t("settings"); onTriggered: win.togglePanel("settings") }
+        component CenterModal: Popup {
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        popupType: Popup.Item
+        modal: true
+        dim: true
+        focus: true
+        padding: 0
+        closePolicy: Popup.CloseOnEscape
+        Overlay.modal: Rectangle { color: "#B000080F" }
+        background: Rectangle {
+            radius: 18
+            color: Theme.backgroundAlt
+            border.color: Theme.border
+        }
+        enter: Transition {
+            ParallelAnimation {
+                NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 150 }
+                NumberAnimation { property: "scale"; from: 0.97; to: 1; duration: 150; easing.type: Easing.OutCubic }
+            }
+        }
     }
 
-    FileDialog {
+    CenterModal {
+        id: settingsModal
+        objectName: "settingsModal"
+        width: Math.min(740, parent.width - 48)
+        height: Math.min(700, parent.height - 48)
+        padding: 1
+        contentItem: SidePanel {
+            kind: "settings"
+            embedded: true
+            privateMode: win.privateMode
+            onCloseRequested: settingsModal.close()
+        }
+    }
+
+    CenterModal {
+        id: mainMenu
+        objectName: "mainMenu"
+        width: Math.min(580, parent.width - 48)
+        height: Math.min(450, parent.height - 48)
+
+        contentItem: ColumnLayout {
+            spacing: 0
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 60
+                Layout.leftMargin: 18
+                Layout.rightMargin: 12
+                spacing: 10
+                LineIcon { kind: "menu"; color: win.accent }
+                Text {
+                    text: Tr.t("menu")
+                    color: Theme.text
+                    font.pixelSize: 17
+                    font.weight: Font.DemiBold
+                    Layout.fillWidth: true
+                }
+                IconButton { kind: "close"; tip: Tr.t("close"); onClicked: mainMenu.close() }
+            }
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.borderSubtle }
+            Flickable {
+                id: menuScroll
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                contentWidth: width
+                contentHeight: actions.implicitHeight + 28
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                ScrollBar.vertical: ScrollBar {}
+
+                GridLayout {
+                    id: actions
+                    x: 16
+                    y: 14
+                    width: menuScroll.width - 32
+                    columns: 2
+                    columnSpacing: 8
+                    rowSpacing: 8
+                    Repeater {
+                        model: [
+                            { key: "newTab", run: () => win.addTab("", true) },
+                            { key: "newWindow", run: () => Browser.openWindow(false, "") },
+                            { key: "newPrivate", run: () => Browser.openWindow(true, "") },
+                            { key: "settings", run: () => settingsModal.open() },
+                            { key: "history", run: () => win.togglePanel("history") },
+                            { key: "bookmarks", run: () => win.togglePanel("bookmarks") },
+                            { key: "downloads", run: () => win.togglePanel("downloads") },
+                            { key: "find", run: () => win.openFind() },
+                            { key: "zoomIn", run: () => win.zoomBy(0.1) },
+                            { key: "zoomOut", run: () => win.zoomBy(-0.1) },
+                            { key: "zoomReset", run: () => win.zoomBy(0) },
+                            { key: "fullscreen", run: () => win.setFull(true) },
+                            { key: "savePdf", needsPage: true, run: () => pdfDialog.open() },
+                            { key: "viewSource", needsPage: true, run: () => win.addTab("view-source:" + win.curUrl, true) },
+                            { key: "devtools", run: () => win.openDevTools() }
+                        ]
+                        delegate: BButton {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            Layout.preferredHeight: 38
+                            text: Tr.t(modelData.key)
+                            enabled: !modelData.needsPage || !win.curBlank
+                            onClicked: {
+                                mainMenu.close()
+                                modelData.run()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+FileDialog {
         id: pdfDialog
         title: Tr.t("savePdf")
         fileMode: FileDialog.SaveFile

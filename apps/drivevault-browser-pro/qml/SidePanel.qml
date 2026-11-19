@@ -9,11 +9,12 @@ Rectangle {
     id: panel
     property string kind: "history"               // history | bookmarks | downloads | settings
     property bool privateMode: false
+    property bool embedded: false
     signal openUrl(string url, bool newTab)
     signal closeRequested()
 
-    color: Theme.backgroundAlt
-    border.width: 1
+    color: embedded ? "transparent" : Theme.backgroundAlt
+    border.width: embedded ? 0 : 1
     border.color: Theme.borderSubtle
     clip: true
 
@@ -25,9 +26,10 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 48
+            Layout.preferredHeight: panel.embedded ? 60 : 48
             Layout.leftMargin: 16
             Layout.rightMargin: 8
+            GearIcon { visible: panel.embedded; color: Theme.accent }
             Text {
                 Layout.fillWidth: true
                 text: panel.titleOf(panel.kind)

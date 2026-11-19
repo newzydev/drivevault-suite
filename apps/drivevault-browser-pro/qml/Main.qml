@@ -22,7 +22,7 @@ QtObject {
     }
 
     function showPanel(name) {
-        if (firstWindow) firstWindow.panel = name
+        if (firstWindow) firstWindow.showPanel(name)
     }
 
     property Connections requests: Connections {

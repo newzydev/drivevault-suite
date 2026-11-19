@@ -8,6 +8,9 @@ Rectangle {
 
     property bool privateMode: false
     property var sites: privateMode ? [] : Browser.history.topSites(8)
+    readonly property var shortcutSites: privateMode ? [] : [{ title: "Google", url: "https://www.google.com/" }]
+        .concat(Browser.bookmarks.items.filter(b => !/^https:\/\/www\.google\.com\/?$/i.test(b.url)).slice(0, 7))
+    readonly property var visibleSites: siteTabs.currentIndex === 0 ? shortcutSites : sites
     readonly property color accent: privateMode ? Theme.privateAccent : Theme.accent
 
     signal go(string text)
@@ -130,7 +133,7 @@ Rectangle {
             Rectangle {
                 visible: !page.privateMode
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: Math.min(dashboard.width, Math.max(148, Math.min(page.sites.length, 6) * 110 + 26))
+                Layout.preferredWidth: Math.min(dashboard.width, 690)
                 Layout.topMargin: 6
                 implicitHeight: shortcuts.implicitHeight + 32
                 color: "#CD111C26"
@@ -146,19 +149,37 @@ Rectangle {
                     anchors.margins: 16
                     spacing: 10
 
+                    TabBar {
+                        id: siteTabs
+                        objectName: "workspaceTabs"
+                        Layout.fillWidth: true
+                        padding: 3
+                        spacing: 4
+                        background: Rectangle {
+                            radius: 12
+                            color: "#BD0B151E"
+                            border.color: "#4D8EA9BA"
+                        }
+                        WorkspaceTab { text: Tr.t("ntp_shortcuts") }
+                        WorkspaceTab { text: Tr.t("ntp_top") }
+                    }
                     Text {
-                        Layout.alignment: page.sites.length <= 1 ? Qt.AlignHCenter : Qt.AlignLeft
-                        text: Tr.t(page.sites.length ? "ntp_top" : "ntp_shortcuts")
-                        color: Theme.text
+                        visible: page.visibleSites.length === 0
+                        Layout.fillWidth: true
+                        topPadding: 10
+                        bottomPadding: 12
+                        text: Tr.t("ntp_history_empty")
+                        color: Theme.textSecondary
                         font.pixelSize: 13
-                        font.weight: Font.DemiBold
+                        wrapMode: Text.WordWrap
+                        horizontalAlignment: Text.AlignHCenter
                     }
                     Flow {
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: page.sites.length <= 1 ? Math.min(104, shortcuts.width) : shortcuts.width
+                        visible: page.visibleSites.length > 0
+                        Layout.fillWidth: true
                         spacing: 6
                         Repeater {
-                            model: page.sites.length ? page.sites : [{ title: "Google", url: "https://www.google.com/" }]
+                            model: page.visibleSites
                             delegate: AbstractButton {
                                 id: shortcut
                                 required property var modelData
@@ -209,6 +230,29 @@ Rectangle {
                     }
                 }
             }
+        }
+    }
+
+    component WorkspaceTab: TabButton {
+        id: tab
+        implicitHeight: 36
+        hoverEnabled: true
+        font.pixelSize: 13
+        font.weight: Font.DemiBold
+        HoverHandler { cursorShape: Qt.PointingHandCursor }
+        background: Rectangle {
+            radius: 9
+            color: tab.checked ? "#214959" : tab.hovered ? "#223542" : "transparent"
+            border.width: tab.checked || tab.visualFocus ? 1 : 0
+            border.color: tab.visualFocus ? page.accent : "#527C8B"
+        }
+        contentItem: Text {
+            text: tab.text
+            font: tab.font
+            color: tab.checked ? "#B4F0FA" : Theme.textSecondary
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
         }
     }
 }
