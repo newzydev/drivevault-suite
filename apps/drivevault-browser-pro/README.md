@@ -2,9 +2,9 @@
 
 A Chrome-like web browser for Windows (Qt 6.8, Qt WebEngine / Chromium) with a built-in ad blocker. Accent colour cyan `#06B6D4`.
 
-**Status: version 0.8.1, beta. The installer is built by `scripts\package.ps1` (not install-tested by an agent), the program is listed in Master Pro, and the published release is 0.6.0.** Not done: extensions (on hold, see the plan), Google sign-in / sync (cancelled by the owner). The plan is `docs/Browser-Pro-Plan.md`; the first tests of the engine are in `docs/Phase0b-Results.md`.
+**Status: version 1.0.0, approved for stable release. The installer is built by `scripts\package.ps1` (not install-tested by an agent), the program is listed in Master Pro, and the latest recorded release is 0.6.0 (beta).** Not done: extensions (on hold, see the plan), Google sign-in / sync (cancelled by the owner). The plan is `docs/Browser-Pro-Plan.md`; the first tests of the engine are in `docs/Phase0b-Results.md`.
 
-## What works in 0.8.1 (Phases 1 - 6)
+## What works in 1.0.0 (Phases 1 - 6)
 Tabs (new, close, duplicate, pin, close others / to the right, reopen closed), address bar with suggestions from bookmarks and history and Google as the default search engine, back / forward / reload / home,
 bookmarks (star, bookmarks bar, panel, import / export as HTML), history (search, remove, clear), downloads (pause / resume / cancel, show in folder, warning for program files), find in page, zoom per site, full screen,
 save a page as PDF, view source, developer tools, private window, website permissions that ask (notifications are refused by default), restore of the tabs of last time (setting), Thai + English.

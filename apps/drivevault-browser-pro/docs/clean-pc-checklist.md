@@ -1,4 +1,4 @@
-# Browser Pro 0.8.1 clean Windows acceptance
+# Browser Pro 1.0.0 clean Windows acceptance
 
 Owner-run on disposable Windows 10 or 11 x64 VM snapshots with no DriveVault or Qt present. Not done by an agent: the installer was built, never installed. Use test pages and your own videos.
 
@@ -11,4 +11,4 @@ Owner-run on disposable Windows 10 or 11 x64 VM snapshots with no DriveVault or 
 7. Master Pro refuses removal while Browser Pro is installed. Uninstall Browser Pro: `%LOCALAPPDATA%\DriveVault\BrowserPro` and the saved videos remain. Then uninstall Master Pro.
 8. Restore the VM and repeat as **All users** (HKLM, Program Files, launch from a second account). Test an upgrade over an older Master Pro.
 
-Record the outcome of each item before approving a Release.
+Record the outcome of each item when clean-machine testing is performed. The owner approved 1.0.0 with these installation checks pending.

@@ -104,7 +104,7 @@ Phase 1 scope, built on what Master Pro's `BrowserView.qml` already solved (tabs
 
 Master Pro's `docs/suite-integration.md` currently lists only Video Editor, PDF Pro, Image and Audio as products: update it in the same change that adds the catalog entry.
 
-## 8. Phases (each ends with tests and a smoke start; versions start at 0.1.0 and the first Release is 1.0.0 only when the owner says so)
+## 8. Phases (each ends with tests and a smoke start; versions start at 0.1.0 and the first stable Release is 1.0.0)
 
 | Phase | Content | Done when |
 |---|---|---|
@@ -123,7 +123,7 @@ Master Pro's `docs/suite-integration.md` currently lists only Video Editor, PDF 
 3. **Engine**: own C++ matcher (recommended) or Brave `adblock-rust` (needs a Rust toolchain download).
 4. **Video download scope**: direct files and non-DRM HLS from any site (recommended) / also YouTube (not recommended).
 5. **Accent colour**: cyan `#06B6D4` (recommended) or other.
-6. Whether the first Release should wait for Phase 4, or ship after Phase 3 as 0.x with the real status "Beta" in the Master Pro card.
+6. **Release scope (owner decision, 2026-11-19):** ship 1.0.0 as the first stable version with the current features. Continue the remaining items in later versions. Version 0.6.0 was published as a beta.
 
 ## 10. Risks
 
