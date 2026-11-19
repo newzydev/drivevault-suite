@@ -2,8 +2,8 @@
 
 namespace dv::br {
 
-AdBlockController::AdBlockController(BrowserSettings* settings, AdBlockInterceptor* interceptor, const QString& dataDir, const QString& shippedDir, QObject* parent)
-    : QObject(parent), m_settings(settings), m_interceptor(interceptor), m_lists(dataDir, shippedDir)
+AdBlockController::AdBlockController(BrowserSettings* settings, AdBlockInterceptor* interceptor, StandInHandler* standIns, const QString& dataDir, const QString& shippedDir, QObject* parent)
+    : QObject(parent), m_settings(settings), m_interceptor(interceptor), m_standIns(standIns), m_lists(dataDir, shippedDir)
 {
     m_interceptor->setManager(&m_lists);
     connect(&m_lists, &ab::ListManager::statusChanged, this, &AdBlockController::changed);
@@ -51,8 +51,20 @@ void AdBlockController::start()
 
 void AdBlockController::attach(QQuickWebEngineProfile* profile)
 {
-    if (profile)
-        profile->setUrlRequestInterceptor(m_interceptor);
+    if (!profile)
+        return;
+    profile->setUrlRequestInterceptor(m_interceptor);
+    if (m_standIns)
+        profile->installUrlSchemeHandler(QByteArrayLiteral("dvres"), m_standIns);
+}
+
+QString AdBlockController::scriptFor(const QString& pageUrl) const
+{
+    if (!m_settings->adblockEnabled() || !m_settings->cosmeticEnabled() || m_library.isEmpty())
+        return {};
+    if (m_settings->adblockPaused(m_lists.hostOfUrl(pageUrl)))
+        return {};
+    return m_lists.pageScriptFor(m_library, pageUrl);
 }
 
 void AdBlockController::setEnabled(bool on) { m_settings->setAdblockEnabled(on); }

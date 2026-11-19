@@ -120,6 +120,13 @@ ApplicationWindow {
         else visibility = beforeFull === Window.FullScreen ? Window.Windowed : beforeFull
         isFull = on
     }
+    function prepareScripts(view, url) {
+        const src = Browser.adblock.scriptFor(url)
+        view.userScripts.collection = src === "" ? [] : [{
+            name: "dv-adblock", sourceCode: src,
+            injectionPoint: WebEngineScript.DocumentCreation, worldId: WebEngineScript.MainWorld, runsOnSubFrames: false
+        }]
+    }
     function togglePanel(kind) { panel = panel === kind ? "" : kind }
     function focusOmnibox() { omnibox.forceActiveFocus(); omnibox.selectAll() }
     function zoomBy(delta) {
@@ -691,6 +698,8 @@ ApplicationWindow {
                         settings.fullScreenSupportEnabled: true
                         settings.localContentCanAccessRemoteUrls: true
 
+                        // the hiding rules and scriptlets of the page that is about to open go in BEFORE it is created (a script of the page can then not run first)
+                        onNavigationRequested: request => { if (request.isMainFrame) win.prepareScripts(wv, request.url.toString()) }
                         onTitleChanged: tabs.setProperty(index, "title", title)
                         onIconChanged: tabs.setProperty(index, "icon", icon.toString())
                         onLoadingChanged: loadRequest => {

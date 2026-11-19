@@ -24,7 +24,7 @@ bool unsupportedOption(const QString& name)
     static const QStringList bad = {
         QStringLiteral("removeparam"), QStringLiteral("queryprune"), QStringLiteral("csp"), QStringLiteral("rewrite"), QStringLiteral("replace"), QStringLiteral("header"),
         QStringLiteral("permissions"), QStringLiteral("cname"), QStringLiteral("uritransform"), QStringLiteral("urlskip"), QStringLiteral("popup"), QStringLiteral("popunder"),
-        QStringLiteral("elemhide"), QStringLiteral("ehide"), QStringLiteral("generichide"), QStringLiteral("ghide"), QStringLiteral("specifichide"), QStringLiteral("shide"),
+        QStringLiteral("specifichide"), QStringLiteral("shide"),
         QStringLiteral("genericblock"), QStringLiteral("inline-script"), QStringLiteral("inline-font"), QStringLiteral("webrtc"), QStringLiteral("badfilter"),
         QStringLiteral("app"), QStringLiteral("method"), QStringLiteral("to"), QStringLiteral("from"), QStringLiteral("denyallow"), QStringLiteral("strict1p"), QStringLiteral("strict3p"),
         QStringLiteral("empty"), QStringLiteral("mp4"), QStringLiteral("redirect-rule"), QStringLiteral("xhr-only"), QStringLiteral("all-except"),
@@ -94,6 +94,11 @@ ParseKind parseLine(const QString& rawLine, NetRule& rule)
                 r.thirdParty = neg ? 0 : 1;
             } else if (opt == QLatin1String("first-party") || opt == QLatin1String("1p")) {
                 r.thirdParty = neg ? 1 : 0;
+            } else if (opt == QLatin1String("elemhide") || opt == QLatin1String("ehide")) {
+                r.cosmeticOff = 2;
+            } else if (opt == QLatin1String("generichide") || opt == QLatin1String("ghide")) {
+                if (r.cosmeticOff == 0)
+                    r.cosmeticOff = 1;
             } else if (opt == QLatin1String("important")) {
                 r.important = true;
             } else if (opt == QLatin1String("match-case")) {
@@ -154,6 +159,14 @@ ParseKind parseLine(const QString& rawLine, NetRule& rule)
         const bool endsCleanly = n == body.size() || body.at(n) == QLatin1Char('^') || body.at(n) == QLatin1Char('/') || body.at(n) == QLatin1Char(':') || body.at(n) == QLatin1Char('?');
         if (n > 0 && endsCleanly && !body.left(n).endsWith(QLatin1Char('.')) && !body.left(n).endsWith(QLatin1Char('-')))
             r.hostKey = body.left(n);
+    }
+    if (r.cosmeticOff != 0) {
+        if (!r.exception)
+            return ParseKind::Unsupported;               // meaningful only as an exception
+        r.types = Document;
+        r.typesGiven = true;
+        rule = r;
+        return ParseKind::CosmeticSite;
     }
     rule = r;
     return ParseKind::Network;

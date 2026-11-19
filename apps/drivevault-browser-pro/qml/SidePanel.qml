@@ -434,6 +434,13 @@ Rectangle {
                     checked: Browser.adblock.enabled
                     onToggled: Browser.adblock.enabled = checked
                 }
+                Toggle {
+                    objectName: "cosmeticSwitch"
+                    text: Tr.t("ab_cosmetic")
+                    enabled: Browser.adblock.enabled
+                    checked: Browser.settings.cosmeticEnabled
+                    onToggled: Browser.settings.cosmeticEnabled = checked
+                }
                 Text {
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
@@ -454,7 +461,7 @@ Rectangle {
                         id: listToggle
                         required property var modelData
                         text: modelData.name + "  -  " + Tr.t("ab_cat_" + modelData.category)
-                              + "  (" + (modelData.present ? Tr.t("ab_rules", modelData.rules) + (modelData.date ? ", " + Tr.t("ab_date", modelData.date.substring(0, 10)) : "") : Tr.t("ab_missing")) + ")"
+                              + "  (" + (modelData.present ? Tr.t("ab_rules_page", modelData.rules, modelData.cosmetic + modelData.scriptlets) + (modelData.date ? ", " + Tr.t("ab_date", modelData.date.substring(0, 10)) : "") : Tr.t("ab_missing")) + ")"
                         checked: Browser.adblock.listEnabled(modelData.id)
                         onToggled: Browser.adblock.setListEnabled(modelData.id, checked)
                     }

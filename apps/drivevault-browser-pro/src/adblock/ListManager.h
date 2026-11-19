@@ -1,5 +1,6 @@
-﻿#pragma once
+#pragma once
 
+#include "Cosmetic.h"
 #include "RuleSet.h"
 
 #include <QObject>
@@ -59,6 +60,13 @@ public:
     Decision match(const QString& url, const QString& sourceUrl, quint16 type) const;
     bool siteExempt(const QString& sourceUrl) const;
 
+    // what goes INTO the page (thread safe): the hide / style / scriptlet rules of the page's site, with the exceptions and $elemhide / $generichide applied
+    PageCosmetics cosmeticsFor(const QString& pageUrl) const;
+    // the script for the page (see PageScript.h); empty when there is nothing to do
+    QString pageScriptFor(const QString& libraryJs, const QString& pageUrl) const;
+    static QString hostOfUrl(const QString& url) { return RuleSet::hostOf(url.toLower()); }
+    int cosmeticRuleCount() const;                     // of the lists that are on
+
     Q_INVOKABLE QVariantList status() const;           // [{id, name, category, licence, present, enabled, rules, cosmetic, unsupported, date, bytes}]
     bool loading() const { return m_loading; }
     bool updating() const { return m_updating; }
@@ -78,14 +86,20 @@ signals:
 private:
     struct Stats {
         bool present = false;
-        int rules = 0, cosmetic = 0, unsupported = 0;
+        int rules = 0, cosmetic = 0, scriptlets = 0, unsupported = 0;
         qint64 bytes = 0;
         QString date;
     };
     struct Built {
         std::shared_ptr<const RuleSet> set;
+        std::shared_ptr<const CosmeticStore> cosmetics;
+        std::shared_ptr<const RuleSet> noGeneric, noCosmetic;           // sites with $generichide / $elemhide exceptions
         QVector<Stats> stats;
     };
+    struct Generic {
+        QString classes, ids;
+    };
+    void refreshGeneric();
     static Built build(const QVector<ListDef>& catalog, const QString& dataDir, const QString& shippedDir);
     quint32 maskOf(const QStringList& ids) const;
     void startNextDownload();
@@ -94,6 +108,9 @@ private:
     QString m_dataDir, m_shippedDir;
     QVector<ListDef> m_catalog;
     std::atomic<std::shared_ptr<const RuleSet>> m_set;
+    std::atomic<std::shared_ptr<const CosmeticStore>> m_cos;
+    std::atomic<std::shared_ptr<const RuleSet>> m_noGeneric, m_noCosmetic;
+    std::atomic<std::shared_ptr<const Generic>> m_generic;
     std::atomic<quint32> m_mask{0};
     QStringList m_enabled;
     QVector<Stats> m_stats;

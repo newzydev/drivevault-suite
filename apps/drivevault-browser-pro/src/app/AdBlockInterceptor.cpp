@@ -1,6 +1,8 @@
 #include "AdBlockInterceptor.h"
 
 #include "ListManager.h"
+#include "StandInHandler.h"
+#include "StandIns.h"
 
 #include <QMutexLocker>
 #include <QUrl>
@@ -65,10 +67,22 @@ void AdBlockInterceptor::interceptRequest(QWebEngineUrlRequestInfo& info)
         if (m_paused.contains(pageHost))
             return;
     }
-    const ab::ListManager::Decision d = manager->match(url.toString(QUrl::FullyEncoded), info.firstPartyUrl().toString(QUrl::FullyEncoded), type);
+    const QString address = url.toString(QUrl::FullyEncoded);
+    const ab::ListManager::Decision d = manager->match(address, info.firstPartyUrl().toString(QUrl::FullyEncoded), type);
     if (!d.blocked)
         return;
-    info.block(true);
+    // A request is answered with a small stand-in file when the list says so ($redirect=) or when it is an ad / analytics library that pages test for;
+    // otherwise it is stopped.
+    ab::StandIn standInFile;
+    QString name;
+    if (!d.redirect.isEmpty() && ab::standIn(d.redirect, &standInFile))
+        name = d.redirect;
+    else
+        name = ab::standInNameForUrl(address, type);
+    if (!name.isEmpty())
+        info.redirect(StandInHandler::urlFor(name));
+    else
+        info.block(true);
     ++m_total;
     QMutexLocker lock(&m_lock);
     ++m_perHost[pageHost];

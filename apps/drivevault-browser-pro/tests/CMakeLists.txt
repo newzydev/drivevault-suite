@@ -17,3 +17,17 @@ add_executable(tst_adblock tst_adblock.cpp)
 target_link_libraries(tst_adblock PRIVATE browser_core Qt6::Test)
 add_test(NAME tst_adblock COMMAND tst_adblock)
 set_tests_properties(tst_adblock PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;DV_NO_AUDIO=1" TIMEOUT 240)
+
+# Cosmetic filters, scriptlets, site switches, the page script and the stand-in files (and, opt in, the real lists).
+add_executable(tst_cosmetic tst_cosmetic.cpp)
+target_link_libraries(tst_cosmetic PRIVATE browser_core Qt6::Test)
+add_test(NAME tst_cosmetic COMMAND tst_cosmetic)
+set_tests_properties(tst_cosmetic PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;DV_NO_AUDIO=1" TIMEOUT 240)
+
+# The lab: pages on this computer that imitate real ones (hide-able boxes, scripts to tame, ad libraries), opened in the REAL program with Chromium.
+add_executable(tst_lab tst_lab.cpp)
+target_link_libraries(tst_lab PRIVATE Qt6::Test Qt6::Network)
+target_compile_definitions(tst_lab PRIVATE BROWSER_EXE_PATH="$<TARGET_FILE:DriveVaultBrowserPro>")
+add_dependencies(tst_lab DriveVaultBrowserPro)
+add_test(NAME tst_lab COMMAND tst_lab)
+set_tests_properties(tst_lab PROPERTIES ENVIRONMENT "DV_NO_AUDIO=1" TIMEOUT 900)

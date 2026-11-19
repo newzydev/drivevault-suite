@@ -1,6 +1,7 @@
-﻿#include "ListManager.h"
+#include "ListManager.h"
 
 #include "FilterParser.h"
+#include "PageScript.h"
 
 #include <QCryptographicHash>
 #include <QDateTime>
@@ -38,6 +39,10 @@ ListManager::ListManager(const QString& dataDir, const QString& shippedDir, QObj
     : QObject(parent), m_dataDir(dataDir), m_shippedDir(shippedDir), m_catalog(defaultCatalog())
 {
     m_set.store(std::make_shared<const RuleSet>());
+    m_cos.store(std::make_shared<const CosmeticStore>());
+    m_noGeneric.store(std::make_shared<const RuleSet>());
+    m_noCosmetic.store(std::make_shared<const RuleSet>());
+    m_generic.store(std::make_shared<const Generic>());
     m_stats.resize(m_catalog.size());
 }
 
@@ -54,6 +59,7 @@ void ListManager::setEnabled(const QStringList& ids)
 {
     m_enabled = ids;
     m_mask.store(maskOf(ids));
+    refreshGeneric();
     emit statusChanged();
 }
 
@@ -73,6 +79,9 @@ ListManager::Built ListManager::build(const QVector<ListDef>& catalog, const QSt
     Built out;
     out.stats.resize(catalog.size());
     auto set = std::make_shared<RuleSet>();
+    auto cos = std::make_shared<CosmeticStore>();
+    auto noGeneric = std::make_shared<RuleSet>();
+    auto noCosmetic = std::make_shared<RuleSet>();
     for (int i = 0; i < catalog.size() && i < 32; ++i) {
         const ListDef& def = catalog.at(i);
         QString path = dataDir + QStringLiteral("/filters/") + def.id + QStringLiteral(".txt");
@@ -97,14 +106,39 @@ ListManager::Built ListManager::build(const QVector<ListDef>& catalog, const QSt
                 set->add(rule);
                 ++st.rules;
                 break;
-            case ParseKind::Cosmetic: ++st.cosmetic; break;
+            case ParseKind::Cosmetic: {
+                CosmeticRule cr;
+                if (parseCosmetic(line, cr) == ParseKind::Cosmetic) {
+                    cr.list = quint8(i);
+                    cos->add(cr);
+                    if (cr.kind == CosmeticKind::Scriptlet && !cr.exception)
+                        ++st.scriptlets;
+                    else
+                        ++st.cosmetic;
+                } else {
+                    ++st.unsupported;
+                }
+                break;
+            }
+            case ParseKind::CosmeticSite:
+                rule.list = quint8(i);
+                (rule.cosmeticOff == 2 ? noCosmetic : noGeneric)->add(rule);
+                if (rule.cosmeticOff == 2)
+                    noGeneric->add(rule);                                // $elemhide also means no generic hiding
+                break;
             case ParseKind::Unsupported: ++st.unsupported; break;
             case ParseKind::Comment: break;
             }
         }
     }
     set->finalize();
+    cos->finalize();
+    noGeneric->finalize();
+    noCosmetic->finalize();
     out.set = set;
+    out.cosmetics = cos;
+    out.noGeneric = noGeneric;
+    out.noCosmetic = noCosmetic;
     return out;
 }
 
@@ -128,7 +162,11 @@ void ListManager::reload()
             if (!self)
                 return;
             self->m_set.store(b.set);
+            self->m_cos.store(b.cosmetics);
+            self->m_noGeneric.store(b.noGeneric);
+            self->m_noCosmetic.store(b.noCosmetic);
             self->m_stats = b.stats;
+            self->refreshGeneric();
             self->m_loading = false;
             self->m_phase = QStringLiteral("idle");
             emit self->statusChanged();
@@ -169,6 +207,56 @@ bool ListManager::siteExempt(const QString& sourceUrl) const
     return set && set->siteExempt(sourceUrl, m_mask.load());
 }
 
+void ListManager::refreshGeneric()
+{
+    const std::shared_ptr<const CosmeticStore> cos = m_cos.load();
+    auto g = std::make_shared<Generic>();
+    if (cos) {
+        g->classes = cos->genericClasses(m_mask.load());
+        g->ids = cos->genericIds(m_mask.load());
+    }
+    m_generic.store(g);
+}
+
+int ListManager::cosmeticRuleCount() const
+{
+    int n = 0;
+    for (int i = 0; i < m_stats.size() && i < 32; ++i)
+        if (m_mask.load() & (1u << i))
+            n += m_stats.at(i).cosmetic + m_stats.at(i).scriptlets;
+    return n;
+}
+
+PageCosmetics ListManager::cosmeticsFor(const QString& pageUrl) const
+{
+    PageCosmetics out;
+    const QString lower = pageUrl.toLower();
+    if (!lower.startsWith(QLatin1String("http://")) && !lower.startsWith(QLatin1String("https://")))
+        return out;
+    const QString host = RuleSet::hostOf(lower);
+    const std::shared_ptr<const CosmeticStore> cos = m_cos.load();
+    const quint32 mask = m_mask.load();
+    if (!cos || host.isEmpty() || mask == 0)
+        return out;
+    const std::shared_ptr<const RuleSet> noCos = m_noCosmetic.load(), noGen = m_noGeneric.load();
+    const bool noCosmetic = noCos && noCos->siteExempt(pageUrl, mask);
+    const bool noGeneric = noCosmetic || (noGen && noGen->siteExempt(pageUrl, mask));
+    out = cos->forPage(host, mask, noGeneric);
+    out.noCosmetic = noCosmetic;
+    out.noGeneric = noGeneric;
+    return out;
+}
+
+QString ListManager::pageScriptFor(const QString& libraryJs, const QString& pageUrl) const
+{
+    const PageCosmetics page = cosmeticsFor(pageUrl);
+    const std::shared_ptr<const Generic> g = m_generic.load();
+    const QString lower = pageUrl.toLower();
+    const bool http = lower.startsWith(QLatin1String("http://")) || lower.startsWith(QLatin1String("https://"));
+    if (!http || !g || m_mask.load() == 0)
+        return {};
+    return buildPageScript(libraryJs, page, g->classes, g->ids);
+}
 QVariantList ListManager::status() const
 {
     QVariantList out;
@@ -177,7 +265,7 @@ QVariantList ListManager::status() const
         const Stats st = i < m_stats.size() ? m_stats.at(i) : Stats();
         out.append(QVariantMap{{QStringLiteral("id"), d.id}, {QStringLiteral("name"), d.name}, {QStringLiteral("category"), d.category}, {QStringLiteral("licence"), d.licence},
                                {QStringLiteral("present"), st.present}, {QStringLiteral("enabled"), m_enabled.contains(d.id)}, {QStringLiteral("rules"), st.rules},
-                               {QStringLiteral("cosmetic"), st.cosmetic}, {QStringLiteral("unsupported"), st.unsupported}, {QStringLiteral("date"), st.date}, {QStringLiteral("bytes"), st.bytes}});
+                               {QStringLiteral("cosmetic"), st.cosmetic}, {QStringLiteral("scriptlets"), st.scriptlets}, {QStringLiteral("unsupported"), st.unsupported}, {QStringLiteral("date"), st.date}, {QStringLiteral("bytes"), st.bytes}});
     }
     return out;
 }

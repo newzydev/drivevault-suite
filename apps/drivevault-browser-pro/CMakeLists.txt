@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultBrowserPro
-    VERSION 0.2.0
+    VERSION 0.3.0
     DESCRIPTION "DriveVault Browser Pro - a web browser with a built-in ad blocker"
     LANGUAGES CXX)
 
@@ -29,7 +29,8 @@ add_library(browser_core STATIC
     src/core/BookmarkStore.cpp src/core/BookmarkStore.h
     src/core/HistoryStore.cpp src/core/HistoryStore.h
     src/core/BrowserSettings.cpp src/core/BrowserSettings.h
-    src/adblock/NetRule.h src/adblock/FilterParser.cpp src/adblock/FilterParser.h src/adblock/RuleSet.cpp src/adblock/RuleSet.h src/adblock/ListManager.cpp src/adblock/ListManager.h)
+    src/adblock/NetRule.h src/adblock/FilterParser.cpp src/adblock/FilterParser.h src/adblock/RuleSet.cpp src/adblock/RuleSet.h src/adblock/ListManager.cpp src/adblock/ListManager.h
+    src/adblock/Cosmetic.cpp src/adblock/Cosmetic.h src/adblock/StandIns.cpp src/adblock/StandIns.h src/adblock/PageScript.cpp src/adblock/PageScript.h)
 target_include_directories(browser_core PUBLIC src/core src/adblock ${CMAKE_BINARY_DIR}/generated)
 target_link_libraries(browser_core PUBLIC Qt6::Core Qt6::Network)
 
@@ -37,7 +38,7 @@ target_link_libraries(browser_core PUBLIC Qt6::Core Qt6::Network)
 set_source_files_properties(qml/Theme.qml qml/Tr.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_executable(DriveVaultBrowserPro WIN32
     src/app/main.cpp src/app/BrowserApp.cpp src/app/BrowserApp.h src/app/DownloadModel.cpp src/app/DownloadModel.h
-    src/app/AdBlockInterceptor.cpp src/app/AdBlockInterceptor.h src/app/AdBlockController.cpp src/app/AdBlockController.h src/app.rc)
+    src/app/AdBlockInterceptor.cpp src/app/AdBlockInterceptor.h src/app/AdBlockController.cpp src/app/AdBlockController.h src/app/StandInHandler.cpp src/app/StandInHandler.h src/app.rc)
 qt_add_qml_module(DriveVaultBrowserPro
     URI DriveVault.Browser
     VERSION 1.0
@@ -53,6 +54,7 @@ qt_add_qml_module(DriveVaultBrowserPro
         qml/SidePanel.qml
     RESOURCES
         resources/icons/app.png
+        resources/adblock-page.js
         resources/fonts/Inter-Variable.ttf
         resources/fonts/NotoSansThai-Variable.ttf)
 target_include_directories(DriveVaultBrowserPro PRIVATE src/app)

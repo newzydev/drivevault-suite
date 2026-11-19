@@ -94,6 +94,8 @@ QVariantList BrowserSettings::engines() const
 
 bool BrowserSettings::adblockEnabled() const { return m_data.value(QLatin1String("adblockEnabled")).toBool(true); }
 void BrowserSettings::setAdblockEnabled(bool v) { set(QStringLiteral("adblockEnabled"), v); }
+bool BrowserSettings::cosmeticEnabled() const { return m_data.value(QLatin1String("cosmeticEnabled")).toBool(true); }
+void BrowserSettings::setCosmeticEnabled(bool v) { set(QStringLiteral("cosmeticEnabled"), v); }
 
 bool BrowserSettings::listOn(const QString& id) const
 {

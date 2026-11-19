@@ -30,7 +30,7 @@ class BrowserApp : public QObject {
     Q_PROPERTY(QStringList initialUrls READ initialUrls CONSTANT)
     Q_PROPERTY(bool startPrivate READ startPrivate CONSTANT)
 public:
-    BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, AdBlockInterceptor* interceptor, QObject* parent = nullptr);
+    BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, AdBlockInterceptor* interceptor, StandInHandler* standIns, QObject* parent = nullptr);
 
     BrowserSettings* settings() { return &m_settings; }
     BookmarkStore* bookmarks() { return &m_bookmarks; }

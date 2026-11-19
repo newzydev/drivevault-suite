@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <QJsonObject>
 #include <QObject>
@@ -17,6 +17,7 @@ class BrowserSettings : public QObject {
     Q_PROPERTY(QString startup READ startup WRITE setStartup NOTIFY changed)
     Q_PROPERTY(bool blockNotifications READ blockNotifications WRITE setBlockNotifications NOTIFY changed)
     Q_PROPERTY(bool adblockEnabled READ adblockEnabled WRITE setAdblockEnabled NOTIFY changed)
+    Q_PROPERTY(bool cosmeticEnabled READ cosmeticEnabled WRITE setCosmeticEnabled NOTIFY changed)
 public:
     explicit BrowserSettings(const QString& file, QObject* parent = nullptr);
 
@@ -39,6 +40,8 @@ public:
 
     bool adblockEnabled() const;               // the ad blocker as a whole (default on)
     void setAdblockEnabled(bool v);
+    bool cosmeticEnabled() const;              // hiding elements and the scripts inside pages (default on)
+    void setCosmeticEnabled(bool v);
     Q_INVOKABLE bool listOn(const QString& id) const;                 // lists are on unless the user switched them off
     Q_INVOKABLE void setListOn(const QString& id, bool on);
     Q_INVOKABLE bool adblockPaused(const QString& host) const;        // paused on this site

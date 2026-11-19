@@ -29,10 +29,11 @@ struct NetRule {
     QStringList domainsInc, domainsExc;       // $domain= (the page the request comes from), suffix match
     QString redirect;                 // $redirect=name (stand-in resource, Phase 3)
     QString hostKey;                  // "||example.com^" -> "example.com" (index key); empty when not usable
+    quint8 cosmeticOff = 0;           // exception filters only: 1 = $generichide, 2 = $elemhide (no network meaning)
     quint8 list = 0;                  // which list it came from
     QString raw;                      // the original line
 };
 
-enum class ParseKind { Network, Cosmetic, Comment, Unsupported };
+enum class ParseKind { Network, Cosmetic, CosmeticSite, Comment, Unsupported };       // CosmeticSite: "@@||site^$elemhide" / "$generichide"
 
 } // namespace dv::br::ab

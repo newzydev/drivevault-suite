@@ -17,12 +17,15 @@
 
 namespace dv::br {
 
-BrowserApp::BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, AdBlockInterceptor* interceptor, QObject* parent)
+BrowserApp::BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, AdBlockInterceptor* interceptor, StandInHandler* standIns, QObject* parent)
     : QObject(parent), m_dataDir(dataDir), m_profile(profile),
       m_settings(dataDir + QStringLiteral("/settings.json")), m_bookmarks(dataDir + QStringLiteral("/bookmarks.json")),
       m_history(dataDir + QStringLiteral("/history.jsonl")),
-      m_adblock(&m_settings, interceptor, dataDir, QCoreApplication::applicationDirPath() + QStringLiteral("/filters"))
+      m_adblock(&m_settings, interceptor, standIns, dataDir, QCoreApplication::applicationDirPath() + QStringLiteral("/filters"))
 {
+    QFile library(QStringLiteral(":/qt/qml/DriveVault/Browser/resources/adblock-page.js"));       // the script that runs inside pages (hiding, scriptlets)
+    if (library.open(QIODevice::ReadOnly))
+        m_adblock.setPageLibrary(QString::fromUtf8(library.readAll()));
 }
 
 QString BrowserApp::version() const { return QString::fromLatin1(version::kVersion); }

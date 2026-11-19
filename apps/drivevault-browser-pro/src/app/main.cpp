@@ -1,4 +1,5 @@
 #include "BrowserApp.h"
+#include "StandInHandler.h"
 #include "UrlUtil.h"
 
 #include <QCommandLineParser>
@@ -24,6 +25,7 @@
 
 int main(int argc, char* argv[])
 {
+    dv::br::StandInHandler::registerScheme();                 // "dvres:" - before the application object and the engine
     QtWebEngineQuick::initialize();                           // before the application object
     QGuiApplication app(argc, argv);
     app.setOrganizationName(QStringLiteral("DriveVault"));
@@ -60,10 +62,10 @@ int main(int argc, char* argv[])
 
     // The ad blocker's request filter is made before the profile and the application object of the pages: it must outlive every profile that uses it.
     dv::br::AdBlockInterceptor interceptor;
+    dv::br::StandInHandler standIns;
 
     // The shared profile of the normal windows (a private window has its own, off the record). It lives longer than the QML engine.
     QQuickWebEngineProfile profile;
-    profile.setUrlRequestInterceptor(&interceptor);
     profile.setStorageName(QStringLiteral("DriveVaultBrowserPro"));
     profile.setPersistentStoragePath(dataDir + QStringLiteral("/profile"));
     profile.setCachePath(dataDir + QStringLiteral("/cache"));
@@ -72,7 +74,8 @@ int main(int argc, char* argv[])
     // The engine's own name ("QtWebEngine/x") is left out and the system is named as Chrome does: some sites turn an unknown browser away.
     profile.setHttpUserAgent(profile.httpUserAgent().replace(QRegularExpression(QStringLiteral(" QtWebEngine/[0-9.]+")), QString()).replace(QStringLiteral("Windows NT 6.2"), QStringLiteral("Windows NT 10.0")));
 
-    dv::br::BrowserApp browser(dataDir, &profile, &interceptor);
+    dv::br::BrowserApp browser(dataDir, &profile, &interceptor, &standIns);
+    browser.adblock()->attach(&profile);                       // the request filter and the "dvres:" stand-ins on the shared profile
     browser.adblock()->start();                                // reads the lists that are already on this PC; nothing is downloaded
     browser.downloads()->setFolder(parser.isSet(dataDirOpt) ? dataDir + QStringLiteral("/downloads") : QString());     // a test run never writes to the real Downloads folder
     QObject::connect(&profile, &QQuickWebEngineProfile::downloadRequested, browser.downloads(), &dv::br::DownloadModel::handle);
