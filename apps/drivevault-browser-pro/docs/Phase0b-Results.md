@@ -24,3 +24,6 @@ Throw-away test program: `spike/phase0b` (Qt Widgets + `QWebEngineView`, Qt **6.
 - Google sign-in inside a page: needs a human. Run `build\spike.exe google` (after building as in the plan) and try `accounts.google.com`; report what appears. The result decides nothing in the code, only the wording of the UI.
 - Real Chrome Web Store extensions, the Chrome Web Store install step, the Google OAuth flow, Drive sync.
 - Performance of the interceptor with a real filter list (Phase 2).
+
+## Qt 6.12.1 attempt (2026-11-19)
+Not installable with the portable tool: `aqt list-qt` names 6.11.0 - 6.12.1, but the binary repository (`download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_<ver>/qt6_<ver>/Updates.xml`) answers **404 for 6.11.0 - 6.11.3 and 6.12.0 - 6.12.1** (and 200 for 6.10.3). So the crash of `setExtensionEnabled` could not be re-tested on a newer Qt. Nothing was downloaded or installed in this attempt. Ways forward (each needs the owner): the official Qt installer with a Qt account (`aqt install-qt-official`, the owner signs in; the agent never enters the password), building Qt WebEngine 6.12 from source (very large), or waiting for the binaries.
