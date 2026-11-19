@@ -195,11 +195,11 @@ ApplicationWindow {
         currentView.url = Browser.resolve(text)
         currentView.forceActiveFocus()
     }
+    function homeAddress(homePage) {
+        return homePage !== "" ? Browser.resolve(homePage) : "https://www.google.com"
+    }
     function goHome() {
-        const h = Browser.settings.homePage
-        if (!currentView) return
-        currentView.url = h !== "" ? Browser.resolve(h) : "about:blank"
-        if (h === "") focusOmnibox()
+        if (currentView) currentView.url = homeAddress(Browser.settings.homePage)
     }
     function setFull(on) {
         if (on === isFull) return
@@ -379,6 +379,9 @@ ApplicationWindow {
             settingsButton.clicked()
             check("title bar settings button opens settings", panel === "settings" && sidePanel.visible, "")
             panel = ""
+            check("Home uses Google by default and respects a custom page",
+                  homeAddress("") === "https://www.google.com"
+                  && homeAddress("https://example.com/").toString() === "https://example.com/", "")
             selfTestResult = JSON.stringify(stChecks)
         }
     }

@@ -139,7 +139,7 @@ QtObject {
         "set_language": ["Language", "ภาษา"],
         "language_th": ["ไทย", "ไทย"],
         "set_home": ["Home page", "หน้าแรก"],
-        "set_home_hint": ["Empty = the new tab page", "ว่าง = หน้าแท็บใหม่"],
+        "set_home_hint": ["Empty = Google for Home, new tab at startup", "เว้นว่างเพื่อให้ปุ่มหน้าแรกเปิด Google และเริ่มโปรแกรมที่แท็บใหม่"],
         "set_startup": ["On start", "เมื่อเริ่มโปรแกรม"],
         "set_startup_newtab": ["Open a new tab", "เปิดแท็บใหม่"],
         "set_startup_restore": ["Open the tabs of last time", "เปิดแท็บเดิมจากครั้งก่อน"],
