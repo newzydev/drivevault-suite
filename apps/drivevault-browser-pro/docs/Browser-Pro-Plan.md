@@ -153,3 +153,7 @@ New phases (after the engine phases; Qt upgrade first):
 | 9 Extensions | Qt upgrade done, extensions page (install from file, from Web Store address, enable / disable / remove, permissions shown), compatibility notes per tested extension | the 3 test extensions run; failures listed in the UI as "may not work fully" |
 
 Honest labels in the UI: "Signed in to Google (sync only)" and "Extensions (Manifest V3, partial)". The program never says "Chrome Sync" and never implies that gmail.com sign-in works unless Phase 0b showed it.
+
+## 12. Phase 0b result (2026-11-19) - read `Phase0b-Results.md`
+
+Short version: the blocker design (interceptor block + redirect to a custom-scheme stub) is **confirmed to work**. Three assumptions of this plan are **not** confirmed on Qt 6.10.3: (1) extensions - `setExtensionEnabled` crashes, so extension support (section 11, Phase 9) is on hold until Qt 6.11 / 6.12 is tried or a Qt fix is found; (2) H.264 / AAC video does not play (no proprietary codecs in the Qt binaries) - needs an owner decision (build Qt WebEngine ourselves, or accept VP9 / AV1 only); (3) Picture-in-Picture is off in the engine, so the own mini-window fallback is the plan. Section 3 (filters) and sections 5 - 6 are unaffected. Google sign-in inside a page is still untested (manual).

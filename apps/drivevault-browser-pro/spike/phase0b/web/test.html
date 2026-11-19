@@ -1,0 +1,8 @@
+<!doctype html><meta charset=utf-8><title>spike</title>
+<div class="adsbox" id="bait" style="height:20px;width:20px">bait</div>
+<script>window.__res = {};</script>
+<script src="/ads.js" onerror="window.__res.adsJs='blocked'" onload="window.__res.adsJs='loaded'"></script>
+<script src="/adsbygoogle.js" onerror="window.__res.abg='blocked'" onload="window.__res.abg='loaded'"></script>
+<script>
+fetch('/pagead/x').then(r=>window.__res.fetch='ok '+r.status).catch(e=>window.__res.fetch='failed');
+</script>
