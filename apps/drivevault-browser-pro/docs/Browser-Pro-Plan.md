@@ -177,3 +177,10 @@ Sources checked on 2026-11-19 (a HEAD request each, no list body read; the serve
 | Thai (EasyList Thailand) | address not found | - | unknown; NOT in the catalog |
 
 Before the first Release the licence of every shipped list is read from its own header, written into `THIRD-PARTY-NOTICES`, and the release gate "every file has an owner" gets an entry for the list snapshot (plan 3.3).
+
+**The owner allowed the download on 2026-11-19** (4 lists, 5.7 MB in all, into `.tools\browser-test-data`, not committed, not shipped). Done through the program's own Update code (`--update-lists`): 4 updated, 0 failed, SHA-256 and date kept in `<id>.meta.json`.
+- **Licence**: the header of each of the four files says `Licence: https://easylist.to/pages/licence.html`, i.e. the EasyList repository licence (GPLv3+ or CC BY-SA 3.0+, attribution "The EasyList authors"). The doubt about the two Fanboy lists is therefore settled for these files as downloaded; re-read the headers before every release.
+- **Content** (`easylist` 2.06 MB, `easyprivacy` 1.52 MB, `fanboy-social` 0.41 MB, `fanboy-annoyance` 1.74 MB): network rules 49,868 / 56,688 / 657 / 4,203 = **111,416**; cosmetic lines 24,794 / 41 / 13,250 / 45,304 (Phase 3); lines the parser skips 3,174 / 12 / 11 / 15 (regular expressions, `$removeparam`, `$csp`, `$popup` and others).
+- **Speed** (release build, this PC): loaded in 318 ms; 15.5 us per request over 40,000 ordinary requests (0 of them blocked, as expected).
+- **Correctness probes**: `pagead2.googlesyndication.com/.../adsbygoogle.js` (EasyList), `google-analytics.com/analytics.js` and `connect.facebook.net/.../fbevents.js` (EasyPrivacy), `securepubads.g.doubleclick.net/.../gpt.js` (EasyList) are blocked; Wikipedia, wikimedia images, jsdelivr, Google Fonts and the YouTube player script are allowed. Note: EasyPrivacy also blocks `googletagmanager.com`, which some sites need - Phase 3 / 4 answer that with stand-in resources.
+- Not done: real sites in the real browser; the cookie list and a Thai list (see the table above).

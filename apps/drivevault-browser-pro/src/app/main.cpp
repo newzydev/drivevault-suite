@@ -42,7 +42,8 @@ int main(int argc, char* argv[])
     QCommandLineOption privateOpt(QStringLiteral("private"), QStringLiteral("Start in a private window."));
     QCommandLineOption selfTestOpt(QStringLiteral("selftest"), QStringLiteral("Run the window's own checks (tabs, pin, bookmarks, history, suggestions, find, zoom) on the page given as address, write the results (JSON) to <file>, exit 0 when all passed (diagnostics)."), QStringLiteral("file"));
     QCommandLineOption probeOpt(QStringLiteral("probe"), QStringLiteral("Open the page given as address, wait, read what the page recorded in window.__res and how many requests the ad blocker stopped, write that (JSON) to <file> and exit (diagnostics, tests)."), QStringLiteral("file"));
-    parser.addOptions({dataDirOpt, langOpt, shotOpt, sizeOpt, panelOpt, privateOpt, selfTestOpt, probeOpt});
+    QCommandLineOption updateOpt(QStringLiteral("update-lists"), QStringLiteral("Do what the button \"Update filter lists\" does (download the switched-on lists from their official addresses), write the result (JSON) to <file>, exit (diagnostics; downloads only because this option was given)."), QStringLiteral("file"));
+    parser.addOptions({dataDirOpt, langOpt, shotOpt, sizeOpt, panelOpt, privateOpt, selfTestOpt, probeOpt, updateOpt});
     parser.process(app);
 
     for (const char* font : {":/qt/qml/DriveVault/Browser/resources/fonts/Inter-Variable.ttf", ":/qt/qml/DriveVault/Browser/resources/fonts/NotoSansThai-Variable.ttf"})
@@ -96,6 +97,24 @@ int main(int argc, char* argv[])
     if (parser.isSet(panelOpt))
         QMetaObject::invokeMethod(root, "showPanel", Q_ARG(QVariant, parser.value(panelOpt)));
 
+    if (parser.isSet(updateOpt)) {
+        const QString file = parser.value(updateOpt);
+        auto* lists = browser.adblock()->lists();
+        auto finish = [&app, lists, file] {
+            QJsonObject o{{QStringLiteral("updated"), lists->updatedCount()}, {QStringLiteral("failed"), lists->failedCount()}, {QStringLiteral("failures"), lists->failures()},
+                          {QStringLiteral("totalRules"), lists->totalRules()}, {QStringLiteral("lists"), QJsonArray::fromVariantList(lists->status())}};
+            QFile out(file);
+            if (out.open(QIODevice::WriteOnly))
+                out.write(QJsonDocument(o).toJson());
+            app.exit(lists->failedCount() == 0 && lists->updatedCount() > 0 ? 0 : 1);
+        };
+        QObject::connect(lists, &dv::br::ab::ListManager::updateFinished, &app, [lists, finish, &app](const QString&) {
+            if (lists->updatedCount() == 0) { finish(); return; }
+            auto* once = new QObject(&app);
+            QObject::connect(lists, &dv::br::ab::ListManager::reloaded, once, [finish, once] { once->deleteLater(); finish(); });
+        });
+        QTimer::singleShot(500, &app, [browserPtr = &browser] { browserPtr->adblock()->updateLists(); });
+    }
     if (parser.isSet(selfTestOpt) || parser.isSet(probeOpt)) {
         QObject* win = root->property("firstWindow").value<QObject*>();
         if (!win)

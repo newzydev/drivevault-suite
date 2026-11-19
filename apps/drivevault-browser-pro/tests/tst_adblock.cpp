@@ -301,6 +301,67 @@ private slots:
         QCOMPARE(m.failedCount(), 1);
     }
 
+    // ---- the real lists (opt in: DV_TEST_FILTER_DATA=<data dir that has filters\*.txt>; made by the program's "Update filter lists") ------------
+    void realListsLoadAndMatch()
+    {
+        const QString data = qEnvironmentVariable("DV_TEST_FILTER_DATA");
+        if (data.isEmpty())
+            QSKIP("set DV_TEST_FILTER_DATA to a data folder with downloaded lists");
+        ListManager m(data);
+        QStringList ids;
+        for (const ListDef& d : m.catalog())
+            ids << d.id;
+        m.setEnabled(ids);
+        QSignalSpy spy(&m, &ListManager::reloaded);
+        QElapsedTimer t;
+        t.start();
+        m.reload();
+        QVERIFY(spy.wait(60000));
+        const qint64 loadMs = t.elapsed();
+        QVERIFY2(m.totalRules() > 50000, "the real lists are not there");
+
+        struct Probe { const char* url; const char* source; quint16 type; bool expectBlocked; };
+        const QList<Probe> probes = {
+            {"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", "https://news.example/", Script, true},
+            {"https://www.google-analytics.com/analytics.js", "https://news.example/", Script, true},
+            {"https://connect.facebook.net/en_US/fbevents.js", "https://news.example/", Script, true},
+            {"https://securepubads.g.doubleclick.net/tag/js/gpt.js", "https://news.example/", Script, true},
+            {"https://www.googletagmanager.com/gtag/js?id=G-XXXX", "https://news.example/", Script, false},          // listed or not changes with the lists: only printed
+            {"https://en.wikipedia.org/wiki/Main_Page", QString().isEmpty() ? "" : "", Document, false},
+            {"https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg", "https://en.wikipedia.org/", Image, false},
+            {"https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js", "https://app.example/", Script, false},
+            {"https://fonts.googleapis.com/css2?family=Inter", "https://app.example/", Stylesheet, false},
+            {"https://www.youtube.com/s/player/base.js", "https://www.youtube.com/", Script, false},
+        };
+        for (const Probe& p : probes) {
+            const auto d = m.match(QString::fromLatin1(p.url), QString::fromLatin1(p.source), p.type);
+            qInfo().noquote() << QStringLiteral("PROBE %1 -> %2 %3").arg(QString::fromLatin1(p.url), d.blocked ? QStringLiteral("BLOCKED by ") + d.listId : QStringLiteral("allowed"), d.rule);
+            if (p.expectBlocked)
+                QVERIFY2(d.blocked, p.url);
+        }
+        QVERIFY2(!m.match(QStringLiteral("https://en.wikipedia.org/wiki/Main_Page"), QString(), Document).blocked, "the page itself is not blocked");
+
+        // speed: realistic subresource addresses of 800 sites
+        QStringList urls;
+        auto* rng = QRandomGenerator::global();
+        for (int i = 0; i < 40000; ++i) {
+            const int site = int(rng->bounded(800));
+            switch (i % 4) {
+            case 0: urls << QStringLiteral("https://cdn.site%1.example/assets/app.%2.js").arg(site).arg(i); break;
+            case 1: urls << QStringLiteral("https://www.site%1.example/images/photo-%2.jpg?w=640&q=80").arg(site).arg(i); break;
+            case 2: urls << QStringLiteral("https://api.site%1.example/v2/items/%2?include=meta").arg(site).arg(i); break;
+            default: urls << QStringLiteral("https://fonts.gstatic.com/s/inter/v12/%1.woff2").arg(i); break;
+            }
+        }
+        int hits = 0;
+        t.restart();
+        for (const QString& u : urls)
+            if (m.match(u, QStringLiteral("https://www.site1.example/"), Script).blocked)
+                ++hits;
+        const double us = double(t.nsecsElapsed()) / 1000.0 / urls.size();
+        qInfo().noquote() << QStringLiteral("BENCH real lists: %1 network rules active, loaded in %2 ms, %3 us per request over %4 plain requests (%5 blocked)").arg(m.totalRules()).arg(loadMs).arg(us, 0, 'f', 1).arg(urls.size()).arg(hits);
+        QVERIFY2(us < 300.0, "slower than 300 us per request on the real lists");
+    }
     // ---- speed (synthetic list: real lists are measured later and written down) -----------------------------------------------------
     void aBigListLoadsAndMatchesFast()
     {
