@@ -26,6 +26,8 @@ ApplicationWindow {
     property string hoverUrl: ""
     property bool isFull: false
     property int beforeFull: Window.Windowed
+    property bool wasMaximized: false
+    property rect normalGeometry: Qt.rect(0, 0, 1280, 820)
     property var currentView: null
     property var pipView: null                      // the page (WebEngineView) that is in the small picture-in-picture window, or null
     property var pipWindow: null
@@ -45,9 +47,57 @@ ApplicationWindow {
     height: 820
     minimumWidth: 640
     minimumHeight: 420
-    visible: true
+    flags: Qt.Window | Qt.FramelessWindowHint
     color: Theme.background
     title: (privateMode ? "[" + Tr.t("privateBadge") + "] " : "") + (curTitle !== "" && !curBlank ? curTitle + " - " : "") + Tr.t("app")
+
+    function rememberNormalGeometry() {
+        if (visibility === Window.Windowed)
+            normalGeometry = Qt.rect(x, y, width, height)
+    }
+    function toggleMaximized() {
+        if (visibility === Window.Maximized) {
+            showNormal()
+        } else {
+            rememberNormalGeometry()
+            showMaximized()
+        }
+    }
+    function restoreWindow() {
+        const state = primary && !privateMode ? Browser.settings.windowState() : {}
+        if (state.width > 0 && state.height > 0) {
+            width = Math.max(minimumWidth, Math.min(state.width, screen.desktopAvailableWidth))
+            height = Math.max(minimumHeight, Math.min(state.height, screen.desktopAvailableHeight))
+            const screens = Qt.application.screens
+            for (let i = 0; i < screens.length; ++i) {
+                const s = screens[i]
+                if (state.x >= s.virtualX && state.x + 160 < s.virtualX + s.width
+                        && state.y >= s.virtualY && state.y + 32 < s.virtualY + s.height) {
+                    x = state.x
+                    y = state.y
+                    break
+                }
+            }
+        }
+        normalGeometry = Qt.rect(x, y, width, height)
+        if (state.maximized)
+            showMaximized()
+        else
+            showNormal()
+    }
+    Timer {
+        id: geometrySettled
+        interval: 350
+        onTriggered: win.rememberNormalGeometry()
+    }
+    onXChanged: geometrySettled.restart()
+    onYChanged: geometrySettled.restart()
+    onWidthChanged: geometrySettled.restart()
+    onHeightChanged: geometrySettled.restart()
+    onVisibilityChanged: {
+        if (visibility === Window.Windowed || visibility === Window.Maximized)
+            wasMaximized = visibility === Window.Maximized
+    }
 
     // ---- tabs -------------------------------------------------------------------------------------------------------------
     // (the ListModel `tabs` is declared at the END of this file: Qt destroys the children of an object in the order they were made, and the views write into the model
@@ -153,7 +203,11 @@ ApplicationWindow {
     }
     function setFull(on) {
         if (on === isFull) return
-        if (on) { beforeFull = visibility; visibility = Window.FullScreen }
+        if (on) {
+            rememberNormalGeometry()
+            beforeFull = visibility
+            visibility = Window.FullScreen
+        }
         else visibility = beforeFull === Window.FullScreen ? Window.Windowed : beforeFull
         isFull = on
     }
@@ -234,6 +288,7 @@ ApplicationWindow {
     Connections { target: Browser.bookmarks; function onChanged() { win.refreshBar() } }
 
     Component.onCompleted: {
+        restoreWindow()
         refreshBar()
         if (startUrls.length > 0) {
             for (let i = 0; i < startUrls.length; ++i) addTab(startUrls[i], i === 0)
@@ -245,6 +300,11 @@ ApplicationWindow {
     }
     onClosing: {
         if (primary && !privateMode) {
+            rememberNormalGeometry()
+            Browser.settings.saveWindowState({
+                maximized: wasMaximized, x: normalGeometry.x, y: normalGeometry.y,
+                width: normalGeometry.width, height: normalGeometry.height
+            })
             const urls = []
             for (let i = 0; i < views.count; ++i) { const v = views.itemAt(i); if (v) urls.push(v.url.toString()) }
             Browser.saveSession(urls)
@@ -475,10 +535,70 @@ ApplicationWindow {
         contentItem: Rectangle { implicitHeight: 1; color: Theme.borderSubtle }
     }
 
+    component ResizeEdge: MouseArea {
+        required property int edges
+        z: 1
+        enabled: win.visibility === Window.Windowed
+        onPressed: win.startSystemResize(edges)
+    }
+    ResizeEdge { edges: Qt.LeftEdge; cursorShape: Qt.SizeHorCursor; x: 0; y: 10; width: 5; height: win.height - 20 }
+    ResizeEdge { edges: Qt.RightEdge; cursorShape: Qt.SizeHorCursor; x: win.width - 5; y: 10; width: 5; height: win.height - 20 }
+    ResizeEdge { edges: Qt.TopEdge; cursorShape: Qt.SizeVerCursor; x: 10; y: 0; width: win.width - 20; height: 5 }
+    ResizeEdge { edges: Qt.BottomEdge; cursorShape: Qt.SizeVerCursor; x: 10; y: win.height - 5; width: win.width - 20; height: 5 }
+    ResizeEdge { edges: Qt.LeftEdge | Qt.TopEdge; cursorShape: Qt.SizeFDiagCursor; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.RightEdge | Qt.BottomEdge; cursorShape: Qt.SizeFDiagCursor; x: win.width - 10; y: win.height - 10; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.RightEdge | Qt.TopEdge; cursorShape: Qt.SizeBDiagCursor; x: win.width - 10; width: 10; height: 10 }
+    ResizeEdge { edges: Qt.LeftEdge | Qt.BottomEdge; cursorShape: Qt.SizeBDiagCursor; y: win.height - 10; width: 10; height: 10 }
+
     // ---- layout ------------------------------------------------------------------------------------------------------------
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
+
+        Rectangle {
+            visible: !win.isFull
+            Layout.fillWidth: true
+            Layout.preferredHeight: 64
+            color: Theme.background
+
+            DragHandler {
+                target: null
+                onActiveChanged: if (active) win.startSystemMove()
+            }
+            TapHandler { onDoubleTapped: win.toggleMaximized() }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 28
+                anchors.rightMargin: 24
+                spacing: 12
+                Image {
+                    source: "qrc:/qt/qml/DriveVault/Browser/resources/icons/app.png"
+                    Layout.preferredWidth: 34
+                    Layout.preferredHeight: 34
+                    fillMode: Image.PreserveAspectFit
+                }
+                Text {
+                    text: Tr.t("app")
+                    color: Theme.text
+                    font.pixelSize: 17
+                    font.weight: Font.DemiBold
+                }
+                Item { Layout.fillWidth: true }
+                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 22; color: Theme.border }
+                RowLayout {
+                    spacing: 2
+                    WindowButton { kind: "minimize"; text: Tr.t("minimize"); onClicked: { win.rememberNormalGeometry(); win.showMinimized() } }
+                    WindowButton {
+                        kind: win.visibility === Window.Maximized ? "restore" : "maximize"
+                        text: Tr.t(kind)
+                        onClicked: win.toggleMaximized()
+                    }
+                    WindowButton { kind: "close"; text: Tr.t("close"); onClicked: win.close() }
+                }
+            }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
+        }
 
         // tab strip
         Rectangle {

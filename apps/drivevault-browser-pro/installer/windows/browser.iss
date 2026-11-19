@@ -1,6 +1,6 @@
 ﻿; DriveVault Browser Pro. The package script supplies the audited payload; Master Pro (the hub) is downloaded by the shared code below.
 #ifndef AppVersion
-  #define AppVersion "0.6.0"
+  #define AppVersion "0.6.1"
 #endif
 #if !Defined(StageDir) || !Defined(OutputDir) || !Defined(ArtworkDir)
   #error Build this installer with scripts\package.ps1
@@ -14,6 +14,7 @@
 AppId={{0013FBD7-EDB6-4FA9-A5C5-9B31517C66D0}
 AppName={#AppName}
 AppVersion={#AppVersion}
+AppVerName={#AppName} {#AppVersion}
 AppPublisher=DriveVault
 VersionInfoVersion={#AppVersion}.0
 VersionInfoProductName={#AppName}
@@ -50,10 +51,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"; LicenseFile: "license-en.
 Name: "thai"; MessagesFile: "compiler:Languages\Thai.isl"; LicenseFile: "license-th.txt"
 
 [CustomMessages]
-english.DesktopTask=Create a desktop shortcut
+english.DesktopTask=Create a &desktop shortcut
 english.UserGuide=Browser Pro User Guide
 #include "..\..\..\..\shared\installer\master-hub-messages.iss"
-thai.DesktopTask=สร้างทางลัดบนเดสก์ท็อป
+thai.DesktopTask=สร้างทางลัดบน&เดสก์ท็อป
 thai.UserGuide=คู่มือ Browser Pro
 
 [Tasks]
@@ -71,7 +72,7 @@ Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
 Name: "{group}\{cm:UserGuide}"; Filename: "{app}\docs\user-guide.en.html"; Languages: english
 Name: "{group}\{cm:UserGuide}"; Filename: "{app}\docs\user-guide.th.html"; Languages: thai
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Registry]
 Root: HKA; Subkey: "Software\DriveVault"; Flags: uninsdeletekeyifempty
@@ -87,7 +88,7 @@ Root: HKA; Subkey: "{#ProductKey}"; ValueType: string; ValueName: "Uninstaller";
 ; the program is NOT made the default browser by the installer: that is the user's choice in Windows Settings
 
 [Run]
-Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent
 
 [Code]
 // ---- updating -------------------------------------------------------------------------------------------------------------------------

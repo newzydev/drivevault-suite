@@ -30,17 +30,17 @@ private slots:
         QTest::newRow("full http") << "http://localhost:5173/" << "http://localhost:5173/";
         QTest::newRow("about") << "about:blank" << "about:blank";
         QTest::newRow("trim") << "  example.com  " << "https://example.com";
-        QTest::newRow("search words") << "hello world" << "https://duckduckgo.com/?q=hello%20world";
-        QTest::newRow("single word") << "weather" << "https://duckduckgo.com/?q=weather";
-        QTest::newRow("thai words") << QString::fromUtf8("ข่าววันนี้") << "https://duckduckgo.com/?q=%E0%B8%82%E0%B9%88%E0%B8%B2%E0%B8%A7%E0%B8%A7%E0%B8%B1%E0%B8%99%E0%B8%99%E0%B8%B5%E0%B9%89";
-        QTest::newRow("words with a dot") << "what is node.js really" << "https://duckduckgo.com/?q=what%20is%20node.js%20really";
+        QTest::newRow("search words") << "hello world" << "https://www.google.com/search?q=hello%20world";
+        QTest::newRow("single word") << "weather" << "https://www.google.com/search?q=weather";
+        QTest::newRow("thai words") << QString::fromUtf8("ข่าววันนี้") << "https://www.google.com/search?q=%E0%B8%82%E0%B9%88%E0%B8%B2%E0%B8%A7%E0%B8%A7%E0%B8%B1%E0%B8%99%E0%B8%99%E0%B8%B5%E0%B9%89";
+        QTest::newRow("words with a dot") << "what is node.js really" << "https://www.google.com/search?q=what%20is%20node.js%20really";
         QTest::newRow("view-source") << "view-source:https://example.com" << "view-source:https://example.com";
     }
     void typedTextBecomesAnAddress()
     {
         QFETCH(QString, typed);
         QFETCH(QString, expected);
-        QCOMPARE(resolveInput(typed, QStringLiteral("duckduckgo")).toString(QUrl::FullyEncoded), expected);
+        QCOMPARE(resolveInput(typed, {}).toString(QUrl::FullyEncoded), expected);
     }
     void aWindowsPathBecomesAFileAddress()
     {
@@ -49,8 +49,8 @@ private slots:
     }
     void theChosenSearchEngineIsUsed()
     {
-        QVERIFY(resolveInput(QStringLiteral("cats"), QStringLiteral("google")).toString().startsWith(QLatin1String("https://www.google.com/search?q=cats")));
-        QVERIFY(resolveInput(QStringLiteral("cats"), QStringLiteral("unknown-engine")).toString().startsWith(QLatin1String("https://duckduckgo.com/")));
+        QCOMPARE(resolveInput(QStringLiteral("cats"), QStringLiteral("bing")), QUrl(QStringLiteral("https://www.bing.com/search?q=cats")));
+        QCOMPARE(resolveInput(QStringLiteral("cats"), QStringLiteral("unknown-engine")), QUrl(QStringLiteral("https://www.google.com/search?q=cats")));
     }
     void anAddressIsShownShort()
     {
@@ -223,7 +223,7 @@ private slots:
         {
             BrowserSettings s(file);
             QCOMPARE(s.language(), QStringLiteral("th"));
-            QCOMPARE(s.searchEngine(), QStringLiteral("duckduckgo"));
+            QCOMPARE(s.searchEngine(), QStringLiteral("google"));
             QVERIFY(s.showBookmarksBar());
             QVERIFY(s.blockNotifications());
             QCOMPARE(s.startup(), QStringLiteral("newtab"));
@@ -231,7 +231,7 @@ private slots:
             QCOMPARE(s.zoomFor(QStringLiteral("a.example")), 1.0);
             QSignalSpy spy(&s, &BrowserSettings::changed);
             s.setLanguage(QStringLiteral("en"));
-            s.setSearchEngine(QStringLiteral("google"));
+            s.setSearchEngine(QStringLiteral("bing"));
             s.setStartup(QStringLiteral("restore"));
             s.setBlockNotifications(false);
             s.setShowBookmarksBar(false);
@@ -243,7 +243,7 @@ private slots:
         }
         BrowserSettings s(file);
         QCOMPARE(s.language(), QStringLiteral("en"));
-        QCOMPARE(s.searchEngine(), QStringLiteral("google"));
+        QCOMPARE(s.searchEngine(), QStringLiteral("bing"));
         QCOMPARE(s.startup(), QStringLiteral("restore"));
         QVERIFY(!s.blockNotifications());
         QVERIFY(!s.showBookmarksBar());
@@ -254,7 +254,7 @@ private slots:
         s.setZoomFor(QStringLiteral("big.example"), 99.0);
         QCOMPARE(s.zoomFor(QStringLiteral("big.example")), 5.0);
         s.setSearchEngine(QStringLiteral("nonsense"));
-        QCOMPARE(s.searchEngine(), QStringLiteral("duckduckgo"));
+        QCOMPARE(s.searchEngine(), QStringLiteral("google"));
     }
 };
 

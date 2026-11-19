@@ -71,7 +71,7 @@ Not in scope, on purpose: DRM circumvention, account / paywall bypass for paid c
 ## 5. Browser shell (Chrome as the model)
 
 Phase 1 scope, built on what Master Pro's `BrowserView.qml` already solved (tabs, permission bar with remembered choices, downloads to the Downloads folder with a warning for risky types, `Profile` declared last to avoid the exit crash, own user agent, open settings): copy and adapt it first; extract it into `shared/` only when two programs need identical code (do not destabilise Master Pro).
-- Tabs (drag to reorder, pin, duplicate, close others, reopen closed, tab search), omnibox (address, host, search words; search engine choice, default DuckDuckGo as in Master Pro), back / forward / reload / home, find in page, zoom per site, full screen, print (`printToPdf` / system print), view source, DevTools (`inspectedView`; needs a check in Phase 0).
+- Tabs (drag to reorder, pin, duplicate, close others, reopen closed, tab search), omnibox (address, host, search words; search engine choice, Google by default since 0.6.1), back / forward / reload / home, find in page, zoom per site, full screen, print (`printToPdf` / system print), view source, DevTools (`inspectedView`; needs a check in Phase 0).
 - Bookmarks (bar + manager, import / export HTML), history (page + clear), downloads page with pause / resume / show in folder, Settings (privacy, ad blocking, appearance, search, languages, about).
 - Private window (off-the-record profile; no history, no cookies kept).
 - Permissions as in Master Pro (ask, remember, reset). Notifications default **Block**.

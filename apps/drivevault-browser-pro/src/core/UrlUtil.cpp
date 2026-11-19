@@ -10,14 +10,14 @@ namespace dv::br {
 QList<SearchEngine> searchEngines()
 {
     return {
-        {QStringLiteral("duckduckgo"), QStringLiteral("DuckDuckGo"), QStringLiteral("https://duckduckgo.com/?q=%s")},
         {QStringLiteral("google"), QStringLiteral("Google"), QStringLiteral("https://www.google.com/search?q=%s")},
+        {QStringLiteral("duckduckgo"), QStringLiteral("DuckDuckGo"), QStringLiteral("https://duckduckgo.com/?q=%s")},
         {QStringLiteral("bing"), QStringLiteral("Bing"), QStringLiteral("https://www.bing.com/search?q=%s")},
         {QStringLiteral("brave"), QStringLiteral("Brave Search"), QStringLiteral("https://search.brave.com/search?q=%s")},
     };
 }
 
-QString defaultSearchEngineId() { return QStringLiteral("duckduckgo"); }
+QString defaultSearchEngineId() { return searchEngines().constFirst().id; }
 
 QUrl searchUrl(const QString& engineId, const QString& words)
 {

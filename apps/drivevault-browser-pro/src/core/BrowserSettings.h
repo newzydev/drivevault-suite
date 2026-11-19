@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QString>
 #include <QVariantList>
+#include <QVariantMap>
 
 namespace dv::br {
 
@@ -38,6 +39,8 @@ public:
     Q_INVOKABLE double zoomFor(const QString& host) const;               // 1.0 when the user never changed it
     Q_INVOKABLE void setZoomFor(const QString& host, double factor);     // 0.25 .. 5.0; 1.0 forgets the host
     Q_INVOKABLE QVariantList engines() const;                            // [{id, name}]
+    Q_INVOKABLE QVariantMap windowState() const;
+    Q_INVOKABLE void saveWindowState(const QVariantMap& state);
 
     bool adblockEnabled() const;               // the ad blocker as a whole (default on)
     void setAdblockEnabled(bool v);

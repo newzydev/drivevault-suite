@@ -56,6 +56,16 @@ QString BrowserSettings::searchEngine() const
 }
 void BrowserSettings::setSearchEngine(const QString& v) { set(QStringLiteral("searchEngine"), v); }
 
+QVariantMap BrowserSettings::windowState() const
+{
+    return m_data.value(QLatin1String("window")).toObject().toVariantMap();
+}
+
+void BrowserSettings::saveWindowState(const QVariantMap& state)
+{
+    set(QStringLiteral("window"), QJsonObject::fromVariantMap(state));
+}
+
 bool BrowserSettings::showBookmarksBar() const { return m_data.value(QLatin1String("showBookmarksBar")).toBool(true); }
 void BrowserSettings::setShowBookmarksBar(bool v) { set(QStringLiteral("showBookmarksBar"), v); }
 
