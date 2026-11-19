@@ -16,7 +16,7 @@ Output `build\release\bin\DriveVaultBrowserPro.exe`. Data: `%LOCALAPPDATA%\Drive
 ## Commands (from this folder)
 ```powershell
 .\scripts\build.ps1 -Test        # configure + build Release + tst_core + tst_smoke (smoke opens real windows for about a minute)
-..\..\scripts\run-browser-pro.bat   # not written yet: run build\release\bin\DriveVaultBrowserPro.exe with Qt on PATH (. ..\..\shared\scripts\env.ps1)
+..\..\scripts\run-browser-pro.bat   # smoke start / look at the program (no install)
 .\scripts\make-icon.ps1          # redraws resources\icons\app.png / app.ico
 ```
 Diagnostics of the exe: `--screenshot <png> [--size WxH] [--lang th|en] [--panel history|bookmarks|downloads|settings] [--private]`, `--selftest <json> <page address>` (17 checks of tabs, pin, bookmarks, history, suggestions, find, zoom, typed address, panels; exit 0 = all passed), `--data-dir`, `--lang`, addresses as arguments.
