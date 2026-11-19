@@ -1,4 +1,4 @@
-# DriveVault Master Pro
+# DriveVault Suite
 
 **โปรแกรมสำหรับ Windows ที่ทำงานบนเครื่องของคุณเอง ไม่ต้องสมัครสมาชิก ไฟล์ของคุณอยู่ในเครื่อง - จะถูกส่งออกไปก็ต่อเมื่อคุณเลือกใช้โมเดล AI ออนไลน์เอง**
 *Windows programs that run on your own PC - no account, your files stay on your PC - they leave it only if you yourself choose an online AI model.*
@@ -9,19 +9,19 @@
 |---|---|---|
 | **DriveVault Master Pro**<br>ศูนย์รวมโปรแกรม DriveVault / the hub | 1.38.0 | [![Download Master Pro 1.38.0](https://img.shields.io/badge/Download-1.38.0-F59E0B?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/newzydev/drivevault-suite/releases/download/drivevault-master-pro-v1.38.0/DriveVault-Master-Pro-Setup-x64.exe)<br>[รายละเอียดรุ่น / release page](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-master-pro-v1.38.0) |
 | **DriveVault Video Editor Pro**<br>ตัดต่อวิดีโอ / video editor | 1.16.2 | [![Download Video Editor Pro 1.16.2](https://img.shields.io/badge/Download-1.16.2-8B5CF6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/newzydev/drivevault-suite/releases/download/drivevault-video-editor-pro-v1.16.2/DriveVault-Video-Editor-Pro-Setup-x64.exe)<br>[รายละเอียดรุ่น / release page](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-video-editor-pro-v1.16.2) |
-| DriveVault Image Editor Pro<br>แต่งภาพ / image editor | - | เร็วๆ นี้ / coming soon |
-| DriveVault Audio Editor Pro<br>ตัดต่อเสียง / audio editor | - | เร็วๆ นี้ / coming soon |
-| DriveVault Document Pro<br>เอกสาร / documents | - | เร็วๆ นี้ / coming soon |
-| DriveVault Presentation Pro<br>งานนำเสนอ / presentations | - | เร็วๆ นี้ / coming soon |
-| DriveVault Spreadsheet Pro<br>ตาราง / spreadsheets | - | เร็วๆ นี้ / coming soon |
-| DriveVault Browser Pro<br>เว็บเบราว์เซอร์ / web browser | 1.0.0 | [![Download Browser Pro 1.0.0](https://img.shields.io/badge/Download-1.0.0-06B6D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/newzydev/drivevault-suite/releases/download/drivevault-browser-pro-v1.0.0/DriveVault-Browser-Pro-Setup-x64.exe)<br>[รายละเอียดรุ่น / release page](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-browser-pro-v1.0.0) |
+| **DriveVault Browser Pro**<br>เว็บเบราว์เซอร์ / web browser | 1.0.0 | [![Download Browser Pro 1.0.0](https://img.shields.io/badge/Download-1.0.0-06B6D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/newzydev/drivevault-suite/releases/download/drivevault-browser-pro-v1.0.0/DriveVault-Browser-Pro-Setup-x64.exe)<br>[รายละเอียดรุ่น / release page](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-browser-pro-v1.0.0) |
 | **DriveVault PDF Pro**<br>จัดการ PDF / PDF tools | 1.22.2 | [![Download PDF Pro 1.22.2](https://img.shields.io/badge/Download-1.22.2-EF4444?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/newzydev/drivevault-suite/releases/download/drivevault-pdf-pro-v1.22.2/DriveVault-PDF-Pro-Setup-x64.exe)<br>[รายละเอียดรุ่น / release page](https://github.com/newzydev/drivevault-suite/releases/tag/drivevault-pdf-pro-v1.22.2) |
+| DriveVault Image Editor Pro<br>แต่งภาพ / image editor | - | อยู่ในแผน / planned |
+| DriveVault Audio Editor Pro<br>ตัดต่อเสียง / audio editor | - | อยู่ในแผน / planned |
+| DriveVault Document Pro<br>เอกสาร / documents | - | อยู่ในแผน / planned |
+| DriveVault Presentation Pro<br>งานนำเสนอ / presentations | - | อยู่ในแผน / planned |
+| DriveVault Spreadsheet Pro<br>ตาราง / spreadsheets | - | อยู่ในแผน / planned |
 
 ต้องใช้ Windows 10 หรือ 11 (64 บิต) · *Windows 10 or 11, 64-bit.*
 ทุกรุ่นก่อนหน้าอยู่ที่ [Releases](https://github.com/newzydev/drivevault-suite/releases) · *All earlier versions are on the Releases page.*
 
-> **ไม่ต้องดาวน์โหลด Master Pro แยก** - ตัวติดตั้งของ Video Editor Pro และ PDF Pro ตรวจหา Master Pro รุ่นล่าสุดบน GitHub แล้วดาวน์โหลดและติดตั้งให้เอง (ต้องต่ออินเทอร์เน็ตตอนติดตั้ง ถ้าต่อไม่ได้ โปรแกรมยังติดตั้งได้ และติดตั้ง Master Pro ทีหลังได้)
-> *You do not need to download Master Pro separately - the installers of Video Editor Pro and PDF Pro check GitHub for the newest Master Pro and download and install it for you (an Internet connection is needed while installing; without one the program is still installed and you can add Master Pro later).*
+> **ไม่ต้องดาวน์โหลด Master Pro แยก** - ตัวติดตั้งของ Video Editor Pro, PDF Pro และ Browser Pro ตรวจหา Master Pro รุ่นล่าสุดบน GitHub แล้วดาวน์โหลดและติดตั้งให้เอง (ต้องต่ออินเทอร์เน็ตตอนติดตั้ง ถ้าต่อไม่ได้ โปรแกรมยังติดตั้งได้ และติดตั้ง Master Pro ทีหลังได้)
+> *You do not need to download Master Pro separately - the installers of Video Editor Pro, PDF Pro and Browser Pro check GitHub for the newest Master Pro and download and install it for you (an Internet connection is needed while installing; without one the program is still installed and you can add Master Pro later).*
 
 ## โปรแกรมในชุด / The programs
 
@@ -74,12 +74,28 @@
 โปรแกรมไม่แก้ไฟล์ต้นฉบับ - ทุกอย่างบันทึกเป็นสำเนาใหม่ ยังไม่มี: การลงนามแบบมองเห็น, การใส่แท็ก PDF/UA, PDF/A, การแก้ย่อหน้าเดิมให้ไหลต่อกัน
 *It never changes the original - everything is saved as a new copy. Not available yet: visible signatures, PDF/UA tagging, PDF/A, re-flowing existing paragraphs.*
 
+### DriveVault Browser Pro
+เว็บเบราว์เซอร์ Chromium สำหรับ Windows พร้อมหน้าแท็บใหม่และตัวบล็อกโฆษณาในตัว
+*A Chromium browser for Windows with a new-tab workspace and built-in ad blocking.*
+
+- **ท่องเว็บ / Browsing** - ค้นด้วย Google เป็นค่าเริ่มต้น ใช้แท็บ ปักหมุด คืนแท็บที่ปิดไป ค้นหาในหน้า ซูมรายเว็บ และบันทึกหน้าเป็น PDF ได้
+- **หน้าแท็บใหม่ / Workspace** - มีภาพพื้นหลัง ช่องค้นหาที่พร้อมพิมพ์ทันที ทางลัดพร้อม favicon และรายการเว็บไซต์ที่เข้าบ่อย เพิ่มทางลัดด้วยชื่อและ URL ได้
+- **บุ๊กมาร์ก ประวัติ และดาวน์โหลด / Bookmarks, history and downloads** - นำเข้าและส่งออกบุ๊กมาร์กเป็น HTML จัดการประวัติ และพักหรือดาวน์โหลดไฟล์ต่อได้
+- **ความเป็นส่วนตัว / Privacy** - มีหน้าต่างส่วนตัว เลือกอนุญาตหรือปฏิเสธเมื่อเว็บไซต์ขอสิทธิ์ และใช้โปรแกรมได้ทั้งภาษาไทยและอังกฤษ
+- **บล็อกโฆษณาและเล่นวิดีโอ / Ad blocking and video** - มีลิสต์กรองในตัวและปิดการบล็อกรายเว็บได้ ใช้ภาพซ้อนภาพกับวิดีโอในหน้าหลัก และบันทึกไฟล์หรือสตรีมที่รองรับได้ กลไกรับมือการตรวจจับตัวบล็อกโฆษณาผ่านการทดสอบบนหน้าแล็บ
+- **ข้อจำกัด / Limits** - ส่วนขยาย Chrome และการเล่น H.264/AAC ยังไม่รองรับ รุ่นนี้บันทึกหน้าเป็น PDF ได้ และยังไม่มีการพิมพ์ผ่านเครื่องพิมพ์โดยตรง
+
+### โปรแกรมที่อยู่ในแผน / Planned programs
+
+Image Editor Pro สำหรับแต่งภาพ, Audio Editor Pro สำหรับตัดต่อเสียง, Document Pro สำหรับเอกสาร, Presentation Pro สำหรับงานนำเสนอ และ Spreadsheet Pro สำหรับตารางคำนวณ รายการเหล่านี้อยู่ในแผนพัฒนา
+*Planned apps cover image editing, audio editing, documents, presentations and spreadsheets.*
+
 ## ติดตั้ง / Install
 
 1. ดาวน์โหลดไฟล์ `...Setup-x64.exe` จากตารางด้านบน แล้วดับเบิลคลิก *(download the setup file above and run it)*
 2. **Windows อาจขึ้นหน้าเตือนสีน้ำเงิน "Windows protected your PC"** เพราะตัวติดตั้งยังไม่ได้เซ็นลายเซ็นดิจิทัล (ต้องซื้อใบรับรอง) ให้กด **More info** แล้วกด **Run anyway**
    *Windows may show a blue "Windows protected your PC" window because the installer is not digitally signed yet. Choose **More info**, then **Run anyway**.*
-3. ทำตามขั้นตอนของตัวติดตั้ง (ไทย/อังกฤษ) Master Pro อยู่ใน `C:\Program Files\DriveVault` และโปรแกรมอื่นอยู่ในโฟลเดอร์ `Common` ข้างใน (ถ้าเลือก "เฉพาะฉัน" จะอยู่ใน `%LOCALAPPDATA%\Programs\DriveVault`) ตัวติดตั้งของ Video Editor Pro และ PDF Pro จะดาวน์โหลดและติดตั้ง Master Pro ให้ก่อนถ้ายังไม่มีหรือเก่ากว่า *(follow the wizard; the installers of Video Editor Pro and PDF Pro download and install Master Pro first when it is missing or older)*
+3. ทำตามขั้นตอนของตัวติดตั้ง (ไทย/อังกฤษ) Master Pro อยู่ใน `C:\Program Files\DriveVault` และโปรแกรมอื่นอยู่ในโฟลเดอร์ `Common` ข้างใน (ถ้าเลือก "เฉพาะฉัน" จะอยู่ใน `%LOCALAPPDATA%\Programs\DriveVault`) ตัวติดตั้งของ Video Editor Pro, PDF Pro และ Browser Pro จะดาวน์โหลดและติดตั้ง Master Pro ให้ก่อนถ้ายังไม่มีหรือเก่ากว่า *(follow the wizard; the installers of Video Editor Pro, PDF Pro and Browser Pro download and install Master Pro first when it is missing or older)*
 
 **ตรวจว่าไฟล์ไม่เสียหาย (ไม่บังคับ) / Check the download (optional):** เปิด PowerShell ในโฟลเดอร์ที่ดาวน์โหลด แล้วเทียบผลกับไฟล์ `.sha256` ที่อยู่ใน Release เดียวกัน
 *Open PowerShell where you saved the file and compare the result with the `.sha256` file of the same release.*
@@ -95,19 +111,20 @@ Get-FileHash .\DriveVault-Video-Editor-Pro-Setup-x64.exe -Algorithm SHA256
 
 ## ความเป็นส่วนตัว / Privacy
 
-โปรแกรมไม่เก็บข้อมูลการใช้งานและไม่มี telemetry ไฟล์ของคุณอยู่ในเครื่อง การตั้งค่า บทสนทนา และเบราว์เซอร์ (คุกกี้ สิทธิ์ที่คุณอนุญาต) เก็บไว้ในเครื่องคุณเท่านั้น ใช้อินเทอร์เน็ตเฉพาะกรณีต่อไปนี้ และทุกกรณีเกิดจากสิ่งที่คุณสั่งหรือเลือกไว้:
+โปรแกรมไม่เก็บข้อมูลการใช้งานและไม่มี telemetry ไฟล์ของคุณอยู่ในเครื่อง การตั้งค่า บทสนทนา และสิทธิ์เว็บไซต์เก็บบนเครื่องคุณ เบราว์เซอร์เก็บคุกกี้ในโปรไฟล์และส่งคุกกี้ที่เกี่ยวข้องกลับไปยังเว็บไซต์ตามการท่องเว็บปกติ ใช้อินเทอร์เน็ตเฉพาะกรณีต่อไปนี้ และทุกกรณีเกิดจากสิ่งที่คุณสั่งหรือเลือกไว้:
 - **โมเดล AI ออนไลน์ (เฉพาะเมื่อคุณเลือกเองในเมนูโมเดลของ Master Pro)** - ข้อความที่คุณส่ง ข้อความก่อนหน้าในบทสนทนานั้น และ (ในหน้าเอเจนติกเอไอ) ข้อความในไฟล์ โฟลเดอร์ และผลคำสั่งที่ AI อ่านเพื่อทำงานนั้น จะถูกส่งทางอินเทอร์เน็ตไปที่ NVIDIA ซึ่งเป็นผู้รันโมเดล และ NVIDIA อาจประมวลผลและเก็บข้อมูลตามนโยบายของตัวเอง โปรดอย่าใช้กับเนื้อหาที่คุณไม่มีสิทธิ์เผยแพร่ ถ้าเลือกโมเดลภายในเครื่อง ทุกอย่างอยู่ในเครื่อง กุญแจเข้าถึงบริการนี้ฝังอยู่ในโปรแกรมและใช้ร่วมกันทุกคน อาจถูกจำกัดหรือยกเลิกได้โดยไม่แจ้งล่วงหน้า
 - Master Pro ตรวจหาอัปเดตจาก GitHub (ปิดการตรวจตอนเปิดโปรแกรมได้) และดาวน์โหลดเมื่อคุณกดปุ่มอัปเดต ตัวติดตั้งของโปรแกรมอื่นติดต่อ GitHub เพื่อหาและดาวน์โหลด Master Pro รุ่นล่าสุดตอนติดตั้ง
 - ดาวน์โหลดโมเดล AI จาก Hugging Face - ตอนติดตั้ง (เป็นงานที่เลือกไม่ทำได้) หรือเมื่อคุณกดปุ่มดาวน์โหลดเอง ไฟล์ถูกตรวจ SHA-256 ก่อนใช้ ติดตั้งแบบเงียบไม่ดาวน์โหลดโมเดลเลย
 - เอไอใน Master Pro ค้นเว็บ (DuckDuckGo) และเปิดหน้าเว็บอ่านเมื่อสวิตช์ "เว็บ" เปิดอยู่ (เปิดเป็นค่าเริ่มต้น ปิดได้ที่ใต้ช่องพิมพ์หรือในตั้งค่า AI) ส่งออกไปเฉพาะคำค้นและที่อยู่หน้าเว็บ ไม่ส่งไฟล์หรือบทสนทนา (ยกเว้นเมื่อคุณใช้โมเดลออนไลน์ตามข้อแรก)
 - เบราว์เซอร์ในตัวของ Master Pro เปิดหน้าเว็บที่คุณพิมพ์ที่อยู่เอง หรือหน้าที่ AI เปิดให้ในงานของมัน เหมือนเว็บเบราว์เซอร์ทั่วไป เว็บไซต์นั้นเห็นการเชื่อมต่อของคุณ
+- Browser Pro ติดต่อเว็บไซต์ที่คุณเปิดและเครื่องมือค้นหาที่คุณเลือกเพื่อส่งคำค้น การอัปเดตลิสต์ตัวบล็อกโฆษณาจะดาวน์โหลดเมื่อคุณกดอัปเดต
 
-*The programs collect no usage data and have no telemetry; your files stay on your PC, and settings, conversations and the browser's cookies and permissions are kept on your PC only. The internet is used only for the following, and always because of something you did or chose: **an online AI model, only when you choose one yourself in the model menu of Master Pro** - your messages, the earlier messages of that conversation and (on the Agentic AI page) the text of files, folders and command results the AI reads are sent over the Internet to NVIDIA, which runs the model and may process and keep them under its own policy; do not use it with content you may not share; a model of your own PC keeps everything on the PC; the access key of the service is built into the program, shared by all users, and may be limited or withdrawn without notice. Master Pro checking GitHub for updates (and downloading when you press the update button), and the other installers asking GitHub for the newest Master Pro while installing; downloading AI models from Hugging Face - during setup (a task you can clear) or when you press a download button, checked against a SHA-256, never during a silent install; the AI of Master Pro searching the web (DuckDuckGo) and reading a page while the "Web" switch is on (on by default; only the search words and the page address go out); and the built-in browser loading pages you type or that the AI opens for its work, like any web browser.*
+*The programs collect no usage data and have no telemetry; your files stay on your PC, and your PC stores settings, conversations and website permissions. The browser stores cookies in its profile and sends applicable cookies to websites during regular browsing. The internet is used only for the following, and always because of something you did or chose: **an online AI model, only when you choose one yourself in the model menu of Master Pro** - your messages, the earlier messages of that conversation and (on the Agentic AI page) the text of files, folders and command results the AI reads are sent over the Internet to NVIDIA, which runs the model and may process and keep them under its own policy; do not use it with content you may not share; a model of your own PC keeps everything on the PC; the access key of the service is built into the program, shared by all users, and may be limited or withdrawn without notice. Master Pro checking GitHub for updates (and downloading when you press the update button), and the other installers asking GitHub for the newest Master Pro while installing; downloading AI models from Hugging Face - during setup (a task you can clear) or when you press a download button, checked against a SHA-256, never during a silent install; the AI of Master Pro searching the web (DuckDuckGo) and reading a page while the "Web" switch is on (on by default; only the search words and the page address go out); and the built-in browser loading pages you type or that the AI opens for its work. Browser Pro contacts the websites you open and sends search terms to the search engine you selected. It downloads filter lists when you press Update filter lists.*
 
 ## ข้อตกลงและสิทธิ์การใช้งาน / Licence
 
-ข้อตกลงการใช้ซอฟต์แวร์ (ไทย/อังกฤษ) แสดงในตัวติดตั้งและอยู่ในโฟลเดอร์ `licenses` ของแต่ละโปรแกรม เป็นร่างที่ยังไม่ได้ผ่านการตรวจโดยทนายความ โปรแกรมใช้ Qt (รวม Qt WebEngine / Chromium ในเบราว์เซอร์ของ Master Pro), FFmpeg, whisper.cpp, llama.cpp, ONNX Runtime, PDFium และ qpdf ตามสัญญาอนุญาตของแต่ละตัว และโมเดล AI ที่โหลดมาใช้ตามสัญญาอนุญาตของโมเดลนั้น (เช่น Qwen3.5 ใช้ Apache-2.0) ดูประกาศบุคคลที่สามในโปรแกรม
-*The licence agreement (Thai / English) is shown in the installer and kept in each program's `licenses` folder. It is a draft that no lawyer has reviewed yet. The programs use Qt (including Qt WebEngine / Chromium for the browser of Master Pro), FFmpeg, whisper.cpp, llama.cpp, ONNX Runtime, PDFium and qpdf under their own licences, and the AI models you download under their own licences (Qwen3.5 is Apache-2.0); see the third-party notices in the program.*
+ข้อตกลงการใช้ซอฟต์แวร์ (ไทย/อังกฤษ) แสดงในตัวติดตั้งและอยู่ในโฟลเดอร์ `licenses` ของแต่ละโปรแกรม เป็นร่างที่ยังไม่ได้ผ่านการตรวจโดยทนายความ โปรแกรมใช้ Qt (รวม Qt WebEngine / Chromium ในเบราว์เซอร์ของ Master Pro และ Browser Pro), FFmpeg, whisper.cpp, llama.cpp, ONNX Runtime, PDFium และ qpdf ตามสัญญาอนุญาตของแต่ละตัว และโมเดล AI ที่โหลดมาใช้ตามสัญญาอนุญาตของโมเดลนั้น (เช่น Qwen3.5 ใช้ Apache-2.0) ดูประกาศบุคคลที่สามในโปรแกรม
+*The licence agreement (Thai / English) is shown in the installer and kept in each program's `licenses` folder. It is a draft that no lawyer has reviewed yet. The programs use Qt (including Qt WebEngine / Chromium for the browsers in Master Pro and Browser Pro), FFmpeg, whisper.cpp, llama.cpp, ONNX Runtime, PDFium and qpdf under their own licences, and the AI models you download under their own licences (Qwen3.5 is Apache-2.0); see the third-party notices in the program.*
 
 ---
 

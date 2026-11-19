@@ -13,13 +13,13 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 | `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.16.2 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
 | `apps/drivevault-master-pro` | DriveVault Master Pro 1.38.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
 | `apps/drivevault-pdf-pro` | DriveVault PDF Pro 1.22.2 (plan in `apps/drivevault-pdf-pro/docs/PDF-Pro-Plan.md`). PDFium + qpdf, Thai OCR with ONNX Runtime. Accent colour red `#EF4444`. |
-| `apps/drivevault-browser-pro` | DriveVault Browser Pro 1.0.0 - **stable release approved, listed in the Master Pro catalog, latest recorded Release 0.6.0 (beta)** (plan `apps/drivevault-browser-pro/docs/Browser-Pro-Plan.md`; Qt WebEngine, owner's decision 2026-11-19; no Google sign-in). Accent colour cyan `#06B6D4`. |
+| `apps/drivevault-browser-pro` | DriveVault Browser Pro 1.0.0 - **stable Release 1.0.0 published, listed in the Master Pro catalog** (plan `apps/drivevault-browser-pro/docs/Browser-Pro-Plan.md`; Qt WebEngine, owner's decision 2026-11-19; no Google sign-in). Accent colour cyan `#06B6D4`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
 | `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md), `run-master-pro.bat` / `run-video-editor.bat` / `run-pdf-pro.bat` (open the Release build without installing: Qt on PATH, then start the exe; extra arguments are passed on - use these for the smoke start). |
 | `docs` | `suite-integration.md` (contract between programs and hub). |
 | `.tools` (not in git) | Portable toolchain: CMake, Ninja, Qt 6.8.3 msvc2022_64, Inno Setup, FFmpeg (LGPL shared), whisper.cpp + models, PDFium (BSD-3), qpdf (Apache-2.0), ONNX Runtime 1.24.4 (MIT), the OpenThai OCR Text model (`openthai-ocr`, Apache-2.0, 4 MB; PDF Pro ships it), the OpenThai ASR model (`openthai-asr`, OpenMDW-1.1, about 2.6 GB, never shipped), Python. |
 
-Planned (do not pretend they exist): Image Editor Pro, Audio Editor Pro. New programs go in `apps/drivevault-<name>` (lower case, words joined with `-`).
+Planned (do not pretend they exist): Image Editor Pro, Audio Editor Pro, Document Pro, Presentation Pro, Spreadsheet Pro. New programs go in `apps/drivevault-<name>` (lower case, words joined with `-`).
 
 ## How to work here
 
@@ -167,6 +167,7 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 | PDF Pro | 1.22.1 | `drivevault-pdf-pro-v1.22.1` | `8e9f69b` | 2026-11-17 |
 | PDF Pro | 1.22.2 | `drivevault-pdf-pro-v1.22.2` | `43d0c09` | 2026-11-19 |
 | Browser Pro | 0.6.0 | `drivevault-browser-pro-v0.6.0` | `407b7f0` | 2026-11-19 |
+| Browser Pro | 1.0.0 | `drivevault-browser-pro-v1.0.0` | `8243163` | 2026-11-19 |
 
 ## Open items the owner knows about
 
