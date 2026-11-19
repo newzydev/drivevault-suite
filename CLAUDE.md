@@ -137,6 +137,7 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 | Master Pro | 1.27.4 | `drivevault-master-pro-v1.27.4` | `071e75c` | 2026-11-17 |
 | Master Pro | 1.29.0 | `drivevault-master-pro-v1.29.0` | `f86e66e` | 2026-11-17 |
 | Master Pro | 1.36.0 | `drivevault-master-pro-v1.36.0` | `43d0c09` | 2026-11-19 |
+| Master Pro | 1.37.0 | `drivevault-master-pro-v1.37.0` | `e410858` | 2026-11-19 |
 | Video Editor Pro | 1.0.1 | `drivevault-video-editor-pro-v1.0.1` | `1156f9e` | 2026-11-07 |
 | Video Editor Pro | 1.1.0 | `drivevault-video-editor-pro-v1.1.0` | `6859f14` | 2026-11-07 |
 | Video Editor Pro | 1.1.1 | `drivevault-video-editor-pro-v1.1.1` | `4d5b720` | 2026-11-07 |
