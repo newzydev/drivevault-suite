@@ -1,5 +1,6 @@
-#pragma once
+﻿#pragma once
 
+#include "AdBlockController.h"
 #include "BookmarkStore.h"
 #include "BrowserSettings.h"
 #include "DownloadModel.h"
@@ -21,6 +22,7 @@ class BrowserApp : public QObject {
     Q_PROPERTY(dv::br::BookmarkStore* bookmarks READ bookmarks CONSTANT)
     Q_PROPERTY(dv::br::HistoryStore* history READ history CONSTANT)
     Q_PROPERTY(dv::br::DownloadModel* downloads READ downloads CONSTANT)
+    Q_PROPERTY(dv::br::AdBlockController* adblock READ adblock CONSTANT)
     Q_PROPERTY(QQuickWebEngineProfile* profile READ profile CONSTANT)
     Q_PROPERTY(QString version READ version CONSTANT)
     Q_PROPERTY(QString engineInfo READ engineInfo CONSTANT)
@@ -28,12 +30,13 @@ class BrowserApp : public QObject {
     Q_PROPERTY(QStringList initialUrls READ initialUrls CONSTANT)
     Q_PROPERTY(bool startPrivate READ startPrivate CONSTANT)
 public:
-    BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, QObject* parent = nullptr);
+    BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, AdBlockInterceptor* interceptor, QObject* parent = nullptr);
 
     BrowserSettings* settings() { return &m_settings; }
     BookmarkStore* bookmarks() { return &m_bookmarks; }
     HistoryStore* history() { return &m_history; }
     DownloadModel* downloads() { return &m_downloads; }
+    AdBlockController* adblock() { return &m_adblock; }
     QQuickWebEngineProfile* profile() const { return m_profile; }
     QString version() const;
     QString engineInfo() const;
@@ -63,6 +66,7 @@ private:
     BrowserSettings m_settings;
     BookmarkStore m_bookmarks;
     HistoryStore m_history;
+    AdBlockController m_adblock;
     DownloadModel m_downloads;
     QStringList m_initialUrls;
     bool m_startPrivate = false;

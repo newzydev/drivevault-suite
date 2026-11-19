@@ -35,6 +35,7 @@ ApplicationWindow {
     readonly property string curUrl: currentView ? currentView.url.toString() : ""
     readonly property string curTitle: currentView ? currentView.title : ""
     readonly property bool curBlank: curUrl === "" || curUrl === "about:blank"
+    readonly property string curHost: Browser.hostOf(curUrl)
     readonly property bool starred: { Browser.bookmarks.items; return curUrl !== "" && Browser.bookmarks.contains(curUrl) }
 
     width: 1280
@@ -267,6 +268,13 @@ ApplicationWindow {
         }
     }
     Timer { id: stTimer; property int step: 0; interval: 1800; onTriggered: win.selfTestStep(step) }
+    // --probe: what the loaded page recorded (window.__res) and how many requests the ad blocker stopped for its host
+    function probe() {
+        if (!currentView) { selfTestResult = "[]"; return }
+        currentView.runJavaScript("JSON.stringify(window.__res || null)", function (r) {
+            selfTestResult = JSON.stringify([{ name: "probe", ok: true, detail: r, blocked: Browser.adblock.blockedOn(curHost), host: curHost, rules: Browser.adblock.lists.totalRules }])
+        })
+    }
 
     // ---- shortcuts ---------------------------------------------------------------------------------------------------------
     Shortcut { sequence: "Ctrl+T"; onActivated: win.addTab("", true) }
@@ -506,6 +514,32 @@ ApplicationWindow {
                             if (win.curBlank) return
                             if (win.starred) Browser.bookmarks.removeUrl(win.curUrl)
                             else Browser.bookmarks.add(win.curTitle, win.curUrl, "bar")
+                        }
+                    }
+                }
+                IconButton {
+                    id: shieldButton
+                    objectName: "shieldButton"
+                    kind: "shield"
+                    tip: Tr.t("shield_tip")
+                    readonly property bool paused: { Browser.adblock.tick; return Browser.adblock.isPaused(win.curHost) }
+                    readonly property int count: { Browser.adblock.tick; return Browser.adblock.blockedOn(win.curHost) }
+                    readonly property bool ready: Browser.adblock.enabled && Browser.adblock.lists.totalRules > 0
+                    active: ready && !paused
+                    activeColor: win.accent
+                    onClicked: shieldMenu.popup(x, y + height)
+                    Rectangle {
+                        visible: shieldButton.ready && !shieldButton.paused && shieldButton.count > 0
+                        x: parent.width - width + 2; y: 0
+                        width: Math.max(14, countText.implicitWidth + 6); height: 14; radius: 7
+                        color: win.accent
+                        Text {
+                            id: countText
+                            anchors.centerIn: parent
+                            text: shieldButton.count > 99 ? "99+" : shieldButton.count
+                            color: Theme.readableOn(win.accent)
+                            font.pixelSize: 9
+                            font.weight: Font.DemiBold
                         }
                     }
                 }
@@ -830,6 +864,24 @@ ApplicationWindow {
         DItem { text: Tr.t("tab_reopen"); enabled: win.closedUrls.length > 0; onTriggered: win.reopenClosed() }
     }
     DMenu {
+        id: shieldMenu
+        objectName: "shieldMenu"
+        DItem {
+            enabled: false
+            text: !Browser.adblock.enabled ? Tr.t("shield_off")
+                : Browser.adblock.lists.totalRules === 0 ? Tr.t("shield_nolists")
+                : shieldButton.paused ? Tr.t("shield_paused")
+                : Tr.t("shield_blocked", shieldButton.count)
+        }
+        DItem {
+            text: shieldButton.paused ? Tr.t("shield_resume") : Tr.t("shield_pause")
+            enabled: Browser.adblock.enabled && !win.curBlank && win.curHost !== ""
+            onTriggered: Browser.adblock.setPaused(win.curHost, !shieldButton.paused)
+        }
+        DSep {}
+        DItem { text: Tr.t("shield_settings"); onTriggered: win.panel = "settings" }
+    }
+    DMenu {
         id: mainMenu
         objectName: "mainMenu"
         DItem { text: Tr.t("newTab"); onTriggered: win.addTab("", true) }
@@ -884,5 +936,6 @@ ApplicationWindow {
         offTheRecord: true
         httpUserAgent: Browser.profile.httpUserAgent
         onDownloadRequested: download => Browser.downloads.handle(download)
+        Component.onCompleted: Browser.adblock.attach(privateProfile)         // the ad blocker works in private windows too
     }
 }

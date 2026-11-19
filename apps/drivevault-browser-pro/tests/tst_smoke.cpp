@@ -1,4 +1,10 @@
 #include <QDir>
+#include <QElapsedTimer>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QTcpServer>
+#include <QTcpSocket>
 #include <QFile>
 #include <QImage>
 #include <QProcess>
@@ -7,6 +13,39 @@
 #include <QTemporaryDir>
 #include <QTest>
 
+// A web server on this computer: a page with two scripts and a picture; counts which paths the browser really asked for.
+class PageServer : public QTcpServer {
+public:
+    QMap<QString, int> hits;
+    PageServer()
+    {
+        listen(QHostAddress::LocalHost);
+        connect(this, &QTcpServer::newConnection, this, [this] {
+            while (QTcpSocket* s = nextPendingConnection())
+                connect(s, &QTcpSocket::readyRead, s, [this, s] {
+                    const QByteArray head = s->readAll();
+                    const QString path = QString::fromLatin1(head.split(' ').value(1));
+                    ++hits[path];
+                    QByteArray type = "text/plain", body;
+                    if (path == QLatin1String("/page.html")) {
+                        type = "text/html";
+                        body = "<!doctype html><meta charset=utf-8><title>Ads</title><script>window.__res={};</script>"
+                               "<script src='/blocked-ad.js' onload=\"__res.ad='loaded'\" onerror=\"__res.ad='blocked'\"></script>"
+                               "<script src='/ok.js' onload=\"__res.ok='loaded'\" onerror=\"__res.ok='blocked'\"></script>"
+                               "<img src='/pixel.gif' onload=\"__res.img='loaded'\" onerror=\"__res.img='blocked'\">";
+                    } else if (path.endsWith(QLatin1String(".js"))) {
+                        type = "application/javascript";
+                        body = "/* ok */";
+                    } else if (path == QLatin1String("/pixel.gif")) {
+                        type = "image/gif";
+                        body = QByteArray::fromBase64("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+                    }
+                    s->write("HTTP/1.1 200 OK\r\nContent-Type: " + type + "\r\nContent-Length: " + QByteArray::number(body.size()) + "\r\nConnection: close\r\n\r\n" + body);
+                    s->disconnectFromHost();
+                });
+        });
+    }
+};
 // Starts the real program (Qt WebEngine and all), lets it draw, and checks the picture of its window: not blank, the accent colour of the program is there.
 class TstSmoke : public QObject {
     Q_OBJECT
@@ -91,7 +130,64 @@ private slots:
         QVERIFY2(p.exitCode() == 0, text.constData());
         QVERIFY2(text.contains("\"ok\": true") && !text.contains("\"ok\": false"), text.constData());
     }
-    void theSidePanelsOpen()
+    void theAdBlockerStopsRequestsInTheRealEngine()
+    {
+        struct Case { const char* name; QStringList extra; QByteArray settings; bool adBlocked; };
+        const QList<Case> cases = {
+            {"normal window", {}, "{}", true},
+            {"private window", {QStringLiteral("--private")}, "{}", true},
+            {"paused on the site", {}, "{\"adblockPaused\":[\"127.0.0.1\"]}", false},
+            {"switched off", {}, "{\"adblockEnabled\":false}", false},
+            {"list switched off", {}, "{\"adblockListsOff\":[\"easylist\"]}", false},
+        };
+        for (const Case& c : cases) {
+            QTemporaryDir dir;
+            PageServer server;
+            QVERIFY(server.isListening());
+            const QString data = dir.filePath(QStringLiteral("data"));
+            QDir().mkpath(data + QStringLiteral("/filters"));
+            QFile list(data + QStringLiteral("/filters/easylist.txt"));
+            QVERIFY(list.open(QIODevice::WriteOnly));
+            list.write("[Adblock Plus 2.0]\n! test list\n/blocked-ad.js\n/pixel.gif\n##.cosmetic\n");
+            list.close();
+            QFile settings(data + QStringLiteral("/settings.json"));
+            QVERIFY(settings.open(QIODevice::WriteOnly));
+            settings.write(c.settings);
+            settings.close();
+
+            const QString report = dir.filePath(QStringLiteral("probe.json"));
+            QProcess p;
+            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+            env.insert(QStringLiteral("DV_NO_AUDIO"), QStringLiteral("1"));
+            p.setProcessEnvironment(env);
+            p.start(QStringLiteral(BROWSER_EXE_PATH), QStringList{QStringLiteral("--data-dir"), data, QStringLiteral("--lang"), QStringLiteral("en"), QStringLiteral("--probe"), report}
+                                                           + c.extra + QStringList{QStringLiteral("http://127.0.0.1:%1/page.html").arg(server.serverPort())});
+            QElapsedTimer waited;
+            waited.start();
+            while (p.state() != QProcess::NotRunning && waited.elapsed() < 90000)
+                QTest::qWait(50);                                  // the page server of this test must keep answering
+            QVERIFY2(p.state() == QProcess::NotRunning, c.name);
+            QFile r(report);
+            QVERIFY2(r.open(QIODevice::ReadOnly), c.name);
+            const QJsonObject o = QJsonDocument::fromJson(r.readAll()).array().at(0).toObject();
+            const QJsonObject res = QJsonDocument::fromJson(o.value(QStringLiteral("detail")).toString().toUtf8()).object();
+            qInfo().noquote() << c.name << ":" << res << "blocked count" << o.value(QStringLiteral("blocked")).toInt() << "hits" << server.hits;
+            QVERIFY2(o.value(QStringLiteral("rules")).toInt() >= (QByteArray(c.settings).contains("easylist") ? 0 : 0), c.name);
+            QCOMPARE(res.value(QStringLiteral("ok")).toString(), QStringLiteral("loaded"));              // a script nobody listed always loads
+            const bool listOff = QByteArray(c.settings).contains("easylist");
+            if (c.adBlocked) {
+                QVERIFY2(res.value(QStringLiteral("ad")).toString() == QLatin1String("blocked"), c.name);
+                QVERIFY2(res.value(QStringLiteral("img")).toString() == QLatin1String("blocked"), c.name);
+                QVERIFY2(server.hits.value(QStringLiteral("/blocked-ad.js")) == 0, c.name);               // the request never reached the server
+                QVERIFY2(o.value(QStringLiteral("blocked")).toInt() >= 2, c.name);
+            } else {
+                QVERIFY2(res.value(QStringLiteral("ad")).toString() == QLatin1String("loaded"), c.name);
+                QVERIFY2(res.value(QStringLiteral("img")).toString() == QLatin1String("loaded"), c.name);
+                QVERIFY2(server.hits.value(QStringLiteral("/blocked-ad.js")) == 1, c.name);
+                QVERIFY2(listOff || o.value(QStringLiteral("blocked")).toInt() == 0, c.name);
+            }
+        }
+    }    void theSidePanelsOpen()
     {
         for (const char* panel : {"history", "bookmarks", "downloads", "settings"}) {
             QTemporaryDir dir;

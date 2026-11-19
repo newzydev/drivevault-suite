@@ -1,9 +1,10 @@
-#include "BrowserApp.h"
+﻿#include "BrowserApp.h"
 
 #include "UrlUtil.h"
 #include "Version.h"
 
 #include <QClipboard>
+#include <QCoreApplication>
 #include <QFile>
 #include <QGuiApplication>
 #include <QJsonArray>
@@ -16,10 +17,11 @@
 
 namespace dv::br {
 
-BrowserApp::BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, QObject* parent)
+BrowserApp::BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, AdBlockInterceptor* interceptor, QObject* parent)
     : QObject(parent), m_dataDir(dataDir), m_profile(profile),
       m_settings(dataDir + QStringLiteral("/settings.json")), m_bookmarks(dataDir + QStringLiteral("/bookmarks.json")),
-      m_history(dataDir + QStringLiteral("/history.jsonl"))
+      m_history(dataDir + QStringLiteral("/history.jsonl")),
+      m_adblock(&m_settings, interceptor, dataDir, QCoreApplication::applicationDirPath() + QStringLiteral("/filters"))
 {
 }
 

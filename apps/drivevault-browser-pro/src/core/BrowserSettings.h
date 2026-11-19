@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <QJsonObject>
 #include <QObject>
@@ -16,6 +16,7 @@ class BrowserSettings : public QObject {
     Q_PROPERTY(bool showBookmarksBar READ showBookmarksBar WRITE setShowBookmarksBar NOTIFY changed)
     Q_PROPERTY(QString startup READ startup WRITE setStartup NOTIFY changed)
     Q_PROPERTY(bool blockNotifications READ blockNotifications WRITE setBlockNotifications NOTIFY changed)
+    Q_PROPERTY(bool adblockEnabled READ adblockEnabled WRITE setAdblockEnabled NOTIFY changed)
 public:
     explicit BrowserSettings(const QString& file, QObject* parent = nullptr);
 
@@ -36,6 +37,14 @@ public:
     Q_INVOKABLE void setZoomFor(const QString& host, double factor);     // 0.25 .. 5.0; 1.0 forgets the host
     Q_INVOKABLE QVariantList engines() const;                            // [{id, name}]
 
+    bool adblockEnabled() const;               // the ad blocker as a whole (default on)
+    void setAdblockEnabled(bool v);
+    Q_INVOKABLE bool listOn(const QString& id) const;                 // lists are on unless the user switched them off
+    Q_INVOKABLE void setListOn(const QString& id, bool on);
+    Q_INVOKABLE bool adblockPaused(const QString& host) const;        // paused on this site
+    Q_INVOKABLE void setAdblockPaused(const QString& host, bool paused);
+    QStringList pausedHosts() const;
+
 signals:
     void changed();
 
@@ -48,3 +57,4 @@ private:
 };
 
 } // namespace dv::br
+

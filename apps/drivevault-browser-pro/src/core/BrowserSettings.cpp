@@ -1,4 +1,4 @@
-#include "BrowserSettings.h"
+﻿#include "BrowserSettings.h"
 
 #include "UrlUtil.h"
 
@@ -8,6 +8,8 @@
 #include <QJsonDocument>
 #include <QSaveFile>
 #include <QVariantMap>
+#include <QJsonArray>
+#include <algorithm>
 #include <cmath>
 
 namespace dv::br {
@@ -87,6 +89,58 @@ QVariantList BrowserSettings::engines() const
     QVariantList out;
     for (const SearchEngine& e : searchEngines())
         out.append(QVariantMap{{QStringLiteral("id"), e.id}, {QStringLiteral("name"), e.name}});
+    return out;
+}
+
+bool BrowserSettings::adblockEnabled() const { return m_data.value(QLatin1String("adblockEnabled")).toBool(true); }
+void BrowserSettings::setAdblockEnabled(bool v) { set(QStringLiteral("adblockEnabled"), v); }
+
+bool BrowserSettings::listOn(const QString& id) const
+{
+    for (const QJsonValue& v : m_data.value(QLatin1String("adblockListsOff")).toArray())
+        if (v.toString() == id)
+            return false;
+    return true;
+}
+
+void BrowserSettings::setListOn(const QString& id, bool on)
+{
+    QJsonArray off = m_data.value(QLatin1String("adblockListsOff")).toArray();
+    QJsonArray next;
+    for (const QJsonValue& v : off)
+        if (v.toString() != id)
+            next.append(v);
+    if (!on)
+        next.append(id);
+    set(QStringLiteral("adblockListsOff"), next);
+}
+
+bool BrowserSettings::adblockPaused(const QString& host) const
+{
+    for (const QJsonValue& v : m_data.value(QLatin1String("adblockPaused")).toArray())
+        if (v.toString() == host)
+            return true;
+    return false;
+}
+
+void BrowserSettings::setAdblockPaused(const QString& host, bool paused)
+{
+    if (host.isEmpty())
+        return;
+    QJsonArray next;
+    for (const QJsonValue& v : m_data.value(QLatin1String("adblockPaused")).toArray())
+        if (v.toString() != host)
+            next.append(v);
+    if (paused)
+        next.append(host);
+    set(QStringLiteral("adblockPaused"), next);
+}
+
+QStringList BrowserSettings::pausedHosts() const
+{
+    QStringList out;
+    for (const QJsonValue& v : m_data.value(QLatin1String("adblockPaused")).toArray())
+        out << v.toString();
     return out;
 }
 

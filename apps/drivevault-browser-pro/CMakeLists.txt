@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultBrowserPro
-    VERSION 0.1.0
+    VERSION 0.2.0
     DESCRIPTION "DriveVault Browser Pro - a web browser with a built-in ad blocker"
     LANGUAGES CXX)
 
@@ -14,7 +14,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 option(DB_BUILD_TESTS "Build tests" ON)
 string(TIMESTAMP DB_BUILD_NUMBER "%Y%m%d%H%M" UTC)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 QuickDialogs2 WebEngineQuick Test)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network Qml Quick QuickControls2 QuickDialogs2 WebEngineQuick Test)
 qt_standard_project_setup(REQUIRES 6.8)
 
 if(MSVC)
@@ -28,14 +28,16 @@ add_library(browser_core STATIC
     src/core/UrlUtil.cpp src/core/UrlUtil.h
     src/core/BookmarkStore.cpp src/core/BookmarkStore.h
     src/core/HistoryStore.cpp src/core/HistoryStore.h
-    src/core/BrowserSettings.cpp src/core/BrowserSettings.h)
-target_include_directories(browser_core PUBLIC src/core ${CMAKE_BINARY_DIR}/generated)
-target_link_libraries(browser_core PUBLIC Qt6::Core)
+    src/core/BrowserSettings.cpp src/core/BrowserSettings.h
+    src/adblock/NetRule.h src/adblock/FilterParser.cpp src/adblock/FilterParser.h src/adblock/RuleSet.cpp src/adblock/RuleSet.h src/adblock/ListManager.cpp src/adblock/ListManager.h)
+target_include_directories(browser_core PUBLIC src/core src/adblock ${CMAKE_BINARY_DIR}/generated)
+target_link_libraries(browser_core PUBLIC Qt6::Core Qt6::Network)
 
 # ---- application ---------------------------------------------------------------------------------------------------------
 set_source_files_properties(qml/Theme.qml qml/Tr.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_executable(DriveVaultBrowserPro WIN32
-    src/app/main.cpp src/app/BrowserApp.cpp src/app/BrowserApp.h src/app/DownloadModel.cpp src/app/DownloadModel.h src/app.rc)
+    src/app/main.cpp src/app/BrowserApp.cpp src/app/BrowserApp.h src/app/DownloadModel.cpp src/app/DownloadModel.h
+    src/app/AdBlockInterceptor.cpp src/app/AdBlockInterceptor.h src/app/AdBlockController.cpp src/app/AdBlockController.h src/app.rc)
 qt_add_qml_module(DriveVaultBrowserPro
     URI DriveVault.Browser
     VERSION 1.0
@@ -54,9 +56,10 @@ qt_add_qml_module(DriveVaultBrowserPro
         resources/fonts/Inter-Variable.ttf
         resources/fonts/NotoSansThai-Variable.ttf)
 target_include_directories(DriveVaultBrowserPro PRIVATE src/app)
-target_link_libraries(DriveVaultBrowserPro PRIVATE browser_core Qt6::Gui Qt6::Quick Qt6::QuickControls2 Qt6::QuickDialogs2 Qt6::WebEngineQuick)
+target_link_libraries(DriveVaultBrowserPro PRIVATE browser_core Qt6::Gui Qt6::Quick Qt6::QuickControls2 Qt6::QuickDialogs2 Qt6::WebEngineQuick Qt6::WebEngineCore)
 
 if(DB_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
+

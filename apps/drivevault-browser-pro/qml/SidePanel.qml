@@ -426,8 +426,62 @@ Rectangle {
                     checked: Browser.settings.blockNotifications
                     onToggled: Browser.settings.blockNotifications = checked
                 }
-                Text { text: Tr.t("set_adblock"); color: Theme.text; font.pixelSize: 13; font.weight: Font.Medium }
-                Text { Layout.fillWidth: true; text: Tr.t("set_adblock_status"); color: Theme.warning; font.pixelSize: 12; wrapMode: Text.WordWrap }
+
+                SectionTitle { text: Tr.t("set_adblock") }
+                Toggle {
+                    objectName: "adblockSwitch"
+                    text: Tr.t("ab_on")
+                    checked: Browser.adblock.enabled
+                    onToggled: Browser.adblock.enabled = checked
+                }
+                Text {
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 12
+                    color: Browser.adblock.lists.totalRules > 0 ? Theme.textSecondary : Theme.warning
+                    text: {
+                        Browser.adblock.tick
+                        const l = Browser.adblock.lists
+                        return l.phase === "loading" ? Tr.t("ab_status_loading")
+                             : l.totalRules > 0 ? Tr.t("ab_status_rules", l.totalRules)
+                             : Tr.t("ab_status_none")
+                    }
+                }
+                Text { text: Tr.t("ab_lists"); color: Theme.text; font.pixelSize: 13; font.weight: Font.Medium }
+                Repeater {
+                    model: { Browser.adblock.tick; return Browser.adblock.listStatus() }
+                    delegate: Toggle {
+                        id: listToggle
+                        required property var modelData
+                        text: modelData.name + "  -  " + Tr.t("ab_cat_" + modelData.category)
+                              + "  (" + (modelData.present ? Tr.t("ab_rules", modelData.rules) + (modelData.date ? ", " + Tr.t("ab_date", modelData.date.substring(0, 10)) : "") : Tr.t("ab_missing")) + ")"
+                        checked: Browser.adblock.listEnabled(modelData.id)
+                        onToggled: Browser.adblock.setListEnabled(modelData.id, checked)
+                    }
+                }
+                BButton {
+                    objectName: "updateLists"
+                    text: Tr.t("ab_update")
+                    enabled: !Browser.adblock.lists.updating
+                    onClicked: Browser.adblock.updateLists()
+                }
+                Text {
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 12
+                    color: Browser.adblock.lists.failedCount > 0 ? Theme.errorSoft : Theme.success
+                    visible: text !== ""
+                    text: {
+                        Browser.adblock.tick
+                        const l = Browser.adblock.lists
+                        if (l.phase === "updating") return Tr.t("ab_updating", l.current)
+                        if (l.phase === "nothingOn") return Tr.t("ab_nothing_on")
+                        if (l.updatedCount + l.failedCount > 0) return Tr.t("ab_update_result", l.updatedCount, l.failedCount) + (l.failures !== "" ? "  " + l.failures : "")
+                        return ""
+                    }
+                }
+                Text { Layout.fillWidth: true; text: Tr.t("ab_update_note"); color: Theme.textSecondary; font.pixelSize: 11; wrapMode: Text.WordWrap }
+                Text { Layout.fillWidth: true; text: Tr.t("ab_not_yet"); color: Theme.warning; font.pixelSize: 12; wrapMode: Text.WordWrap }
 
                 SectionTitle { text: Tr.t("set_clear") }
                 BButton {

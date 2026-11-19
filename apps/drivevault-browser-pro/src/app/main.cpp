@@ -41,7 +41,8 @@ int main(int argc, char* argv[])
     QCommandLineOption panelOpt(QStringLiteral("panel"), QStringLiteral("Open a side panel: history, bookmarks, downloads or settings (diagnostics)."), QStringLiteral("name"));
     QCommandLineOption privateOpt(QStringLiteral("private"), QStringLiteral("Start in a private window."));
     QCommandLineOption selfTestOpt(QStringLiteral("selftest"), QStringLiteral("Run the window's own checks (tabs, pin, bookmarks, history, suggestions, find, zoom) on the page given as address, write the results (JSON) to <file>, exit 0 when all passed (diagnostics)."), QStringLiteral("file"));
-    parser.addOptions({dataDirOpt, langOpt, shotOpt, sizeOpt, panelOpt, privateOpt, selfTestOpt});
+    QCommandLineOption probeOpt(QStringLiteral("probe"), QStringLiteral("Open the page given as address, wait, read what the page recorded in window.__res and how many requests the ad blocker stopped, write that (JSON) to <file> and exit (diagnostics, tests)."), QStringLiteral("file"));
+    parser.addOptions({dataDirOpt, langOpt, shotOpt, sizeOpt, panelOpt, privateOpt, selfTestOpt, probeOpt});
     parser.process(app);
 
     for (const char* font : {":/qt/qml/DriveVault/Browser/resources/fonts/Inter-Variable.ttf", ":/qt/qml/DriveVault/Browser/resources/fonts/NotoSansThai-Variable.ttf"})
@@ -56,8 +57,12 @@ int main(int argc, char* argv[])
         : QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/DriveVault/BrowserPro");
     QDir().mkpath(dataDir);
 
+    // The ad blocker's request filter is made before the profile and the application object of the pages: it must outlive every profile that uses it.
+    dv::br::AdBlockInterceptor interceptor;
+
     // The shared profile of the normal windows (a private window has its own, off the record). It lives longer than the QML engine.
     QQuickWebEngineProfile profile;
+    profile.setUrlRequestInterceptor(&interceptor);
     profile.setStorageName(QStringLiteral("DriveVaultBrowserPro"));
     profile.setPersistentStoragePath(dataDir + QStringLiteral("/profile"));
     profile.setCachePath(dataDir + QStringLiteral("/cache"));
@@ -66,7 +71,8 @@ int main(int argc, char* argv[])
     // The engine's own name ("QtWebEngine/x") is left out and the system is named as Chrome does: some sites turn an unknown browser away.
     profile.setHttpUserAgent(profile.httpUserAgent().replace(QRegularExpression(QStringLiteral(" QtWebEngine/[0-9.]+")), QString()).replace(QStringLiteral("Windows NT 6.2"), QStringLiteral("Windows NT 10.0")));
 
-    dv::br::BrowserApp browser(dataDir, &profile);
+    dv::br::BrowserApp browser(dataDir, &profile, &interceptor);
+    browser.adblock()->start();                                // reads the lists that are already on this PC; nothing is downloaded
     browser.downloads()->setFolder(parser.isSet(dataDirOpt) ? dataDir + QStringLiteral("/downloads") : QString());     // a test run never writes to the real Downloads folder
     QObject::connect(&profile, &QQuickWebEngineProfile::downloadRequested, browser.downloads(), &dv::br::DownloadModel::handle);
     if (parser.isSet(langOpt))
@@ -80,6 +86,8 @@ int main(int argc, char* argv[])
     qmlRegisterUncreatableType<dv::br::BookmarkStore>("DriveVault.Browser.Backend", 1, 0, "BookmarkStore", QStringLiteral("owned by Browser"));
     qmlRegisterUncreatableType<dv::br::HistoryStore>("DriveVault.Browser.Backend", 1, 0, "HistoryStore", QStringLiteral("owned by Browser"));
     qmlRegisterUncreatableType<dv::br::DownloadModel>("DriveVault.Browser.Backend", 1, 0, "DownloadModel", QStringLiteral("owned by Browser"));
+    qmlRegisterUncreatableType<dv::br::AdBlockController>("DriveVault.Browser.Backend", 1, 0, "AdBlockController", QStringLiteral("owned by Browser"));
+    qmlRegisterUncreatableType<dv::br::ab::ListManager>("DriveVault.Browser.Backend", 1, 0, "ListManager", QStringLiteral("owned by AdBlockController"));
     engine.loadFromModule("DriveVault.Browser", "Main");
     if (engine.rootObjects().isEmpty())
         return 1;
@@ -88,12 +96,13 @@ int main(int argc, char* argv[])
     if (parser.isSet(panelOpt))
         QMetaObject::invokeMethod(root, "showPanel", Q_ARG(QVariant, parser.value(panelOpt)));
 
-    if (parser.isSet(selfTestOpt)) {
+    if (parser.isSet(selfTestOpt) || parser.isSet(probeOpt)) {
         QObject* win = root->property("firstWindow").value<QObject*>();
         if (!win)
             return 3;
-        const QString file = parser.value(selfTestOpt);
-        QTimer::singleShot(2500, win, [win] { QMetaObject::invokeMethod(win, "selfTest"); });         // the page has started loading
+        const QString file = parser.isSet(selfTestOpt) ? parser.value(selfTestOpt) : parser.value(probeOpt);
+        const char* method = parser.isSet(selfTestOpt) ? "selfTest" : "probe";
+        QTimer::singleShot(2500, win, [win, method] { QMetaObject::invokeMethod(win, method); });         // the page has started loading
         auto* poll = new QTimer(&app);
         int ticks = 0;
         QObject::connect(poll, &QTimer::timeout, &app, [&app, win, file, poll, &ticks] {
