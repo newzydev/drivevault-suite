@@ -1,0 +1,132 @@
+# DriveVault Browser Pro - plan
+
+Status: **PLANNED, no code yet.** Nothing here is available to users. Written 2026-11-19. Open decisions are in section 9; defaults are marked "recommended".
+
+## 1. What it is
+
+A Chrome-like web browser for Windows with a strong built-in ad blocker and a defence against "anti-adblock" walls (sites that refuse to work when they detect a blocker). Chrome is the model for layout and behaviour (tabs, omnibox, bookmarks, history, downloads, find, zoom, DevTools, private window). Same stack as the rest of the suite: C++20, Qt 6.8 / Qt Quick, CMake. Accent colour proposal: cyan `#06B6D4` (free: violet, red, amber, blue and emerald are taken).
+
+## 2. Engine choice (needs the owner's confirmation, see 9.1)
+
+Qt WebEngine (Chromium). There is no realistic native alternative for a full web browser. The suite rule "no WebView" was relaxed for Master Pro's browser tab by the owner on 2026-11-17; this program **is** a browser, so the same exception is needed for it. Facts already proven in this repository: Qt WebEngine 6.8.3 is in `.tools`, Master Pro uses it (`qml/BrowserView.qml`: tabs, permission bar, downloads, persistent profile) and the installer carries it (about 150 MB).
+
+Limits of Qt WebEngine that shape the plan (verify each in Phase 0, do not assume):
+- **No Chrome extension support** (uBlock Origin / Adblock Plus cannot be installed). The blocker must be built in. This is also what the owner asked for.
+- Network-level blocking is possible: `QWebEngineUrlRequestInterceptor` sees every request of every frame (URL, first-party URL, resource type) and can `block()` or `redirect()`. It runs on the IO thread: the filter lookup must be fast and lock-free.
+- Page-level changes are possible: `QWebEngineScript` (document start, main world or isolated world) and injected CSS.
+- Not possible or unproven: blocking WebSocket / WebRTC by URL, request body inspection, and Picture-in-Picture / DevTools behaviour in Qt's Chromium build (Phase 0 checks).
+
+## 3. Ad blocker design
+
+### 3.1 Layers (in the order they act)
+1. **Network filters** (`||example.com^`, `$third-party`, `$script`, `$image`, `$domain=`, `@@` exceptions, `$important`). Parsed into a token index (hash of the rarest token of each rule) so a request is matched in microseconds. In `QWebEngineUrlRequestInterceptor`.
+2. **Cosmetic filters** (`##.ad-banner`, `example.com##div`, `#@#` exceptions, `:has()`, `:-abp-has` style procedural filters where Chromium cannot do it natively). Injected as one stylesheet per page at document creation, plus a small observer script for procedural ones.
+3. **Scriptlets** (`example.com##+js(abort-on-property-read, ...)`, the uBlock Origin syntax): fixed, reviewed JavaScript snippets run in the page's main world at document start. Built-in set: `abort-on-property-read/write`, `abort-on-stack-trace`, `set-constant`, `json-prune`, `no-fetch-if`, `no-xhr-if`, `remove-attr/class`, `prevent-addEventListener`, `nowebrtc`, `window.open` guard, timer speed-up for "wait N seconds" walls.
+4. **Neutered resources (redirects)**: for ad-library URLs that pages test for (`adsbygoogle.js`, `ads.js`, `google-analytics.js`, `googletag`, `doubleclick` stubs) the request is *redirected* to an empty but well-behaved stub (custom scheme handler `dvres:`), not blocked. A blocked bait script is the most common detection; a stub that defines the expected globals passes the check.
+5. **Anti-adblock countermeasures** (section 4).
+
+### 3.2 Categories (mirror what the owner listed; each is a switch in Settings > Ad blocking)
+| Category (owner's list) | How it is done | Source |
+|---|---|---|
+| Ads (base) | network + cosmetic filters | EasyList |
+| Extra tracking protection | network filters | EasyPrivacy |
+| Social media icon tracking | network + cosmetic | Fanboy's Social Blocking list |
+| Basic distraction control (corner video boxes, pay / install / shop prompts) | cosmetic + network | Fanboy's Annoyance list parts, uBlock "Annoyances" |
+| Block push notifications | the browser **denies the notifications permission by default** (own permission policy) + filters for push-prompt scripts | built in + Annoyance lists |
+| Block cookie consent pop-ups | cosmetic hide + scriptlet that clicks "reject / necessary only" where a list says so | EasyList Cookie / uBlock "Cookie notices" |
+| Enhanced distraction control (newsletter pop-ups, floating video, site notifications, survey requests) | cosmetic + scriptlets + `window.open` / overlay guard | Annoyance lists |
+| Language filter lists | one regional list per language the user picks, Thai first | the exact Thai list must be checked before it is added (do not guess its name) |
+
+Every list is shown by name, version date, rule count and licence. Users can add a custom list URL and write own rules (`My filters`). Per-site pause (shield button in the address bar, like Chrome's site controls) and a "Report broken site" that only copies text locally.
+
+### 3.3 Lists: licences and network use
+- Common lists (EasyList, EasyPrivacy, Fanboy's) are CC BY-SA 3.0 and/or GPLv3+ **data**, not linked code. They need an entry in `THIRD-PARTY-NOTICES` and a decision for the release gate "every file has an owner" (9.2). uBlock Origin's own resources (scriptlets, redirects) are GPLv3: **do not copy that code**. The scriptlets here are written fresh, behaving the same, and only the *rule syntax* is supported.
+- Owner rule (root CLAUDE.md): nothing downloads unless the user presses a button. So: the installer ships a **snapshot** of the lists (made at build time, with date shown), and Settings has a button "Update filter lists" (user pressed, from the official list URLs, hash recorded). No background polling. Optional later: a setting "update lists once at start" off by default, as in Master Pro's update check - owner's decision.
+
+### 3.4 Engine implementation (recommended: own C++)
+`src/adblock/`: `FilterParser`, `NetworkMatcher`, `CosmeticStore`, `ScriptletLibrary`, `ListManager`, `Interceptor`. Pure C++ / no WebEngine inside the first four so they are unit-tested like Master Pro's `BrowserBridge`. Alternative considered: Brave's `adblock-rust` (MPL-2.0, mature, fast) through FFI - rejected as default because it needs a Rust toolchain in `.tools` (a download) and a build-system change; revisit if the own matcher misses in the benchmark (9.3).
+Target: 150,000 rules loaded < 1.5 s in the background thread, match time < 50 microseconds per request, memory < 150 MB for the lists. These are targets, to be measured and reported, not claims.
+
+## 4. Anti-adblock defence (the owner's hard requirement)
+
+Honest scope first: this is a cat-and-mouse game. No one can promise "every site". YouTube-style server-side ad insertion and sites that check ads **server-side** (e.g. an ad must load and call back to the server) cannot be solved by blocking in the client alone. The plan makes the common cases work and measures the result; the UI will never say "bypasses everything".
+
+How common detectors work and what answers each:
+| Detector | Answer |
+|---|---|
+| Bait element (`div.adsbox`, `#ad`, `.ad-banner`) whose height becomes 0 | the cosmetic layer never `display:none`s a bait-sized element on first load; where needed it keeps the box laid out (`visibility:hidden` + size kept) and a scriptlet reports the real size from `offsetHeight` / `getComputedStyle` |
+| Bait script (`ads.js`, `adsbygoogle.js`, `pagead2.googlesyndication.com`) fails to load or its global is missing | redirect to a stub that defines the expected globals (section 3.1 layer 4) |
+| Libraries (FuckAdBlock / BlockAdBlock / Admiral / Sourcepoint / Detect.js) | scriptlets: `set-constant` of their detect result, `abort-on-property-read` of their entry points, `prevent-addEventListener` for their "blocked" event |
+| `fetch` / `XMLHttpRequest` bait to ad URLs that must succeed | `no-fetch-if` / `no-xhr-if` return a fake successful empty answer |
+| Overlay "please disable your ad blocker" + scroll lock | cosmetic removal + `remove-class` of `no-scroll` on `body` / `html`, restore `overflow` |
+| `MutationObserver` that notices removed ad nodes | scriptlet hides by CSS only, and wraps the observer for known libraries |
+| Timers / "wait" walls | timer speed-up scriptlet |
+
+Rules for these come from the lists' anti-adblock sections (EasyList Anti-Adblock, uBlock "Annoyances" anti-adblock part, Adblock Warning Removal) **and** the built-in generic scriptlets above, so a new site does not need a list update for the common libraries.
+
+**Test lab** (the only honest way to say what works): `tests/lab/` holds local pages that each imitate one detector (bait div, bait script, fetch probe, library stub, overlay + scroll lock, timer wall). The test opens each with the blocker on and checks that the page's own detector says "no blocker" and the content is readable. A second, **manual** table of real sites (owner chooses, network use only when the owner asks) records pass / fail per date in `docs/anti-adblock-results.md`. Failing sites stay listed as failing.
+
+Not in scope, on purpose: DRM circumvention, account / paywall bypass for paid content, and hiding the browser from fraud checks. Anti-adblock bypass of free ad-supported pages is a client-side choice of the user.
+
+## 5. Browser shell (Chrome as the model)
+
+Phase 1 scope, built on what Master Pro's `BrowserView.qml` already solved (tabs, permission bar with remembered choices, downloads to the Downloads folder with a warning for risky types, `Profile` declared last to avoid the exit crash, own user agent, open settings): copy and adapt it first; extract it into `shared/` only when two programs need identical code (do not destabilise Master Pro).
+- Tabs (drag to reorder, pin, duplicate, close others, reopen closed, tab search), omnibox (address, host, search words; search engine choice, default DuckDuckGo as in Master Pro), back / forward / reload / home, find in page, zoom per site, full screen, print (`printToPdf` / system print), view source, DevTools (`inspectedView`; needs a check in Phase 0).
+- Bookmarks (bar + manager, import / export HTML), history (page + clear), downloads page with pause / resume / show in folder, Settings (privacy, ad blocking, appearance, search, languages, about).
+- Private window (off-the-record profile; no history, no cookies kept).
+- Permissions as in Master Pro (ask, remember, reset). Notifications default **Block**.
+- Not planned: sync, Chrome extensions / Web Store, a built-in password manager (storing passwords needs its own security design; if wanted, a separate decision with Windows DPAPI), Google account sign-in features.
+
+## 6. Other features
+
+| Feature | Plan | Check first |
+|---|---|---|
+| Picture-in-Picture | a toolbar button + hotkey: a fixed script finds the playing / largest `<video>` and calls `requestPictureInPicture()` | does Qt's Chromium build expose the PiP window? If not, fall back to our own always-on-top mini window that renders the video element (works for non-DRM video) |
+| Video download | the request interceptor lists media URLs the page loads (`.mp4`, `.webm`, `.m4a`, `.m3u8` / `.mpd`); a button saves a direct file with Qt network, and HLS with the suite's FFmpeg (LGPL, already in `.tools`) | **DRM-protected streams (EME / Widevine) are never touched**; whether YouTube and similar are in or out is the owner's decision (9.4, recommended: out - terms of service) |
+| Reader mode | later | |
+| Screenshot of page / area | later | |
+| Tab sleeping to save memory | later (`lifecycleState`) | |
+
+## 7. Suite integration (contract in `docs/suite-integration.md`)
+
+| Item | Value (proposal) |
+|---|---|
+| Folder | `apps/drivevault-browser-pro` |
+| Product key (registry `Software\DriveVault\Products\<Key>`) | `BrowserPro` |
+| Manifest id / data folder | `drivevault.browser` / `BrowserPro` (`%LOCALAPPDATA%\DriveVault\BrowserPro`: profile, filter lists, bookmarks) |
+| Setup file | `DriveVault-Browser-Pro-Setup-x64.exe` (+ `.sha256`) |
+| Release tag slug | `drivevault-browser-pro` (add to `slugForKey` in Master Pro) |
+| Inno `AppId` | a new GUID, generated once at the start of Phase 6 and never changed |
+| Master Pro | add `BrowserPro` to the catalog with accent colour; the card shows the real status only (Available once a Release exists) |
+| Installer | `installer/windows/browser.iss` including `shared/installer/master-hub-code.iss` like `pdf.iss`; ships Qt WebEngine + the list snapshot |
+| Other places | root `README.md` table, root `CLAUDE.md` / `AGENTS.md` table, `docs/suite-integration.md` (new product row), release gates (license audit, clean-machine check, notices incl. Chromium and each list) |
+
+Master Pro's `docs/suite-integration.md` currently lists only Video Editor, PDF Pro, Image and Audio as products: update it in the same change that adds the catalog entry.
+
+## 8. Phases (each ends with tests and a smoke start; versions start at 0.1.0 and the first Release is 1.0.0 only when the owner says so)
+
+| Phase | Content | Done when |
+|---|---|---|
+| 0 Spike (about 1 day, no downloads) | tiny Qt Quick app with one `WebEngineView`; interceptor blocks a host and redirects a script to a `dvres:` stub; run one bait page; check PiP, DevTools, notification permission, user agent | a short written result in this folder: what works, what does not |
+| 1 Browser shell | section 5 without ad blocking; `build.ps1 -Test`, `--screenshot` smoke | a user can browse, bookmark, download |
+| 2 Filter engine | parser, matcher, list manager, snapshot lists, Settings page with the categories; benchmark | unit tests on fixtures; load time and match time measured and reported |
+| 3 Cosmetic + scriptlets + redirects | layers 2 - 4 | lab pages pass for cosmetic hiding and stubs |
+| 4 Anti-adblock | section 4 table, `tests/lab/`, results table | every lab detector passes; real-site table filled by the owner's sites |
+| 5 PiP, video download, polish | section 6 | PiP and a direct mp4 / HLS download verified by hand |
+| 6 Packaging | installer, notices, Master Pro catalog entry, docs, README, version 1.0.0 candidate | `package.ps1` gates pass (installer built, **not** install-tested: rule 3a) |
+
+## 9. Decisions the owner must make
+
+1. **Qt WebEngine for this program** (needed; recommended yes).
+2. **Filter lists**: allow shipping the community lists (CC BY-SA / GPL data) as a snapshot with notices, and the "Update filter lists" button that downloads from their official addresses when the user presses it (recommended yes). The exact lists are re-checked, with their current licences, before Phase 2.
+3. **Engine**: own C++ matcher (recommended) or Brave `adblock-rust` (needs a Rust toolchain download).
+4. **Video download scope**: direct files and non-DRM HLS from any site (recommended) / also YouTube (not recommended).
+5. **Accent colour**: cyan `#06B6D4` (recommended) or other.
+6. Whether the first Release should wait for Phase 4, or ship after Phase 3 as 0.x with the real status "Beta" in the Master Pro card.
+
+## 10. Risks
+
+- Anti-adblock changes often: lists and scriptlets will need updates after release; the program says so and shows the list date.
+- Chromium security updates arrive only with a new Qt release: keep a Qt update routine and show the Chromium version in About.
+- Installer size (about 150 MB for WebEngine, more with lists) and memory use per tab; measure in Phase 1.
+- Qt WebEngine gaps (PiP, DevTools, extension APIs, some media codecs: proprietary codecs such as H.264 need a build option that may not be in the Qt binaries in `.tools`): checked in Phase 0 before promising them.
