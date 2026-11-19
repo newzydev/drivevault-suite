@@ -1,3 +1,4 @@
+v0.8.0 (2026-11-19): Added a shortcut dialog with a name and URL. New shortcuts are saved as bookmarks. Shortcuts can be collapsed and expanded on the new tab workspace. The installer is unsigned.
 v0.7.2 (2026-11-19): Refined the new tab workspace with compact category tabs, circular website shortcuts and automatic focus in the central search field. Updated search placeholders. The installer is unsigned.
 v0.7.1 (2026-11-19): Redesigned Settings with a category sidebar and aligned controls in the style of Video Editor Pro. The installer is unsigned.
 v0.7.0 (2026-11-19): Open Settings and the toolbar menu in centered dialogs. The new tab workspace has separate Shortcuts (Google and bookmarks) and Most visited tabs. The installer is unsigned.

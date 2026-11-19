@@ -7,10 +7,17 @@ Rectangle {
     id: page
 
     property bool privateMode: false
+    property bool shortcutsExpanded: true
     property var sites: privateMode ? [] : Browser.history.topSites(8)
     readonly property var shortcutSites: privateMode ? [] : [{ title: "Google", url: "https://www.google.com/" }]
-        .concat(Browser.bookmarks.items.filter(b => !/^https:\/\/www\.google\.com\/?$/i.test(b.url)).slice(0, 7))
-    readonly property var visibleSites: siteTabs.currentIndex === 0 ? shortcutSites : sites
+        .concat(Browser.bookmarks.items.filter(b => !isDefaultShortcut(b.url)))
+    readonly property var visibleSites: siteTabs.currentIndex === 0
+        ? (shortcutsExpanded ? shortcutSites : []).concat([
+            { title: Tr.t("ntp_add_shortcut"), action: "add", glyph: "plus" },
+            { title: Tr.t(shortcutsExpanded ? "ntp_show_less" : "ntp_show_more"), action: "toggle",
+                glyph: shortcutsExpanded ? "shortcutLess" : "shortcutMore" }
+        ])
+        : sites
     readonly property color accent: privateMode ? Theme.privateAccent : Theme.accent
 
     signal go(string text)
@@ -24,6 +31,23 @@ Rectangle {
     }
 
     function focusSearch() { box.forceActiveFocus() }
+    function isDefaultShortcut(url) { return /^https:\/\/www\.google\.com\/?$/i.test(url) }
+    function saveShortcut() {
+        const input = shortcutUrl.text.trim()
+        const candidate = /^https?:\/\//i.test(input) ? input : "https://" + input
+        if (/\s|\\/.test(input) || !Browser.hostOf(candidate)
+                || (!/^https?:\/\//i.test(input) && input.includes("://"))) {
+            addShortcut.errorText = Tr.t("ntp_bad_shortcut_url")
+            return
+        }
+        const url = Browser.resolve(candidate).toString()
+        if (isDefaultShortcut(url) || Browser.bookmarks.add(shortcutName.text.trim(), url, "other") === "") {
+            addShortcut.errorText = Tr.t("ntp_duplicate_shortcut")
+            return
+        }
+        shortcutsExpanded = true
+        addShortcut.close()
+    }
 
     Image {
         anchors.fill: parent
@@ -186,14 +210,18 @@ Rectangle {
                             delegate: AbstractButton {
                                 id: shortcut
                                 required property var modelData
-                                readonly property string host: Browser.hostOf(modelData.url).replace(/^www\./, "")
+                                readonly property string host: modelData.url ? Browser.hostOf(modelData.url).replace(/^www\./, "") : ""
                                 width: siteGrid.tileWidth
                                 height: 78
                                 padding: 4
                                 hoverEnabled: true
                                 text: modelData.title || host
                                 Accessible.name: text
-                                onClicked: page.go(modelData.url)
+                                onClicked: {
+                                    if (modelData.action === "add") addShortcut.open()
+                                    else if (modelData.action === "toggle") page.shortcutsExpanded = !page.shortcutsExpanded
+                                    else page.go(modelData.url)
+                                }
                                 HoverHandler { cursorShape: Qt.PointingHandCursor }
                                 background: Rectangle {
                                     radius: 12
@@ -213,10 +241,18 @@ Rectangle {
                                         border.color: "#6979919F"
                                         Text {
                                             anchors.centerIn: parent
+                                            visible: !shortcut.modelData.glyph
                                             text: (shortcut.host || "?").charAt(0).toUpperCase()
                                             color: "#BCEFFA"
                                             font.pixelSize: 18
                                             font.weight: Font.DemiBold
+                                        }
+                                        LineIcon {
+                                            anchors.centerIn: parent
+                                            visible: !!shortcut.modelData.glyph
+                                            kind: shortcut.modelData.glyph || "plus"
+                                            size: 18
+                                            color: "#BCEFFA"
                                         }
                                     }
                                     Text {
@@ -239,6 +275,78 @@ Rectangle {
                     }
                 }
             }
+        }
+    }
+
+    Popup {
+        id: addShortcut
+        objectName: "addShortcut"
+        property string errorText: ""
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        focus: true
+        width: Math.min(460, parent.width - 48)
+        padding: 22
+        background: Rectangle { radius: 16; color: Theme.backgroundAlt; border.color: Theme.border }
+        Overlay.modal: Rectangle { color: "#B000080F" }
+        onAboutToShow: {
+            shortcutName.clear()
+            shortcutUrl.clear()
+            errorText = ""
+        }
+        onOpened: shortcutName.forceActiveFocus()
+
+        contentItem: ColumnLayout {
+            spacing: 12
+            Text { text: Tr.t("ntp_add_shortcut"); color: Theme.text; font.pixelSize: 19; font.weight: Font.DemiBold }
+            Text { text: Tr.t("ntp_shortcut_name"); color: Theme.textSecondary }
+            ShortcutField {
+                id: shortcutName
+                Accessible.name: Tr.t("ntp_shortcut_name")
+                onAccepted: shortcutUrl.forceActiveFocus()
+            }
+            Text { text: "URL"; color: Theme.textSecondary }
+            ShortcutField {
+                id: shortcutUrl
+                Accessible.name: "URL"
+                inputMethodHints: Qt.ImhUrlCharactersOnly
+                onTextEdited: addShortcut.errorText = ""
+                onAccepted: if (saveShortcutButton.enabled) page.saveShortcut()
+            }
+            Text {
+                visible: text !== ""
+                Layout.fillWidth: true
+                text: addShortcut.errorText
+                color: Theme.errorSoft
+                wrapMode: Text.WordWrap
+            }
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                Layout.topMargin: 8
+                BButton { text: Tr.t("cancel"); onClicked: addShortcut.close() }
+                BButton {
+                    id: saveShortcutButton
+                    text: Tr.t("ntp_shortcut_done")
+                    variant: "primary"
+                    enabled: shortcutName.text.trim() !== "" && shortcutUrl.text.trim() !== ""
+                    onClicked: page.saveShortcut()
+                }
+            }
+        }
+    }
+
+    component ShortcutField: TextField {
+        Layout.fillWidth: true
+        implicitHeight: 36
+        leftPadding: 10
+        rightPadding: 10
+        selectByMouse: true
+        color: Theme.text
+        background: Rectangle {
+            radius: 8
+            color: Theme.surface
+            border.color: parent.activeFocus ? Theme.accent : Theme.border
         }
     }
 

@@ -38,6 +38,9 @@ Canvas {
             c.arc(8, 8, 5, Math.PI * 0.15, Math.PI * 1.75); c.moveTo(13.6, 2.6); c.lineTo(13.2, 6.4); c.lineTo(9.4, 5.9)
         } else if (kind === "stop") {
             c.moveTo(4, 4); c.lineTo(12, 12); c.moveTo(12, 4); c.lineTo(4, 12)
+        } else if (kind === "shortcutLess" || kind === "shortcutMore") {
+            const up = kind === "shortcutLess"
+            c.moveTo(3, up ? 10 : 6); c.lineTo(8, up ? 5 : 11); c.lineTo(13, up ? 10 : 6)
         } else if (kind === "plus") {
             c.moveTo(8, 3); c.lineTo(8, 13); c.moveTo(3, 8); c.lineTo(13, 8)
         } else if (kind === "lock") {
