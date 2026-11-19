@@ -1,4 +1,4 @@
-# Browser Pro 0.6.3 clean Windows acceptance
+# Browser Pro 0.6.4 clean Windows acceptance
 
 Owner-run on disposable Windows 10 or 11 x64 VM snapshots with no DriveVault or Qt present. Not done by an agent: the installer was built, never installed. Use test pages and your own videos.
 

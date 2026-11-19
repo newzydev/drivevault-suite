@@ -33,6 +33,8 @@ QtObject {
         // toolbar
         "back": ["Back", "ย้อนกลับ"],
         "forward": ["Forward", "ไปข้างหน้า"],
+        "shortcut_back": ["Alt+Left", "Alt+ลูกศรซ้าย"],
+        "shortcut_forward": ["Alt+Right", "Alt+ลูกศรขวา"],
         "reload": ["Reload", "โหลดใหม่"],
         "stop": ["Stop loading", "หยุดโหลด"],
         "home": ["Home", "หน้าแรก"],
@@ -98,7 +100,7 @@ QtObject {
         // new tab page
         "ntp_search": ["Search the web or type an address", "ค้นหาเว็บหรือพิมพ์ที่อยู่เว็บ"],
         "ntp_top": ["Most visited", "เข้าบ่อยที่สุด"],
-        "ntp_none": ["Pages you visit often will appear here.", "หน้าที่คุณเข้าบ่อยจะแสดงที่นี่"],
+        "ntp_shortcuts": ["Shortcuts", "ทางลัด"],
         "ntp_private_title": ["This is a private window", "นี่คือหน้าต่างส่วนตัว"],
         "ntp_private_body": ["Pages you visit here are not saved in the history, and cookies are removed when you close the window. Downloads and bookmarks you make are kept. Websites, your network and your internet provider can still see what you do.",
                              "หน้าที่เปิดในนี้จะไม่ถูกบันทึกในประวัติ และคุกกี้จะถูกลบเมื่อปิดหน้าต่าง ไฟล์ที่ดาวน์โหลดและบุ๊กมาร์กที่เพิ่มจะยังอยู่ เว็บไซต์ เครือข่าย และผู้ให้บริการอินเทอร์เน็ตยังเห็นสิ่งที่คุณทำได้"],

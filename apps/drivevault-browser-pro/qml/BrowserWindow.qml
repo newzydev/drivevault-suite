@@ -540,6 +540,29 @@ ApplicationWindow {
         contentItem: Text { leftPadding: 8; text: mi.text; color: mi.enabled ? Theme.text : Theme.textDisabled; font: mi.font; verticalAlignment: Text.AlignVCenter }
         background: Rectangle { color: mi.highlighted ? Theme.surfaceHover : "transparent"; radius: 6 }
     }
+    component PageMenuItem: DItem {
+        id: mi
+        property string shortcutLabel: ""
+        height: visible ? implicitHeight : 0
+        contentItem: RowLayout {
+            spacing: 16
+            Text {
+                Layout.fillWidth: true
+                leftPadding: 8
+                text: mi.text
+                color: mi.enabled ? Theme.text : Theme.textDisabled
+                font: mi.font
+                elide: Text.ElideRight
+            }
+            Text {
+                visible: mi.shortcutLabel !== ""
+                rightPadding: 8
+                text: mi.shortcutLabel
+                color: mi.enabled ? Theme.textSecondary : Theme.textDisabled
+                font.pixelSize: 11
+            }
+        }
+    }
     component DSep: MenuSeparator {
         contentItem: Rectangle { implicitHeight: 1; color: Theme.borderSubtle }
     }
@@ -1065,6 +1088,14 @@ ApplicationWindow {
                         settings.fullScreenSupportEnabled: true
                         settings.localContentCanAccessRemoteUrls: true
 
+                        onContextMenuRequested: request => {
+                            if (poppedOut || request.isContentEditable || request.selectedText !== ""
+                                    || request.linkUrl.toString() !== "" || request.mediaType !== ContextMenuRequest.MediaTypeNone)
+                                return
+                            request.accepted = true
+                            pageMenu.popup(stage, request.position.x, request.position.y)
+                        }
+
                         // the hiding rules and scriptlets of the page that is about to open go in BEFORE it is created (a script of the page can then not run first)
                         onNavigationRequested: request => { if (request.isMainFrame) win.prepareScripts(wv, request.url.toString()) }
                         onTitleChanged: tabs.setProperty(index, "title", title)
@@ -1103,6 +1134,7 @@ ApplicationWindow {
                     visible: win.curBlank
                     privateMode: win.privateMode
                     onGo: text => win.navigate(text)
+                    onContextRequested: position => pageMenu.popup(stage, position.x, position.y)
                 }
 
                 Rectangle {                           // find in page
@@ -1307,6 +1339,22 @@ ApplicationWindow {
         }
         DSep {}
         DItem { text: Tr.t("shield_settings"); onTriggered: win.panel = "settings" }
+    }
+    DMenu {
+        id: pageMenu
+        objectName: "pageContextMenu"
+        popupType: Popup.Item
+        implicitWidth: 300
+        padding: 6
+        PageMenuItem { text: Tr.t("back"); shortcutLabel: Tr.t("shortcut_back"); enabled: !!win.currentView && win.currentView.canGoBack; onTriggered: win.currentView.goBack() }
+        PageMenuItem { text: Tr.t("forward"); shortcutLabel: Tr.t("shortcut_forward"); enabled: !!win.currentView && win.currentView.canGoForward; onTriggered: win.currentView.goForward() }
+        PageMenuItem { text: Tr.t("reload"); shortcutLabel: "Ctrl+R"; enabled: !!win.currentView; onTriggered: win.currentView.reload() }
+        DSep { visible: !win.curBlank; height: visible ? implicitHeight : 0 }
+        PageMenuItem { visible: !win.curBlank; enabled: visible; text: Tr.t("savePdf"); onTriggered: pdfDialog.open() }
+        PageMenuItem { visible: !win.curBlank; enabled: visible; text: Tr.t("viewSource"); shortcutLabel: "Ctrl+U"; onTriggered: win.addTab("view-source:" + win.curUrl, true) }
+        PageMenuItem { visible: !win.curBlank; enabled: visible; text: Tr.t("devtools"); shortcutLabel: "F12"; onTriggered: win.openDevTools() }
+        DSep {}
+        PageMenuItem { text: Tr.t("settings"); onTriggered: win.togglePanel("settings") }
     }
     DMenu {
         id: mainMenu
