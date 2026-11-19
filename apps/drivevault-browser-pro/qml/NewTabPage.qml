@@ -94,18 +94,18 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 54
                 placeholderText: Tr.t("ntp_search")
-                placeholderTextColor: Theme.textSecondary
-                color: Theme.text
+                placeholderTextColor: page.privateMode ? Theme.textSecondary : "#496171"
+                color: page.privateMode ? Theme.text : "#142633"
                 font.pixelSize: 15
                 leftPadding: 46
                 rightPadding: 22
                 selectByMouse: true
                 background: Rectangle {
                     radius: height / 2
-                    color: "#F219242F"
+                    color: page.privateMode ? "#F219242F" : "#F4F9FD"
                     border.width: box.activeFocus ? 2 : 1
-                    border.color: box.activeFocus ? page.accent : "#668EA9BA"
-                    LineIcon { x: 18; anchors.verticalCenter: parent.verticalCenter; kind: "search"; color: page.accent }
+                    border.color: box.activeFocus ? page.accent : "#8EA9BA"
+                    LineIcon { x: 18; anchors.verticalCenter: parent.verticalCenter; kind: "search"; color: page.privateMode ? page.accent : "#22637B" }
                 }
                 onAccepted: { if (text.trim() !== "") { page.go(text); text = "" } }
             }
@@ -130,62 +130,66 @@ Rectangle {
                 lineHeight: 1.3
             }
 
-            Rectangle {
+                        ColumnLayout {
                 visible: !page.privateMode
-                Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: Math.min(dashboard.width, 690)
-                Layout.topMargin: 6
-                implicitHeight: shortcuts.implicitHeight + 32
-                color: "#CD111C26"
-                border.width: 1
-                border.color: "#4D8EA9BA"
-                radius: 18
+                Layout.fillWidth: true
+                Layout.topMargin: 2
+                spacing: 14
 
-                ColumnLayout {
-                    id: shortcuts
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 16
-                    spacing: 10
-
+                Item {
+                    Layout.fillWidth: true
+                    implicitHeight: siteTabs.implicitHeight
                     TabBar {
                         id: siteTabs
                         objectName: "workspaceTabs"
-                        Layout.fillWidth: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: Math.min(parent.width, 252)
                         padding: 3
-                        spacing: 4
+                        spacing: 3
                         background: Rectangle {
-                            radius: 12
-                            color: "#BD0B151E"
-                            border.color: "#4D8EA9BA"
+                            radius: height / 2
+                            color: "#B00B151E"
+                            border.color: "#507790A1"
                         }
                         WorkspaceTab { text: Tr.t("ntp_shortcuts") }
                         WorkspaceTab { text: Tr.t("ntp_top") }
                     }
-                    Text {
-                        visible: page.visibleSites.length === 0
-                        Layout.fillWidth: true
-                        topPadding: 10
-                        bottomPadding: 12
-                        text: Tr.t("ntp_history_empty")
-                        color: Theme.textSecondary
-                        font.pixelSize: 13
-                        wrapMode: Text.WordWrap
-                        horizontalAlignment: Text.AlignHCenter
-                    }
+                }
+
+                Text {
+                    visible: page.visibleSites.length === 0
+                    Layout.fillWidth: true
+                    topPadding: 12
+                    bottomPadding: 12
+                    text: Tr.t("ntp_history_empty")
+                    color: Theme.text
+                    font.pixelSize: 13
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                Item {
+                    visible: page.visibleSites.length > 0
+                    Layout.fillWidth: true
+                    implicitHeight: siteGrid.implicitHeight
                     Flow {
-                        visible: page.visibleSites.length > 0
-                        Layout.fillWidth: true
-                        spacing: 6
+                        id: siteGrid
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: columns * tileWidth + Math.max(0, columns - 1) * spacing
+                        readonly property int tileWidth: 78
+                        readonly property int columns: Math.min(page.visibleSites.length,
+                            Math.max(1, Math.floor((dashboard.width + spacing) / (tileWidth + spacing))))
+                        spacing: 9
+
                         Repeater {
                             model: page.visibleSites
                             delegate: AbstractButton {
                                 id: shortcut
                                 required property var modelData
                                 readonly property string host: Browser.hostOf(modelData.url).replace(/^www\./, "")
-                                width: Math.min(104, shortcuts.width)
-                                height: 76
+                                width: siteGrid.tileWidth
+                                height: 78
+                                padding: 4
                                 hoverEnabled: true
                                 text: modelData.title || host
                                 Accessible.name: text
@@ -193,37 +197,42 @@ Rectangle {
                                 HoverHandler { cursorShape: Qt.PointingHandCursor }
                                 background: Rectangle {
                                     radius: 12
-                                    color: shortcut.hovered || shortcut.down ? "#66829AA9" : "transparent"
+                                    color: shortcut.down ? "#60577A8B"
+                                        : shortcut.hovered ? "#40819BAC" : "transparent"
                                     border.width: shortcut.visualFocus ? 1 : 0
                                     border.color: page.accent
                                 }
                                 contentItem: Column {
-                                    spacing: 6
+                                    spacing: 7
                                     Rectangle {
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        width: 36
-                                        height: 36
-                                        radius: 12
-                                        color: "#203947"
+                                        width: 44
+                                        height: 44
+                                        radius: width / 2
+                                        color: "#E0182A36"
+                                        border.color: "#6979919F"
                                         Text {
                                             anchors.centerIn: parent
                                             text: (shortcut.host || "?").charAt(0).toUpperCase()
-                                            color: "#9DEBFA"
-                                            font.pixelSize: 16
+                                            color: "#BCEFFA"
+                                            font.pixelSize: 18
                                             font.weight: Font.DemiBold
                                         }
                                     }
                                     Text {
+                                        id: shortcutLabel
                                         width: parent.width
                                         text: shortcut.text
                                         color: Theme.text
                                         font.pixelSize: 12
                                         elide: Text.ElideRight
                                         horizontalAlignment: Text.AlignHCenter
+                                        style: Text.Outline
+                                        styleColor: "#A0001016"
                                     }
                                 }
-                                ToolTip.visible: hovered && text !== ""
-                                ToolTip.delay: 600
+                                ToolTip.visible: hovered && shortcutLabel.truncated
+                                ToolTip.delay: 700
                                 ToolTip.text: text
                             }
                         }
@@ -235,14 +244,14 @@ Rectangle {
 
     component WorkspaceTab: TabButton {
         id: tab
-        implicitHeight: 36
+        implicitHeight: 30
         hoverEnabled: true
         font.pixelSize: 13
         font.weight: Font.DemiBold
         HoverHandler { cursorShape: Qt.PointingHandCursor }
         background: Rectangle {
-            radius: 9
-            color: tab.checked ? "#214959" : tab.hovered ? "#223542" : "transparent"
+            radius: height / 2
+            color: tab.checked ? "#285266" : tab.hovered ? "#223542" : "transparent"
             border.width: tab.checked || tab.visualFocus ? 1 : 0
             border.color: tab.visualFocus ? page.accent : "#527C8B"
         }

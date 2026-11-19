@@ -38,7 +38,7 @@ QtObject {
         "reload": ["Reload", "โหลดใหม่"],
         "stop": ["Stop loading", "หยุดโหลด"],
         "home": ["Home", "หน้าแรก"],
-        "addressHint": ["Search or type an address", "ค้นหาหรือพิมพ์ที่อยู่เว็บ"],
+        "addressHint": ["Ask DriveVault or type a URL", "ถาม DriveVault หรือพิมพ์ URL"],
         "searchFor": ["Search for \"%1\"", "ค้นหา \"%1\""],
         "bookmarkAdd": ["Bookmark this page", "เพิ่มบุ๊กมาร์กหน้านี้"],
         "bookmarkRemove": ["Remove bookmark", "ลบบุ๊กมาร์ก"],
@@ -98,7 +98,7 @@ QtObject {
         "media_noffmpeg": ["Saving a stream needs FFmpeg, which was not found.", "การบันทึกสตรีมต้องใช้ FFmpeg ซึ่งไม่พบในเครื่อง"],
         "media_failed": ["Could not start saving: %1", "เริ่มบันทึกไม่ได้: %1"],
         // new tab page
-        "ntp_search": ["Search the web or type an address", "ค้นหาเว็บหรือพิมพ์ที่อยู่เว็บ"],
+        "ntp_search": ["Ask DriveVault", "ถาม DriveVault"],
         "ntp_top": ["Most visited", "เข้าบ่อยที่สุด"],
         "ntp_shortcuts": ["Shortcuts", "ทางลัด"],
         "ntp_history_empty": ["Frequently visited sites will appear here.", "เว็บไซต์ที่เข้าบ่อยจะแสดงที่นี่"],

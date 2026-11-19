@@ -114,7 +114,7 @@ ApplicationWindow {
     function addTab(url, activate) {
         tabs.append({ title: "", icon: "", loading: false, pinned: false, startUrl: url || "" })
         if (activate !== false) currentIndex = tabs.count - 1
-        if (!url && activate !== false) Qt.callLater(focusOmnibox)
+        if (!url && activate !== false) Qt.callLater(focusWorkspaceSearch)
     }
     // ---- picture in picture ------------------------------------------------------------------------------------------------
     // The engine's own picture-in-picture is switched off (document.pictureInPictureEnabled is false), so the tab itself is moved into a small window that stays on top
@@ -224,6 +224,10 @@ ApplicationWindow {
     }
     function togglePanel(kind) { showPanel(panel === kind ? "" : kind) }
     function focusOmnibox() { omnibox.forceActiveFocus(); omnibox.selectAll() }
+    function focusWorkspaceSearch() {
+        if (newTabPage.visible && !settingsModal.visible && !mainMenu.visible)
+            newTabPage.focusSearch()
+    }
     function zoomBy(delta) {
         const v = currentView
         if (!v) return
@@ -1133,9 +1137,11 @@ ApplicationWindow {
                 }
 
                 NewTabPage {
+                    id: newTabPage
                     objectName: "newTabPage"
                     anchors.fill: parent
                     visible: win.curBlank
+                    onVisibleChanged: if (visible) Qt.callLater(win.focusWorkspaceSearch)
                     privateMode: win.privateMode
                     onGo: text => win.navigate(text)
                     onContextRequested: position => pageMenu.popup(stage, position.x, position.y)
