@@ -554,7 +554,8 @@ void AiChannel::sendTools()
                                         "already in a file. A long file is read in parts (start_line). "
                                         "(8) To save room, old tool results in this conversation may be shortened: read the file again when you need its text. ")
                        + (c.allowCommands ? QStringLiteral("run_command runs on the user's PC with the user's permissions: use it only for what the job needs (build, test, git status, dir) "
-                                                           "and never to delete, install or reinstall anything that was not asked for. ") : QString())
+                                                           "and never to delete, install or reinstall anything that was not asked for. The commands run in Windows cmd.exe: there is no head, tail, grep, "
+                                                           "ls or cat - use dir, type, findstr or powershell -command instead. ") : QString())
                        + (c.browser ? QStringLiteral("When you made a web page, check it in the browser of the program: browser_open it (the file name, e.g. index.html; the working folder is %1), read it with browser_read").arg(QDir::fromNativeSeparators(m_folder))
                                           + (c.vision ? QStringLiteral(" and LOOK at it with browser_look (first the top, then scroll down screen by screen), and fix what looks wrong or is missing. ")
                                                       : QStringLiteral(" (text, counts, images that did not load, logged errors) and fix what is missing. "))
@@ -1593,10 +1594,13 @@ namespace {
 const char kNvidiaBase[] = "https://integrate.api.nvidia.com/v1";
 struct RemoteModel { const char* id; const char* title; const char* maker; const char* hintKey; };    // hintKey: the "what is it good for" line in Tr.qml
 const RemoteModel kRemoteModels[] = {
-    {"nvidia/nemotron-3-ultra-550b-a55b", "Nemotron 3 Ultra 550B", "NVIDIA", "mh_ultra"},          // the biggest and still fast (about 2 s): the default
+    // The lineup of 1.37.0 (owner's request 2026-11-19, measured the same day with the same Thai landing-page job on the agent page, web off, one run each - a
+    // single run, not a statistical test): Super 108 s, a 26 KB page, 5 sections, 17 animations, checked itself on three screen sizes; Laguna 81 s, 21 KB;
+    // Bolt 59 s but a plain 10 KB page without script; Lightning 68 s, plain; Gemma 4 31B 301 s; Nano Omni 191 s, a 2.6 KB page; Ultra 550B 957 s and an EMPTY
+    // file (it answered with nothing again and again, also with the thinking switched off); MiniMax M3.1 Flash, Kimi K3.1 Pro, GLM 5.3 Flash, Mistral Large 4,
+    // Muse Glimmer 30B and Step 5 Preview did not finish in 8 minutes. The first entry is the best one.
     {"nvidia/nemotron-3.5-super-vl-120b-a12b", "Nemotron 3.5 Super 120B", "NVIDIA", "mh_super"},
-    {"nvidia/nemotron-3.5-bolt-e4b", "Nemotron 3.5 Bolt", "NVIDIA", "mh_bolt"},                    // small and the fastest (about 1 s)
-    {"minimaxai/minimax-m3.1-flash", "MiniMax M3.1 Flash", "MiniMax", "mh_minimax"},               // made for coding and agent work, slower (about 9 s)
+    {"poolside/laguna-xs-2.1", "Laguna XS 2.1", "Poolside", "mh_laguna"},
 };
 } // namespace
 

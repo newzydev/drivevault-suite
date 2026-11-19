@@ -14,7 +14,8 @@
 
 namespace dm::ai {
 
-static constexpr int kMaxWebCalls = 4;                     // web_search + fetch_page calls in one task
+static constexpr int kMaxWebCalls = 6;                     // web_search + fetch_page calls of one task that gave an answer
+static constexpr int kMaxWebFailures = 4;                  // web calls of one task that failed (403, 429, no connection ...): counted apart, so a bad page does not use up the searches
 static constexpr const char* kDigestMarker = "Earlier in this job";   // starts the note that lists the steps whose results were dropped
 
 namespace {
@@ -176,7 +177,7 @@ QString LocalAgent::start(const Config& c)
         }
     }
     m_steps = 0;
-    m_webCalls = 0;
+    m_webCalls = m_webFailures = 0;
     m_parseRetries = m_emptyNudges = m_todoNudges = m_continues = m_contextRetries = 0;
     m_budgetFactor = 1.0;
     m_compacted = false;
@@ -936,13 +937,21 @@ void LocalAgent::runNextCall()
             result(QStringLiteral("you already made exactly this call and have its result above; do not repeat it. Use it and continue the task"), true);
             return;
         }
-        if (m_webCalls >= kMaxWebCalls) {
-            result(QStringLiteral("the web limit for this task is reached (%1 calls); do not search again. Do the task now with what you have").arg(kMaxWebCalls), true);
+        if (m_webCalls >= kMaxWebCalls || m_webFailures >= kMaxWebFailures) {
+            result(QStringLiteral("the web limit for this task is reached (%1 answers, %2 failures); do not search again. Do the task now with what you have")
+                       .arg(m_webCalls).arg(m_webFailures), true);
             return;
         }
         m_webSeen.append(key);
         ++m_webCalls;
-        m_web->run(name, args, result);
+        // A call that failed does not use up the budget of searches (a site that answers 403 / 429 is not the model's fault), but failures have their own, smaller one.
+        m_web->run(name, args, [this, result](const QString& text, bool error) {
+            if (error) {
+                --m_webCalls;
+                ++m_webFailures;
+            }
+            result(text, error);
+        });
         return;
     }
     if (name == QLatin1String("browser_open") || name == QLatin1String("browser_read") || name == QLatin1String("browser_look") || name == QLatin1String("browser_click")

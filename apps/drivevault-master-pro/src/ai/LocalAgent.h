@@ -184,7 +184,8 @@ private:
     QVariantList m_todoList;                               // the last list of todo_write
     QString m_lastCall;                                    // "name args" of the last file / command call and how often in a row
     int m_sameCall = 0;
-    int m_webCalls = 0;                                   // web tool calls of this task: a small model can search for ever
+    int m_webCalls = 0;                                   // web tool calls of this task that gave an answer: a small model can search for ever
+    int m_webFailures = 0;                                // web tool calls of this task that failed (counted apart)
     QStringList m_webSeen;                                 // "name + arguments" of the web calls already made
     bool m_running = false;
     bool m_cancelled = false;

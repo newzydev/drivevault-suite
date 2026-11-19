@@ -651,6 +651,7 @@ Item {
                                 id: stepRow
                                 required property var modelData
                                 readonly property bool isNote: modelData.kind === "note"
+                                readonly property bool isRetry: isNote && modelData.target.indexOf("Connection problem") === 0      // a wait before asking again: not a success
                                 Layout.fillWidth: true
                                 spacing: 10
                                 Item {
@@ -658,7 +659,8 @@ Item {
                                     implicitWidth: 18
                                     implicitHeight: 18
                                     Spinner { visible: stepRow.modelData.state === "running"; anchors.centerIn: parent; size: 14 }
-                                    Text { visible: stepRow.modelData.state === "done"; anchors.centerIn: parent; text: "✓"; font.pixelSize: 15; font.bold: true; color: Theme.success }
+                                    Text { visible: stepRow.isRetry; anchors.centerIn: parent; text: "↻"; font.pixelSize: 15; font.bold: true; color: Theme.warning }
+                                    Text { visible: stepRow.modelData.state === "done" && !stepRow.isRetry; anchors.centerIn: parent; text: "✓"; font.pixelSize: 15; font.bold: true; color: Theme.success }
                                     Text { visible: stepRow.modelData.state === "error"; anchors.centerIn: parent; text: "✗"; font.pixelSize: 14; font.bold: true; color: Theme.error }
                                     Text { visible: stepRow.modelData.state === "waiting"; anchors.centerIn: parent; text: "●"; font.pixelSize: 13; color: Theme.warning }
                                     Text { visible: stepRow.modelData.state === "stopped"; anchors.centerIn: parent; text: "–"; font.pixelSize: 15; color: Theme.textDisabled }

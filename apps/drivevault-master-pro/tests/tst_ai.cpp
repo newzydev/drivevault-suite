@@ -2135,27 +2135,27 @@ private slots:
             ai.setRemoteBaseUrl(server.base() + "/v1");
             ai.setWebEnabled(false);
             auto* ask = qobject_cast<AiChannel*>(ai.ask());
-            QVERIFY(ai.remoteModels().size() >= 3);
+            QVERIFY(ai.remoteModels().size() >= 2);
             QVERIFY(!ai.useRemote());
             ai.selectRemoteModel("not/in-the-list");                       // only the catalogue can be chosen
             QVERIFY(!ai.useRemote());
-            ai.selectRemoteModel("nvidia/nemotron-3-ultra-550b-a55b");
+            ai.selectRemoteModel("nvidia/nemotron-3.5-super-vl-120b-a12b");
             QVERIFY(ai.useRemote());
             QCOMPARE(ask->notReady(), QString());                          // no engine, no file and no key of the user are needed
-            QCOMPARE(ai.activeModelLabel(), QString("Nemotron 3 Ultra 550B"));
+            QCOMPARE(ai.activeModelLabel(), QString("Nemotron 3.5 Super 120B"));
             QCOMPARE(ask->send("hello"), QString());
             QTRY_VERIFY_WITH_TIMEOUT(!ask->busy(), 10000);
             QCOMPARE(ask->messages().at(1).toMap().value("text").toString(), QString("Online answer"));
             QCOMPARE(ask->messages().at(1).toMap().value("errorCode").toString(), QString());
             QVERIFY(server.lastRequest.contains("Bearer " + builtIn.toUtf8()));
             const QJsonObject body = requestBody(server.lastRequest);
-            QCOMPARE(body.value("model").toString(), QString("nvidia/nemotron-3-ultra-550b-a55b"));
+            QCOMPARE(body.value("model").toString(), QString("nvidia/nemotron-3.5-super-vl-120b-a12b"));
             QVERIFY(!body.contains("chat_template_kwargs"));
             QFile f(dataDir + "/ai/settings.json");                        // the key is not written to the settings
             QVERIFY(f.open(QIODevice::ReadOnly));
             const QByteArray saved = f.readAll();
             QVERIFY(!saved.contains("nvapi") && !saved.contains(builtIn.toUtf8()));
-            QVERIFY(saved.contains("nvidia/nemotron-3-ultra-550b-a55b"));
+            QVERIFY(saved.contains("nvidia/nemotron-3.5-super-vl-120b-a12b"));
         }
         {   // a new start: the choice comes back; a model of this PC leaves the online one
             dm::Hub::Options o;
@@ -2164,7 +2164,7 @@ private slots:
             dm::Hub hub(o);
             AiService ai(&hub);
             QVERIFY(ai.useRemote());
-            QCOMPARE(ai.remoteModel(), QString("nvidia/nemotron-3-ultra-550b-a55b"));
+            QCOMPARE(ai.remoteModel(), QString("nvidia/nemotron-3.5-super-vl-120b-a12b"));
             QFile gguf(m_dir.filePath("local-after-remote.gguf"));
             QVERIFY(gguf.open(QIODevice::WriteOnly));
             gguf.write("x");
