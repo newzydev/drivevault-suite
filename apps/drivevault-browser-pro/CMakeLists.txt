@@ -1,0 +1,62 @@
+cmake_minimum_required(VERSION 3.28)
+
+project(DriveVaultBrowserPro
+    VERSION 0.1.0
+    DESCRIPTION "DriveVault Browser Pro - a web browser with a built-in ad blocker"
+    LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+option(DB_BUILD_TESTS "Build tests" ON)
+string(TIMESTAMP DB_BUILD_NUMBER "%Y%m%d%H%M" UTC)
+
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 QuickDialogs2 WebEngineQuick Test)
+qt_standard_project_setup(REQUIRES 6.8)
+
+if(MSVC)
+    add_compile_options(/W4 /wd4702 /utf-8 /permissive- /Zc:__cplusplus)
+endif()
+
+configure_file(src/Version.h.in ${CMAKE_BINARY_DIR}/generated/Version.h @ONLY)
+
+# ---- core (no WebEngine; also used by the tests) -------------------------------------------------------------------
+add_library(browser_core STATIC
+    src/core/UrlUtil.cpp src/core/UrlUtil.h
+    src/core/BookmarkStore.cpp src/core/BookmarkStore.h
+    src/core/HistoryStore.cpp src/core/HistoryStore.h
+    src/core/BrowserSettings.cpp src/core/BrowserSettings.h)
+target_include_directories(browser_core PUBLIC src/core ${CMAKE_BINARY_DIR}/generated)
+target_link_libraries(browser_core PUBLIC Qt6::Core)
+
+# ---- application ---------------------------------------------------------------------------------------------------------
+set_source_files_properties(qml/Theme.qml qml/Tr.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+qt_add_executable(DriveVaultBrowserPro WIN32
+    src/app/main.cpp src/app/BrowserApp.cpp src/app/BrowserApp.h src/app/DownloadModel.cpp src/app/DownloadModel.h src/app.rc)
+qt_add_qml_module(DriveVaultBrowserPro
+    URI DriveVault.Browser
+    VERSION 1.0
+    QML_FILES
+        qml/Main.qml
+        qml/BrowserWindow.qml
+        qml/Theme.qml
+        qml/Tr.qml
+        qml/LineIcon.qml
+        qml/IconButton.qml
+        qml/BButton.qml
+        qml/NewTabPage.qml
+        qml/SidePanel.qml
+    RESOURCES
+        resources/icons/app.png
+        resources/fonts/Inter-Variable.ttf
+        resources/fonts/NotoSansThai-Variable.ttf)
+target_include_directories(DriveVaultBrowserPro PRIVATE src/app)
+target_link_libraries(DriveVaultBrowserPro PRIVATE browser_core Qt6::Gui Qt6::Quick Qt6::QuickControls2 Qt6::QuickDialogs2 Qt6::WebEngineQuick)
+
+if(DB_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

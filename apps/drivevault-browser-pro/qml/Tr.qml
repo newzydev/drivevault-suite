@@ -1,0 +1,141 @@
+pragma Singleton
+import QtQuick
+import DriveVault.Browser.Backend
+
+// Every user-visible text: [English, Thai]. Tr.t("key") or Tr.t("key", a, b) for %1 / %2.
+QtObject {
+    readonly property string lang: Browser.settings.language
+
+    function t(key, a, b) {
+        const e = table[key]
+        if (!e) return key
+        let s = lang === "en" ? e[0] : e[1]
+        if (a !== undefined) s = s.replace("%1", a)
+        if (b !== undefined) s = s.replace("%2", b)
+        return s
+    }
+
+    readonly property var table: ({
+        // window and tabs
+        "app": ["DriveVault Browser Pro", "DriveVault Browser Pro"],
+        "newTab": ["New tab", "แท็บใหม่"],
+        "newWindow": ["New window", "หน้าต่างใหม่"],
+        "newPrivate": ["New private window", "หน้าต่างส่วนตัวใหม่"],
+        "privateBadge": ["Private", "ส่วนตัว"],
+        "tab_reload": ["Reload", "โหลดใหม่"],
+        "tab_duplicate": ["Duplicate", "ทำซ้ำแท็บ"],
+        "tab_pin": ["Pin tab", "ปักหมุดแท็บ"],
+        "tab_unpin": ["Unpin tab", "เลิกปักหมุดแท็บ"],
+        "tab_close": ["Close tab", "ปิดแท็บ"],
+        "tab_closeOthers": ["Close other tabs", "ปิดแท็บอื่น"],
+        "tab_closeRight": ["Close tabs to the right", "ปิดแท็บทางขวา"],
+        "tab_reopen": ["Reopen closed tab", "เปิดแท็บที่ปิดไปอีกครั้ง"],
+        // toolbar
+        "back": ["Back", "ย้อนกลับ"],
+        "forward": ["Forward", "ไปข้างหน้า"],
+        "reload": ["Reload", "โหลดใหม่"],
+        "stop": ["Stop loading", "หยุดโหลด"],
+        "home": ["Home", "หน้าแรก"],
+        "addressHint": ["Search or type an address", "ค้นหาหรือพิมพ์ที่อยู่เว็บ"],
+        "searchFor": ["Search for \"%1\"", "ค้นหา \"%1\""],
+        "bookmarkAdd": ["Bookmark this page", "เพิ่มบุ๊กมาร์กหน้านี้"],
+        "bookmarkRemove": ["Remove bookmark", "ลบบุ๊กมาร์ก"],
+        "menu": ["Menu", "เมนู"],
+        "downloads": ["Downloads", "ดาวน์โหลด"],
+        "history": ["History", "ประวัติ"],
+        "bookmarks": ["Bookmarks", "บุ๊กมาร์ก"],
+        "settings": ["Settings", "ตั้งค่า"],
+        "find": ["Find in page", "ค้นหาในหน้า"],
+        "findHint": ["Find", "ค้นหา"],
+        "findNone": ["No matches", "ไม่พบ"],
+        "zoomIn": ["Zoom in", "ขยาย"],
+        "zoomOut": ["Zoom out", "ย่อ"],
+        "zoomReset": ["Actual size", "ขนาดจริง"],
+        "savePdf": ["Save page as PDF…", "บันทึกหน้านี้เป็น PDF…"],
+        "viewSource": ["View page source", "ดูซอร์สของหน้า"],
+        "devtools": ["Developer tools", "เครื่องมือนักพัฒนา"],
+        "fullscreen": ["Full screen", "เต็มหน้าจอ"],
+        "showBar": ["Show bookmarks bar", "แสดงแถบบุ๊กมาร์ก"],
+        "siteSecure": ["Secure connection", "การเชื่อมต่อปลอดภัย"],
+        "siteInsecure": ["Not secure", "ไม่ปลอดภัย"],
+        "close": ["Close", "ปิด"],
+        "cancel": ["Cancel", "ยกเลิก"],
+        "yes": ["Yes", "ใช่"],
+        "no": ["No", "ไม่"],
+        "untitled": ["New tab", "แท็บใหม่"],
+        // permissions
+        "perm_ask": ["%1 wants to use: %2", "%1 ขอใช้: %2"],
+        "perm_allow": ["Allow", "อนุญาต"],
+        "perm_block": ["Block", "บล็อก"],
+        "perm_mic": ["the microphone", "ไมโครโฟน"],
+        "perm_camera": ["the camera", "กล้อง"],
+        "perm_camera_mic": ["the camera and microphone", "กล้องและไมโครโฟน"],
+        "perm_screen": ["share your screen", "การแชร์หน้าจอ"],
+        "perm_screen_audio": ["share your screen and sound", "การแชร์หน้าจอและเสียง"],
+        "perm_location": ["your location", "ตำแหน่งของคุณ"],
+        "perm_notifications": ["notifications", "การแจ้งเตือน"],
+        "perm_clipboard": ["the clipboard", "คลิปบอร์ด"],
+        "perm_mouselock": ["lock the mouse pointer", "ล็อกตัวชี้เมาส์"],
+        "perm_fonts": ["the fonts on this PC", "ฟอนต์ในเครื่องนี้"],
+        "perm_other": ["a permission", "สิทธิ์บางอย่าง"],
+        // new tab page
+        "ntp_search": ["Search the web or type an address", "ค้นหาเว็บหรือพิมพ์ที่อยู่เว็บ"],
+        "ntp_top": ["Most visited", "เข้าบ่อยที่สุด"],
+        "ntp_none": ["Pages you visit often will appear here.", "หน้าที่คุณเข้าบ่อยจะแสดงที่นี่"],
+        "ntp_private_title": ["This is a private window", "นี่คือหน้าต่างส่วนตัว"],
+        "ntp_private_body": ["Pages you visit here are not saved in the history, and cookies are removed when you close the window. Downloads and bookmarks you make are kept. Websites, your network and your internet provider can still see what you do.",
+                             "หน้าที่เปิดในนี้จะไม่ถูกบันทึกในประวัติ และคุกกี้จะถูกลบเมื่อปิดหน้าต่าง ไฟล์ที่ดาวน์โหลดและบุ๊กมาร์กที่เพิ่มจะยังอยู่ เว็บไซต์ เครือข่าย และผู้ให้บริการอินเทอร์เน็ตยังเห็นสิ่งที่คุณทำได้"],
+        // side panels
+        "panel_search_history": ["Search history", "ค้นหาประวัติ"],
+        "panel_clear_history": ["Clear history…", "ล้างประวัติ…"],
+        "panel_clear_confirm": ["Delete all browsing history?", "ลบประวัติการเข้าชมทั้งหมดหรือไม่?"],
+        "panel_no_history": ["No history yet.", "ยังไม่มีประวัติ"],
+        "panel_no_bookmarks": ["No bookmarks yet. Press the star in the address bar.", "ยังไม่มีบุ๊กมาร์ก กดรูปดาวในแถบที่อยู่เว็บ"],
+        "panel_no_downloads": ["No downloads in this session.", "ยังไม่มีการดาวน์โหลดในรอบนี้"],
+        "bm_bar": ["Bookmarks bar", "แถบบุ๊กมาร์ก"],
+        "bm_bar_empty": ["Bookmarks you add appear here.", "บุ๊กมาร์กที่เพิ่มจะแสดงที่นี่"],
+        "bm_other": ["Other bookmarks", "บุ๊กมาร์กอื่นๆ"],
+        "bm_import": ["Import (HTML)…", "นำเข้า (HTML)…"],
+        "bm_export": ["Export (HTML)…", "ส่งออก (HTML)…"],
+        "bm_imported": ["Imported %1 bookmarks.", "นำเข้าบุ๊กมาร์ก %1 รายการ"],
+        "bm_exported": ["Bookmarks saved.", "บันทึกบุ๊กมาร์กแล้ว"],
+        "bm_export_failed": ["The file could not be written.", "เขียนไฟล์ไม่ได้"],
+        "bm_openNewTab": ["Open in new tab", "เปิดในแท็บใหม่"],
+        "bm_delete": ["Delete", "ลบ"],
+        "bm_moveBar": ["Move to bookmarks bar", "ย้ายไปแถบบุ๊กมาร์ก"],
+        "bm_moveOther": ["Move to other bookmarks", "ย้ายไปบุ๊กมาร์กอื่นๆ"],
+        "dl_running": ["Downloading", "กำลังดาวน์โหลด"],
+        "dl_paused": ["Paused", "หยุดชั่วคราว"],
+        "dl_done": ["Done", "เสร็จแล้ว"],
+        "dl_failed": ["Failed", "ไม่สำเร็จ"],
+        "dl_cancelled": ["Cancelled", "ยกเลิกแล้ว"],
+        "dl_pause": ["Pause", "หยุดชั่วคราว"],
+        "dl_resume": ["Resume", "ทำต่อ"],
+        "dl_cancel": ["Cancel download", "ยกเลิกการดาวน์โหลด"],
+        "dl_show": ["Show in folder", "แสดงในโฟลเดอร์"],
+        "dl_remove": ["Remove from list", "เอาออกจากรายการ"],
+        "dl_clear": ["Clear finished", "ล้างที่เสร็จแล้ว"],
+        "dl_risky": ["This kind of file can harm your PC. Open it only if you trust the site.", "ไฟล์ประเภทนี้อาจเป็นอันตรายต่อเครื่อง เปิดเมื่อไว้ใจเว็บนั้นเท่านั้น"],
+        "dl_saved_in": ["Saved in %1", "บันทึกใน %1"],
+        // settings
+        "set_general": ["General", "ทั่วไป"],
+        "set_language": ["Language", "ภาษา"],
+        "set_home": ["Home page", "หน้าแรก"],
+        "set_home_hint": ["Empty = the new tab page", "ว่าง = หน้าแท็บใหม่"],
+        "set_startup": ["On start", "เมื่อเริ่มโปรแกรม"],
+        "set_startup_newtab": ["Open a new tab", "เปิดแท็บใหม่"],
+        "set_startup_restore": ["Open the tabs of last time", "เปิดแท็บเดิมจากครั้งก่อน"],
+        "set_search": ["Search engine", "เครื่องมือค้นหา"],
+        "set_privacy": ["Privacy", "ความเป็นส่วนตัว"],
+        "set_notifications": ["Refuse website notifications without asking", "ปฏิเสธการแจ้งเตือนจากเว็บโดยไม่ถาม"],
+        "set_adblock": ["Ad blocking", "การบล็อกโฆษณา"],
+        "set_adblock_status": ["Not implemented yet - planned for the next versions.", "ยังไม่มี - วางแผนไว้ในเวอร์ชันถัดไป"],
+        "set_clear": ["Browsing data", "ข้อมูลการเรียกดู"],
+        "set_clear_button": ["Clear history and cache", "ล้างประวัติและแคช"],
+        "set_clear_note": ["Cookies are not cleared by this button yet.", "ปุ่มนี้ยังไม่ล้างคุกกี้"],
+        "set_cleared": ["History and cache cleared.", "ล้างประวัติและแคชแล้ว"],
+        "set_about": ["About", "เกี่ยวกับ"],
+        "set_version": ["Version %1", "เวอร์ชัน %1"],
+        "set_data": ["Data folder: %1", "โฟลเดอร์ข้อมูล: %1"]
+    })
+}

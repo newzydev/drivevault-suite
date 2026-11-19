@@ -1,0 +1,7 @@
+#pragma once
+
+namespace dv::br::version {
+inline constexpr const char* kProductName = "DriveVault Browser Pro";
+inline constexpr const char* kVersion = "@PROJECT_VERSION@";
+inline constexpr const char* kBuildNumber = "@DB_BUILD_NUMBER@";
+} // namespace dv::br::version

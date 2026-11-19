@@ -1,0 +1,2 @@
+v0.1.0 (2026-11-19): First build of DriveVault Browser Pro (Phase 1, the browser shell). Tabs, address bar with suggestions, bookmarks (HTML import / export), history, downloads, find in page,
+zoom per site, private window, website permissions, save as PDF, view source, developer tools, Thai + English. Ad blocking is not implemented yet. Not released: there is no installer.
