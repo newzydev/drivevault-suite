@@ -161,3 +161,19 @@ Short version: the blocker design (interceptor block + redirect to a custom-sche
 ## 13. Owner decision 2026-11-19: no Google sign-in in the program
 
 The owner dropped Google sign-in. Consequences: **Phase 7 (Google account) and Phase 8 (sync through Google Drive) are cancelled**; no OAuth client, no Drive access, no Credential Manager token. Section 11 stays only as the record of what was found. Extensions (Phase 9) stay on hold (Phase0b-Results.md). Bookmarks, history and settings live only in `%LOCALAPPDATA%\DriveVault\BrowserPro`; a later local export / import (bookmarks as HTML, already in Phase 1) is the only way to move them. Signing in to a website with a Google account inside a page is the website's own matter; the program does not promise it (untested).
+
+## 14. Phase 2 result (2026-11-19, version 0.2.0) and the filter list sources
+
+Built and tested: parser, indexed rule set, list manager with the Update button (downloads only when pressed), interceptor in normal and private windows, shield button, per-list switches. Measured on a SYNTHETIC list of 150,000 rules: 0.4 s to load, 6 us per request; with Chromium, a blocked request never reached a local server. **No real list has been downloaded or measured yet** (waiting for the owner's go-ahead, below).
+
+Sources checked on 2026-11-19 (a HEAD request each, no list body read; the servers did not report sizes):
+| List | Address | Answer | Licence |
+|---|---|---|---|
+| EasyList | `https://easylist.to/easylist/easylist.txt` | 200 | GPLv3+ or CC BY-SA 3.0+ ([licence page](https://easylist.to/pages/licence.html)) |
+| EasyPrivacy | `https://easylist.to/easylist/easyprivacy.txt` | 200 | same |
+| Fanboy's Social Blocking | `https://easylist.to/easylist/fanboy-social.txt` | 200 | **to be read from the file header** (the EasyList licence page names only EasyList, EasyPrivacy, EasyList Germany and Italy; one source says CC BY 3.0, another says GPL / CC BY-SA) |
+| Fanboy's Annoyance | `https://easylist.to/easylist/fanboy-annoyance.txt` | 200 | same doubt |
+| Cookie notices (Fanboy's Cookiemonster) | `https://secure.fanboy.co.nz/fanboy-cookiemonster.txt` | 200 | unknown, read from the file; NOT in the catalog yet (`easylist-cookie.txt` on easylist.to and adblockplus.org answered 404) |
+| Thai (EasyList Thailand) | address not found | - | unknown; NOT in the catalog |
+
+Before the first Release the licence of every shipped list is read from its own header, written into `THIRD-PARTY-NOTICES`, and the release gate "every file has an owner" gets an entry for the list snapshot (plan 3.3).
