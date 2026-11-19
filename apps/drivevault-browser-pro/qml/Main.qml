@@ -17,7 +17,8 @@ QtObject {
         const w = windowComponent.createObject(null, { privateMode: privateMode, primary: first, startUrls: urls })
         if (!w) return
         windows = windows.concat([w])
-        w.closed.connect(function () { app.windows = app.windows.filter(function (x) { return x !== w }) })
+        // a closed window is destroyed a little later, when the engine has finished with its pages (taking it down at once crashed the program when a heavy page was still busy)
+        w.closed.connect(function () { app.windows = app.windows.filter(function (x) { return x !== w }); w.destroy(2000) })
     }
 
     function showPanel(name) {

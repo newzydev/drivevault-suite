@@ -47,7 +47,8 @@ ApplicationWindow {
     title: (privateMode ? "[" + Tr.t("privateBadge") + "] " : "") + (curTitle !== "" && !curBlank ? curTitle + " - " : "") + Tr.t("app")
 
     // ---- tabs -------------------------------------------------------------------------------------------------------------
-    ListModel { id: tabs }
+    // (the ListModel `tabs` is declared at the END of this file: Qt destroys the children of an object in the order they were made, and the views write into the model
+    //  from their signals - a model that dies first made the program crash when it was closed while pages were still loading)
 
     function recount() {
         let n = 0
@@ -212,6 +213,10 @@ ApplicationWindow {
             for (let i = 0; i < views.count; ++i) { const v = views.itemAt(i); if (v) urls.push(v.url.toString()) }
             Browser.saveSession(urls)
         }
+        // the pages are taken down one by one while the window and its model are still alive (a page that is still loading would otherwise call into a half destroyed window)
+        for (let i = 0; i < views.count; ++i) { const v = views.itemAt(i); if (v) v.stop() }
+        currentView = null
+        tabs.clear()
         closed()
     }
 
@@ -275,6 +280,21 @@ ApplicationWindow {
         }
     }
     Timer { id: stTimer; property int step: 0; interval: 1800; onTriggered: win.selfTestStep(step) }
+    // --survey: a look at a real page (tests on real websites): size of its text, frames, walls that talk about ad blockers that are still visible, scroll lock
+    function survey() {
+        if (!currentView) { selfTestResult = "[]"; return }
+        const js = "(function(){var W=/ad[\\s-]?block|ads? blocker|adblocking|(?:disable|turn off|deactivate|pause|whitelist)[^.]{0,40}\\bads?\\b|\\bads?\\b[^.]{0,40}(?:disable|turn off|whitelist)|ตัวบล็อกโฆษณา|บล็อกโฆษณา|แอดบล็อก/i;"
+                  + "var vw=innerWidth,vh=innerHeight,walls=[],all=document.querySelectorAll('body *'),n=Math.min(all.length,6000);"
+                  + "for(var i=0;i<n&&walls.length<3;i++){var e=all[i];if(e.children.length>40)continue;var t=e.textContent;if(!t||t.length>3000||!W.test(t))continue;"
+                  + "for(var a=e,d=0;a&&a!==document.body&&d<8;a=a.parentElement,d++){var cs=getComputedStyle(a);"
+                  + "if((cs.position==='fixed'||(cs.position==='absolute'&&parseInt(cs.zIndex,10)>=100))&&cs.display!=='none'&&cs.visibility!=='hidden'&&cs.opacity!=='0'&&a.offsetWidth>=vw*0.5&&a.offsetHeight>=vh*0.3)"
+                  + "{walls.push({tag:a.tagName,id:String(a.id).slice(0,40),cls:String(a.className).slice(0,60),text:t.trim().replace(/\\s+/g,' ').slice(0,140)});break;}}}"
+                  + "var bs=getComputedStyle(document.body),hs=getComputedStyle(document.documentElement);"
+                  + "return JSON.stringify({title:document.title,textLen:(document.body?document.body.innerText:'').length,iframes:document.querySelectorAll('iframe').length,imgs:document.images.length,walls:walls,bodyOverflow:bs.overflow,htmlOverflow:hs.overflow,scrollH:document.documentElement.scrollHeight,ready:document.readyState});})()"
+        currentView.runJavaScript(js, function (r) {
+            selfTestResult = JSON.stringify([{ name: "survey", ok: true, detail: r === undefined ? "null" : r, blocked: Browser.adblock.blockedOn(curHost), host: curHost, url: curUrl, loading: currentView.loading, rules: Browser.adblock.lists.totalRules }])
+        })
+    }
     // --probe: what the loaded page recorded (window.__res) and how many requests the ad blocker stopped for its host
     function probe() {
         if (!currentView) { selfTestResult = "[]"; return }
@@ -939,7 +959,10 @@ ApplicationWindow {
         }
     }
 
-    // The private profile is declared LAST: Qt destroys the children of an object in the order they were made, and a profile must go after every view that uses it.
+    // The tab model goes after every view that writes into it (see the note at "tabs" above) ...
+    ListModel { id: tabs }
+
+    // ... and the private profile is declared LAST: Qt destroys the children of an object in the order they were made, and a profile must go after every view that uses it.
     WebEngineProfile {
         id: privateProfile
         offTheRecord: true

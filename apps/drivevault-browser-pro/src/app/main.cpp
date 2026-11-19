@@ -3,6 +3,7 @@
 #include "UrlUtil.h"
 
 #include <QCommandLineParser>
+#include <memory>
 #include <QDir>
 #include <QFontDatabase>
 #include <QGuiApplication>
@@ -26,6 +27,8 @@
 int main(int argc, char* argv[])
 {
     dv::br::StandInHandler::registerScheme();                 // "dvres:" - before the application object and the engine
+    if (qEnvironmentVariableIsSet("DV_NO_AUDIO"))              // tests and smoke starts are silent (suite rule): a page that plays a sound is muted
+        qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --mute-audio");
     QtWebEngineQuick::initialize();                           // before the application object
     QGuiApplication app(argc, argv);
     app.setOrganizationName(QStringLiteral("DriveVault"));
@@ -45,7 +48,9 @@ int main(int argc, char* argv[])
     QCommandLineOption selfTestOpt(QStringLiteral("selftest"), QStringLiteral("Run the window's own checks (tabs, pin, bookmarks, history, suggestions, find, zoom) on the page given as address, write the results (JSON) to <file>, exit 0 when all passed (diagnostics)."), QStringLiteral("file"));
     QCommandLineOption probeOpt(QStringLiteral("probe"), QStringLiteral("Open the page given as address, wait, read what the page recorded in window.__res and how many requests the ad blocker stopped, write that (JSON) to <file> and exit (diagnostics, tests)."), QStringLiteral("file"));
     QCommandLineOption updateOpt(QStringLiteral("update-lists"), QStringLiteral("Do what the button \"Update filter lists\" does (download the switched-on lists from their official addresses), write the result (JSON) to <file>, exit (diagnostics; downloads only because this option was given)."), QStringLiteral("file"));
-    parser.addOptions({dataDirOpt, langOpt, shotOpt, sizeOpt, panelOpt, privateOpt, selfTestOpt, probeOpt, updateOpt});
+    QCommandLineOption surveyOpt(QStringLiteral("survey"), QStringLiteral("Open the page given as address, wait (--wait), look at it (title, text length, frames, walls that talk about ad blockers, scroll lock) and how many requests the ad blocker stopped, write that (JSON) to <file> and exit (diagnostics: tests on real websites, only when the owner has allowed network use)."), QStringLiteral("file"));
+    QCommandLineOption waitOpt(QStringLiteral("wait"), QStringLiteral("Milliseconds to wait before --probe / --survey / --screenshot act (default 2500 / 2500 / 3500)."), QStringLiteral("ms"));
+    parser.addOptions({dataDirOpt, langOpt, shotOpt, sizeOpt, panelOpt, privateOpt, selfTestOpt, probeOpt, updateOpt, surveyOpt, waitOpt});
     parser.process(app);
 
     for (const char* font : {":/qt/qml/DriveVault/Browser/resources/fonts/Inter-Variable.ttf", ":/qt/qml/DriveVault/Browser/resources/fonts/NotoSansThai-Variable.ttf"})
@@ -118,20 +123,27 @@ int main(int argc, char* argv[])
         });
         QTimer::singleShot(500, &app, [browserPtr = &browser] { browserPtr->adblock()->updateLists(); });
     }
-    if (parser.isSet(selfTestOpt) || parser.isSet(probeOpt)) {
+    const int waitMs = parser.isSet(waitOpt) ? qBound(500, parser.value(waitOpt).toInt(), 120000) : 0;
+    const bool inspect = parser.isSet(selfTestOpt) || parser.isSet(probeOpt) || parser.isSet(surveyOpt);
+    if (inspect) {
         QObject* win = root->property("firstWindow").value<QObject*>();
         if (!win)
             return 3;
-        const QString file = parser.isSet(selfTestOpt) ? parser.value(selfTestOpt) : parser.value(probeOpt);
-        const char* method = parser.isSet(selfTestOpt) ? "selfTest" : "probe";
-        QTimer::singleShot(2500, win, [win, method] { QMetaObject::invokeMethod(win, method); });         // the page has started loading
+        const QString file = parser.isSet(selfTestOpt) ? parser.value(selfTestOpt) : parser.isSet(surveyOpt) ? parser.value(surveyOpt) : parser.value(probeOpt);
+        const char* method = parser.isSet(selfTestOpt) ? "selfTest" : parser.isSet(surveyOpt) ? "survey" : "probe";
+        const int delay = waitMs > 0 ? waitMs : 2500;
+        QTimer::singleShot(delay, win, [win, method] { QMetaObject::invokeMethod(win, method); });         // the page has started loading
         auto* poll = new QTimer(&app);
-        int ticks = 0;
-        QObject::connect(poll, &QTimer::timeout, &app, [&app, win, file, poll, &ticks] {
+        auto ticks = std::make_shared<int>(0);                  // shared state: the timer outlives this block (a reference to a local here was a dangling reference)
+        const QString shotFile = parser.isSet(shotOpt) ? parser.value(shotOpt) : QString();                    // the picture of the page is taken right after the answer (not at the same time: the two disturbed each other)
+        QObject::connect(poll, &QTimer::timeout, &app, [&app, win, file, poll, ticks, waitMs, shotFile] {
             const QString result = win->property("selfTestResult").toString();
-            if (result.isEmpty() && ++ticks < 120)       // 120 x 250 ms = 30 s
+            if (result.isEmpty() && ++*ticks < 120 + waitMs / 250)       // 30 s (and the wait before it)
                 return;
             poll->stop();
+            if (!shotFile.isEmpty())
+                if (auto* qw = qobject_cast<QQuickWindow*>(win))
+                    qw->grabWindow().save(shotFile);
             QFile out(file);
             bool allOk = !result.isEmpty();
             if (allOk)
@@ -139,7 +151,9 @@ int main(int argc, char* argv[])
                     allOk = allOk && v.toObject().value(QStringLiteral("ok")).toBool();
             if (out.open(QIODevice::WriteOnly))
                 out.write(result.isEmpty() ? QByteArray("[]  (timed out)") : QJsonDocument::fromJson(result.toUtf8()).toJson());
-            app.exit(allOk ? 0 : 1);
+            // close the window like a user does (its pages are taken down in order), then end
+            QMetaObject::invokeMethod(win, "close");
+            QTimer::singleShot(400, &app, [&app, allOk] { app.exit(allOk ? 0 : 1); });
         });
         poll->start(250);
     }
@@ -155,10 +169,11 @@ int main(int argc, char* argv[])
                 window->resize(wh[0].toInt(), wh[1].toInt());
         }
         const QString file = parser.value(shotOpt);
-        QTimer::singleShot(3500, &app, [&app, window, file] {
-            const QImage img = window->grabWindow();
-            app.exit(!img.isNull() && img.save(file) ? 0 : 2);
-        });
+        if (!inspect)                                           // with a probe / survey the picture is taken after its answer (see above)
+            QTimer::singleShot(waitMs > 0 ? waitMs : 3500, &app, [&app, window, file] {
+                const QImage img = window->grabWindow();
+                app.exit(!img.isNull() && img.save(file) ? 0 : 2);
+            });
     }
     return app.exec();
 }
