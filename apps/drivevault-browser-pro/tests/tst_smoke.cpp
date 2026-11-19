@@ -177,7 +177,8 @@ private slots:
             const bool listOff = QByteArray(c.settings).contains("easylist");
             if (c.adBlocked) {
                 QVERIFY2(res.value(QStringLiteral("ad")).toString() == QLatin1String("blocked"), c.name);
-                QVERIFY2(res.value(QStringLiteral("img")).toString() == QLatin1String("blocked"), c.name);
+                QVERIFY2(res.value(QStringLiteral("img")).toString() == QLatin1String("loaded"), c.name);        // 0.4.0: a blocked picture is answered by a transparent dot (no error event) ...
+                QVERIFY2(server.hits.value(QStringLiteral("/pixel.gif")) == 0, c.name);                          // ... and its request never reaches the server
                 QVERIFY2(server.hits.value(QStringLiteral("/blocked-ad.js")) == 0, c.name);               // the request never reached the server
                 QVERIFY2(o.value(QStringLiteral("blocked")).toInt() >= 2, c.name);
             } else {

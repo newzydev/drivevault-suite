@@ -63,7 +63,8 @@ public:
     // what goes INTO the page (thread safe): the hide / style / scriptlet rules of the page's site, with the exceptions and $elemhide / $generichide applied
     PageCosmetics cosmeticsFor(const QString& pageUrl) const;
     // the script for the page (see PageScript.h); empty when there is nothing to do
-    QString pageScriptFor(const QString& libraryJs, const QString& pageUrl) const;
+    // cosmetic: hiding + scriptlets of the lists; defend: the defence against pages that detect ad blockers (works without any list)
+    QString pageScriptFor(const QString& libraryJs, const QString& pageUrl, bool cosmetic = true, bool defend = false) const;
     static QString hostOfUrl(const QString& url) { return RuleSet::hostOf(url.toLower()); }
     int cosmeticRuleCount() const;                     // of the lists that are on
 

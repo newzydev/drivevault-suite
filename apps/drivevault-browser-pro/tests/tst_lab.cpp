@@ -156,6 +156,66 @@ setTimeout(function () {
     s.files[QStringLiteral("/adsbygoogle.js")] = {"application/javascript", "window.REAL_ABG = 1;"};
     s.files[QStringLiteral("/plain-blocked.js")] = {"application/javascript", "window.REAL_PLAIN = 1;"};
     s.files[QStringLiteral("/px.gif")] = {"image/gif", QByteArray::fromBase64("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")};
+    s.files[QStringLiteral("/detect.html")] = {"text/html", R"HTML(<!doctype html><meta charset=utf-8><title>Detect</title>
+<style>body{margin:0;font-family:sans-serif} #article{padding:20px} .tiny-bait{width:1px;height:1px;position:absolute;left:-9999px}</style>
+<script>
+window.__res = {};
+function makeBait(cls) {
+  var b = document.createElement('div'); b.className = cls;
+  b.style.cssText = 'width: 1px !important; height: 1px !important; position: absolute !important; left: -10000px !important; top: -1000px !important;';
+  document.body.appendChild(b); return b;
+}
+function looksBlocked(b) { var cs = getComputedStyle(b); return b.offsetParent === null || b.offsetHeight === 0 || b.offsetWidth === 0 || cs.display === 'none' || cs.visibility === 'hidden'; }
+</script>
+<script src="/ads.js" onload="__res.script = (window.canRunAds === true) ? 'clear' : 'detected'" onerror="__res.script = 'detected'"></script>
+<body>
+<div id="article"><p id="para">Our review of the best ad blocker extensions for 2026.</p></div>
+<div id="realad" class="text-ad">Buy our product now!</div>
+<div id="cookie" style="position:fixed;left:0;right:0;bottom:0;height:60px;background:#222;color:#fff;z-index:1000">We use cookies to improve your experience.</div>
+<div id="news" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:99998;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center"><div>Subscribe to our newsletter</div></div>
+<script>
+// (a) a bait box that is looked at a little later (as BlockAdBlock does)
+var bait = makeBait('pub_300x250 pub_300x250m pub_728x90 text-ad textAd text_ad text_ads text-ads text-ad-links');
+setTimeout(function () { __res.bait = looksBlocked(bait) ? 'detected' : 'clear'; }, 400);
+// (a2) a bait in normal flow that holds only a space, (a3) a bait made tiny by a style sheet instead of an inline style
+var bait2 = document.createElement('div'); bait2.className = 'ad-banner'; bait2.innerHTML = '&nbsp;'; document.body.appendChild(bait2);
+var bait3 = document.createElement('div'); bait3.className = 'tiny-bait'; document.body.appendChild(bait3);
+setTimeout(function () { __res.bait2 = looksBlocked(bait2) ? 'detected' : 'clear'; __res.bait3 = looksBlocked(bait3) ? 'detected' : 'clear'; }, 400);
+// (b) a detector library that the page defines itself
+(function () {
+  var FuckAdBlock = function () { this._d = []; this._n = []; };
+  FuckAdBlock.prototype.onDetected = function (f) { this._d.push(f); return this; };
+  FuckAdBlock.prototype.onNotDetected = function (f) { this._n.push(f); return this; };
+  FuckAdBlock.prototype.check = function () { var self = this, b = makeBait('adsbox'); setTimeout(function () { (looksBlocked(b) ? self._d : self._n).forEach(function (f) { f(); }); }, 150); };
+  window.FuckAdBlock = FuckAdBlock;
+  if (typeof window.fuckAdBlock === 'undefined') window.fuckAdBlock = new FuckAdBlock();
+  fuckAdBlock.onDetected(function () { __res.lib = 'detected'; });
+  fuckAdBlock.onNotDetected(function () { __res.lib = 'clear'; });
+  fuckAdBlock.check();
+})();
+// (c) a fetch to an ad address that must "succeed"
+fetch('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', { method: 'HEAD', mode: 'no-cors' }).then(function () { __res.fetch = 'clear'; }).catch(function () { __res.fetch = 'detected'; });
+// (d) a picture from an ad address
+var im = new Image(); im.onload = function () { __res.img = 'clear'; }; im.onerror = function () { __res.img = 'detected'; }; im.src = 'https://ads.tracker.test/banner.gif';
+// (e) a wall that appears later and locks the page
+setTimeout(function () {
+  var o = document.createElement('div'); o.id = 'wall';
+  o.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,.85);color:#fff;display:flex;align-items:center;justify-content:center';
+  o.innerHTML = '<div><h2>Ad blocker detected</h2><p>Please disable your ad blocker to continue.</p><button>I have disabled it</button></div>';
+  document.body.appendChild(o);
+  document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
+}, 300);
+setTimeout(function () {
+  var gone = function (id) { var e = document.getElementById(id); return !e || !document.body.contains(e) || getComputedStyle(e).display === 'none'; };
+  __res.wallGone = gone('wall');
+  __res.scrollLocked = getComputedStyle(document.body).overflow === 'hidden' || getComputedStyle(document.documentElement).overflow === 'hidden';
+  __res.cookieKept = !gone('cookie');
+  __res.newsKept = !gone('news');
+  __res.paraKept = !gone('para');
+  __res.realAdHidden = gone('realad');
+}, 1300);
+</script>)HTML"};
 }
 
 bool is(const QJsonObject& o, const char* key, bool value) { return o.value(QLatin1String(key)).toBool(!value) == value; }
@@ -275,6 +335,43 @@ private slots:
             QCOMPARE(str(r.res, "adsjs"), QStringLiteral("loaded:real"));                         // without the blocker the real files come
             QCOMPARE(str(r.res, "plain"), QStringLiteral("loaded"));
             QCOMPARE(server.hits.value(QStringLiteral("/ads.js")), 1);
+        }
+    }
+
+    // The detectors of plan section 4, each as a page on this computer, once with the defence on and once with it off (the control: it proves that the page really detects).
+    void anAdBlockerDetectorFindsNothing()
+    {
+        const QByteArray list =
+            "[Adblock Plus 2.0]\n##.pub_300x250\n##.text-ad\n##.adsbox\n##.ad-banner\n##.tiny-bait\n/ads.js\n||pagead2.googlesyndication.com^\n||ads.tracker.test^\n";
+        for (int defend = 1; defend >= 0; --defend) {
+            LabServer server;
+            QVERIFY(server.isListening());
+            fillPages(server);
+            const Result r = runCase(server, list, defend ? "{}" : "{\"antiDetectEnabled\":false}", {}, QStringLiteral("/detect.html"));
+            QVERIFY(r.ok);
+            qInfo().noquote() << "DETECT defence" << (defend ? "ON " : "OFF") << QJsonDocument(r.res).toJson(QJsonDocument::Compact);
+            QCOMPARE(str(r.res, "script"), QStringLiteral("clear"));          // the bait script (stand-in)
+            QCOMPARE(str(r.res, "fetch"), QStringLiteral("clear"));           // fetch to an ad address
+            QCOMPARE(str(r.res, "img"), QStringLiteral("clear"));             // picture from an ad address
+            QVERIFY(is(r.res, "cookieKept", true));                           // a cookie notice is not a wall
+            QVERIFY(is(r.res, "paraKept", true));                             // text about ad blockers in the page itself stays
+            QVERIFY(is(r.res, "newsKept", true));                             // a full-window box that does not talk about ad blockers stays
+            QVERIFY2(is(r.res, "realAdHidden", true), "a real ad (a box with content) is still hidden");
+            if (defend) {
+                QCOMPARE(str(r.res, "bait"), QStringLiteral("clear"));         // the bait box was left alone
+                QCOMPARE(str(r.res, "bait2"), QStringLiteral("clear"));        // a bait that holds only a space
+                QCOMPARE(str(r.res, "bait3"), QStringLiteral("clear"));        // a bait made tiny by a style sheet
+                QCOMPARE(str(r.res, "lib"), QStringLiteral("clear"));          // the library says "no ad blocker"
+                QVERIFY(is(r.res, "wallGone", true));                         // the wall is hidden ...
+                QVERIFY(is(r.res, "scrollLocked", false));                    // ... and the page scrolls again
+            } else {
+                QCOMPARE(str(r.res, "bait"), QStringLiteral("detected"));      // control: without the defence the page does detect it
+                QCOMPARE(str(r.res, "bait2"), QStringLiteral("detected"));
+                QCOMPARE(str(r.res, "bait3"), QStringLiteral("detected"));
+                QCOMPARE(str(r.res, "lib"), QStringLiteral("detected"));
+                QVERIFY(is(r.res, "wallGone", false));
+                QVERIFY(is(r.res, "scrollLocked", true));
+            }
         }
     }
 };

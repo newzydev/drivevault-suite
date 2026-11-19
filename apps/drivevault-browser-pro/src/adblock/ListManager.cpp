@@ -247,15 +247,22 @@ PageCosmetics ListManager::cosmeticsFor(const QString& pageUrl) const
     return out;
 }
 
-QString ListManager::pageScriptFor(const QString& libraryJs, const QString& pageUrl) const
+QString ListManager::pageScriptFor(const QString& libraryJs, const QString& pageUrl, bool cosmetic, bool defend) const
 {
-    const PageCosmetics page = cosmeticsFor(pageUrl);
-    const std::shared_ptr<const Generic> g = m_generic.load();
     const QString lower = pageUrl.toLower();
     const bool http = lower.startsWith(QLatin1String("http://")) || lower.startsWith(QLatin1String("https://"));
-    if (!http || !g || m_mask.load() == 0)
+    if (!http)
         return {};
-    return buildPageScript(libraryJs, page, g->classes, g->ids);
+    PageCosmetics page;
+    QString classes, ids;
+    if (cosmetic && m_mask.load() != 0) {
+        page = cosmeticsFor(pageUrl);
+        if (const std::shared_ptr<const Generic> g = m_generic.load()) {
+            classes = g->classes;
+            ids = g->ids;
+        }
+    }
+    return buildPageScript(libraryJs, page, classes, ids, defend);
 }
 QVariantList ListManager::status() const
 {

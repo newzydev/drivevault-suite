@@ -79,6 +79,8 @@ void AdBlockInterceptor::interceptRequest(QWebEngineUrlRequestInfo& info)
         name = d.redirect;
     else
         name = ab::standInNameForUrl(address, type);
+    if (name.isEmpty() && type == ab::Image)
+        name = QStringLiteral("1x1.gif");                        // a blocked picture "loads" as a transparent dot: no error event for a page that watches for one
     if (!name.isEmpty())
         info.redirect(StandInHandler::urlFor(name));
     else

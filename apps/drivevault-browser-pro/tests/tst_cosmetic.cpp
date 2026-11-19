@@ -157,6 +157,10 @@ private slots:
         const QString none = buildPageScript(QStringLiteral("L"), p, QStringLiteral("a"), QStringLiteral("b"));
         QVERIFY2(none.contains(QLatin1String("\"sel\":[]")) && none.contains(QLatin1String("set-constant")), "$elemhide keeps the scriptlets but hides nothing");
         QVERIFY(buildPageScript(QStringLiteral("L"), PageCosmetics(), QString(), QString()).isEmpty());
+        QVERIFY(buildPageScript(QStringLiteral("L"), PageCosmetics(), QString(), QString(), false).isEmpty());
+        const QString defendOnly = buildPageScript(QStringLiteral("L"), PageCosmetics(), QString(), QString(), true);      // the defence needs no list at all
+        QVERIFY(defendOnly.contains(QLatin1String("\"def\":true")) && defendOnly.contains(QLatin1String("\"gen\":false")));
+        QVERIFY(buildPageScript(QStringLiteral("L"), p, QStringLiteral("a"), QStringLiteral("b"), false).contains(QLatin1String("\"def\":false")));
     }
 
     void standInsAreHarmlessAndKnown()
@@ -179,6 +183,10 @@ private slots:
         QCOMPARE(standInNameForUrl(QStringLiteral("https://securepubads.g.doubleclick.net/tag/js/gpt.js"), Script), QStringLiteral("googletagservices_gpt.js"));
         QCOMPARE(standInNameForUrl(QStringLiteral("https://connect.facebook.net/en_US/fbevents.js"), Script), QStringLiteral("fbevents.js"));
         QCOMPARE(standInNameForUrl(QStringLiteral("https://site.test/js/ads.js"), Script), QStringLiteral("canrunads.js"));
+        QCOMPARE(standInNameForUrl(QStringLiteral("https://site.test/js/fuckadblock.min.js?v=3"), Script), QStringLiteral("fuckadblock.js"));
+        QCOMPARE(standInNameForUrl(QStringLiteral("https://cdn.test/blockadblock.js"), Script), QStringLiteral("fuckadblock.js"));
+        QCOMPARE(standInNameForUrl(QStringLiteral("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"), Xhr), QStringLiteral("googlesyndication_adsbygoogle.js"));        // a fetch test succeeds too
+        QVERIFY(standIn(QStringLiteral("fuckadblock.js"), &s) && s.body.contains("onNotDetected") && s.body.contains("FuckAdBlock"));
         QVERIFY(standInNameForUrl(QStringLiteral("https://site.test/js/app.js"), Script).isEmpty());
         QVERIFY(standInNameForUrl(QStringLiteral("https://www.google-analytics.com/analytics.js"), Image).isEmpty());          // only scripts
     }

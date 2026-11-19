@@ -441,6 +441,14 @@ Rectangle {
                     checked: Browser.settings.cosmeticEnabled
                     onToggled: Browser.settings.cosmeticEnabled = checked
                 }
+                Toggle {
+                    objectName: "defendSwitch"
+                    text: Tr.t("ab_defend")
+                    enabled: Browser.adblock.enabled
+                    checked: Browser.settings.antiDetectEnabled
+                    onToggled: Browser.settings.antiDetectEnabled = checked
+                }
+                Text { Layout.fillWidth: true; text: Tr.t("ab_defend_note"); color: Theme.textSecondary; font.pixelSize: 11; wrapMode: Text.WordWrap }
                 Text {
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap

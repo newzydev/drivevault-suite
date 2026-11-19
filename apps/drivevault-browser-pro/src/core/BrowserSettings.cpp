@@ -1,4 +1,4 @@
-﻿#include "BrowserSettings.h"
+#include "BrowserSettings.h"
 
 #include "UrlUtil.h"
 
@@ -96,6 +96,8 @@ bool BrowserSettings::adblockEnabled() const { return m_data.value(QLatin1String
 void BrowserSettings::setAdblockEnabled(bool v) { set(QStringLiteral("adblockEnabled"), v); }
 bool BrowserSettings::cosmeticEnabled() const { return m_data.value(QLatin1String("cosmeticEnabled")).toBool(true); }
 void BrowserSettings::setCosmeticEnabled(bool v) { set(QStringLiteral("cosmeticEnabled"), v); }
+bool BrowserSettings::antiDetectEnabled() const { return m_data.value(QLatin1String("antiDetectEnabled")).toBool(true); }
+void BrowserSettings::setAntiDetectEnabled(bool v) { set(QStringLiteral("antiDetectEnabled"), v); }
 
 bool BrowserSettings::listOn(const QString& id) const
 {

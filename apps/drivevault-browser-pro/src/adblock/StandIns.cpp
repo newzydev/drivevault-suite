@@ -41,6 +41,14 @@ const char* const kFingerprint =
     "(function(){var F=function(){};F.get=function(o,c){(typeof o==='function'?o:c)([])};F.getPromise=function(){return Promise.resolve([])};"
     "F.getV18=F.get;F.x64hash128=function(){return''};window.Fingerprint2=F;})();";
 const char* const kInstream = "window.google_ad_status=1;";
+// the libraries that sites use to ask "is an ad blocker running?": a stand-in that always answers "no"
+const char* const kDetector =
+    "(function(){var w=window;function D(){}var c=function(){return this};"
+    "D.prototype={check:function(){return true},emitEvent:c,clearEvent:c,setOption:c,"
+    "on:function(d,f){if(!d&&typeof f==='function')setTimeout(f,0);return this},onDetected:c,"
+    "onNotDetected:function(f){if(typeof f==='function')setTimeout(f,0);return this}};"
+    "w.FuckAdBlock=w.BlockAdBlock=w.SniffAdBlock=D;"
+    "if(!w.fuckAdBlock)w.fuckAdBlock=new D();if(!w.blockAdBlock)w.blockAdBlock=new D();if(!w.sniffAdBlock)w.sniffAdBlock=new D();})();";
 const char* const kCanRunAds = "window.canRunAds=true;window.isAdBlockActive=false;";
 const char* const kPng1 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 const char* const kGif1 = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
@@ -62,6 +70,7 @@ QHash<QString, StandIn> buildTable()
     js({"fingerprint2.js"}, kFingerprint);
     js({"doubleclick_instream_ad_status.js", "doubleclick.net/instream/ad_status.js"}, kInstream);
     js({"canrunads.js"}, kCanRunAds);
+    js({"fuckadblock.js", "blockadblock.js"}, kDetector);
     t.insert(QStringLiteral("noopjson"), {"{}", "application/json"});
     t.insert(QStringLiteral("noop.json"), {"{}", "application/json"});
     t.insert(QStringLiteral("noop.txt"), {"", "text/plain"});
@@ -109,8 +118,8 @@ QStringList standInNames()
 
 QString standInNameForUrl(const QString& url, quint16 type)
 {
-    if (!(type & (Script | Other)))
-        return {};
+    if (!(type & (Script | Other | Xhr)))
+        return {};                                          // scripts, and the fetch / XHR "is this ad address reachable?" tests
     const QString u = url.toLower();
     const QString noScheme = u.mid(u.indexOf(QLatin1String("://")) + 3);
     const QString path = noScheme.left(qMin(noScheme.indexOf(QLatin1Char('?')) < 0 ? noScheme.size() : noScheme.indexOf(QLatin1Char('?')), noScheme.size()));
@@ -132,6 +141,9 @@ QString standInNameForUrl(const QString& url, quint16 type)
     for (const char* bait : {"/ads.js", "/adframe.js", "/advertisement.js", "/adsbox.js"})
         if (path.endsWith(QLatin1String(bait)))
             return QStringLiteral("canrunads.js");
+    for (const char* lib : {"/fuckadblock.js", "/fuckadblock.min.js", "/blockadblock.js", "/blockadblock.min.js", "/sniffadblock.js"})
+        if (path.endsWith(QLatin1String(lib)))
+            return QStringLiteral("fuckadblock.js");
     return {};
 }
 

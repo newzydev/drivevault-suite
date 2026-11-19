@@ -60,11 +60,11 @@ void AdBlockController::attach(QQuickWebEngineProfile* profile)
 
 QString AdBlockController::scriptFor(const QString& pageUrl) const
 {
-    if (!m_settings->adblockEnabled() || !m_settings->cosmeticEnabled() || m_library.isEmpty())
+    if (!m_settings->adblockEnabled() || m_library.isEmpty())
         return {};
     if (m_settings->adblockPaused(m_lists.hostOfUrl(pageUrl)))
         return {};
-    return m_lists.pageScriptFor(m_library, pageUrl);
+    return m_lists.pageScriptFor(m_library, pageUrl, m_settings->cosmeticEnabled(), m_settings->antiDetectEnabled());
 }
 
 void AdBlockController::setEnabled(bool on) { m_settings->setAdblockEnabled(on); }

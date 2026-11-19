@@ -6,10 +6,10 @@
 
 namespace dv::br::ab {
 
-QString buildPageScript(const QString& libraryJs, const PageCosmetics& page, const QString& genericClasses, const QString& genericIds)
+QString buildPageScript(const QString& libraryJs, const PageCosmetics& page, const QString& genericClasses, const QString& genericIds, bool defend)
 {
     const bool generic = !page.noGeneric && (!genericClasses.isEmpty() || !genericIds.isEmpty());
-    if (page.empty() && !generic)
+    if (page.empty() && !generic && !defend)
         return {};
     QJsonObject cfg;
     cfg.insert(QStringLiteral("sel"), QJsonArray::fromStringList(page.noCosmetic ? QStringList() : page.selectors));
@@ -20,6 +20,7 @@ QString buildPageScript(const QString& libraryJs, const PageCosmetics& page, con
     cfg.insert(QStringLiteral("sl"), sl);
     cfg.insert(QStringLiteral("goff"), QJsonArray::fromStringList(page.genericOff));
     cfg.insert(QStringLiteral("gen"), generic && !page.noCosmetic);
+    cfg.insert(QStringLiteral("def"), defend);
     if (generic && !page.noCosmetic) {
         cfg.insert(QStringLiteral("cls"), genericClasses);
         cfg.insert(QStringLiteral("ids"), genericIds);

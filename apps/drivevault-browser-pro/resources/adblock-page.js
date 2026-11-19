@@ -334,12 +334,28 @@ if ((CFG.sel && CFG.sel.length) || (CFG.css && CFG.css.length)) {
     }
 }
 
-// generic rules (".name" / "#name"): only names that really occur in the page are given a rule
+// Generic rules (".name" / "#name"): only names that really occur in the page do anything.
+//  - defence off: a name that occurs gets one style rule ([class~="x"] / [id="x"]).
+//  - defence on:  every element is looked at on its own and hidden with an inline style - EXCEPT an empty box (no child element, no text). A page makes such a box only to see
+//    whether it gets hidden ("bait"); there is nothing in it to hide, so hiding it would only tell the page that an ad blocker is running. An empty box that is filled
+//    later (an ad arrives) is looked at again.
 if (CFG.gen) {
     var classNames = new Set(CFG.cls ? CFG.cls.split(" ") : []), idNames = new Set(CFG.ids ? CFG.ids.split(" ") : []);
-    var off = new Set(CFG.goff || []), seenC = new Set(), seenI = new Set(), found = [], genSheet = null;
+    var off = new Set(CFG.goff || []), seenC = new Set(), seenI = new Set(), found = [], genSheet = null, hidden = new WeakSet(), hits = [];
+    var emptyBox = function (el) {
+        if (el.children.length > 0) return false;
+        var t = el.textContent;
+        return !t || t.trim() === "";
+    };
     var checkEl = function (el) {
-        var id = el.id;
+        var id = el.id, hit = false;
+        if (CFG.def) {
+            if (id && typeof id === "string" && idNames.has(id) && !off.has("#" + id)) hit = true;
+            var cl0 = el.classList;
+            if (!hit && cl0) for (var j = 0; j < cl0.length; ++j) if (classNames.has(cl0[j]) && !off.has("." + cl0[j])) { hit = true; break; }
+            if (hit) hits.push(el);
+            return;
+        }
         if (id && typeof id === "string" && !seenI.has(id)) {
             seenI.add(id);
             if (idNames.has(id) && !off.has("#" + id) && /^[\w-]+$/.test(id)) found.push('[id="' + id + '"]');
@@ -361,6 +377,14 @@ if (CFG.gen) {
             checkEl(n);
             if (n.querySelectorAll) n.querySelectorAll("[class],[id]").forEach(checkEl);
         });
+        if (hits.length) {
+            var list = hits; hits = [];
+            list.forEach(function (el) {
+                if (hidden.has(el) || emptyBox(el)) return;
+                hidden.add(el);
+                el.style.setProperty("display", "none", "important");
+            });
+        }
         if (found.length) {
             if (!genSheet) genSheet = makeSheet();
             if (genSheet) addRules(genSheet, found);
@@ -371,9 +395,91 @@ if (CFG.gen) {
     new MutationObserver(function (records) {
         records.forEach(function (r) {
             if (r.type === "attributes") push(r.target);
-            else r.addedNodes.forEach(push);
+            else { if (CFG.def) push(r.target); r.addedNodes.forEach(push); }       // defence on: an empty box that got content is looked at again
         });
     }).observe(doc, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "id"] });
     doc.addEventListener("DOMContentLoaded", function () { push(doc.documentElement); });
     if (doc.documentElement) push(doc.documentElement);
+}
+
+// ---- defence against pages that detect an ad blocker (CFG.def) --------------------------------------------------------------------------
+// Honest limit: this answers the usual client-side tests (a bait box, the "FuckAdBlock / BlockAdBlock" libraries, a wall that says "turn off your ad blocker").
+// A page that checks on its server, or hides its content until an ad was really shown, can still refuse to work.
+if (CFG.def) {
+    // 1. detector libraries: whatever the page defines under these names, the page gets an object that always answers "no ad blocker"
+    (function () {
+        function Det() {}
+        var chain = function () { return this; };
+        Det.prototype = {
+            check: function () { return true; }, emitEvent: chain, clearEvent: chain, setOption: chain,
+            on: function (detected, fn) { if (!detected && typeof fn === "function") setT(fn, 0); return this; },
+            onDetected: chain,
+            onNotDetected: function (fn) { if (typeof fn === "function") setT(fn, 0); return this; }
+        };
+        ["FuckAdBlock", "BlockAdBlock", "SniffAdBlock"].forEach(function (n) {
+            safe(function () { defProp(win, n, { configurable: true, get: function () { return Det; }, set: function () {} }); });
+        });
+        ["fuckAdBlock", "blockAdBlock", "sniffAdBlock"].forEach(function (n) {
+            var inst = new Det();
+            safe(function () { defProp(win, n, { configurable: true, get: function () { return inst; }, set: function () {} }); });
+        });
+    })();
+
+    // 2. walls: a big fixed box that talks about ad blockers is hidden, the page may scroll again
+    var WORDS = /ad[\s-]?block|ads? blocker|adblocking|(?:disable|turn off|deactivate|pause|whitelist)[^.]{0,40}\bads?\b|\bads?\b[^.]{0,40}(?:disable|turn off|whitelist)|ตัวบล็อกโฆษณา|บล็อกโฆษณา|แอดบล็อก/i;
+    var handled = new WeakSet(), unlockSheet = null, wallSet = new Set(), wallQueued = false;
+    function unlockPage() {
+        if (unlockSheet) return;
+        unlockSheet = makeSheet();
+        if (unlockSheet) {
+            ["html,body{overflow:auto!important;position:static!important;filter:none!important;pointer-events:auto!important}",
+             "html,body{height:auto!important;max-height:none!important}"].forEach(function (r) { safe(function () { unlockSheet.insertRule(r, unlockSheet.cssRules.length); }); });
+        }
+    }
+    function wallOf(el) {                                    // the outermost ancestor (up to 8 levels) that behaves like an overlay
+        var found = null;
+        for (var n = el, i = 0; n && n !== doc.body && n !== doc.documentElement && i < 8; n = n.parentElement, ++i) {
+            var cs = win.getComputedStyle(n);
+            var z = parseInt(cs.zIndex, 10);
+            var floats = cs.position === "fixed" || ((cs.position === "absolute" || cs.position === "sticky") && z >= 100);
+            if (floats && n.offsetWidth >= win.innerWidth * 0.5 && n.offsetHeight >= win.innerHeight * 0.3) found = n;
+        }
+        return found;
+    }
+    function inspectWall(node) {
+        if (!node || node.nodeType !== 1 || handled.has(node)) return;
+        var tag = node.tagName;
+        if (tag === "SCRIPT" || tag === "STYLE" || tag === "NOSCRIPT" || tag === "HTML" || tag === "BODY") return;
+        var text = node.textContent;
+        if (!text || text.length > 2500 || !WORDS.test(text)) return;
+        var wall = wallOf(node);
+        if (!wall) return;
+        handled.add(node); handled.add(wall);
+        wall.style.setProperty("display", "none", "important");
+        unlockPage();
+        var parent = wall.parentElement;                      // a dark backdrop next to it: a full-window fixed box without text
+        if (parent) Array.prototype.forEach.call(parent.children, function (s) {
+            if (s === wall || s.nodeType !== 1) return;
+            var cs = win.getComputedStyle(s);
+            if (cs.position === "fixed" && s.offsetWidth >= win.innerWidth * 0.9 && s.offsetHeight >= win.innerHeight * 0.9 && (s.textContent || "").trim().length < 5)
+                s.style.setProperty("display", "none", "important");
+        });
+    }
+    function flushWalls() {
+        wallQueued = false;
+        var work = Array.from(wallSet).slice(0, 300);            // a page that animates thousands of nodes must not be slowed down: a few hundred a round
+        work.forEach(function (n) { wallSet.delete(n); safe(function () { inspectWall(n); }); });
+        if (wallSet.size > 0) { wallQueued = true; setT(flushWalls, 100); }
+    }
+    function queueWall(n) { if (n && n.nodeType === 1) wallSet.add(n); if (!wallQueued) { wallQueued = true; setT(flushWalls, 50); } }
+    new MutationObserver(function (records) {
+        records.forEach(function (r) {
+            if (r.type === "attributes") queueWall(r.target);
+            else r.addedNodes.forEach(queueWall);
+        });
+    }).observe(doc, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "hidden"] });
+    doc.addEventListener("DOMContentLoaded", function () {
+        var first = doc.querySelectorAll("body > *, body > * > *");
+        for (var i = 0; i < first.length && i < 400; ++i) queueWall(first[i]);
+    });
 }
