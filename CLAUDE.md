@@ -13,7 +13,7 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 | `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.16.2 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
 | `apps/drivevault-master-pro` | DriveVault Master Pro 1.38.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
 | `apps/drivevault-pdf-pro` | DriveVault PDF Pro 1.22.2 (plan in `apps/drivevault-pdf-pro/docs/PDF-Pro-Plan.md`). PDFium + qpdf, Thai OCR with ONNX Runtime. Accent colour red `#EF4444`. |
-| `apps/drivevault-browser-pro` | DriveVault Browser Pro 0.6.0 - **beta: installer built by `package.ps1` (not install-tested), listed in the Master Pro catalog, no Release published yet** (plan `apps/drivevault-browser-pro/docs/Browser-Pro-Plan.md`; Qt WebEngine, owner's decision 2026-11-19; no Google sign-in). Accent colour cyan `#06B6D4`. |
+| `apps/drivevault-browser-pro` | DriveVault Browser Pro 0.6.0 - **beta: installer built by `package.ps1` (not install-tested), listed in the Master Pro catalog, Release 0.6.0 published** (plan `apps/drivevault-browser-pro/docs/Browser-Pro-Plan.md`; Qt WebEngine, owner's decision 2026-11-19; no Google sign-in). Accent colour cyan `#06B6D4`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
 | `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md), `run-master-pro.bat` / `run-video-editor.bat` / `run-pdf-pro.bat` (open the Release build without installing: Qt on PATH, then start the exe; extra arguments are passed on - use these for the smoke start). |
 | `docs` | `suite-integration.md` (contract between programs and hub). |
@@ -139,6 +139,7 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 | Master Pro | 1.29.0 | `drivevault-master-pro-v1.29.0` | `f86e66e` | 2026-11-17 |
 | Master Pro | 1.36.0 | `drivevault-master-pro-v1.36.0` | `43d0c09` | 2026-11-19 |
 | Master Pro | 1.37.0 | `drivevault-master-pro-v1.37.0` | `e410858` | 2026-11-19 |
+| Master Pro | 1.38.0 | `drivevault-master-pro-v1.38.0` | `407b7f0` | 2026-11-19 |
 | Video Editor Pro | 1.0.1 | `drivevault-video-editor-pro-v1.0.1` | `1156f9e` | 2026-11-07 |
 | Video Editor Pro | 1.1.0 | `drivevault-video-editor-pro-v1.1.0` | `6859f14` | 2026-11-07 |
 | Video Editor Pro | 1.1.1 | `drivevault-video-editor-pro-v1.1.1` | `4d5b720` | 2026-11-07 |
@@ -165,6 +166,7 @@ The owner publishes Releases on GitHub by hand. This table is how an agent knows
 | PDF Pro | 1.19.1 | `drivevault-pdf-pro-v1.19.1` | `4ffba4b` | 2026-11-15 |
 | PDF Pro | 1.22.1 | `drivevault-pdf-pro-v1.22.1` | `8e9f69b` | 2026-11-17 |
 | PDF Pro | 1.22.2 | `drivevault-pdf-pro-v1.22.2` | `43d0c09` | 2026-11-19 |
+| Browser Pro | 0.6.0 | `drivevault-browser-pro-v0.6.0` | `407b7f0` | 2026-11-19 |
 
 ## Open items the owner knows about
 
