@@ -157,3 +157,7 @@ Honest labels in the UI: "Signed in to Google (sync only)" and "Extensions (Mani
 ## 12. Phase 0b result (2026-11-19) - read `Phase0b-Results.md`
 
 Short version: the blocker design (interceptor block + redirect to a custom-scheme stub) is **confirmed to work**. Three assumptions of this plan are **not** confirmed on Qt 6.10.3: (1) extensions - `setExtensionEnabled` crashes, so extension support (section 11, Phase 9) is on hold until Qt 6.11 / 6.12 is tried or a Qt fix is found; (2) H.264 / AAC video does not play (no proprietary codecs in the Qt binaries) - needs an owner decision (build Qt WebEngine ourselves, or accept VP9 / AV1 only); (3) Picture-in-Picture is off in the engine, so the own mini-window fallback is the plan. Section 3 (filters) and sections 5 - 6 are unaffected. Google sign-in inside a page is still untested (manual).
+
+## 13. Owner decision 2026-11-19: no Google sign-in in the program
+
+The owner dropped Google sign-in. Consequences: **Phase 7 (Google account) and Phase 8 (sync through Google Drive) are cancelled**; no OAuth client, no Drive access, no Credential Manager token. Section 11 stays only as the record of what was found. Extensions (Phase 9) stay on hold (Phase0b-Results.md). Bookmarks, history and settings live only in `%LOCALAPPDATA%\DriveVault\BrowserPro`; a later local export / import (bookmarks as HTML, already in Phase 1) is the only way to move them. Signing in to a website with a Google account inside a page is the website's own matter; the program does not promise it (untested).
