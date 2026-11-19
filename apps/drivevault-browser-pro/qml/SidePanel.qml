@@ -4,21 +4,20 @@ import QtQuick.Dialogs
 import QtQuick.Layouts
 import DriveVault.Browser.Backend
 
-// The panel at the right: history, bookmarks, downloads or settings (what Chrome shows as its own pages).
+// The panel at the right: history, bookmarks or downloads (what Chrome shows as its own pages).
 Rectangle {
     id: panel
-    property string kind: "history"               // history | bookmarks | downloads | settings
+    property string kind: "history"               // history | bookmarks | downloads
     property bool privateMode: false
-    property bool embedded: false
     signal openUrl(string url, bool newTab)
     signal closeRequested()
 
-    color: embedded ? "transparent" : Theme.backgroundAlt
-    border.width: embedded ? 0 : 1
+    color: Theme.backgroundAlt
+    border.width: 1
     border.color: Theme.borderSubtle
     clip: true
 
-    function titleOf(k) { return k === "history" ? Tr.t("history") : k === "bookmarks" ? Tr.t("bookmarks") : k === "downloads" ? Tr.t("downloads") : Tr.t("settings") }
+    function titleOf(k) { return k === "history" ? Tr.t("history") : k === "bookmarks" ? Tr.t("bookmarks") : Tr.t("downloads") }
 
     ColumnLayout {
         anchors.fill: parent
@@ -26,10 +25,9 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: panel.embedded ? 60 : 48
+            Layout.preferredHeight: 48
             Layout.leftMargin: 16
             Layout.rightMargin: 8
-            GearIcon { visible: panel.embedded; color: Theme.accent }
             Text {
                 Layout.fillWidth: true
                 text: panel.titleOf(panel.kind)
@@ -45,7 +43,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
             sourceComponent: panel.kind === "history" ? historyView : panel.kind === "bookmarks" ? bookmarksView
-                           : panel.kind === "downloads" ? downloadsView : settingsView
+                           : downloadsView
         }
     }
 
@@ -336,191 +334,6 @@ Rectangle {
                     }
                     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.borderSubtle }
                 }
-            }
-        }
-    }
-
-    // ---- settings ---------------------------------------------------------------------------------------------------------
-    Component {
-        id: settingsView
-        Flickable {
-            id: sv
-            contentWidth: width
-            contentHeight: sc.implicitHeight + 32
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar {}
-            property string note: ""
-
-            component Choice: ComboBox {
-                id: cb
-                property string current: ""
-                signal picked(string id)
-                textRole: "name"
-                implicitHeight: 34
-                Layout.fillWidth: true
-                currentIndex: { for (let i = 0; i < model.length; ++i) if (model[i].id === current) return i; return 0 }
-                onActivated: picked(model[currentIndex].id)
-                font.pixelSize: 13
-                contentItem: Text { leftPadding: 10; text: cb.displayText; color: Theme.text; font: cb.font; verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight }
-                background: Rectangle { radius: Theme.radiusSmall; color: Theme.surface; border.width: 1; border.color: Theme.border }
-                popup.background: Rectangle { color: Theme.surface; border.width: 1; border.color: Theme.border; radius: Theme.radiusSmall }
-                delegate: ItemDelegate {
-                    required property var modelData
-                    required property int index
-                    width: cb.width
-                    highlighted: cb.highlightedIndex === index
-                    contentItem: Text { text: modelData.name; color: Theme.text; font: cb.font; verticalAlignment: Text.AlignVCenter }
-                    background: Rectangle { color: highlighted ? Theme.surfaceHover : "transparent" }
-                }
-            }
-            component Toggle: CheckBox {
-                id: ck
-                font.pixelSize: 13
-                Layout.fillWidth: true
-                spacing: 8
-                indicator: Rectangle {
-                    x: ck.leftPadding
-                    y: (ck.height - height) / 2
-                    width: 18; height: 18; radius: 5
-                    color: ck.checked ? Theme.accent : "transparent"
-                    border.width: 1
-                    border.color: ck.checked ? Theme.accent : Theme.border
-                    LineIcon { anchors.centerIn: parent; visible: ck.checked; kind: "check"; size: 13; color: Theme.readableOn(Theme.accent) }
-                }
-                contentItem: Text { leftPadding: ck.indicator.width + ck.spacing; text: ck.text; color: Theme.text; font: ck.font; wrapMode: Text.WordWrap; verticalAlignment: Text.AlignVCenter }
-            }
-
-            ColumnLayout {
-                id: sc
-                x: 16
-                width: sv.width - 32
-                y: 8
-                spacing: 8
-
-                SectionTitle { text: Tr.t("set_general") }
-                Text { text: Tr.t("set_language"); color: Theme.text; font.pixelSize: 13 }
-                Choice {
-                    objectName: "setLanguage"
-                    model: [ { id: "th", name: "ไทย" }, { id: "en", name: "English" } ]
-                    current: Browser.settings.language
-                    onPicked: id => Browser.settings.language = id
-                }
-                Text { text: Tr.t("set_home"); color: Theme.text; font.pixelSize: 13 }
-                PanelField {
-                    Layout.fillWidth: true
-                    text: Browser.settings.homePage
-                    placeholderText: Tr.t("set_home_hint")
-                    onEditingFinished: Browser.settings.homePage = text
-                }
-                Text { text: Tr.t("set_startup"); color: Theme.text; font.pixelSize: 13 }
-                Choice {
-                    model: [ { id: "newtab", name: Tr.t("set_startup_newtab") }, { id: "restore", name: Tr.t("set_startup_restore") } ]
-                    current: Browser.settings.startup
-                    onPicked: id => Browser.settings.startup = id
-                }
-                Text { text: Tr.t("set_search"); color: Theme.text; font.pixelSize: 13 }
-                Choice {
-                    model: Browser.settings.engines()
-                    current: Browser.settings.searchEngine
-                    onPicked: id => Browser.settings.searchEngine = id
-                }
-                Toggle {
-                    text: Tr.t("showBar")
-                    checked: Browser.settings.showBookmarksBar
-                    onToggled: Browser.settings.showBookmarksBar = checked
-                }
-
-                SectionTitle { text: Tr.t("set_privacy") }
-                Toggle {
-                    text: Tr.t("set_notifications")
-                    checked: Browser.settings.blockNotifications
-                    onToggled: Browser.settings.blockNotifications = checked
-                }
-
-                SectionTitle { text: Tr.t("set_adblock") }
-                Toggle {
-                    objectName: "adblockSwitch"
-                    text: Tr.t("ab_on")
-                    checked: Browser.adblock.enabled
-                    onToggled: Browser.adblock.enabled = checked
-                }
-                Toggle {
-                    objectName: "cosmeticSwitch"
-                    text: Tr.t("ab_cosmetic")
-                    enabled: Browser.adblock.enabled
-                    checked: Browser.settings.cosmeticEnabled
-                    onToggled: Browser.settings.cosmeticEnabled = checked
-                }
-                Toggle {
-                    objectName: "defendSwitch"
-                    text: Tr.t("ab_defend")
-                    enabled: Browser.adblock.enabled
-                    checked: Browser.settings.antiDetectEnabled
-                    onToggled: Browser.settings.antiDetectEnabled = checked
-                }
-                Text { Layout.fillWidth: true; text: Tr.t("ab_defend_note"); color: Theme.textSecondary; font.pixelSize: 11; wrapMode: Text.WordWrap }
-                Text {
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    font.pixelSize: 12
-                    color: Browser.adblock.lists.totalRules > 0 ? Theme.textSecondary : Theme.warning
-                    text: {
-                        Browser.adblock.tick
-                        const l = Browser.adblock.lists
-                        return l.phase === "loading" ? Tr.t("ab_status_loading")
-                             : l.totalRules > 0 ? Tr.t("ab_status_rules", l.totalRules)
-                             : Tr.t("ab_status_none")
-                    }
-                }
-                Text { text: Tr.t("ab_lists"); color: Theme.text; font.pixelSize: 13; font.weight: Font.Medium }
-                Repeater {
-                    model: { Browser.adblock.tick; return Browser.adblock.listStatus() }
-                    delegate: Toggle {
-                        id: listToggle
-                        required property var modelData
-                        text: modelData.name + "  -  " + Tr.t("ab_cat_" + modelData.category)
-                              + "  (" + (modelData.present ? Tr.t("ab_rules_page", modelData.rules, modelData.cosmetic + modelData.scriptlets) + (modelData.date ? ", " + Tr.t("ab_date", modelData.date.substring(0, 10)) : "") : Tr.t("ab_missing")) + ")"
-                        checked: Browser.adblock.listEnabled(modelData.id)
-                        onToggled: Browser.adblock.setListEnabled(modelData.id, checked)
-                    }
-                }
-                BButton {
-                    objectName: "updateLists"
-                    text: Tr.t("ab_update")
-                    enabled: !Browser.adblock.lists.updating
-                    onClicked: Browser.adblock.updateLists()
-                }
-                Text {
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    font.pixelSize: 12
-                    color: Browser.adblock.lists.failedCount > 0 ? Theme.errorSoft : Theme.success
-                    visible: text !== ""
-                    text: {
-                        Browser.adblock.tick
-                        const l = Browser.adblock.lists
-                        if (l.phase === "updating") return Tr.t("ab_updating", l.current)
-                        if (l.phase === "nothingOn") return Tr.t("ab_nothing_on")
-                        if (l.updatedCount + l.failedCount > 0) return Tr.t("ab_update_result", l.updatedCount, l.failedCount) + (l.failures !== "" ? "  " + l.failures : "")
-                        return ""
-                    }
-                }
-                Text { Layout.fillWidth: true; text: Tr.t("ab_update_note"); color: Theme.textSecondary; font.pixelSize: 11; wrapMode: Text.WordWrap }
-                Text { Layout.fillWidth: true; text: Tr.t("ab_not_yet"); color: Theme.warning; font.pixelSize: 12; wrapMode: Text.WordWrap }
-
-                SectionTitle { text: Tr.t("set_clear") }
-                BButton {
-                    text: Tr.t("set_clear_button")
-                    onClicked: { Browser.clearBrowsingData(true, true); sv.note = Tr.t("set_cleared") }
-                }
-                Text { Layout.fillWidth: true; text: Tr.t("set_clear_note"); color: Theme.textSecondary; font.pixelSize: 11; wrapMode: Text.WordWrap }
-                Text { visible: sv.note !== ""; text: sv.note; color: Theme.success; font.pixelSize: 12 }
-
-                SectionTitle { text: Tr.t("set_about") }
-                Text { text: Tr.t("app") + "  " + Tr.t("set_version", Browser.version); color: Theme.text; font.pixelSize: 13 }
-                Text { text: Browser.engineInfo; color: Theme.textSecondary; font.pixelSize: 12 }
-                Text { Layout.fillWidth: true; text: Tr.t("set_data", Browser.dataDir); color: Theme.textSecondary; font.pixelSize: 11; wrapMode: Text.WrapAnywhere }
             }
         }
     }

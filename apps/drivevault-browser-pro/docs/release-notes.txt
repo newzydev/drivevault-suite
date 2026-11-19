@@ -1,3 +1,4 @@
+v0.7.1 (2026-11-19): Redesigned Settings with a category sidebar and aligned controls in the style of Video Editor Pro. The installer is unsigned.
 v0.7.0 (2026-11-19): Open Settings and the toolbar menu in centered dialogs. The new tab workspace has separate Shortcuts (Google and bookmarks) and Most visited tabs. The installer is unsigned.
 v0.6.4 (2026-11-19): Redesigned the new-tab workspace with a bundled coastal wallpaper, a larger search field and site shortcuts. Added a dark context menu for the workspace and ordinary web page backgrounds. The installer is unsigned.
 v0.6.3 (2026-11-19): The Home button opens Google by default. A custom home page can still be set in Settings. The installer is unsigned.

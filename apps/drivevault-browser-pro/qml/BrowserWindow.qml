@@ -1386,13 +1386,10 @@ ApplicationWindow {
     CenterModal {
         id: settingsModal
         objectName: "settingsModal"
-        width: Math.min(740, parent.width - 48)
-        height: Math.min(700, parent.height - 48)
+        width: Math.min(1040, parent.width - 64)
+        height: Math.min(720, parent.height - 64)
         padding: 1
-        contentItem: SidePanel {
-            kind: "settings"
-            embedded: true
-            privateMode: win.privateMode
+        contentItem: BrowserSettingsPage {
             onCloseRequested: settingsModal.close()
         }
     }
