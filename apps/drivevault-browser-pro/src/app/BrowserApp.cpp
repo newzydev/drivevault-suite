@@ -1,4 +1,6 @@
 #include "BrowserApp.h"
+#include <QImage>
+#include <QQuickItemGrabResult>
 
 #include "UrlUtil.h"
 #include "Version.h"
@@ -47,6 +49,21 @@ QString BrowserApp::engineInfo() const
 QUrl BrowserApp::resolve(const QString& typed) const { return resolveInput(typed, m_settings.searchEngine()); }
 QString BrowserApp::prettyUrl(const QString& url) const { return dv::br::prettyUrl(url); }
 QString BrowserApp::hostOf(const QString& url) const { return dv::br::hostOf(url); }
+
+bool BrowserApp::hasIconPixels(QObject* grabResult) const
+{
+    const auto* result = qobject_cast<QQuickItemGrabResult*>(grabResult);
+    if (!result)
+        return false;
+    const QImage image = result->image().convertToFormat(QImage::Format_ARGB32);
+    for (int y = 0; y < image.height(); ++y) {
+        const auto* pixels = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+        for (int x = 0; x < image.width(); ++x)
+            if (qAlpha(pixels[x]) > 0)
+                return true;
+    }
+    return false;
+}
 
 QVariantList BrowserApp::suggest(const QString& text, int limit) const
 {

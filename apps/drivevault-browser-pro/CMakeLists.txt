@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultBrowserPro
-    VERSION 0.8.0
+    VERSION 0.8.1
     DESCRIPTION "DriveVault Browser Pro - a web browser with a built-in ad blocker"
     LANGUAGES CXX)
 
@@ -59,6 +59,7 @@ qt_add_qml_module(DriveVaultBrowserPro
     RESOURCES
         resources/icons/app.png
         resources/workspace/coast.jpg
+        resources/workspace/google-favicon.png
         resources/adblock-page.js
         resources/pip-on.js
         resources/pip-off.js

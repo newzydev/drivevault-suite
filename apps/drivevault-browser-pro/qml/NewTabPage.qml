@@ -8,6 +8,7 @@ Rectangle {
 
     property bool privateMode: false
     property bool shortcutsExpanded: true
+    property bool iconsReady: false
     property var sites: privateMode ? [] : Browser.history.topSites(8)
     readonly property var shortcutSites: privateMode ? [] : [{ title: "Google", url: "https://www.google.com/" }]
         .concat(Browser.bookmarks.items.filter(b => !isDefaultShortcut(b.url)))
@@ -24,6 +25,14 @@ Rectangle {
     signal contextRequested(point position)
 
     color: Theme.background
+    onVisibleChanged: if (!visible) iconsReady = false
+
+    // The favicon provider needs the window's WebEngineView to be registered first.
+    Timer {
+        interval: 120
+        running: page.visible && !page.privateMode
+        onTriggered: page.iconsReady = true
+    }
 
     Connections {
         target: Browser.history
@@ -211,6 +220,11 @@ Rectangle {
                                 id: shortcut
                                 required property var modelData
                                 readonly property string host: modelData.url ? Browser.hostOf(modelData.url).replace(/^www\./, "") : ""
+                                readonly property string iconPage: modelData.url && /^https?:\/\//i.test(modelData.url) ? modelData.url : ""
+                                readonly property string iconHome: {
+                                    const origin = iconPage.match(/^https?:\/\/[^/?#]+/i)
+                                    return origin ? origin[0] + "/" : ""
+                                }
                                 width: siteGrid.tileWidth
                                 height: 78
                                 padding: 4
@@ -239,9 +253,33 @@ Rectangle {
                                         radius: width / 2
                                         color: "#E0182A36"
                                         border.color: "#6979919F"
+                                        WorkspaceIcon {
+                                            id: siteIcon
+                                            anchors.centerIn: parent
+                                            width: 26
+                                            height: 26
+                                            bundled: page.isDefaultShortcut(shortcut.iconHome)
+                                            source: {
+                                                if (!page.visible || !shortcut.iconPage) return ""
+                                                if (bundled)
+                                                    return "qrc:/qt/qml/DriveVault/Browser/resources/workspace/google-favicon.png"
+                                                return page.iconsReady ? "image://favicon/" + shortcut.iconPage : ""
+                                            }
+                                        }
+                                        WorkspaceIcon {
+                                            id: fallbackIcon
+                                            anchors.centerIn: parent
+                                            width: siteIcon.width
+                                            height: siteIcon.height
+                                            source: {
+                                                if (!page.visible || !siteIcon.finished || siteIcon.hasIcon) return ""
+                                                return shortcut.iconHome && shortcut.iconHome !== shortcut.iconPage
+                                                    ? "image://favicon/" + shortcut.iconHome : ""
+                                            }
+                                        }
                                         Text {
                                             anchors.centerIn: parent
-                                            visible: !shortcut.modelData.glyph
+                                            visible: !shortcut.modelData.glyph && !siteIcon.hasIcon && !fallbackIcon.hasIcon
                                             text: (shortcut.host || "?").charAt(0).toUpperCase()
                                             color: "#BCEFFA"
                                             font.pixelSize: 18
@@ -347,6 +385,37 @@ Rectangle {
             radius: 8
             color: Theme.surface
             border.color: parent.activeFocus ? Theme.accent : Theme.border
+        }
+    }
+
+    component WorkspaceIcon: Image {
+        id: icon
+        property bool bundled: false
+        property bool hasPixels: false
+        property bool checkedPixels: false
+        readonly property bool hasIcon: bundled ? status === Image.Ready : hasPixels
+        readonly property bool finished: status === Image.Error || checkedPixels || hasIcon
+        readonly property bool canCheck: !bundled && status === Image.Ready && !!Window.window && Window.window.visible
+        sourceSize.width: 40
+        sourceSize.height: 40
+        fillMode: Image.PreserveAspectFit
+        cache: false
+
+        onStatusChanged: {
+            hasPixels = false
+            checkedPixels = false
+        }
+        onCanCheckChanged: if (canCheck && !checkedPixels) Qt.callLater(checkPixels)
+
+        function checkPixels() {
+            if (!canCheck || checkedPixels) return
+            const loadedSource = source.toString()
+            // Qt's favicon provider can return a transparent image for a cache miss.
+            if (!grabToImage(result => {
+                if (!icon || icon.source.toString() !== loadedSource) return
+                icon.hasPixels = Browser.hasIconPixels(result)
+                icon.checkedPixels = true
+            }, Qt.size(26, 26))) checkedPixels = true
         }
     }
 

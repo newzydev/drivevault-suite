@@ -76,6 +76,7 @@ int main(int argc, char* argv[])
     profile.setStorageName(QStringLiteral("DriveVaultBrowserPro"));
     profile.setPersistentStoragePath(dataDir + QStringLiteral("/profile"));
     profile.setCachePath(dataDir + QStringLiteral("/cache"));
+    profile.setOffTheRecord(false);
     profile.setPersistentCookiesPolicy(QQuickWebEngineProfile::ForcePersistentCookies);
     profile.setPersistentPermissionsPolicy(QQuickWebEngineProfile::PersistentPermissionsPolicy::StoreOnDisk);
     // The engine's own name ("QtWebEngine/x") is left out and the system is named as Chrome does: some sites turn an unknown browser away.
