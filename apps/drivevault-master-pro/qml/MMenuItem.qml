@@ -17,15 +17,11 @@ MenuItem {
 
     contentItem: Row {
         spacing: 10
-        Text {
+        Item {                                     // the tick is drawn (a font glyph looked different on every PC)
             visible: item.checkable
-            width: 16
-            text: item.checked ? "✓" : ""
-            font.pixelSize: 13
-            font.weight: Font.Bold
-            color: Theme.accent
-            verticalAlignment: Text.AlignVCenter
+            width: 16; height: 16
             anchors.verticalCenter: parent.verticalCenter
+            LineIcon { visible: item.checked; anchors.centerIn: parent; kind: "check"; size: 14; color: Theme.accent }
         }
         Column {
             width: item.availableWidth - (item.checkable ? 26 : 0)

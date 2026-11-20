@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.40.1 (2026-11-20): The ticks of the menus are drawn icons and show the right entry.
+  - Fixed: in the category list (All / Multimedia / Office / Other) every entry showed a tick after it had been chosen once, because the click replaced the binding of the tick. The tick now follows the real choice. The tick itself is a drawn line icon (LineIcon "check") instead of a font glyph, in every menu (also "Check for updates on start").
+  - Tested: Master Pro build + tst_hub + tst_window, a smoke start with a screenshot of the open menu. The installer was not rebuilt. The installer is unsigned.
+
 v1.40.0 (2026-11-20): The chat history of both AI pages belongs to the signed-in Google account.
   - New: with a Google account signed in, the conversations of AI Q&A and Agentic AI are kept per account (<data>\ai\accounts\<key>\conversations-*.json); another account sees its own chats, and signing out shows the shared history (the files as before). The first time an account is used it starts from a COPY of the shared chats (the shared files stay as they are). A switch of account made while a job is running waits until the job ends. Signing in or out in another DriveVault program switches this one too. The settings (model, effort, web ...) are not per account.
   - Tested: tst_ai theChatHistoryFollowsTheAccount (separate histories, switching back, copy on first use, restart), tst_account (scope key), tst_window. NOT tested: a real sign-in. The installer was not rebuilt. The installer is unsigned.

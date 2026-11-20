@@ -515,7 +515,7 @@ ApplicationWindow {
                                         text: Tr.s("cat_all")
                                         checkable: true
                                         checked: win.category === ""
-                                        onTriggered: { win.category = ""; checked = true }
+                                        onTriggered: { win.category = ""; checked = Qt.binding(() => win.category === "") }
                                     }
                                     Repeater {
                                         model: win.sections
@@ -525,7 +525,7 @@ ApplicationWindow {
                                             text: Tr.s("cat_" + modelData.key)
                                             checkable: true
                                             checked: win.category === modelData.key
-                                            onTriggered: { win.category = modelData.key; checked = true }
+                                            onTriggered: { win.category = modelData.key; checked = Qt.binding(() => win.category === modelData.key) }
                                         }
                                     }
                                 }

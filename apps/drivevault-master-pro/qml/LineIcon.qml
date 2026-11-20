@@ -51,6 +51,8 @@ Canvas {
             c.arc(8, 8, 6, 0, Math.PI * 2); c.moveTo(8, 7.2); c.lineTo(8, 11.2); c.moveTo(8, 4.9); c.lineTo(8, 5.1)
         } else if (kind === "sidebar") {                        // a window with a bar at the left
             c.rect(2, 3, 12, 10); c.moveTo(6, 3); c.lineTo(6, 13)
+        } else if (kind === "check") {
+            c.moveTo(3, 8.6); c.lineTo(6.6, 12); c.lineTo(13, 4.4)
         } else if (kind === "sites") {                          // a shield
             c.moveTo(8, 2); c.lineTo(13, 4); c.lineTo(13, 8); c.quadraticCurveTo(13, 12, 8, 14); c.quadraticCurveTo(3, 12, 3, 8); c.lineTo(3, 4); c.closePath()
         }
