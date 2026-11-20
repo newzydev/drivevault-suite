@@ -36,6 +36,7 @@ ApplicationWindow {
     property var suggestions: []
     property int suggestIndex: -1
     property var barItems: []
+    property bool googleSignInOwner: false       // this window sent the user to the system browser and waits for them to come back
 
     readonly property color accent: privateMode ? Theme.privateAccent : Theme.accent
     readonly property string curUrl: currentView ? currentView.url.toString() : ""
@@ -257,15 +258,10 @@ ApplicationWindow {
     }
     function prepareScripts(view, url) {
         const src = Browser.adblock.scriptFor(url)
-        const scripts = src === "" ? [] : [{
+        view.userScripts.collection = src === "" ? [] : [{
             name: "dv-adblock", sourceCode: src,
             injectionPoint: WebEngineScript.DocumentCreation, worldId: WebEngineScript.MainWorld, runsOnSubFrames: false
         }]
-        // Google's sign-in page turns away an engine that does not look like Chrome: it is shown what Chrome shows (google-compat.js)
-        if (Browser.hostOf(url) === "accounts.google.com" && url.indexOf("https:") === 0)
-            scripts.push({ name: "dv-google", sourceCode: Browser.googleCompatScript,
-                           injectionPoint: WebEngineScript.DocumentCreation, worldId: WebEngineScript.MainWorld, runsOnSubFrames: false })
-        view.userScripts.collection = scripts
     }
     function showPanel(kind) {
         if (kind === "settings") settingsModal.open()
@@ -343,6 +339,16 @@ ApplicationWindow {
         barItems = Browser.bookmarks.items.filter(function (b) { return b.folder === "bar" })
     }
     Connections { target: Browser.bookmarks; function onChanged() { win.refreshBar() } }
+    Connections {
+        target: ProfileSession
+        function onGoogleSignInEnded(completed) {
+            if (!win.googleSignInOwner) return
+            win.googleSignInOwner = false
+            if (!completed) return
+            win.show(); win.raise(); win.requestActivate()
+            if (win.currentView) win.currentView.reload()
+        }
+    }
 
     Component.onCompleted: {
         restoreWindow()
@@ -1228,11 +1234,15 @@ ApplicationWindow {
                         // the hiding rules and scriptlets of the page that is about to open go in BEFORE it is created (a script of the page can then not run first)
                         onNavigationRequested: request => {
                             if (!request.isMainFrame) return
-                            // signed in to a Google profile: Google's own sign-in page opens with that account's address filled in
-                            const hinted = win.privateMode || !ProfileSession.signedIn ? "" : Browser.googleSignInUrl(request.url, ProfileSession.email).toString()
-                            if (hinted !== "") {
+                            // Google refuses to sign in inside this engine: its sign-in page opens in the system browser instead.
+                            // A Google profile gets a round trip (the system browser comes back to this window); anyone else just gets the page there.
+                            if (Browser.isGoogleSignInPage(request.url)) {
                                 request.action = WebEngineNavigationRequest.IgnoreRequest
-                                wv.url = hinted
+                                if (!win.privateMode && ProfileSession.signedIn && !ProfileSession.googleSignInWaiting) {
+                                    win.googleSignInOwner = true
+                                    if (!ProfileSession.signInOnGoogle()) win.googleSignInOwner = false
+                                }
+                                if (!win.googleSignInOwner) Qt.openUrlExternally(request.url)
                                 return
                             }
                             win.prepareScripts(wv, request.url.toString())

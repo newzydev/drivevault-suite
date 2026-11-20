@@ -54,7 +54,6 @@ BrowserApp::BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, 
     };
     m_pipOn = readResource("pip-on.js");
     m_pipOff = readResource("pip-off.js");
-    m_googleCompat = readResource("google-compat.js");
 }
 
 QString BrowserApp::version() const { return QString::fromLatin1(version::kVersion); }
@@ -67,7 +66,7 @@ QString BrowserApp::engineInfo() const
 QUrl BrowserApp::resolve(const QString& typed) const { return resolveInput(typed, m_settings.searchEngine()); }
 QString BrowserApp::prettyUrl(const QString& url) const { return dv::br::prettyUrl(url); }
 QString BrowserApp::hostOf(const QString& url) const { return dv::br::hostOf(url); }
-QUrl BrowserApp::googleSignInUrl(const QUrl& url, const QString& email) const { return dv::br::googleSignInUrl(url, email); }
+bool BrowserApp::isGoogleSignInPage(const QUrl& url) const { return dv::br::isGoogleSignInPage(url); }
 
 bool BrowserApp::hasIconPixels(QObject* grabResult) const
 {

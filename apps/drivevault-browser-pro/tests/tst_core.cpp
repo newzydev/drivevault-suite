@@ -7,7 +7,6 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
-#include <QUrlQuery>
 #include <QVariantMap>
 
 using namespace dv::br;
@@ -62,22 +61,19 @@ private slots:
         QCOMPARE(hostOf(QStringLiteral("https://dev.example.com:8080/x")), QStringLiteral("dev.example.com"));
     }
 
-    void aGoogleSignInPageGetsTheProfileAddress()
+    void googleSignInPagesAreRecognised()
     {
-        const QString mail = QStringLiteral("a.b@gmail.com");
-        const QUrl hinted = googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com/ServiceLogin?hl=th&continue=https://www.google.com/")), mail);
-        QVERIFY(hinted.isValid());
-        QCOMPARE(QUrlQuery(hinted).queryItemValue(QStringLiteral("Email")), mail);
-        QCOMPARE(QUrlQuery(hinted).queryItemValue(QStringLiteral("login_hint")), mail);
-        QCOMPARE(QUrlQuery(hinted).queryItemValue(QStringLiteral("hl")), QStringLiteral("th"));
-        QVERIFY(googleSignInUrl(hinted, mail).isEmpty());                                                          // already named: no loop
-        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com/ServiceLogin?Email=x@y.z")), mail).isEmpty());
-        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("http://accounts.google.com/ServiceLogin")), mail).isEmpty());   // not https
-        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com.evil.example/ServiceLogin")), mail).isEmpty());
-        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com/o/oauth2/v2/auth")), mail).isEmpty());
-        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://www.google.com/")), mail).isEmpty());
-        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com/ServiceLogin")), QString()).isEmpty());
-        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com/ServiceLogin")), QStringLiteral("bad&x=1@y.z")).isEmpty());
+        QVERIFY(isGoogleSignInPage(QUrl(QStringLiteral("https://accounts.google.com/ServiceLogin?hl=th&continue=https://www.google.com/"))));
+        QVERIFY(isGoogleSignInPage(QUrl(QStringLiteral("https://accounts.google.com/v3/signin/identifier?flowName=GlifWebSignIn"))));
+        QVERIFY(isGoogleSignInPage(QUrl(QStringLiteral("https://accounts.google.com/AccountChooser"))));
+        QVERIFY(isGoogleSignInPage(QUrl(QStringLiteral("https://accounts.google.com/signin/v2/identifier"))));
+        QVERIFY(!isGoogleSignInPage(QUrl(QStringLiteral("http://accounts.google.com/ServiceLogin"))));                  // not https
+        QVERIFY(!isGoogleSignInPage(QUrl(QStringLiteral("https://accounts.google.com.evil.example/ServiceLogin"))));
+        QVERIFY(!isGoogleSignInPage(QUrl(QStringLiteral("https://evil.example/accounts.google.com/ServiceLogin"))));
+        QVERIFY(!isGoogleSignInPage(QUrl(QStringLiteral("https://accounts.google.com:8443/ServiceLogin"))));
+        QVERIFY(!isGoogleSignInPage(QUrl(QStringLiteral("https://accounts.google.com/o/oauth2/v2/auth?client_id=x"))));   // another site's "Sign in with Google"
+        QVERIFY(!isGoogleSignInPage(QUrl(QStringLiteral("https://accounts.google.com/signinfoo"))));
+        QVERIFY(!isGoogleSignInPage(QUrl(QStringLiteral("https://www.google.com/"))));
     }
 
     // ---- downloads -----------------------------------------------------------------------------------------------------

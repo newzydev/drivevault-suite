@@ -385,6 +385,77 @@ void ProfileSession::signIn()
 }
 
 
+bool ProfileSession::signInOnGoogle()
+{
+    if (!signedIn() || m_guestSession || m_locked || m_googleServer) return false;
+    const auto builtIn = embeddedOAuth();
+    const auto client = builtIn.value("GOOGLE_LOGIN_CLIENT_ID").toString();
+    const auto stateBytes = randomBytes(32);
+    if (builtIn.value("client_type").toString() != "installed" || client.isEmpty() || stateBytes.isEmpty()) return false;
+
+    auto* server = new QTcpServer(this);
+    if (!server->listen(QHostAddress::LocalHost)) { delete server; return false; }
+    m_googleServer = server;
+    m_googleState = QString::fromLatin1(stateBytes.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals));
+    const QString redirect = QStringLiteral("http://127.0.0.1:%1/oauth/callback").arg(server->serverPort());
+
+    // Only the trip is used: Google signs the user in (or recognises them) in the system browser and sends it back to this loopback address.
+    // The code that comes with it is never exchanged, so nothing is received or stored.
+    QUrl authorize(QStringLiteral("https://accounts.google.com/o/oauth2/v2/auth"));
+    QUrlQuery query;
+    query.addQueryItem("client_id", client);
+    query.addQueryItem("redirect_uri", redirect);
+    query.addQueryItem("response_type", "code");
+    query.addQueryItem("scope", "openid email");
+    query.addQueryItem("state", m_googleState);
+    query.addQueryItem("login_hint", email());
+    authorize.setQuery(query);
+
+    auto finish = [this, server](bool completed) {
+        if (m_googleServer != server) return;
+        m_googleServer = nullptr;
+        server->close();
+        server->deleteLater();
+        emit googleSignInChanged();
+        emit googleSignInEnded(completed);
+    };
+    QTimer::singleShot(300000, server, [finish] { finish(false); });
+    connect(server, &QTcpServer::newConnection, server, [this, server, finish] {
+        while (auto* socket = server->nextPendingConnection()) {
+            connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+            QTimer::singleShot(5000, socket, &QTcpSocket::abort);
+            connect(socket, &QTcpSocket::readyRead, socket, [this, socket, finish] {
+                QByteArray data = socket->property("request").toByteArray() + socket->readAll();
+                if (data.size() > 8192) { socket->abort(); return; }
+                if (!data.contains("\r\n\r\n")) { socket->setProperty("request", data); return; }
+                const auto line = data.left(data.indexOf("\r\n")).split(' ');
+                const QUrl url = line.size() == 3 && line[0] == "GET" ? QUrl::fromEncoded(line[1], QUrl::StrictMode) : QUrl();
+                const QUrlQuery response(url);
+                const bool expected = m_googleServer && url.isValid() && url.isRelative() && url.path() == "/oauth/callback"
+                    && response.allQueryItemValues("state").size() == 1
+                    && response.queryItemValue("state", QUrl::FullyDecoded) == m_googleState;
+                static const QByteArray page = QByteArrayLiteral(
+                    "<!doctype html><html lang=\"th\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+                    "<title>DriveVault Browser Pro</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#101820;"
+                    "color:#edf7fa;font:16px system-ui}main{margin:24px;padding:32px;border:1px solid #315160;border-radius:16px;background:#172632;max-width:520px}"
+                    "h1{font-size:24px}p{line-height:1.6}</style><main><h1>DriveVault Browser Pro</h1><p>ดำเนินการกับ Google เสร็จแล้ว กลับไปที่ Browser Pro ได้เลย</p>"
+                    "<p lang=\"en\">Done with Google. You can return to Browser Pro now.</p></main><script>history.replaceState(null,'',location.pathname)</script></html>");
+                socket->write(expected
+                    ? "HTTP/1.1 200 OK\r\nConnection: close\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\n"
+                      "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'\r\n"
+                      "Content-Type: text/html; charset=utf-8\r\nContent-Length: " + QByteArray::number(page.size()) + "\r\n\r\n" + page
+                    : QByteArrayLiteral("HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 0\r\n\r\n"));
+                socket->disconnectFromHost();
+                if (expected) finish(true);
+            });
+            if (socket->bytesAvailable()) emit socket->readyRead();
+        }
+    });
+    emit googleSignInChanged();
+    if (!QDesktopServices::openUrl(authorize)) { finish(false); return false; }
+    return true;
+}
+
 void ProfileSession::cancelSignIn()
 {
     if (settingPin()) {
