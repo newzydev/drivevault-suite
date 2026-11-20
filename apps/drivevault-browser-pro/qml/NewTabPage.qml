@@ -141,7 +141,7 @@ Rectangle {
         }
     }
     Text {
-        visible: accountRow.visible && !ProfileSession.signedIn && text !== ""
+        visible: accountRow.visible && !ProfileSession.signedIn && !ProfileSession.settingPin && text !== ""
         anchors.top: accountRow.bottom
         anchors.right: accountRow.right
         anchors.topMargin: 6
@@ -152,6 +152,73 @@ Rectangle {
         color: Theme.text
         text: ProfileSession.signingIn ? Tr.t("ntp_sign_in_wait")
             : ProfileSession.signInError ? Tr.t("ntp_sign_in_" + ProfileSession.signInError) : ""
+    }
+    Rectangle {
+        visible: !page.privateMode && ProfileSession.settingPin
+        anchors.fill: parent
+        z: 2
+        color: "#A0091018"
+        MouseArea { anchors.fill: parent }
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.min(parent.width - 32, 400)
+            height: pinForm.implicitHeight + 40
+            radius: 16
+            color: Theme.backgroundAlt
+            border.color: Theme.border
+            ColumnLayout {
+                id: pinForm
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: 10
+                Text { text: Tr.t("ntp_pin_title"); color: Theme.text; font.pixelSize: 20; font.bold: true }
+                TextField {
+                    id: pin
+                    Layout.fillWidth: true
+                    echoMode: TextInput.Password
+                    maximumLength: 6
+                    validator: RegularExpressionValidator { regularExpression: /[0-9]{0,6}/ }
+                    inputMethodHints: Qt.ImhDigitsOnly | Qt.ImhSensitiveData
+                    placeholderText: Tr.t("ntp_pin")
+                    Accessible.name: placeholderText
+                    onAccepted: confirmation.forceActiveFocus()
+                }
+                TextField {
+                    id: confirmation
+                    Layout.fillWidth: true
+                    echoMode: TextInput.Password
+                    maximumLength: 6
+                    validator: RegularExpressionValidator { regularExpression: /[0-9]{0,6}/ }
+                    inputMethodHints: Qt.ImhDigitsOnly | Qt.ImhSensitiveData
+                    placeholderText: Tr.t("ntp_pin_confirm")
+                    Accessible.name: placeholderText
+                    onAccepted: if (savePin.enabled) savePin.clicked()
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: text !== ""
+                    wrapMode: Text.WordWrap
+                    color: Theme.error
+                    text: ProfileSession.signInError ? Tr.t("ntp_sign_in_" + ProfileSession.signInError) : ""
+                }
+                RowLayout {
+                    Layout.alignment: Qt.AlignRight
+                    BButton { text: Tr.t("ntp_sign_in_cancel"); onClicked: ProfileSession.cancelSignIn() }
+                    BButton {
+                        id: savePin
+                        variant: "primary"
+                        text: Tr.t("ntp_pin_save")
+                        enabled: pin.length === 6 && confirmation.length === 6
+                        onClicked: ProfileSession.setInitialPin(pin.text, confirmation.text)
+                    }
+                }
+            }
+        }
+        onVisibleChanged: {
+            pin.clear()
+            confirmation.clear()
+            if (visible) pin.forceActiveFocus()
+        }
     }
 
 TapHandler {

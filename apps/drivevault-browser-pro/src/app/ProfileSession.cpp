@@ -153,6 +153,17 @@ QByteArray request(QNetworkAccessManager& network, QNetworkRequest req, const QB
 
 QJsonObject googleProfile(const QString& client, const QString& secret, ProfileSession* session)
 {
+    const QByteArray callbackPage = QByteArrayLiteral(
+        "<!doctype html><html lang=\"th\"><meta charset=\"utf-8\">"
+        "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+        "<title>DriveVault Browser Pro</title>"
+        "<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#101820;"
+        "color:#edf7fa;font:16px system-ui}main{margin:24px;padding:32px;border:1px solid #315160;"
+        "border-radius:16px;background:#172632;max-width:520px}h1{font-size:24px}p{line-height:1.6}</style>"
+        "<main><h1>DriveVault Browser Pro</h1><p>กลับไปที่ Browser Pro เพื่อดำเนินการต่อ "
+        "หากเป็นครั้งแรก ให้ตั้ง PIN 6 หลักในโปรแกรม</p>"
+        "<p lang=\"en\">Return to Browser Pro. If this is your first sign-in, set your six-digit PIN in the app.</p></main>"
+        "<script>history.replaceState(null,'',location.pathname)</script></html>");
     QTcpServer server;
     if (!server.listen(QHostAddress::LocalHost)) return {};
     const auto encoding = QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals;
@@ -194,8 +205,11 @@ QJsonObject googleProfile(const QString& client, const QString& secret, ProfileS
             if (expected && response.allQueryItemValues("code").size() == 1)
                 code = response.queryItemValue("code", QUrl::FullyDecoded);
             socket->write(expected
-                ? "HTTP/1.1 200 OK\r\nConnection: close\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nReturn to DriveVault Browser Pro."
-                : "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
+                ? "HTTP/1.1 200 OK\r\nConnection: close\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\n"
+                  "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'\r\n"
+                  "Content-Type: text/html; charset=utf-8\r\nContent-Length: " + QByteArray::number(callbackPage.size())
+                  + "\r\n\r\n" + callbackPage
+                : QByteArrayLiteral("HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 0\r\n\r\n"));
             socket->disconnectFromHost();
             if (expected) {
                 received = true;
@@ -295,7 +309,7 @@ bool ProfileSession::load()
 
 bool ProfileSession::authenticate()
 {
-        const auto builtIn = embeddedOAuth();
+    const auto builtIn = embeddedOAuth();
     const auto client = builtIn.value("GOOGLE_LOGIN_CLIENT_ID").toString();
     const auto secret = builtIn.value("GOOGLE_LOGIN_CLIENT_SECRET").toString();
     if (builtIn.value("client_type").toString() != "installed" || client.isEmpty() || secret.isEmpty()) {
@@ -308,7 +322,7 @@ bool ProfileSession::authenticate()
         m_signInError = QStringLiteral("failed");
         return false;
     }
-const auto previous = m_account;
+    const auto previous = m_account;
     m_account = profile;
     QFile preferences(directory() + QStringLiteral("/pin.bin"));
     if (preferences.open(QIODevice::ReadOnly) && preferences.size() <= 16384) {
@@ -324,30 +338,36 @@ const auto previous = m_account;
             return false;
         }
     }
-    m_account = previous;
-    for (;;) {
-        bool ok = false;
-        const auto title = trText("Create a six-digit PIN", "ตั้ง PIN 6 หลัก");
-        const auto pin = QInputDialog::getText(nullptr, title, trText("PIN", "รหัส PIN"), QLineEdit::Password, {}, &ok);
-        if (!ok) return false;
-        if (validPin(pin)) {
-            const auto confirmation = QInputDialog::getText(nullptr, title, trText("Confirm PIN", "ยืนยันรหัส PIN"),
-                                                            QLineEdit::Password, {}, &ok);
-            if (!ok) return false;
-            if (confirmation == pin) {
-                const auto salt = randomBytes(32);
-                if (salt.isEmpty()) return false;
-                profile.insert("salt", QString::fromLatin1(salt.toHex()));
-                profile.insert("pin", QString::fromLatin1(pinDigest(pin, salt).toHex()));
-                profile.insert("idle", 10);
-                m_account = profile;
-                if (save()) return true;
-                m_account = {};
-                return false;
-            }
-        }
-        QMessageBox::warning(nullptr, title, trText("Enter two matching six-digit PINs.", "กรอก PIN ตัวเลข 6 หลักให้ตรงกัน"));
+        m_account = previous;
+    m_pendingProfile = profile;
+    return false;
+}
+
+void ProfileSession::setInitialPin(const QString& pin, const QString& confirmation)
+{
+    if (!settingPin()) return;
+    if (!validPin(pin) || pin != confirmation) {
+        m_signInError = QStringLiteral("pin_mismatch");
+        emit signInChanged();
+        return;
     }
+    const auto salt = randomBytes(32);
+    const auto digest = salt.isEmpty() ? QByteArray() : pinDigest(pin, salt);
+    if (digest.size() == 32) {
+        m_account = m_pendingProfile;
+        m_account.insert("salt", QString::fromLatin1(salt.toHex()));
+        m_account.insert("pin", QString::fromLatin1(digest.toHex()));
+        m_account.insert("idle", 10);
+        if (save()) {
+            m_pendingProfile = {};
+            m_restartRequested = true;
+            qApp->quit();
+            return;
+        }
+        m_account = {};
+    }
+    m_signInError = QStringLiteral("pin_save_failed");
+    emit signInChanged();
 }
 
 bool ProfileSession::start()
@@ -363,7 +383,7 @@ bool ProfileSession::start()
 
 void ProfileSession::signIn()
 {
-    if (signedIn() || m_locked || m_signingIn) return;
+    if (signedIn() || m_locked || m_signingIn || settingPin()) return;
     m_signingIn = true;
     m_cancelled = false;
     m_signInError.clear();
@@ -379,6 +399,12 @@ void ProfileSession::signIn()
 
 void ProfileSession::cancelSignIn()
 {
+    if (settingPin()) {
+        m_pendingProfile = {};
+        m_signInError.clear();
+        emit signInChanged();
+        return;
+    }
     if (!m_signingIn) return;
     m_cancelled = true;
     emit signInCancelled();

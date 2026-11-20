@@ -16,6 +16,7 @@ class ProfileSession final : public QObject {
     Q_PROPERTY(bool signedIn READ signedIn CONSTANT)
     Q_PROPERTY(bool locked READ locked NOTIFY lockedChanged)
     Q_PROPERTY(bool signingIn READ signingIn NOTIFY signInChanged)
+    Q_PROPERTY(bool settingPin READ settingPin NOTIFY signInChanged)
     Q_PROPERTY(QString signInError READ signInError NOTIFY signInChanged)
 public:
     ProfileSession(QString root, bool english);
@@ -24,6 +25,7 @@ public:
     bool signedIn() const;
     bool locked() const { return m_locked; }
     bool signingIn() const { return m_signingIn; }
+    bool settingPin() const { return !m_pendingProfile.isEmpty(); }
     QString signInError() const { return m_signInError; }
     bool restartRequested() const { return m_restartRequested; }
     QString name() const;
@@ -33,6 +35,7 @@ public:
     Q_INVOKABLE void showOptions();
     Q_INVOKABLE void signIn();
     Q_INVOKABLE void cancelSignIn();
+    Q_INVOKABLE void setInitialPin(const QString& pin, const QString& confirmation);
 
 signals:
     void lockedChanged();
@@ -55,6 +58,7 @@ private:
     const QString m_root;
     const bool m_english;
     QJsonObject m_account;
+    QJsonObject m_pendingProfile;
     QTimer* m_timer = nullptr;
     QDialog* m_profileDialog = nullptr;
     bool m_locked = false;
