@@ -16,7 +16,7 @@ if(dv_oauth_result)
 endif()
 message(STATUS "Google account: ${dv_oauth_output}")
 
-add_library(dv_account STATIC src/GoogleAccount.cpp src/GoogleAccount.h src/OAuthConfig.cpp src/OAuthConfig.h)
+add_library(dv_account STATIC src/GoogleAccount.cpp src/GoogleAccount.h src/OAuthConfig.cpp src/OAuthConfig.h src/CallbackPage.cpp src/CallbackPage.h)
 target_include_directories(dv_account PUBLIC src PRIVATE "${DV_ACCOUNT_DIR_GENERATED}")
 target_link_libraries(dv_account PUBLIC Qt6::Core Qt6::Gui Qt6::Network PRIVATE bcrypt crypt32)
 set_target_properties(dv_account PROPERTIES AUTOMOC ON)

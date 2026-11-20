@@ -1,5 +1,6 @@
 #include "GoogleAccount.h"
 
+#include "CallbackPage.h"
 #include "OAuthConfig.h"
 
 #include <QBuffer>
@@ -84,13 +85,6 @@ qint64 stampOf(const QFileInfo& info)
 
 bool testMode() { return qEnvironmentVariableIsSet("DV_ACCOUNT_DIR"); }
 
-const QByteArray kDonePage = QByteArrayLiteral(
-    "<!doctype html><html lang=\"th\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-    "<title>DriveVault</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#101014;color:#eef0f4;font:16px system-ui}"
-    "main{margin:24px;padding:32px;border:1px solid #2c2f38;border-radius:16px;background:#17181d;max-width:520px}h1{font-size:24px}p{line-height:1.6}</style>"
-    "<main><h1>DriveVault</h1><p>เข้าสู่ระบบด้วย Google เรียบร้อยแล้ว กลับไปที่โปรแกรม DriveVault ได้เลย ปิดหน้านี้ได้</p>"
-    "<p lang=\"en\">You are signed in with Google. Go back to your DriveVault program; you can close this page.</p></main>"
-    "<script>history.replaceState(null,'',location.pathname)</script></html>");
 
 // One answer of Google or of the picture server: at most 1 MB, status 200 only.
 void onAnswer(QNetworkReply* reply, QObject* context, const std::function<void(const QByteArray&)>& done)
@@ -258,16 +252,20 @@ void GoogleAccount::signIn()
                 const bool expected = m_server && url.isValid() && url.isRelative() && url.path() == QLatin1String("/oauth/callback")
                     && response.allQueryItemValues(QStringLiteral("state")).size() == 1
                     && response.queryItemValue(QStringLiteral("state"), QUrl::FullyDecoded) == QString::fromLatin1(m_state);
-                socket->write(expected
-                    ? "HTTP/1.1 200 OK\r\nConnection: close\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\n"
-                      "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'\r\n"
-                      "Content-Type: text/html; charset=utf-8\r\nContent-Length: " + QByteArray::number(kDonePage.size()) + "\r\n\r\n" + kDonePage
-                    : QByteArrayLiteral("HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 0\r\n\r\n"));
-                socket->disconnectFromHost();
-                if (!expected) return;
-                const QString code = response.allQueryItemValues(QStringLiteral("code")).size() == 1
+                const QString code = expected && response.allQueryItemValues(QStringLiteral("code")).size() == 1
                     ? response.queryItemValue(QStringLiteral("code"), QUrl::FullyDecoded) : QString();
                 const QString problem = response.queryItemValue(QStringLiteral("error"));
+                if (expected) {                      // the page says "signed in" only when Google really sent the code back
+                    const QByteArray page = callbackPage(!code.isEmpty());
+                    socket->write("HTTP/1.1 200 OK\r\nConnection: close\r\nCache-Control: no-store\r\nReferrer-Policy: no-referrer\r\n"
+                                  "X-Content-Type-Options: nosniff\r\n"
+                                  "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\r\n"
+                                  "Content-Type: text/html; charset=utf-8\r\nContent-Length: " + QByteArray::number(page.size()) + "\r\n\r\n" + page);
+                } else {
+                    socket->write(QByteArrayLiteral("HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 0\r\n\r\n"));
+                }
+                socket->disconnectFromHost();
+                if (!expected) return;
                 m_server->close();
                 m_server->deleteLater();
                 m_server = nullptr;

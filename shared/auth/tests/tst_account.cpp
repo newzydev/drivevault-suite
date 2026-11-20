@@ -1,3 +1,4 @@
+#include "CallbackPage.h"
 #include "GoogleAccount.h"
 #include "OAuthConfig.h"
 
@@ -23,6 +24,40 @@ void writeAccount(const QString& dir, const QJsonObject& object)
     QVERIFY2(f.open(QIODevice::WriteOnly | QIODevice::Truncate), "cannot write the test account");
     f.write(QJsonDocument(object).toJson(QJsonDocument::Compact));
 }
+
+// Plays the browser: the account object listens in THIS thread, so the client side must not block (events keep running while it waits).
+struct BrowserTrip {
+    int port = 0;
+    QString state;
+    bool start(GoogleAccount& account)
+    {
+        QUrl authorize;
+        QObject::connect(&account, &GoogleAccount::authorizeUrl, &account, [&](const QUrl& url) { authorize = url; });
+        account.signIn();                                       // DV_ACCOUNT_DIR is set: no browser is opened, no Google call is made
+        if (account.error() == QLatin1String("unavailable")) return false;
+        const QUrlQuery query(authorize);
+        const QUrl redirect(query.queryItemValue(QStringLiteral("redirect_uri"), QUrl::FullyDecoded));
+        state = query.queryItemValue(QStringLiteral("state"), QUrl::FullyDecoded);
+        port = redirect.port();
+        return account.busy() && port > 0 && redirect.host() == QLatin1String("127.0.0.1") && !state.isEmpty();
+    }
+    QByteArray get(const QString& target) const
+    {
+        QTcpSocket socket;
+        QByteArray all;
+        QObject::connect(&socket, &QTcpSocket::readyRead, &socket, [&] { all += socket.readAll(); });
+        QObject::connect(&socket, &QTcpSocket::connected, &socket, [&] {
+            socket.write("GET " + target.toUtf8() + " HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n");
+        });
+        socket.connectToHost(QStringLiteral("127.0.0.1"), quint16(port));
+        QElapsedTimer waited;
+        waited.start();
+        while (socket.state() != QAbstractSocket::UnconnectedState && waited.elapsed() < 5000)
+            QTest::qWait(20);
+        all += socket.readAll();
+        return all;
+    }
+};
 } // namespace
 
 // The shared account: one file per user, every program watches it. DV_ACCOUNT_DIR keeps these tests away from the real account.
@@ -110,43 +145,16 @@ private slots:
     void theBrowserGetsTheCallbackPageInFull()
     {
         GoogleAccount account;
-        QUrl authorize;
-        connect(&account, &GoogleAccount::authorizeUrl, this, [&](const QUrl& url) { authorize = url; });
-        account.signIn();                                       // DV_ACCOUNT_DIR is set: no browser is opened, no Google call is made
-        if (account.error() == QLatin1String("unavailable"))
-            QSKIP("this build has no Google client embedded");
-        QVERIFY(account.busy());
-        QVERIFY(!authorize.isEmpty());
-        const QUrlQuery query(authorize);
-        const QUrl redirect(query.queryItemValue(QStringLiteral("redirect_uri"), QUrl::FullyDecoded));
-        const QString state = query.queryItemValue(QStringLiteral("state"), QUrl::FullyDecoded);
-        QCOMPARE(redirect.host(), QStringLiteral("127.0.0.1"));
-        QVERIFY(redirect.port() > 0);
-
-        // the listener lives in THIS thread, so the client side must not block: events keep running while it waits
-        auto get = [&](const QString& target) {
-            QTcpSocket socket;
-            QByteArray all;
-            connect(&socket, &QTcpSocket::readyRead, &socket, [&] { all += socket.readAll(); });
-            connect(&socket, &QTcpSocket::connected, &socket, [&] {
-                socket.write("GET " + target.toUtf8() + " HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n");
-            });
-            socket.connectToHost(QStringLiteral("127.0.0.1"), quint16(redirect.port()));
-            QElapsedTimer waited;
-            waited.start();
-            while (socket.state() != QAbstractSocket::UnconnectedState && waited.elapsed() < 5000)
-                QTest::qWait(20);
-            all += socket.readAll();
-            return all;
-        };
+        BrowserTrip trip;
+        if (!trip.start(account)) QSKIP("this build has no Google client embedded");
 
         // a request with the wrong state is refused and the listener keeps waiting
-        const QByteArray refused = get(QStringLiteral("/oauth/callback?state=wrong&code=x"));
+        const QByteArray refused = trip.get(QStringLiteral("/oauth/callback?state=wrong&code=x"));
         QVERIFY2(refused.startsWith("HTTP/1.1 400"), refused.left(60).constData());
         QVERIFY(account.busy());
 
-        // the real answer: 200 and the whole page (Content-Length bytes, ending with </html>)
-        const QByteArray answer = get(QStringLiteral("/oauth/callback?state=") + state + QStringLiteral("&code=test"));
+        // the real answer: 200 and the whole page (Content-Length bytes, ending with </html>), saying that the person is signed in
+        const QByteArray answer = trip.get(QStringLiteral("/oauth/callback?state=") + trip.state + QStringLiteral("&code=test"));
         QVERIFY2(answer.startsWith("HTTP/1.1 200"), answer.left(60).constData());
         const int split = int(answer.indexOf("\r\n\r\n"));
         QVERIFY(split > 0);
@@ -154,11 +162,43 @@ private slots:
         const int at = int(head.indexOf("Content-Length: "));
         QVERIFY(at >= 0);
         QCOMPARE(qsizetype(head.mid(at + 16).split('\r').first().toInt()), body.size());
-        QVERIFY(body.endsWith("</html>"));
+        QVERIFY(body.trimmed().endsWith("</html>"));
         QVERIFY(body.contains("DriveVault"));
+        QVERIFY(body.contains(QStringLiteral("เข้าสู่ระบบสำเร็จ").toUtf8()));
+        QVERIFY(head.contains("Content-Security-Policy: default-src 'none'"));
+        QVERIFY(!body.contains("http://") && !body.contains("https://"));      // nothing is loaded from anywhere
         QTRY_VERIFY_WITH_TIMEOUT(!account.busy(), 3000);        // the listener is closed, the sign-in is over (test mode: no Google call)
         QCOMPARE(account.error(), QStringLiteral("test-callback"));
         QVERIFY(!account.signedIn());
+    }
+
+    // Cancelled at Google: the page must NOT say "signed in", and the program learns "denied".
+    void aCancelledSignInGetsAnHonestPage()
+    {
+        GoogleAccount account;
+        BrowserTrip trip;
+        if (!trip.start(account)) QSKIP("this build has no Google client embedded");
+        const QByteArray answer = trip.get(QStringLiteral("/oauth/callback?state=") + trip.state + QStringLiteral("&error=access_denied"));
+        QVERIFY2(answer.startsWith("HTTP/1.1 200"), answer.left(60).constData());
+        QVERIFY(answer.trimmed().endsWith("</html>"));
+        QVERIFY(answer.contains(QStringLiteral("ยังไม่ได้เข้าสู่ระบบ").toUtf8()));
+        QVERIFY(!answer.contains(QStringLiteral("เข้าสู่ระบบสำเร็จ").toUtf8()));
+        QTRY_VERIFY_WITH_TIMEOUT(!account.busy(), 3000);
+        QCOMPARE(account.error(), QStringLiteral("denied"));
+        QVERIFY(!account.signedIn());
+    }
+
+    // Not a check: with DV_DUMP_PAGE_DIR set it writes both callback pages there, to look at them in a browser.
+    void dumpTheCallbackPagesWhenAsked()
+    {
+        const QString dir = qEnvironmentVariable("DV_DUMP_PAGE_DIR");
+        if (dir.isEmpty()) QSKIP("set DV_DUMP_PAGE_DIR to write the pages");
+        QDir().mkpath(dir);
+        for (bool ok : {true, false}) {
+            QFile f(dir + (ok ? QStringLiteral("/callback-ok.html") : QStringLiteral("/callback-no.html")));
+            QVERIFY(f.open(QIODevice::WriteOnly | QIODevice::Truncate));
+            f.write(dv::account::callbackPage(ok));
+        }
     }
 
     void theEmbeddedPairDecryptsAndAWrongKeyDoesNot()
