@@ -99,6 +99,9 @@ QtObject {
         "media_failed": ["Could not start saving: %1", "เริ่มบันทึกไม่ได้: %1"],
         // new tab page
         "ntp_search": ["Ask DriveVault", "ถาม DriveVault"],
+        "ntp_home": ["Home", "หน้าแรก"],
+        "ntp_guest": ["Continue as guest", "เข้าแบบผู้เข้าชม"],
+        "ntp_sign_in": ["Sign in with Google", "เข้าสู่ระบบด้วย Google"],
         "ntp_top": ["Most visited", "เข้าบ่อยที่สุด"],
         "ntp_shortcuts": ["Shortcuts", "ทางลัด"],
         "ntp_add_shortcut": ["Add shortcut", "เพิ่มทางลัด"],

@@ -19,7 +19,9 @@
 #include <QQmlComponent>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QProcess>
 #include <QRegularExpression>
+#include <QScopeGuard>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
@@ -71,6 +73,12 @@ int main(int argc, char* argv[])
     const bool diagnostics = parser.isSet(dataDirOpt) && (parser.isSet(shotOpt) || parser.isSet(selfTestOpt)
         || parser.isSet(probeOpt) || parser.isSet(updateOpt) || parser.isSet(surveyOpt)
         || parser.isSet(pipTestOpt) || parser.isSet(mediaTestOpt));
+    bool reopenWithProfile = false;
+    // Release the guest WebEngine profile and its instance lock before opening the signed-in profile.
+    const auto reopen = qScopeGuard([&] {
+        if (reopenWithProfile)
+            QProcess::startDetached(app.applicationFilePath(), app.arguments().mid(1));
+    });
     QLockFile profileLock(profileRoot + QStringLiteral("/browser.lock"));
     profileLock.setStaleLockTime(0);
     if (!diagnostics && !profileLock.tryLock()) return 1;
@@ -195,5 +203,7 @@ int main(int argc, char* argv[])
                 app.exit(!img.isNull() && img.save(file) ? 0 : 2);
             });
     }
-    return app.exec();
+    const int result = app.exec();
+    reopenWithProfile = session.restartRequested();
+    return result;
 }

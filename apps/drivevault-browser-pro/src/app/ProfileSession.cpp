@@ -25,6 +25,7 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QScopedValueRollback>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
@@ -395,40 +396,18 @@ bool ProfileSession::start()
         return false;
     }
     if (signedIn()) return unlock();
-    for (;;) {
-        QDialog home;
-        home.setWindowTitle(QStringLiteral("DriveVault Browser Pro"));
-        home.setMinimumWidth(430);
-        home.setStyleSheet(QStringLiteral(
-            "QDialog{background:#121b24;color:#eef5fa} QLabel{color:#eef5fa}"
-            "QPushButton{border:1px solid #385366;border-radius:8px;padding:9px 15px;background:#203442;color:#eef5fa}"
-            "QPushButton:focus,QPushButton:hover{border-color:#22d3ee}"
-            "QPushButton#login{background:#0e7490}"));
-        auto* layout = new QVBoxLayout(&home);
-        layout->setContentsMargins(32, 30, 32, 28);
-        layout->setSpacing(12);
-        auto* title = new QLabel(QStringLiteral("DriveVault Browser Pro"));
-        title->setStyleSheet(QStringLiteral("font-size:23px;font-weight:600"));
-        layout->addWidget(title);
-        auto* description = new QLabel(trText("Sign in to keep your browsing data with a local profile.",
-                                               "เข้าสู่ระบบเพื่อเก็บข้อมูลการท่องเว็บกับโปรไฟล์ในเครื่อง"));
-        description->setWordWrap(true);
-        layout->addWidget(description);
-        layout->addSpacing(8);
-        auto* login = new QPushButton(trText("Sign in with Google", "เข้าสู่ระบบด้วย Google"));
-        login->setObjectName(QStringLiteral("login"));
-        login->setDefault(true);
-        layout->addWidget(login);
-        auto* guest = new QPushButton(trText("Guest mode", "โหมดผู้เข้าชม"));
-        layout->addWidget(guest);
-        connect(login, &QPushButton::clicked, &home, &QDialog::accept);
-        connect(guest, &QPushButton::clicked, &home, [&home] { home.done(2); });
-        const int choice = home.exec();
-        if (choice == 2) return true;
-        if (choice != QDialog::Accepted) return false;
-        if (authenticate()) return true;
-    }
+    return true;   // not signed in: the browser opens at once as a guest; "Sign in" is on the home page and in the menu
 }
+
+void ProfileSession::signIn()
+{
+    if (signedIn() || m_locked || m_signingIn) return;
+    const QScopedValueRollback signingIn(m_signingIn, true);
+    if (!authenticate()) return;
+    m_restartRequested = true;
+    qApp->quit();
+}
+
 
 bool ProfileSession::unlock()
 {

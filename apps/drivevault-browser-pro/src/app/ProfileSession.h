@@ -21,11 +21,13 @@ public:
     QString directory() const;
     bool signedIn() const;
     bool locked() const { return m_locked; }
+    bool restartRequested() const { return m_restartRequested; }
     QString name() const;
     QString email() const;
     QUrl picture() const;
     void enableLock();
     Q_INVOKABLE void showOptions();
+    Q_INVOKABLE void signIn();
 
 signals:
     void lockedChanged();
@@ -49,6 +51,8 @@ private:
     QTimer* m_timer = nullptr;
     QDialog* m_profileDialog = nullptr;
     bool m_locked = false;
+    bool m_signingIn = false;
+    bool m_restartRequested = false;
 };
 
 } // namespace dv::br

@@ -10,7 +10,6 @@
 #include <QJsonDocument>
 #include <QMessageBox>
 #include <QPasswordDigestor>
-#include <QPushButton>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QTimer>
@@ -34,24 +33,15 @@ private slots:
             QSKIP("Environment overrides the bundled client.");
         QDesktopServices::setUrlHandler("https", this, "captureAuthorization");
         QTimer inputTimer;
-        bool choseLogin = false;
         connect(&inputTimer, &QTimer::timeout, this, [&] {
-            auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
-            if (!dialog) return;
-            auto* login = dialog->findChild<QPushButton*>("login");
-            if (login && !choseLogin) {
-                choseLogin = true;
-                login->click();
-            } else {
-                dialog->reject();
-            }
+            if (auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget())) dialog->reject();
         });
         inputTimer.start(25);
         dv::br::ProfileSession session(root.path(), true);
-        const bool started = session.start();
+        QVERIFY(session.start());          // no welcome dialog: the browser opens as a guest
+        QVERIFY(!session.signedIn());
+        session.signIn();                  // the Home page button
         QDesktopServices::unsetUrlHandler("https");
-        QVERIFY(!started);
-        QVERIFY(choseLogin);
         QVERIFY(authorization.host() == "accounts.google.com");
         const QUrlQuery query(authorization);
         QVERIFY(query.queryItemValue("client_id").endsWith(".apps.googleusercontent.com"));
