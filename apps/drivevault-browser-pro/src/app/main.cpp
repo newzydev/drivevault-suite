@@ -25,6 +25,7 @@
 #include <QScopeGuard>
 #include <QStandardPaths>
 #include <QTimer>
+#include <QTemporaryDir>
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
 #include <qqml.h>
@@ -50,6 +51,7 @@ int main(int argc, char* argv[])
     QCommandLineOption sizeOpt(QStringLiteral("size"), QStringLiteral("Window size WxH for --screenshot."), QStringLiteral("WxH"));
     QCommandLineOption panelOpt(QStringLiteral("panel"), QStringLiteral("Open a side panel: history, bookmarks, downloads or settings (diagnostics)."), QStringLiteral("name"));
     QCommandLineOption privateOpt(QStringLiteral("private"), QStringLiteral("Start in a private window."));
+    QCommandLineOption guestOpt(QStringLiteral("guest-session"), QStringLiteral("Start with a temporary guest profile."));
     QCommandLineOption selfTestOpt(QStringLiteral("selftest"), QStringLiteral("Run the window's own checks (tabs, pin, bookmarks, history, suggestions, find, zoom) on the page given as address, write the results (JSON) to <file>, exit 0 when all passed (diagnostics)."), QStringLiteral("file"));
     QCommandLineOption probeOpt(QStringLiteral("probe"), QStringLiteral("Open the page given as address, wait, read what the page recorded in window.__res and how many requests the ad blocker stopped, write that (JSON) to <file> and exit (diagnostics, tests)."), QStringLiteral("file"));
     QCommandLineOption updateOpt(QStringLiteral("update-lists"), QStringLiteral("Do what the button \"Update filter lists\" does (download the switched-on lists from their official addresses), write the result (JSON) to <file>, exit (diagnostics; downloads only because this option was given)."), QStringLiteral("file"));
@@ -57,7 +59,7 @@ int main(int argc, char* argv[])
     QCommandLineOption waitOpt(QStringLiteral("wait"), QStringLiteral("Milliseconds to wait before --probe / --survey / --screenshot act (default 2500 / 2500 / 3500)."), QStringLiteral("ms"));
     QCommandLineOption pipTestOpt(QStringLiteral("pip-test"), QStringLiteral("Open the page given as address (it plays a video as window.__video), pop the video out into the small window and back (button path and close path), write the checks (JSON) to <file>, exit 0 when all passed (diagnostics)."), QStringLiteral("file"));
     QCommandLineOption mediaTestOpt(QStringLiteral("media-test"), QStringLiteral("Open the page given as address (it loads a video file and an HLS playlist), check that both are noticed, save them through the program's own path into <data>\downloads, write the checks (JSON) to <file>, exit 0 when all passed (diagnostics)."), QStringLiteral("file"));
-    parser.addOptions({dataDirOpt, langOpt, shotOpt, sizeOpt, panelOpt, privateOpt, selfTestOpt, probeOpt, updateOpt, surveyOpt, waitOpt, pipTestOpt, mediaTestOpt});
+    parser.addOptions({dataDirOpt, langOpt, shotOpt, sizeOpt, panelOpt, privateOpt, guestOpt, selfTestOpt, probeOpt, updateOpt, surveyOpt, waitOpt, pipTestOpt, mediaTestOpt});
     parser.process(app);
 
     for (const char* font : {":/qt/qml/DriveVault/Browser/resources/fonts/Inter-Variable.ttf", ":/qt/qml/DriveVault/Browser/resources/fonts/NotoSansThai-Variable.ttf"})
@@ -67,7 +69,9 @@ int main(int argc, char* argv[])
     f.setPixelSize(13);
     app.setFont(f);
 
-    const QString profileRoot = parser.isSet(dataDirOpt)
+    const auto guestDirectory = parser.isSet(guestOpt) ? std::make_unique<QTemporaryDir>() : nullptr;
+    if (guestDirectory && !guestDirectory->isValid()) return 1;
+    const QString profileRoot = guestDirectory ? guestDirectory->path() : parser.isSet(dataDirOpt)
         ? QDir(parser.value(dataDirOpt)).absolutePath()
         : QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/DriveVault/BrowserPro");
     QDir().mkpath(profileRoot);
@@ -83,7 +87,7 @@ int main(int argc, char* argv[])
     QLockFile profileLock(profileRoot + QStringLiteral("/browser.lock"));
     profileLock.setStaleLockTime(0);
     if (!diagnostics && !profileLock.tryLock()) return 1;
-    dv::br::ProfileSession session(profileRoot);
+    dv::br::ProfileSession session(profileRoot, bool(guestDirectory));
     if ((!diagnostics || QFileInfo::exists(profileRoot + QStringLiteral("/account.bin"))) && !session.start()) return 0;
     const QString dataDir = session.directory();
     QDir().mkpath(dataDir);

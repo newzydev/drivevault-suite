@@ -91,7 +91,7 @@ Rectangle {
         // Account button in the top right corner, of the new tab page.
     RowLayout {
         id: accountRow
-        visible: page.showBrowsingData
+        visible: page.showBrowsingData && !ProfileSession.guestSession
         z: 1
         anchors.top: parent.top
         anchors.right: parent.right

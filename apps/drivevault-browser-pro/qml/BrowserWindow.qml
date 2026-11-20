@@ -1518,6 +1518,35 @@ ApplicationWindow {
         }
     }
 
+    component LockActionButton: BButton {
+        id: action
+        required property string glyph
+        Layout.fillWidth: true
+        Layout.preferredWidth: 1
+        Layout.preferredHeight: 36
+        leftPadding: 6
+        rightPadding: 6
+        contentItem: Item {
+            Row {
+                anchors.centerIn: parent
+                spacing: 6
+                LineIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    kind: action.glyph
+                    size: 14
+                    color: action.variant === "primary" ? Theme.readableOn(action.fill) : Theme.textSecondary
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: action.text
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    color: action.variant === "primary" ? Theme.readableOn(action.fill) : Theme.text
+                }
+            }
+        }
+    }
+
     Rectangle {
         id: lockScreen
         objectName: "profileLockScreen"
@@ -1639,13 +1668,20 @@ ApplicationWindow {
                     }
                 }
                 RowLayout {
-                    Layout.alignment: Qt.AlignHCenter
-                    BButton { text: Tr.t("close"); onClicked: win.close() }
-                    BButton {
+                    Layout.fillWidth: true
+                    spacing: 6
+                    LockActionButton { glyph: "close"; text: Tr.t("close"); onClicked: win.close() }
+                    LockActionButton {
+                        glyph: "mask"
+                        text: Tr.t("profile_guest")
+                        onClicked: ProfileSession.openGuest(Tr.lang)
+                    }
+                    LockActionButton {
                         id: unlockButton
+                        glyph: "lock"
                         visible: ProfileSession.signedIn
                         enabled: lockPin.length === 6
-                        text: Tr.t("profile_unlock")
+                        text: Tr.t("profile_unlock_action")
                         variant: "primary"
                         onClicked: {
                             ProfileSession.unlock(lockPin.text)

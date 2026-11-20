@@ -16,6 +16,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QPasswordDigestor>
+#include <QProcess>
 #include <QRegularExpression>
 #include <QSaveFile>
 
@@ -256,8 +257,8 @@ QJsonObject googleProfile(const QString& client, const QString& secret, ProfileS
 
 } // namespace
 
-ProfileSession::ProfileSession(QString root)
-    : m_root(std::move(root))
+ProfileSession::ProfileSession(QString root, bool guestSession)
+    : m_root(std::move(root)), m_guestSession(guestSession)
 {
 }
 
@@ -370,7 +371,7 @@ bool ProfileSession::start()
 
 void ProfileSession::signIn()
 {
-    if (signedIn() || m_locked || m_signingIn || settingPin()) return;
+    if (m_guestSession || signedIn() || m_locked || m_signingIn || settingPin()) return;
     m_signingIn = true;
     m_cancelled = false;
     m_signInError.clear();
@@ -395,6 +396,17 @@ void ProfileSession::cancelSignIn()
     if (!m_signingIn) return;
     m_cancelled = true;
     emit signInCancelled();
+}
+
+void ProfileSession::openGuest(const QString& language)
+{
+    if (!m_locked) return;
+    const QStringList arguments{QStringLiteral("--guest-session"), QStringLiteral("--lang"),
+        language == QStringLiteral("en") ? QStringLiteral("en") : QStringLiteral("th")};
+    if (!QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments)) {
+        m_profileError = QStringLiteral("profile_guest_failed");
+        emit profileChanged();
+    }
 }
 
 void ProfileSession::unlock(const QString& pin)
