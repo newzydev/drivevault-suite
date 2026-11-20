@@ -84,6 +84,15 @@ ApplicationWindow {
         cardHeight = m
     }
     readonly property var sections: [ { key: "multimedia" }, { key: "office" }, { key: "other" } ]
+    // the sections that have at least one program (the category list offers only these; no "Other programs" while there are none)
+    readonly property var usedSections: {
+        const list = Hub.products, out = []
+        for (const s of sections) {
+            for (let i = 0; i < list.length; ++i)
+                if (list[i].section === s.key) { out.push(s); break }
+        }
+        return out
+    }
     property string category: ""          // "" = all categories, otherwise a section key
     property string tab: "programs"       // the tab at the top of the page: programs | ask | agent | browser
     function showBrowser() { tab = "agent"; aiWorkspace.openBrowser() }     // diagnostics (--tab browser)
@@ -518,7 +527,7 @@ ApplicationWindow {
                                         onTriggered: { win.category = ""; checked = Qt.binding(() => win.category === "") }
                                     }
                                     Repeater {
-                                        model: win.sections
+                                        model: win.usedSections
                                         delegate: MMenuItem {
                                             required property var modelData
                                             objectName: "category_" + modelData.key

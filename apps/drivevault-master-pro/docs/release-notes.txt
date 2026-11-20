@@ -1,6 +1,10 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.40.2 (2026-11-20): The category list offers only categories that have programs.
+  - Fixed: "Other programs" was listed although no program belongs to it. The list now shows All plus only the categories with at least one program (it comes back by itself when such a program appears).
+  - Tested: Master Pro build + tst_hub + tst_window, smoke start. The installer was not rebuilt. The installer is unsigned.
+
 v1.40.1 (2026-11-20): The ticks of the menus are drawn icons and show the right entry.
   - Fixed: in the category list (All / Multimedia / Office / Other) every entry showed a tick after it had been chosen once, because the click replaced the binding of the tick. The tick now follows the real choice. The tick itself is a drawn line icon (LineIcon "check") instead of a font glyph, in every menu (also "Check for updates on start").
   - Tested: Master Pro build + tst_hub + tst_window, a smoke start with a screenshot of the open menu. The installer was not rebuilt. The installer is unsigned.
