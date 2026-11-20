@@ -108,6 +108,21 @@ bool RecentProjectsModel::load(const QString& file)
     return ok;
 }
 
+void RecentProjectsModel::useAccount(const QString& key)
+{
+    if (key.isEmpty()) {
+        load();
+        return;
+    }
+    const QString folder = paths::dataDir() + QStringLiteral("/accounts/") + key;
+    const QString file = folder + QStringLiteral("/recent-projects.json");
+    if (!QFile::exists(file) && QFile::exists(paths::recentFile())) {
+        QDir().mkpath(folder);
+        QFile::copy(paths::recentFile(), file);
+    }
+    load(file);
+}
+
 bool RecentProjectsModel::save()
 {
     QJsonArray items;

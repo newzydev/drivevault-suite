@@ -1344,13 +1344,13 @@ void AiChannel::saveConversations()
             plan.append(QJsonObject{{"content", v.toMap().value("content").toString()}, {"status", v.toMap().value("status").toString()}});
         list.append(QJsonObject{{"id", c.id}, {"title", c.title}, {"updated", double(c.updated)}, {"messages", msgs}, {"todos", plan}, {"folder", c.folder}});
     }
-    writeJson(m_service->dataFolder() + QStringLiteral("/conversations-") + m_mode + QStringLiteral(".json"), QJsonObject{{"conversations", list}});
+    writeJson(m_service->historyFolder() + QStringLiteral("/conversations-") + m_mode + QStringLiteral(".json"), QJsonObject{{"conversations", list}});
 }
 
 void AiChannel::load()
 {
     m_conversations.clear();
-    const QJsonObject root = readJson(m_service->dataFolder() + QStringLiteral("/conversations-") + m_mode + QStringLiteral(".json"));
+    const QJsonObject root = readJson(m_service->historyFolder() + QStringLiteral("/conversations-") + m_mode + QStringLiteral(".json"));
     for (const QJsonValue& v : root.value(QLatin1String("conversations")).toArray()) {
         const QJsonObject o = v.toObject();
         Conversation c;
@@ -1412,6 +1412,7 @@ AiService::AiService(Hub* hub, QObject* parent)
     , m_agent(nullptr)
 {
     m_dir = m_hub->dataDir() + QStringLiteral("/ai");
+    m_historyDir = m_dir;                                    // everyone's history until a Google account is signed in (setHistoryScope)
     QDir().mkpath(m_dir);
     m_ask = new AiChannel(QStringLiteral("ask"), this);
     m_agent = new AiChannel(QStringLiteral("agent"), this);
@@ -1445,6 +1446,8 @@ AiService::AiService(Hub* hub, QObject* parent)
         if (ok && m_localModel.isEmpty() && !m_useRemote)
             selectLocalModel(m_downloadFile);                // the first model becomes the chosen one
     });
+    connect(m_ask, &AiChannel::busyChanged, this, &AiService::applyHistoryScope);      // a switch of account that waited for a job
+    connect(m_agent, &AiChannel::busyChanged, this, &AiService::applyHistoryScope);
     connect(m_ask, &AiChannel::changed, this, &AiService::saveSettings);
     connect(m_agent, &AiChannel::changed, this, &AiService::saveSettings);
     loadSettings();
@@ -1454,6 +1457,42 @@ AiService::AiService(Hub* hub, QObject* parent)
 }
 
 AiService::~AiService() = default;
+
+void AiChannel::reloadHistory()
+{
+    m_currentId.clear();
+    load();
+}
+
+void AiService::setHistoryScope(const QString& key)
+{
+    m_wantedScope = key;
+    applyHistoryScope();
+}
+
+void AiService::applyHistoryScope()
+{
+    if (m_wantedScope == m_scope)
+        return;
+    if (m_ask->busy() || m_agent->busy())
+        return;                                              // a job is running: the switch is made when it ends (busyChanged)
+    m_ask->flushHistory();                                   // what is on the pages goes to the folder it came from
+    m_agent->flushHistory();
+    QString folder = m_dir;
+    if (!m_wantedScope.isEmpty()) {
+        folder = m_dir + QStringLiteral("/accounts/") + m_wantedScope;
+        QDir().mkpath(folder);
+        for (const char* mode : {"ask", "agent"}) {          // the first time an account is used: a copy of the shared history
+            const QString name = QStringLiteral("/conversations-") + QLatin1String(mode) + QStringLiteral(".json");
+            if (!QFile::exists(folder + name) && QFile::exists(m_dir + name))
+                QFile::copy(m_dir + name, folder + name);
+        }
+    }
+    m_historyDir = folder;
+    m_scope = m_wantedScope;
+    m_ask->reloadHistory();
+    m_agent->reloadHistory();
+}
 
 QString AiService::modelsFolder() const { return m_hub->dataDir() + QStringLiteral("/models"); }
 

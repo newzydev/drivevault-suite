@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
         ctx.settings.set(QStringLiteral("language"), lang == QLatin1String("th") ? QStringLiteral("th-TH")
                                                      : lang == QLatin1String("en") ? QStringLiteral("en-US") : lang);
     }
-    ctx.recents.load();
+    ctx.applyAccountScope();
     ctx.language.apply();
     ctx.trimCache();
     ctx.registerQmlTypes();

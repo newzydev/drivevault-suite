@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QSignalSpy>
 #include <QTcpSocket>
 #include <QTemporaryDir>
@@ -89,6 +90,28 @@ private slots:
         QCOMPARE(account.name(), QStringLiteral("Somchai Jaidee"));
         QCOMPARE(account.email(), QStringLiteral("somchai@example.com"));
         QVERIFY(account.picture().isEmpty());                 // no picture saved: the programs show the first letter
+    }
+
+    // The key under which a program keeps the data of this account: empty for nobody, stable for the same Google id, different for another one.
+    void theScopeKeyNamesTheAccountWithoutNamingThePerson()
+    {
+        {
+            GoogleAccount nobody;
+            QVERIFY(nobody.scopeKey().isEmpty());
+        }
+        writeAccount(m_dir.path(), {{"sub", "1001"}, {"name", "Somchai Jaidee"}, {"email", "somchai@example.com"}});
+        GoogleAccount first;
+        const QString key = first.scopeKey();
+        QCOMPARE(key.size(), 24);
+        QVERIFY(QRegularExpression(QStringLiteral("^[0-9a-f]{24}$")).match(key).hasMatch());
+        QVERIFY(!key.contains(QStringLiteral("1001")));
+        QCOMPARE(GoogleAccount().scopeKey(), key);                       // the same account, the same key (also in another program)
+        writeAccount(m_dir.path(), {{"sub", "1002"}, {"email", "napat@example.com"}});
+        GoogleAccount other;
+        QVERIFY(!other.scopeKey().isEmpty());
+        QVERIFY(other.scopeKey() != key);
+        first.signOut();
+        QVERIFY(first.scopeKey().isEmpty());
     }
 
     void aNameThatIsMissingFallsBackToTheEmail()

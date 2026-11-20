@@ -10,9 +10,9 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 
 | Folder | Program |
 |---|---|
-| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.17.0 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
-| `apps/drivevault-master-pro` | DriveVault Master Pro 1.39.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
-| `apps/drivevault-pdf-pro` | DriveVault PDF Pro 1.23.0 (plan in `apps/drivevault-pdf-pro/docs/PDF-Pro-Plan.md`). PDFium + qpdf, Thai OCR with ONNX Runtime. Accent colour red `#EF4444`. |
+| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.18.0 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
+| `apps/drivevault-master-pro` | DriveVault Master Pro 1.40.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
+| `apps/drivevault-pdf-pro` | DriveVault PDF Pro 1.24.0 (plan in `apps/drivevault-pdf-pro/docs/PDF-Pro-Plan.md`). PDFium + qpdf, Thai OCR with ONNX Runtime. Accent colour red `#EF4444`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
 | `shared/auth` | The Google account of the suite (optional sign-in, one file per Windows user, the title-bar component `DvAccountChip`); see `shared/auth/CLAUDE.md`. |
 | `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md), `run-master-pro.bat` / `run-video-editor.bat` / `run-pdf-pro.bat` (open the Release build without installing: Qt on PATH, then start the exe; extra arguments are passed on - use these for the smoke start). |

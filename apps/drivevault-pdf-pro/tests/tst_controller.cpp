@@ -146,6 +146,45 @@ private slots:
         QCOMPARE(again.recentFiles().first(), paths.at(5));
     }
 
+    // The recent files belong to the signed-in Google account: another account has its own list, signing out shows the shared list again, and a
+    // new account starts from a copy of the shared list (which itself stays as it was). Everything survives a restart.
+    void recentFilesFollowTheAccount()
+    {
+        const QString data = m_dir.filePath("data-accounts");
+        const QString alice = QStringLiteral("aaaaaaaaaaaaaaaaaaaaaaaa"), bob = QStringLiteral("bbbbbbbbbbbbbbbbbbbbbbbb");
+        auto open = [&](DocumentController& c, const QString& name) -> QString {   // the native path of the opened file, empty when it did not open
+            const QString p = write(name, testpdf::make(1));
+            return c.open(p).isEmpty() ? QDir::toNativeSeparators(p) : QString();
+        };
+        QString shared, forAlice, forBob;
+        {
+            DocumentController c(data);
+            shared = open(c, "shared.pdf");
+            QVERIFY(!shared.isEmpty());
+            QCOMPARE(c.recentFiles(), QStringList{shared});
+
+            c.setAccountScope(alice);                                  // first use: a copy of the shared list
+            QCOMPARE(c.recentFiles(), QStringList{shared});
+            forAlice = open(c, "alice.pdf");
+            QVERIFY(!forAlice.isEmpty());
+            QCOMPARE(c.recentFiles(), (QStringList{forAlice, shared}));
+
+            c.setAccountScope(bob);                                    // another account: its own list, no "alice.pdf"
+            QCOMPARE(c.recentFiles(), QStringList{shared});
+            forBob = open(c, "bob.pdf");
+            QVERIFY(!forBob.isEmpty());
+
+            c.setAccountScope(alice);                                  // back: Alice's list as she left it
+            QCOMPARE(c.recentFiles(), (QStringList{forAlice, shared}));
+            c.setAccountScope(QString());                              // signed out: the shared list, without any account's file
+            QCOMPARE(c.recentFiles(), QStringList{shared});
+        }
+        DocumentController again(data);                                // restarted, nobody signed in
+        QCOMPARE(again.recentFiles(), QStringList{shared});
+        again.setAccountScope(bob);
+        QCOMPARE(again.recentFiles(), (QStringList{forBob, shared}));
+    }
+
     void theLanguageAndTheDarkViewArePersistedAndOnlyThaiOrEnglishIsAccepted()
     {
         const QString data = m_dir.filePath("data5");

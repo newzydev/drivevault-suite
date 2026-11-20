@@ -41,6 +41,8 @@ public:
     WindowsIntegration windowsIntegration;
     account::GoogleAccount account;     // the Google account of the whole suite (one shared file, see shared/auth)
 
+    // The recent projects follow the signed-in Google account (see the .cpp); called by load() and when the account changes.
+    void applyAccountScope();
     // Loads settings + recents and installs the stored UI language. Call once, before the UI exists.
     void load();
     // Keeps the thumbnail / waveform cache below the configured size limit.

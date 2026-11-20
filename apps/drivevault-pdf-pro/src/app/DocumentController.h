@@ -104,6 +104,9 @@ public:
     Q_INVOKABLE double pageWidthPt(int page) const;      // as shown: the view rotation is applied
     Q_INVOKABLE double pageHeightPt(int page) const;
     Q_INVOKABLE void removeRecent(const QString& path);
+    // The recent files belong to the signed-in Google account: key "" = the list of everyone (as before), else this account's own list. The first time an
+    // account is used it starts from a COPY of the shared list (which stays as it is). Called at start and whenever the account changes.
+    void setAccountScope(const QString& key);
     Q_INVOKABLE bool openRecentFolder(const QString& path) const;
     Q_INVOKABLE QString localPath(const QString& pathOrUrl) const;
     Q_INVOKABLE QString saveWorkspace(const QString& path) const;
@@ -258,6 +261,8 @@ private:
     int m_nextId = 1;
     QString m_dataDir;
     QStringList m_recent;
+    QString m_accountKey;                                  // "" = nobody signed in
+    QString recentSettingsKey() const;
     QString m_language;
     bool m_dark = false;
     bool m_lightTheme = false;

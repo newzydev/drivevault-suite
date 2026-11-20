@@ -91,6 +91,8 @@ int main(int argc, char* argv[])
     if (parser.isSet(dataDir))                                 // a test / diagnostic run keeps its downloads in its own data folder, never in the real Downloads folder
         ai.browserBridge()->setDownloadsFolder(hub.dataDir() + QStringLiteral("/downloads"));
     dv::account::GoogleAccount account;                       // the Google account of the whole suite (one shared file, see shared/auth)
+    ai.setHistoryScope(account.scopeKey());                   // the chat history of the signed-in account (both AI pages), and of the next one
+    QObject::connect(&account, &dv::account::GoogleAccount::changed, &ai, [&] { ai.setHistoryScope(account.scopeKey()); });
     QQmlApplicationEngine engine;
     qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Hub", &hub);
     qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Account", &account);

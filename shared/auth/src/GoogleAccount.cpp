@@ -141,6 +141,13 @@ QString GoogleAccount::filePath() const
     return storeDir() + (testMode() ? QStringLiteral("/account.json") : QStringLiteral("/account.bin"));
 }
 
+QString GoogleAccount::scopeKey() const
+{
+    const QString sub = m_identity.value(QLatin1String("sub")).toString();
+    if (sub.isEmpty()) return {};
+    return QString::fromLatin1(QCryptographicHash::hash(sub.toUtf8(), QCryptographicHash::Sha256).toHex().left(24));
+}
+
 QString GoogleAccount::name() const
 {
     const QString value = m_identity.value(QLatin1String("name")).toString();

@@ -146,6 +146,8 @@ public:
     Q_INVOKABLE void setEffort(const QString& effort);
 
     void load();                                          // conversations of this page
+    void flushHistory() { saveConversations(); }          // what is on the page goes to the folder it came from (before the history changes owner)
+    void reloadHistory();                                 // the history folder changed (another Google account): read this page's conversations again
     void applySettings(const QVariantMap& values);        // used by the service when it reads the settings file
     QVariantMap settingsValues() const;
     void reloadReadiness() { emit settingsChanged(); }
@@ -308,6 +310,11 @@ public:
     LlamaServer* llama() { return &m_llama; }
     Hub* hub() { return m_hub; }
     QString dataFolder() const { return m_dir; }
+    // The history of the chats (both pages) belongs to the signed-in Google account: key "" = everyone's as before (<data>/ai), else <data>/ai/accounts/<key>.
+    // The first time an account is used it starts from a COPY of the shared files (which stay as they are). While a job runs the switch waits until it ends.
+    // Settings (model, effort, web ...) are NOT per account.
+    QString historyFolder() const { return m_historyDir; }
+    void setHistoryScope(const QString& key);
     QString suiteSummary() const;                                       // the programs of the suite, for the system prompt
     void saveSettings();
 
@@ -331,6 +338,9 @@ private:
     AiChannel* m_ask;
     AiChannel* m_agent;
     QString m_dir;
+    QString m_historyDir;                                               // where the conversations of the signed-in account are kept
+    QString m_scope, m_wantedScope;
+    void applyHistoryScope();
     QStringList m_installDirs;                             // install folders of the programs found by the hub (they may carry the engine and models)
     QString m_localModel;
     bool m_useRemote = false;                              // the chosen model is the online one (m_remoteModel)

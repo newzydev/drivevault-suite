@@ -158,6 +158,41 @@ private slots:
         reloaded.removeAt(1);
         QCOMPARE(reloaded.count(), 1);
     }
+    // The recent projects belong to the signed-in Google account: another account has its own list, signing out shows the shared list again,
+    // and a new account starts from a copy of the shared list (which itself stays as it was).
+    void recentProjectsFollowTheAccount()
+    {
+        auto names = [this] {
+            QStringList out;
+            for (int i = 0; i < m_recents->count(); ++i)
+                out << m_recents->data(m_recents->index(i), RecentProjectsModel::NameRole).toString();
+            out.sort();
+            return out;
+        };
+        m_recents->add(m_root.filePath("shared1/Shared1.dvproj"), "Shared1");
+        m_recents->add(m_root.filePath("shared2/Shared2.dvproj"), "Shared2");
+        const QStringList shared{"Shared1", "Shared2"};
+        QCOMPARE(names(), shared);
+
+        const QString alice = QStringLiteral("aaaaaaaaaaaaaaaaaaaaaaaa"), bob = QStringLiteral("bbbbbbbbbbbbbbbbbbbbbbbb");
+        m_recents->useAccount(alice);                                       // first use: a copy of what was there
+        QCOMPARE(names(), shared);
+        QVERIFY(QFile::exists(paths::dataDir() + "/accounts/" + alice + "/recent-projects.json"));
+        m_recents->add(m_root.filePath("alice/Alice.dvproj"), "Alice");
+        QCOMPARE(names(), (QStringList{"Alice", "Shared1", "Shared2"}));
+
+        m_recents->useAccount(bob);                                         // another account: its own list (a copy of the shared one, no "Alice")
+        QCOMPARE(names(), shared);
+        m_recents->add(m_root.filePath("bob/Bob.dvproj"), "Bob");
+
+        m_recents->useAccount(alice);                                       // back: Alice's list as she left it
+        QCOMPARE(names(), (QStringList{"Alice", "Shared1", "Shared2"}));
+        m_recents->useAccount(QString());                                   // signed out: the shared list, without any account's project
+        QCOMPARE(names(), shared);
+        m_recents->useAccount(bob);
+        QCOMPARE(names(), (QStringList{"Bob", "Shared1", "Shared2"}));
+    }
+
     void recentsRespectLimit()
     {
         m_settings->set("recentProjectsLimit", 3);

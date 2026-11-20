@@ -1,6 +1,6 @@
 # DriveVault Video Editor Pro - rules (adds to the repository root file)
 
-Native Windows non-linear video editor: C++20, Qt 6.8 / Qt Quick (QML), FFmpeg 8.1 (LGPL, shared), CMake, Inno Setup. Version 1.17.0, project file schema 3. Thai + English UI.
+Native Windows non-linear video editor: C++20, Qt 6.8 / Qt Quick (QML), FFmpeg 8.1 (LGPL, shared), CMake, Inno Setup. Version 1.18.0, project file schema 3. Thai + English UI.
 (phases 1-6 are done: foundation, editing, pro editing, AI, performance, packaging).
 
 ## Layout
@@ -36,3 +36,5 @@ in the **repository root** when a path contains spaces - delete them.
 - MSVC: no `__int128`; `windows.h` needs `NOMINMAX`; beware the most vexing parse (`std::vector<T> v(size_t(x))`); `QList::append(QVariantList)` flattens a list of lists.
 - The project file stays backward compatible: v1 / v2 / v3 files must still load (`ProjectFile.cpp` is the single migration point; bump `kProjectSchemaVersion` only with a migration and a test).
 - `LICENSE.txt` and `installer/windows/license-*.txt` are generated from `shared/legal` by `shared/scripts/make-license.ps1` - never edit them by hand. The EULA is drafted, not lawyer-reviewed.
+
+- **Per-account data (1.40.0 / 1.24.0 / 1.18.0, owner's request 2026-11-20)**: this program keeps its history per signed-in Google account (rules and the shared pattern: `shared/auth/CLAUDE.md`, "Per-account data"); nobody signed in = the shared data as before; the first use of an account copies the shared data; settings are not per account.

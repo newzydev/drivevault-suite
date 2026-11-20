@@ -515,9 +515,26 @@ bool DocumentController::openRecentFolder(const QString& path) const
     return folder.exists() && QDesktopServices::openUrl(QUrl::fromLocalFile(folder.absolutePath()));
 }
 
+QString DocumentController::recentSettingsKey() const
+{
+    return m_accountKey.isEmpty() ? QStringLiteral("recentFiles") : QStringLiteral("accounts/") + m_accountKey + QStringLiteral("/recentFiles");
+}
+
+void DocumentController::setAccountScope(const QString& key)
+{
+    if (key == m_accountKey)
+        return;
+    m_accountKey = key;
+    QSettings s = iniFile(m_dataDir);
+    if (!key.isEmpty() && !s.contains(recentSettingsKey()))
+        s.setValue(recentSettingsKey(), s.value(QStringLiteral("recentFiles")).toStringList());     // first use: a copy of the shared list
+    m_recent = s.value(recentSettingsKey()).toStringList();
+    emit recentFilesChanged();
+}
+
 void DocumentController::saveRecent()
 {
-    iniFile(m_dataDir).setValue(QStringLiteral("recentFiles"), m_recent);
+    iniFile(m_dataDir).setValue(recentSettingsKey(), m_recent);
     emit recentFilesChanged();
 }
 

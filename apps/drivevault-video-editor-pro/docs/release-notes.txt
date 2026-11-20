@@ -1,5 +1,10 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
+Version 1.18.0 (2026-11-20)
+--------------
+  - New: the recent projects on the Home screen belong to the signed-in Google account. Another account sees its own list; signing out shows the shared list (recent-projects.json as before). The first time an account is used it starts from a COPY of the shared list (which stays as it is). Signing in or out in another DriveVault program switches the list too.
+  - Tested: tst_projectmanager recentProjectsFollowTheAccount, tst_account (scope key), tst_ui_flow. Not tested: a real sign-in. The installer is unsigned and was not rebuilt.
+
 
 Version 1.17.0 (2026-11-20)
 --------------

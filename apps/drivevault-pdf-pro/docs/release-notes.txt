@@ -2,6 +2,8 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.24.0 (2026-11-20): The recent files belong to the signed-in Google account. Another account sees its own list; signing out shows the shared list (as before). The first time an account is used it starts from a COPY of the shared list (which stays as it is). Signing in or out in another DriveVault program switches the list too. Tested: tst_controller recentFilesFollowTheAccount (separate lists, switching back, copy on first use, restart), tst_account; tst_ui_flow ran with the same 1 failure as before this change (theAiCardFloatsOverThePages). Not tested: a real sign-in. The installer is unsigned and was not rebuilt.
+
 v1.23.0 (2026-11-20): Sign in with Google (optional) - the picture and name of the account in the title bar, shared with the other DriveVault programs. It opens Google's page in your default browser; signed in, the bar shows your round picture and name, and a click gives your e-mail and "Sign out". Signing in or out in Master Pro or Video Editor Pro shows here too (and the other way round), also while the programs run; one encrypted file per Windows user, no token kept. Nothing is locked without it. Tested: tst_account and a picture of the title bar signed in; tst_ui_flow ran with the same 2 failures as before this change (theAiCardFloatsOverThePages, clickingALinkGoesToItsPageOrAsksBeforeOpeningAnAddress). Not tested: a real sign-in with Google. The installer is unsigned and was not rebuilt.
 
 v1.22.2 (2026-11-19): Smaller installer that downloads Master Pro

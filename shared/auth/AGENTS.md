@@ -30,3 +30,11 @@ In C++: one `dv::account::GoogleAccount` per process, registered as a QML single
 - The real sign-in opens the system browser and talks to Google: do it only when the owner asks. The OAuth consent screen of the Google project may be in "Testing" (only listed test users can sign in) - that is a Google console setting, not code.
 - Do not add server-side checks, tokens, refresh logic or a "login required" wall without a new owner decision. Do not store more than the four fields.
 - A change here changes **every** program: build and run the UI tests of each (`scripts\build.ps1` of each app, `tst_account`, the UI test) - not `build-all.ps1` (owner only).
+
+## Per-account data (owner's request 2026-11-20: history follows the signed-in account)
+Master Pro: chats of both AI pages. PDF Pro: recent files. Video Editor Pro: recent projects. Each program asks `GoogleAccount::scopeKey()` ("" = nobody signed in) and listens to `changed()`:
+- Nobody signed in = the shared data exactly where it always was (nothing moved, nothing renamed). Signed in = a copy below `accounts/<key>` (Master Pro `<data>\ai\accounts\<key>\conversations-*.json`, Video Editor `<data>\accounts\<key>\recent-projects.json`, PDF Pro the ini section `accounts/<key>`).
+- The first time an account is used it starts from a COPY of the shared data (the shared data is never changed by that); another account starts from the same copy, never from a previous account's data. Switching back restores the account's own data. Never put the Google id, name or e-mail in a path (the key is a hash).
+- Settings (model, effort, language, theme, window size) are NOT per account.
+- Master Pro holds the switch back while an AI job runs (`AiService::applyHistoryScope`, retried on `busyChanged`).
+- A new per-account store needs a test like `recentProjectsFollowTheAccount` / `recentFilesFollowTheAccount` / `theChatHistoryFollowsTheAccount` (separate lists, switching back, copy on first use, restart).

@@ -42,3 +42,5 @@ Output: `build/release/bin/DriveVaultPdfPro.exe` (+ `pdfium.dll` copied next to 
 - PDFium is not thread safe: every call holds `pdfiumMutex()` (inside `PdfDocument`). Never call `FPDF_*` from anywhere else.
 - Do not name a QML type or singleton like a Qt Quick / Controls type (`TextMetrics`, `TabBar` are taken: the compiler then uses the Qt one); a Button already has `icon`, `text`, `font` ... as properties: the Thai line height singleton is `ThaiMetrics`.
 - `ListView` / `Repeater` delegates are not QObject children of the window: tests find them by walking `QQuickItem::childItems()`.
+
+- **Per-account data (1.40.0 / 1.24.0 / 1.18.0, owner's request 2026-11-20)**: this program keeps its history per signed-in Google account (rules and the shared pattern: `shared/auth/CLAUDE.md`, "Per-account data"); nobody signed in = the shared data as before; the first use of an account copies the shared data; settings are not per account.

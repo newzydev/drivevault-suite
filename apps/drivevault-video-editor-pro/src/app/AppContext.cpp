@@ -5,6 +5,8 @@
 #include "playback/FrameView.h"
 #include "timeline/TimelineViewModel.h"
 
+#include <QDir>
+#include <QFile>
 #include <QQmlEngine>
 #include <qqml.h>
 
@@ -21,15 +23,19 @@ AppContext::AppContext(QObject* parent)
     , mcp(&projects, &ai, &settings)
     , proxies(&projects, &settings)
 {
+    // a sign-in or sign-out (here or in another DriveVault program) changes whose recent projects are shown
+    connect(&account, &account::GoogleAccount::changed, this, &AppContext::applyAccountScope);
 }
 
 void AppContext::load()
 {
     settings.load();
-    recents.load();
+    applyAccountScope();
     language.apply();
     trimCache();
 }
+
+void AppContext::applyAccountScope() { recents.useAccount(account.scopeKey()); }
 
 void AppContext::trimCache()
 {

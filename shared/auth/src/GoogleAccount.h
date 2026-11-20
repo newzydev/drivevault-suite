@@ -34,6 +34,10 @@ public:
     QString name() const;
     QString email() const { return m_identity.value(QLatin1String("email")).toString(); }
     QUrl picture() const;
+    // Who the data of a program belongs to: "" while nobody is signed in (the data of everyone / the guest), else 24 hex digits of the SHA-256 of the
+    // Google id - stable for the same account, different for another one, and nothing personal in a folder name. Programs keep per-account data
+    // (history of chats / files / projects) below "accounts/<key>" and switch when changed() comes.
+    QString scopeKey() const;
     bool busy() const { return m_server != nullptr || m_working; }
     QString error() const { return m_error; }
 

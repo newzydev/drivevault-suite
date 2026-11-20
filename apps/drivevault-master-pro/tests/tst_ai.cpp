@@ -1094,6 +1094,50 @@ private slots:
         // nothing in the repository was changed by looking (the file is as we left it)
         QCOMPARE(QFile(dir + "/a.txt").size(), qint64(15));                                    // "one\nthree\nfour\n"
     }
+    // The chat history of both AI pages belongs to the signed-in Google account: another account has its own, signing out shows the shared history
+    // again, a new account starts from a copy of the shared files (which stay as they were), a running job holds the switch back, and the
+    // settings are not per account.
+    void theChatHistoryFollowsTheAccount()
+    {
+        dm::Hub::Options o;
+        o.registryRoot = kRoot;
+        o.dataDir = m_dir.filePath("hubaccounts");
+        dm::Hub hub(o);
+        const QString alice = QStringLiteral("aaaaaaaaaaaaaaaaaaaaaaaa"), bob = QStringLiteral("bbbbbbbbbbbbbbbbbbbbbbbb");
+        {
+            AiService ai(&hub);
+            auto* ask = qobject_cast<AiChannel*>(ai.ask());
+            auto* agent = qobject_cast<AiChannel*>(ai.agent());
+            QCOMPARE(ask->send("/help"), QString());                                  // the shared history: one chat on each page
+            QCOMPARE(agent->send("/help"), QString());
+            QCOMPARE(ask->conversations().size(), 1);
+            QCOMPARE(agent->conversations().size(), 1);
+
+            ai.setHistoryScope(alice);                                                // first use: a copy of the shared history
+            QCOMPARE(ask->conversations().size(), 1);
+            QCOMPARE(agent->conversations().size(), 1);
+            QVERIFY(QFile::exists(o.dataDir + "/ai/accounts/" + alice + "/conversations-ask.json"));
+            QVERIFY(ask->currentId().isEmpty());                                      // the page starts on a new chat, not inside one of the other owner
+            QTest::qWait(8);
+            QCOMPARE(ask->send("/help"), QString());                                  // Alice adds a chat
+            QCOMPARE(ask->conversations().size(), 2);
+
+            ai.setHistoryScope(bob);                                                  // Bob: the copy of the shared history, no chat of Alice
+            QCOMPARE(ask->conversations().size(), 1);
+            QCOMPARE(agent->conversations().size(), 1);
+
+            ai.setHistoryScope(alice);                                                // back: Alice's two chats
+            QCOMPARE(ask->conversations().size(), 2);
+            ai.setHistoryScope(QString());                                            // signed out: the shared history, without any account's chat
+            QCOMPARE(ask->conversations().size(), 1);
+            QCOMPARE(agent->conversations().size(), 1);
+        }
+        AiService again(&hub);                                                        // restarted, nobody signed in
+        QCOMPARE(qobject_cast<AiChannel*>(again.ask())->conversations().size(), 1);
+        again.setHistoryScope(alice);
+        QCOMPARE(qobject_cast<AiChannel*>(again.ask())->conversations().size(), 2);   // Alice's chats survived the restart
+    }
+
     void conversationsAreGroupedByTheirFolder()
     {
         const QString a = m_dir.filePath("groupA"), b = m_dir.filePath("groupB");

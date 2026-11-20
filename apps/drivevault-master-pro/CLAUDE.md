@@ -61,3 +61,5 @@ The real local model is tested only on request: `DM_TEST_REAL_LLM=1 build\releas
 ## Installer behaviour that must stay true (tested by the Video Editor `test-installer.ps1`, which only the owner runs)
 Installs to `C:\Program Files\DriveVault` (admin) or per-user; creates `installers` and `Common`; registers `Software\DriveVault\MasterPro`; **refuses to uninstall while any program is installed** (also silently);
 after uninstalling it removes the empty suite folder (delayed `rmdir`, only empty folders). Version resource: ProductName `DriveVault Master Pro`, CompanyName `DriveVault`.
+
+- **Per-account data (1.40.0 / 1.24.0 / 1.18.0, owner's request 2026-11-20)**: this program keeps its history per signed-in Google account (rules and the shared pattern: `shared/auth/CLAUDE.md`, "Per-account data"); nobody signed in = the shared data as before; the first use of an account copies the shared data; settings are not per account.

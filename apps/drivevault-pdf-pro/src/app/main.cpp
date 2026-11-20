@@ -128,6 +128,8 @@ int main(int argc, char* argv[])
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Assistant", &assistant);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Access", &access);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Account", &account);
+    controller.setAccountScope(account.scopeKey());            // the recent files of the signed-in account (and of the next one)
+    QObject::connect(&account, &dv::account::GoogleAccount::changed, &controller, [&] { controller.setAccountScope(account.scopeKey()); });
 
     QQmlApplicationEngine engine;
     if (parser.isSet(screenshotOption))

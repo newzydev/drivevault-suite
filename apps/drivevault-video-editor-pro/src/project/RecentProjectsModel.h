@@ -24,6 +24,10 @@ public:
     int count() const { return int(m_items.size()); }
 
     bool load(const QString& file = {});
+    // The list belongs to the signed-in account: key "" = the list of everyone (recent-projects.json, as before), else accounts/<key>/recent-projects.json.
+    // The first time an account is used it starts from a COPY of the list that was there (the shared list stays as it is), so signing in does not
+    // make the history vanish. Loads the list of that scope (an empty one when it does not exist).
+    void useAccount(const QString& key);
     bool save();
 
     Q_INVOKABLE void add(const QString& path, const QString& name);

@@ -105,3 +105,6 @@ Signing in with Google is **optional** and one account serves the whole suite (c
 - **Sync**: a program that signs in or out changes the file; every other program, running or started later, reloads it (folder watcher + a look every 2 s).
 - **Tests** set `DV_ACCOUNT_DIR` (plain `account.json` there) so they never touch the real account.
 - A new program adds `shared/auth` as in `shared/auth/CLAUDE.md`; the Google OAuth client is built in from a file outside the repository (`shared/scripts/make-oauth-header.ps1`).
+
+### Per-account data
+Programs keep their history per signed-in account (Master Pro: AI chats, PDF Pro: recent files, Video Editor Pro: recent projects) below `accounts/<key>` of their own data folder, `<key>` = `GoogleAccount::scopeKey()` (24 hex digits of the SHA-256 of the Google id). Nobody signed in = the shared data as before. The first use of an account copies the shared data. Details and rules: `shared/auth/CLAUDE.md`.
