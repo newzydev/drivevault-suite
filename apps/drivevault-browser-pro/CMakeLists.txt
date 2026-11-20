@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultBrowserPro
-    VERSION 1.5.0
+    VERSION 1.5.1
     DESCRIPTION "DriveVault Browser Pro - a web browser with a built-in ad blocker"
     LANGUAGES CXX)
 

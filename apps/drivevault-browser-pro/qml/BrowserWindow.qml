@@ -1878,22 +1878,17 @@ ApplicationWindow {
                         radius: 8
                         color: profileRow.hovered || profileRow.visualFocus ? Theme.surfaceHover : Theme.surface
                     }
+                    leftPadding: 10
+                    rightPadding: 10
                     contentItem: RowLayout {
-                        anchors.margins: 8
-                        spacing: 9
-                        Rectangle {
-                            Layout.preferredWidth: 32
-                            Layout.preferredHeight: 32
-                            radius: 16
-                            color: Theme.background
-                            Image { id: avatar; anchors.fill: parent; source: ProfileSession.picture; fillMode: Image.PreserveAspectFit }
-                            LineIcon { anchors.centerIn: parent; visible: avatar.status !== Image.Ready; kind: "globe"; color: win.accent }
-                        }
+                        spacing: 10
+                        ProfileAvatar { Layout.preferredWidth: 36; Layout.preferredHeight: 36; Layout.alignment: Qt.AlignVCenter }
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: 1
-                            Text { Layout.fillWidth: true; text: ProfileSession.name; textFormat: Text.PlainText; color: Theme.text; elide: Text.ElideRight }
-                            Text { Layout.fillWidth: true; text: ProfileSession.email; textFormat: Text.PlainText; color: Theme.textSecondary; elide: Text.ElideRight }
+                            Text { Layout.fillWidth: true; text: ProfileSession.name; textFormat: Text.PlainText; color: Theme.text; font.weight: Font.DemiBold; elide: Text.ElideRight }
+                            Text { Layout.fillWidth: true; text: ProfileSession.email; textFormat: Text.PlainText; color: Theme.textSecondary; font.pixelSize: 12; elide: Text.ElideRight }
                         }
                     }
                 }
