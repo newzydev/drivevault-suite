@@ -428,6 +428,10 @@ ApplicationWindow {
             languageChoices.itemAt(1).clicked()
             check("title bar language switch selects Thai and English", thaiSelected && Tr.lang === "en" && languageChoices.itemAt(1).current, "")
             Browser.settings.language = originalLanguage
+            menuButton.clicked()
+            check("toolbar menu opens below the three-dot button",
+                  mainMenu.visible && !mainMenu.modal && mainMenu.y > mainMenu.anchorPoint.y, mainMenu.y)
+            mainMenu.close()
             settingsButton.clicked()
             check("title bar settings button opens settings", settingsModal.visible && settingsModal.modal, "")
             settingsModal.close()
@@ -1028,9 +1032,11 @@ ApplicationWindow {
                     }
                 }
                 IconButton {
+                    id: menuButton
                     objectName: "menuButton"
                     kind: "menu"
                     tip: Tr.t("menu")
+                    active: mainMenu.visible
                     onClicked: mainMenu.open()
                 }
             }
@@ -1488,81 +1494,136 @@ ApplicationWindow {
         }
     }
 
-    CenterModal {
+    component ToolbarMenuRow: AbstractButton {
+        id: row
+        property string glyph
+        property string shortcutLabel
+        width: parent.width
+        height: 33
+        leftPadding: 9
+        rightPadding: 9
+        hoverEnabled: true
+        activeFocusOnTab: true
+        Accessible.role: Accessible.MenuItem
+        Accessible.name: text
+        background: Rectangle {
+            radius: 7
+            color: row.down || row.hovered || row.visualFocus ? Theme.surfaceHover : "transparent"
+        }
+        contentItem: RowLayout {
+            spacing: 10
+            LineIcon { kind: row.glyph; size: 15; color: row.enabled ? win.accent : Theme.textSecondary }
+            Text {
+                Layout.fillWidth: true
+                text: row.text
+                color: Theme.text
+                opacity: row.enabled ? 1 : 0.45
+                elide: Text.ElideRight
+            }
+            Text {
+                visible: row.shortcutLabel !== ""
+                text: row.shortcutLabel
+                color: Theme.textSecondary
+                font.pixelSize: 11
+            }
+        }
+    }
+
+    Popup {
         id: mainMenu
         objectName: "mainMenu"
-        width: Math.min(580, parent.width - 48)
-        height: Math.min(450, parent.height - 48)
+        parent: Overlay.overlay
+        popupType: Popup.Item
+        width: Math.min(350, parent.width - 16)
+        height: Math.min(menuEntries.implicitHeight + 16, parent.height - y - 8)
+        property point anchorPoint
+        x: Math.max(8, Math.min(anchorPoint.x - width, parent.width - width - 8))
+        y: anchorPoint.y + 5
+        focus: true
+        padding: 8
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        background: Rectangle { radius: 12; color: Theme.backgroundAlt; border.color: Theme.border }
+        onAboutToShow: {
+            anchorPoint = menuButton.mapToItem(parent, menuButton.width, menuButton.height)
+            menuScroll.contentY = 0
+        }
 
-        contentItem: ColumnLayout {
-            spacing: 0
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 60
-                Layout.leftMargin: 18
-                Layout.rightMargin: 12
-                spacing: 10
-                LineIcon { kind: "menu"; color: win.accent }
-                Text {
-                    text: Tr.t("menu")
-                    color: Theme.text
-                    font.pixelSize: 17
-                    font.weight: Font.DemiBold
-                    Layout.fillWidth: true
-                }
-                IconButton { kind: "close"; tip: Tr.t("close"); onClicked: mainMenu.close() }
-            }
-            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.borderSubtle }
-            Flickable {
-                id: menuScroll
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                contentWidth: width
-                contentHeight: actions.implicitHeight + 28
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                ScrollBar.vertical: ScrollBar {}
-
-                GridLayout {
-                    id: actions
-                    x: 16
-                    y: 14
-                    width: menuScroll.width - 32
-                    columns: 2
-                    columnSpacing: 8
-                    rowSpacing: 8
-                    Repeater {
-                        model: [
-                            { key: "newTab", run: () => win.addTab("", true) },
-                            { key: "newWindow", run: () => Browser.openWindow(false, "") },
-                            { key: "newPrivate", run: () => Browser.openWindow(true, "") },
-                            { key: "settings", run: () => settingsModal.open() },
-                            { key: "history", run: () => win.togglePanel("history") },
-                            { key: "bookmarks", run: () => win.togglePanel("bookmarks") },
-                            { key: "downloads", run: () => win.togglePanel("downloads") },
-                            { key: "find", run: () => win.openFind() },
-                            { key: "zoomIn", run: () => win.zoomBy(0.1) },
-                            { key: "zoomOut", run: () => win.zoomBy(-0.1) },
-                            { key: "zoomReset", run: () => win.zoomBy(0) },
-                            { key: "fullscreen", run: () => win.setFull(true) },
-                            { key: "savePdf", needsPage: true, run: () => pdfDialog.open() },
-                            { key: "print_page", needsPage: true, run: () => win.printPage(win.currentView) },
-                            { key: "reader_mode", needsPage: true, run: () => win.openReader() },
-                            { key: "page_capture", needsPage: true, run: () => captureDialog.open() },
-                            { key: "viewSource", needsPage: true, run: () => win.addTab("view-source:" + win.curUrl, true) },
-                            { key: "devtools", run: () => win.openDevTools() }
-                        ]
-                        delegate: BButton {
-                            required property var modelData
-                            Layout.fillWidth: true
-                            Layout.preferredWidth: 1
-                            Layout.preferredHeight: 38
-                            text: Tr.t(modelData.key)
-                            enabled: !modelData.needsPage || !win.curBlank
+        contentItem: Flickable {
+            id: menuScroll
+            contentWidth: width
+            contentHeight: menuEntries.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar {}
+            Column {
+                id: menuEntries
+                width: menuScroll.width
+                spacing: 1
+                Repeater {
+                    model: [
+                        { key: "newTab", icon: "plus", keys: "Ctrl+T", run: () => win.addTab("", true) },
+                        { key: "newWindow", icon: "plus", keys: "Ctrl+N", run: () => Browser.openWindow(false, "") },
+                        { key: "newPrivate", icon: "mask", keys: "Ctrl+Shift+N", run: () => Browser.openWindow(true, "") },
+                        { divider: true },
+                        { key: "history", icon: "history", keys: "Ctrl+H", run: () => win.togglePanel("history") },
+                        { key: "downloads", icon: "download", keys: "Ctrl+J", run: () => win.togglePanel("downloads") },
+                        { key: "bookmarks", icon: "bookmark", run: () => win.togglePanel("bookmarks") },
+                        { key: "tab_search", icon: "search", keys: "Ctrl+Shift+A", run: () => tabSearch.open() },
+                        { divider: true, zoom: true },
+                        { key: "print_page", icon: "print", keys: "Ctrl+P", needsPage: true, run: () => win.printPage(win.currentView) },
+                        { key: "find", icon: "find", keys: "Ctrl+F", run: () => win.openFind() },
+                        { key: "savePdf", icon: "download", needsPage: true, run: () => pdfDDialog.open() },
+                        { divider: true },
+                        { key: "viewSource", icon: "find", keys: "Ctrl+U", needsPage: true, run: () => win.addTab("view-source:" + win.curUrl, true) },
+                        { key: "devtools", icon: "info", keys: "F12", run: () => win.openDevTools() },
+                        { key: "settings", icon: "menu", run: () => settingsModal.open() }
+                    ]
+                    delegate: Column {
+                        id: section
+                        required property var modelData
+                        width: menuEntries.width
+                        Item {
+                            visible: !!section.modelData.divider
+                            width: parent.width
+                            height: 11
+                            Rectangle { anchors.verticalCenter: parent.verticalCenter; width: parent.width; height: 1; color: Theme.border }
+                        }
+                        ToolbarMenuRow {
+                            visible: !section.modelData.divider
+                            enabled: visible && (!section.modelData.needsPage || !win.curBlank)
+                            text: section.modelData.key ? Tr.t(section.modelData.key) : ""
+                            glyph: section.modelData.icon || "menu"
+                            shortcutLabel: section.modelData.keys || ""
                             onClicked: {
                                 mainMenu.close()
-                                modelData.run()
+                                section.modelData.run()
                             }
+                        }
+                        RowLayout {
+                            visible: !!section.modelData.zoom
+                            width: parent.width
+                            height: 38
+                            spacing: 5
+                            LineIcon { kind: "search"; size: 15; color: win.accent }
+                            Text { Layout.fillWidth: true; text: Tr.t("menu_zoom"); color: Theme.text }
+                            BButton { text: "−"; implicitWidth: 30; Accessible.name: Tr.t("zoomOut"); onClicked: win.zoomBy(-0.1) }
+                            BButton {
+                                implicitWidth: 55
+                                text: Math.round((win.currentView ? win.currentView.zoomFactor : 1) * 100) + "%"
+                                Accessible.name: Tr.t("zoomReset")
+                                onClicked: win.zoomBy(0)
+                            }
+                            BButton { text: "+"; implicitWidth: 30; Accessible.name: Tr.t("zoomIn"); onClicked: win.zoomBy(0.1) }
+                            BButton {
+                                text: Tr.t("fullscreen")
+                                onClicked: { mainMenu.close(); win.setFull(true) }
+                            }
+                        }
+                        Item {
+                            visible: !!section.modelData.zoom
+                            width: parent.width
+                            height: 11
+                            Rectangle { anchors.verticalCenter: parent.verticalCenter; width: parent.width; height: 1; color: Theme.border }
                         }
                     }
                 }

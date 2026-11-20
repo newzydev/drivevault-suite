@@ -4,6 +4,10 @@ A Chrome-like web browser for Windows (Qt 6.8, Qt WebEngine / Chromium) with a b
 
 **Status: version 1.0.0, published as the first stable release. The installer is built by `scripts\package.ps1` (not install-tested by an agent), and the program is listed in Master Pro.** Not done: extensions (on hold, see the plan), Google sign-in / sync (cancelled by the owner). The plan is `docs/Browser-Pro-Plan.md`; the first tests of the engine are in `docs/Phase0b-Results.md`.
 
+## Changes in 1.1.1
+
+The toolbar menu opens below the three-dot button, with grouped commands, keyboard shortcuts and inline zoom controls.
+
 ## Changes in 1.1.0
 
 Workspace shortcuts have their own storage and a three-dot menu to edit or remove them. Open tabs can be reordered and searched with Ctrl+Shift+A. Settings can clear cookies and reset saved permissions by website. The bookmarks panel can import a Chrome profile's Bookmarks file.

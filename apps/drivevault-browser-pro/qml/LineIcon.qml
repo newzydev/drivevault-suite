@@ -55,6 +55,8 @@ Canvas {
             }
             c.closePath()
             fill = kind === "starfill"
+        } else if (kind === "print") {
+            c.rect(2, 6, 12, 6); c.rect(5, 2, 6, 4); c.rect(5, 10, 6, 4)
         } else if (kind === "download") {
             c.moveTo(8, 2.5); c.lineTo(8, 10); c.moveTo(4.8, 7); c.lineTo(8, 10.2); c.lineTo(11.2, 7); c.moveTo(3, 13); c.lineTo(13, 13)
         } else if (kind === "menu") {

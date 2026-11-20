@@ -104,6 +104,7 @@ QtObject {
         "ntp_add_shortcut": ["Add shortcut", "เพิ่มทางลัด"],
         "ntp_edit_shortcut": ["Edit shortcut", "แก้ไขทางลัด"],
         "tab_search": ["Search open tabs", "ค้นหาแท็บที่เปิดอยู่"],
+        "menu_zoom": ["Zoom", "ซูม"],
         "tab_no_results": ["No matching tabs", "ไม่พบแท็บที่ตรงกัน"],
         "reader_mode": ["Reader mode", "โหมดอ่าน"],
         "reader_empty": ["No readable text found on this page.", "ไม่พบข้อความให้อ่านในหน้านี้"],
