@@ -106,9 +106,12 @@ Rectangle {
         BButton {
             objectName: "homeSignInButton"
             visible: !ProfileSession.signedIn
-            text: Tr.t("ntp_sign_in")
+            text: Tr.t(ProfileSession.signingIn ? "ntp_sign_in_cancel" : "ntp_sign_in")
             variant: "primary"
-            onClicked: ProfileSession.signIn()
+            onClicked: {
+                if (ProfileSession.signingIn) ProfileSession.cancelSignIn()
+                else ProfileSession.signIn()
+            }
         }
         AbstractButton {
             id: avatarButton
@@ -136,6 +139,19 @@ Rectangle {
                 LineIcon { anchors.centerIn: parent; visible: avatarImage.status !== Image.Ready; kind: "globe"; color: page.accent }
             }
         }
+    }
+    Text {
+        visible: accountRow.visible && !ProfileSession.signedIn && text !== ""
+        anchors.top: accountRow.bottom
+        anchors.right: accountRow.right
+        anchors.topMargin: 6
+        z: 1
+        width: Math.min(page.width - 32, 360)
+        horizontalAlignment: Text.AlignRight
+        wrapMode: Text.WordWrap
+        color: Theme.text
+        text: ProfileSession.signingIn ? Tr.t("ntp_sign_in_wait")
+            : ProfileSession.signInError ? Tr.t("ntp_sign_in_" + ProfileSession.signInError) : ""
     }
 
 TapHandler {

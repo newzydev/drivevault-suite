@@ -10,7 +10,7 @@
 #include <QDir>
 #include <QEventLoop>
 #include <QFile>
-#include <QFileDialog>
+
 #include <QImage>
 #include <QImageReader>
 #include <QInputDialog>
@@ -25,7 +25,7 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QSaveFile>
-#include <QScopedValueRollback>
+
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
@@ -151,7 +151,7 @@ QByteArray request(QNetworkAccessManager& network, QNetworkRequest req, const QB
     return result;
 }
 
-QJsonObject googleProfile(const QString& client, const QString& secret)
+QJsonObject googleProfile(const QString& client, const QString& secret, ProfileSession* session)
 {
     QTcpServer server;
     if (!server.listen(QHostAddress::LocalHost)) return {};
@@ -173,14 +173,9 @@ QJsonObject googleProfile(const QString& client, const QString& secret)
     query.addQueryItem("code_challenge_method", "S256");
     query.addQueryItem("code_challenge", QString::fromLatin1(QCryptographicHash::hash(verifier, QCryptographicHash::Sha256).toBase64(encoding)));
     authorize.setQuery(query);
-    QDialog waiting;
-    waiting.setWindowTitle(QStringLiteral("DriveVault Browser Pro"));
-    auto* layout = new QVBoxLayout(&waiting);
-    layout->addWidget(new QLabel(QStringLiteral("Complete Google sign-in in your browser.\nเข้าสู่ระบบ Google ในเบราว์เซอร์ของคุณ")));
-    auto* cancel = new QPushButton(QStringLiteral("Cancel / ยกเลิก"));
-    layout->addWidget(cancel);
-    QObject::connect(cancel, &QPushButton::clicked, &waiting, &QDialog::reject);
-    QTimer::singleShot(180000, &waiting, &QDialog::reject);
+    QEventLoop waiting;
+    QTimer::singleShot(180000, &waiting, &QEventLoop::quit);
+    QObject::connect(session, &ProfileSession::signInCancelled, &waiting, &QEventLoop::quit);
     QString code;
     bool received = false;
     QObject::connect(&server, &QTcpServer::newConnection, &waiting, [&] {
@@ -205,7 +200,7 @@ QJsonObject googleProfile(const QString& client, const QString& secret)
             if (expected) {
                 received = true;
                 server.close();
-                waiting.accept();
+                waiting.quit();
             }
         };
         QObject::connect(socket, &QTcpSocket::readyRead, &waiting, consume);
@@ -213,7 +208,9 @@ QJsonObject googleProfile(const QString& client, const QString& secret)
         QTimer::singleShot(5000, socket, &QTcpSocket::abort);
         if (socket->bytesAvailable()) consume();
     });
-    if (!QDesktopServices::openUrl(authorize) || waiting.exec() != QDialog::Accepted || code.isEmpty()) return {};
+    if (!QDesktopServices::openUrl(authorize)) return {};
+    if (!received) waiting.exec();
+    if (code.isEmpty()) return {};
 
     QNetworkAccessManager network;
     QNetworkRequest token{QUrl(QStringLiteral("https://oauth2.googleapis.com/token"))};
@@ -298,55 +295,20 @@ bool ProfileSession::load()
 
 bool ProfileSession::authenticate()
 {
-    QString client = qEnvironmentVariable("GOOGLE_LOGIN_CLIENT_ID").trimmed();
-    QString secret = qEnvironmentVariable("GOOGLE_LOGIN_CLIENT_SECRET").trimmed();
-    if (client.isEmpty() && secret.isEmpty()) {
         const auto builtIn = embeddedOAuth();
-        client = builtIn.value("GOOGLE_LOGIN_CLIENT_ID").toString();
-        secret = builtIn.value("GOOGLE_LOGIN_CLIENT_SECRET").toString();
-    }
-    const QString configPath = m_root + QStringLiteral("/google-oauth.bin");
-    if (client.isEmpty() && secret.isEmpty()) {
-        QFile stored(configPath);
-        if (stored.open(QIODevice::ReadOnly) && stored.size() <= 16384) {
-            const auto config = QJsonDocument::fromJson(protect(stored.readAll(), false)).object();
-            client = config.value("client").toString();
-            secret = config.value("secret").toString();
-        }
-    }
-    if (!client.endsWith(".apps.googleusercontent.com") || secret.isEmpty()) {
-        const auto path = QFileDialog::getOpenFileName(nullptr,
-            trText("Choose Google Desktop OAuth credentials", "เลือกไฟล์ OAuth ของ Google สำหรับแอปเดสก์ท็อป"),
-            QString(), trText("Credential text files (*.txt *.env);;All files (*)", "ไฟล์ข้อมูลรับรอง (*.txt *.env);;ทุกไฟล์ (*)"));
-        if (path.isEmpty()) return false;
-        QFile file(path);
-        if (file.open(QIODevice::ReadOnly) && file.size() <= 16384) {
-            const auto lines = QString::fromUtf8(file.readAll()).split('\n');
-            for (const auto& line : lines) {
-                const auto separator = line.indexOf('=');
-                if (separator < 0) continue;
-                const auto key = line.left(separator).trimmed();
-                auto value = line.mid(separator + 1).trimmed();
-                if (value.size() >= 2 && (value.startsWith('"') || value.startsWith('\'')) && value.back() == value.front())
-                    value = value.mid(1, value.size() - 2);
-                if (key == "GOOGLE_LOGIN_CLIENT_ID") client = value;
-                if (key == "GOOGLE_LOGIN_CLIENT_SECRET") secret = value;
-            }
-        }
-        if (!client.endsWith(".apps.googleusercontent.com") || secret.isEmpty()
-            || !writeProtected(configPath, QJsonDocument(QJsonObject{{"client", client}, {"secret", secret}}).toJson(QJsonDocument::Compact))) {
-            QMessageBox::warning(nullptr, "DriveVault Browser Pro",
-                trText("Could not import the OAuth credentials.", "นำเข้าข้อมูล OAuth ไม่สำเร็จ"));
-            return false;
-        }
-    }
-    auto profile = googleProfile(client, secret);
-    if (profile.isEmpty()) {
-        QMessageBox::information(nullptr, "DriveVault Browser Pro",
-            trText("Google sign-in did not complete.", "เข้าสู่ระบบ Google ไม่สำเร็จหรือถูกยกเลิก"));
+    const auto client = builtIn.value("GOOGLE_LOGIN_CLIENT_ID").toString();
+    const auto secret = builtIn.value("GOOGLE_LOGIN_CLIENT_SECRET").toString();
+    if (builtIn.value("client_type").toString() != "installed" || client.isEmpty() || secret.isEmpty()) {
+        m_signInError = QStringLiteral("unavailable");
         return false;
     }
-    const auto previous = m_account;
+    auto profile = googleProfile(client, secret, this);
+    if (m_cancelled) return false;
+    if (profile.isEmpty()) {
+        m_signInError = QStringLiteral("failed");
+        return false;
+    }
+const auto previous = m_account;
     m_account = profile;
     QFile preferences(directory() + QStringLiteral("/pin.bin"));
     if (preferences.open(QIODevice::ReadOnly) && preferences.size() <= 16384) {
@@ -402,12 +364,25 @@ bool ProfileSession::start()
 void ProfileSession::signIn()
 {
     if (signedIn() || m_locked || m_signingIn) return;
-    const QScopedValueRollback signingIn(m_signingIn, true);
-    if (!authenticate()) return;
+    m_signingIn = true;
+    m_cancelled = false;
+    m_signInError.clear();
+    emit signInChanged();
+    const bool authenticated = authenticate();
+    m_signingIn = false;
+    emit signInChanged();
+    if (!authenticated) return;
     m_restartRequested = true;
     qApp->quit();
 }
 
+
+void ProfileSession::cancelSignIn()
+{
+    if (!m_signingIn) return;
+    m_cancelled = true;
+    emit signInCancelled();
+}
 
 bool ProfileSession::unlock()
 {

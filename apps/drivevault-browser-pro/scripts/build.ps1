@@ -11,24 +11,27 @@ $ErrorActionPreference = 'Continue'
 $build = Join-Path $DvRoot "build\$($Config.ToLower())"
 if ($Clean -and (Test-Path $build)) { Remove-Item $build -Recurse -Force }
 # Keep the Desktop OAuth material out of source control and compiler command lines.
-$oauthPath = if ($env:DV_GOOGLE_OAUTH_FILE) { $env:DV_GOOGLE_OAUTH_FILE } else {
-    Join-Path (Split-Path -Parent $SuiteRoot) 'GOOGLE_LOGIN_CLIENT_ID.txt'
-}
+$oauthPath = $env:DV_GOOGLE_OAUTH_FILE
 $oauthHeader = Join-Path $build 'generated/GoogleDesktopOAuth.h'
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $oauthHeader) | Out-Null
 $oauth = @{}
-if (Test-Path -LiteralPath $oauthPath -PathType Leaf) {
-    foreach ($line in Get-Content -LiteralPath $oauthPath) {
-        if ($line -match '^\s*(GOOGLE_LOGIN_CLIENT_(?:ID|SECRET))\s*=\s*(.+?)\s*$') {
-            $oauth[$Matches[1]] = $Matches[2].Trim().Trim([char]34, [char]39)
-        }
+if ($oauthPath) {
+    if (!(Test-Path -LiteralPath $oauthPath -PathType Leaf)) {
+        throw 'The configured Google Desktop OAuth JSON file does not exist.'
     }
-    if ($oauth['GOOGLE_LOGIN_CLIENT_ID'] -notmatch '^[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$' -or
-        $oauth['GOOGLE_LOGIN_CLIENT_SECRET'] -notmatch '^[A-Za-z0-9_-]+$') {
-        throw 'Invalid Google Desktop OAuth credential file.'
+    $installed = $null
+    try {
+        $installed = (Get-Content -LiteralPath $oauthPath -Raw | ConvertFrom-Json -ErrorAction Stop).installed
+    } catch {
+        throw 'Expected Google OAuth Desktop app JSON.'
     }
-} elseif ($env:DV_GOOGLE_OAUTH_FILE) {
-    throw 'The configured Google Desktop OAuth file does not exist.'
+    if (!$installed -or $installed.client_id -notmatch '^[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$' -or
+        $installed.client_secret -notmatch '^[A-Za-z0-9_-]+$') {
+        throw 'Expected Google OAuth Desktop app JSON with an installed client, not Web application credentials.'
+    }
+    $oauth['GOOGLE_LOGIN_CLIENT_ID'] = $installed.client_id
+    $oauth['GOOGLE_LOGIN_CLIENT_SECRET'] = $installed.client_secret
+    $oauth['client_type'] = 'installed'
 }
 $key = $iv = $ciphertext = ''
 if ($oauth.Count -gt 0) {

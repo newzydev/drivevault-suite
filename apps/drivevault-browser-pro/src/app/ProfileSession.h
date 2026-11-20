@@ -15,12 +15,16 @@ class ProfileSession final : public QObject {
     Q_PROPERTY(QUrl picture READ picture CONSTANT)
     Q_PROPERTY(bool signedIn READ signedIn CONSTANT)
     Q_PROPERTY(bool locked READ locked NOTIFY lockedChanged)
+    Q_PROPERTY(bool signingIn READ signingIn NOTIFY signInChanged)
+    Q_PROPERTY(QString signInError READ signInError NOTIFY signInChanged)
 public:
     ProfileSession(QString root, bool english);
     bool start();
     QString directory() const;
     bool signedIn() const;
     bool locked() const { return m_locked; }
+    bool signingIn() const { return m_signingIn; }
+    QString signInError() const { return m_signInError; }
     bool restartRequested() const { return m_restartRequested; }
     QString name() const;
     QString email() const;
@@ -28,9 +32,12 @@ public:
     void enableLock();
     Q_INVOKABLE void showOptions();
     Q_INVOKABLE void signIn();
+    Q_INVOKABLE void cancelSignIn();
 
 signals:
     void lockedChanged();
+    void signInChanged();
+    void signInCancelled();
 
 protected:
     bool eventFilter(QObject*, QEvent*) override;
@@ -52,6 +59,8 @@ private:
     QDialog* m_profileDialog = nullptr;
     bool m_locked = false;
     bool m_signingIn = false;
+    bool m_cancelled = false;
+    QString m_signInError;
     bool m_restartRequested = false;
 };
 

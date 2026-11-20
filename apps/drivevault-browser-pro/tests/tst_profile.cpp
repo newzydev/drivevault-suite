@@ -23,25 +23,39 @@ class TstProfile : public QObject {
     QUrl authorization;
     Q_INVOKABLE void captureAuthorization(const QUrl& url) { authorization = url; }
 private slots:
+    void unconfiguredLoginReportsInlineError()
+    {
+        if (dv::br::desktopOAuth::ciphertext[0])
+            QSKIP("This build has Desktop credentials.");
+        QTemporaryDir root;
+        QVERIFY(root.isValid());
+        dv::br::ProfileSession session(root.path(), true);
+        QVERIFY(session.start());
+        session.signIn();
+        QCOMPARE(session.signInError(), QStringLiteral("unavailable"));
+        QVERIFY(!session.signingIn());
+        QVERIFY(!QApplication::activeModalWidget());
+    }
+
     void bundledLoginOpensAuthorizationWithoutImport()
     {
         if (!dv::br::desktopOAuth::ciphertext[0])
             QSKIP("No credentials were supplied to the build.");
         QTemporaryDir root;
         QVERIFY(root.isValid());
-        if (qEnvironmentVariableIsSet("GOOGLE_LOGIN_CLIENT_ID") || qEnvironmentVariableIsSet("GOOGLE_LOGIN_CLIENT_SECRET"))
-            QSKIP("Environment overrides the bundled client.");
-        QDesktopServices::setUrlHandler("https", this, "captureAuthorization");
-        QTimer inputTimer;
-        connect(&inputTimer, &QTimer::timeout, this, [&] {
-            if (auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget())) dialog->reject();
-        });
-        inputTimer.start(25);
         dv::br::ProfileSession session(root.path(), true);
         QVERIFY(session.start());          // no welcome dialog: the browser opens as a guest
         QVERIFY(!session.signedIn());
+        QDesktopServices::setUrlHandler("https", this, "captureAuthorization");
+        bool waitedInline = false;
+        QTimer::singleShot(100, &session, [&] {
+            waitedInline = session.signingIn() && !QApplication::activeModalWidget();
+            session.cancelSignIn();
+        });
         session.signIn();                  // the Home page button
         QDesktopServices::unsetUrlHandler("https");
+        QVERIFY(!QApplication::activeModalWidget());
+        QVERIFY(waitedInline);
         QVERIFY(authorization.host() == "accounts.google.com");
         const QUrlQuery query(authorization);
         QVERIFY(query.queryItemValue("client_id").endsWith(".apps.googleusercontent.com"));
