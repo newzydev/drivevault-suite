@@ -2,7 +2,9 @@
 .SYNOPSIS  Writes GoogleDesktopOAuth.h: the suite's Google "Desktop app" OAuth client, AES-256 encrypted, for shared\auth.
 .DESCRIPTION
   The client id and secret are NOT in the repository. They are read from (first one that exists):
-    $env:DV_GOOGLE_OAUTH_FILE, <folder above the repository>\GOOGLE_LOGIN_CLIENT_ID.txt, a client_secret_*.json of Google ("installed") in that folder.
+    $env:DV_GOOGLE_OAUTH_FILE, else a client_secret_*.json of Google ("installed" = Desktop app) in the folder above the repository,
+    else GOOGLE_LOGIN_CLIENT_ID.txt there. The JSON wins because the txt can hold the pair of an older, different client
+    (it gave redirect_uri_mismatch on 2026-11-20: only a Desktop client accepts the loopback address of the sign-in).
   The txt file has the lines GOOGLE_LOGIN_CLIENT_ID=... and GOOGLE_LOGIN_CLIENT_SECRET=...
   Without a file an EMPTY header is written (the program builds, and its Google sign-in says "not available").
   The key is stored next to the ciphertext in the program: this hides the pair from a casual look at the exe, it is not a secret store.
@@ -18,10 +20,11 @@ $above = Split-Path -Parent $suiteRoot
 function Find-Source {
     if ($Source) { return $Source }
     if ($env:DV_GOOGLE_OAUTH_FILE) { return $env:DV_GOOGLE_OAUTH_FILE }
-    $txt = Join-Path $above 'GOOGLE_LOGIN_CLIENT_ID.txt'
-    if (Test-Path -LiteralPath $txt -PathType Leaf) { return $txt }
+    # the JSON that Google gives for a "Desktop app" client comes first: the txt may also hold the pair of an older, different client
     $json = Get-ChildItem -LiteralPath $above -Filter 'client_secret_*.json' -File -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($json) { return $json.FullName }
+    $txt = Join-Path $above 'GOOGLE_LOGIN_CLIENT_ID.txt'
+    if (Test-Path -LiteralPath $txt -PathType Leaf) { return $txt }
     return $null
 }
 
