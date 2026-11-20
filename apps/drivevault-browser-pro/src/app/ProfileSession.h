@@ -46,7 +46,7 @@ public:
     Q_INVOKABLE void requestSignOut();
     Q_INVOKABLE void signIn();
     Q_INVOKABLE void cancelSignIn();
-    // Google refuses to sign in inside the embedded engine: open Google in the system browser (with this account as the hint) and wait for it to call back.
+    // Google refuses to sign in inside the embedded engine: open Google in the system browser (with the signed-in profile, if any, as the hint) and wait for it to call back.
     // The system browser's sign-in is NOT shared with the pages of this browser; this only brings the user back here. false = could not start.
     Q_INVOKABLE bool signInOnGoogle();
     Q_INVOKABLE void setInitialPin(const QString& pin, const QString& confirmation);

@@ -1235,10 +1235,10 @@ ApplicationWindow {
                         onNavigationRequested: request => {
                             if (!request.isMainFrame) return
                             // Google refuses to sign in inside this engine: its sign-in page opens in the system browser instead.
-                            // A Google profile gets a round trip (the system browser comes back to this window); anyone else just gets the page there.
+                            // Every window gets a round trip (the system browser calls back and this window comes to the front); the profile's e-mail is only a hint.
                             if (Browser.isGoogleSignInPage(request.url)) {
                                 request.action = WebEngineNavigationRequest.IgnoreRequest
-                                if (!win.privateMode && ProfileSession.signedIn && !ProfileSession.googleSignInWaiting) {
+                                if (!ProfileSession.googleSignInWaiting) {
                                     win.googleSignInOwner = true
                                     if (!ProfileSession.signInOnGoogle()) win.googleSignInOwner = false
                                 }

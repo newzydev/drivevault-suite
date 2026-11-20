@@ -387,7 +387,7 @@ void ProfileSession::signIn()
 
 bool ProfileSession::signInOnGoogle()
 {
-    if (!signedIn() || m_guestSession || m_locked || m_googleServer) return false;
+    if (m_locked || m_googleServer) return false;
     const auto builtIn = embeddedOAuth();
     const auto client = builtIn.value("GOOGLE_LOGIN_CLIENT_ID").toString();
     const auto stateBytes = randomBytes(32);
@@ -408,7 +408,7 @@ bool ProfileSession::signInOnGoogle()
     query.addQueryItem("response_type", "code");
     query.addQueryItem("scope", "openid email");
     query.addQueryItem("state", m_googleState);
-    query.addQueryItem("login_hint", email());
+    if (signedIn()) query.addQueryItem("login_hint", email());
     authorize.setQuery(query);
 
     auto finish = [this, server](bool completed) {
