@@ -96,13 +96,7 @@ private slots:
     {
         Hub hub(options());
         hub.setLanguage("en");
-        QCOMPARE(hub.products().size(), 8);                                 // 3 multimedia + 4 office programs + Browser Pro (section "other")
-        const QVariantMap browser = find(hub, "drivevault.browser");
-        QCOMPARE(browser.value("key").toString(), QStringLiteral("BrowserPro"));
-        QCOMPARE(browser.value("accent").toString(), QStringLiteral("#06B6D4"));
-        QCOMPARE(browser.value("section").toString(), QStringLiteral("other"));
-        QCOMPARE(browser.value("status").toString(), QStringLiteral("notInstalled"));      // it exists (a beta), so it is not "coming soon"
-        QVERIFY(!browser.value("installed").toBool());
+        QCOMPARE(hub.products().size(), 7);                                 // 3 multimedia + 4 office programs
         const QVariantMap video = find(hub, "drivevault.videoeditor");
         QCOMPARE(video.value("section").toString(), QStringLiteral("multimedia"));
         QCOMPARE(video.value("glyph").toString(), QStringLiteral("V"));
@@ -161,7 +155,7 @@ private slots:
         QVERIFY(!extra.isEmpty());
         QCOMPARE(extra.value("status").toString(), QStringLiteral("installed"));
         QCOMPARE(extra.value("accent").toString(), QStringLiteral("#EC4899"));
-        QCOMPARE(hub.products().size(), 9);
+        QCOMPARE(hub.products().size(), 8);
         QCOMPARE(extra.value("section").toString(), QStringLiteral("other"));       // a program the hub does not know gets its own section
     }
 

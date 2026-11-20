@@ -63,23 +63,6 @@ NVIDIA อาจประมวลผลและเก็บข้อมูล�
 เมื่อเปิด "เว็บ" AI อาจส่งคำค้นไปที่ DuckDuckGo และขอหน้าเว็บจากเว็บไซต์อื่นด้วย คำตอบของ AI อาจผิดพลาดหรือไม่ครบถ้วน โปรดตรวจสอบก่อนนำไปใช้
 หน้าเอเจนติกเอไอแก้ไฟล์และรันคำสั่งบนเครื่องของคุณด้วยสิทธิ์ของคุณได้เมื่อคุณอนุญาต โปรดตรวจสิ่งที่มันจะทำก่อนอนุญาต
 '@
-    },
-    @{
-        Folder = 'drivevault-browser-pro'; Name = 'DriveVault Browser Pro'
-        NotesEn = @'
-Browser Pro opens the websites you ask for and talks to the Internet only for that, and when you press "Update filter lists" (it then downloads the four ad-blocking lists from easylist.to over https) or when you save a video (it then downloads that video from the website that shows it).
-It keeps your history, bookmarks, cookies, cache and the permissions you allow on this computer only; a private window keeps nothing on the disk. It does not sign in to any account, does not sync and sends no usage data to DriveVault.
-The ad blocker, the tracker blocker and the protection against ad-blocker detection work from public filter lists and fixed rules; they can break a website or miss an advertisement, and a website may still show a message about ad blockers. Turn the shield off for a site that does not work.
-Saving a video: only save what you have the right to keep. The Software refuses streams that are copy protected (DRM) and does not offer saving from YouTube and from subscription or music streaming services, whose terms forbid it. The websites you visit keep their own terms and copyrights.
-The browser engine is Chromium (through Qt WebEngine) built without the H.264 and AAC codecs, so some videos do not play. Web pages can be harmful: keep Windows up to date and do not enter passwords on websites you do not trust. This version has no extensions.
-'@
-        NotesTh = @'
-Browser Pro เปิดเว็บไซต์ที่คุณสั่ง และติดต่ออินเทอร์เน็ตเฉพาะเรื่องนั้น เมื่อคุณกด "อัปเดตลิสต์ตัวกรอง" (จะดาวน์โหลดลิสต์บล็อกโฆษณา 4 รายการจาก easylist.to ผ่าน https) หรือเมื่อคุณบันทึกวิดีโอ (จะดาวน์โหลดวิดีโอนั้นจากเว็บไซต์ที่แสดงอยู่)
-ประวัติ บุ๊กมาร์ก คุกกี้ แคช และสิทธิ์ที่คุณอนุญาตถูกเก็บในเครื่องของคุณเท่านั้น หน้าต่างส่วนตัวไม่เก็บอะไรลงดิสก์ โปรแกรมไม่ล็อกอินบัญชีใด ไม่ซิงก์ และไม่ส่งข้อมูลการใช้งานให้ DriveVault
-ตัวบล็อกโฆษณา ตัวบล็อกตัวติดตาม และการป้องกันการตรวจจับตัวบล็อกโฆษณา ทำงานจากลิสต์ตัวกรองสาธารณะและกฎที่กำหนดไว้ อาจทำให้เว็บไซต์เสียหรือพลาดโฆษณาบางตัว และเว็บไซต์อาจยังแสดงข้อความเรื่องตัวบล็อกโฆษณาได้ ปิดโล่สำหรับเว็บไซต์ที่ใช้ไม่ได้
-การบันทึกวิดีโอ: บันทึกเฉพาะสิ่งที่คุณมีสิทธิ์เก็บ ซอฟต์แวร์ปฏิเสธสตรีมที่มีการป้องกันการคัดลอก (DRM) และไม่เสนอการบันทึกจาก YouTube และบริการสตรีมแบบสมัครสมาชิกหรือเพลง ซึ่งข้อกำหนดของเขาห้ามไว้ เว็บไซต์ที่คุณเข้ามีข้อกำหนดและลิขสิทธิ์ของตัวเอง
-เอนจินเบราว์เซอร์คือ Chromium (ผ่าน Qt WebEngine) ที่สร้างโดยไม่มีตัวถอดรหัส H.264 และ AAC วิดีโอบางรายการจึงเล่นไม่ได้ หน้าเว็บอาจเป็นอันตราย โปรดอัปเดต Windows อยู่เสมอ และอย่ากรอกรหัสผ่านในเว็บไซต์ที่ไม่น่าเชื่อถือ รุ่นนี้ยังไม่มีส่วนขยาย
-'@
     }
 )
 

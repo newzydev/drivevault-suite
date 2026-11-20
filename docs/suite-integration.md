@@ -75,15 +75,12 @@ Exit code 0 = success. Installing a newer version over an old one upgrades in pl
 
 PDF Pro uses the same switches and the setup filename `DriveVault-PDF-Pro-Setup-x64.exe`. Its permanent AppId is `{9835145C-1C5A-48CB-A1CE-3F29EC3037BA}`. The registry key and data folder are `PdfPro`, the manifest ID is `drivevault.pdf`, and the release slug is `drivevault-pdf-pro`. Its `OpenWithProgids` registration offers PDF Pro for `.pdf` while leaving the default app under Windows user control.
 
-Browser Pro (0.6.0, beta) follows the same rules: setup filename `DriveVault-Browser-Pro-Setup-x64.exe`, permanent AppId `{0013FBD7-EDB6-4FA9-A5C5-9B31517C66D0}`, registry key and data folder `BrowserPro` (the data is `%LOCALAPPDATA%\DriveVault\BrowserPro`, never removed by the uninstaller), manifest ID `drivevault.browser`, release slug `drivevault-browser-pro`. It does not register itself as the default browser or for any file type. Its installer carries Qt WebEngine (Chromium), FFmpeg (`ffmpeg\`) and a snapshot of four filter lists (`filters\`); gates: `apps\drivevault-browser-pro\scripts\license-audit.ps1`.
-
 ## Brand colours (one accent colour per product)
 
 | Product | Accent | Status |
 |---|---|---|
 | Video Editor Pro | **#8B5CF6** (violet) | in use |
 | PDF Pro | **#EF4444** (red) | in use |
-| Browser Pro | **#06B6D4** (cyan) | in use |
 | Image editor | #3B82F6 (blue) | proposal |
 | Audio editor | #10B981 (emerald) | proposal |
 | Master Pro (hub) | #F59E0B (amber) | proposal |

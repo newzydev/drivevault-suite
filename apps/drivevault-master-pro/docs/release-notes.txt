@@ -1,6 +1,9 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.38.1 (2026-11-20): DriveVault Browser Pro is no longer part of the suite and is removed from the program list.
+  - Removed: the Browser Pro card, its update slug and the matching hub test. A Browser Pro that is still installed is no longer listed or updated by this hub. The built-in browser tab of Master Pro is unchanged. The installer is unsigned.
+
 v1.38.0 (2026-11-19): DriveVault Browser Pro in the program list
   - New: a card for DriveVault Browser Pro (cyan, section "Other programs"): shows it, opens it, updates it from its GitHub releases (slug drivevault-browser-pro) and uninstalls it like the other programs. Browser Pro is a beta; until a Release is published the card offers an install only from a setup file on this PC.
   - Tested: tst_hub (the card, its colour, section and status). The installer of Browser Pro was built but not install-tested.

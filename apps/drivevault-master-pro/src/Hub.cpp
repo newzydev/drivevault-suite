@@ -77,10 +77,6 @@ const CatalogEntry kCatalog[] = {
      u"Read, search, edit, fill forms, merge, split, compress, protect, sign and OCR PDF files. Everything runs on your PC.",
      u"อ่าน ค้นหา แก้ไข กรอกฟอร์ม รวม แยก บีบอัด ป้องกัน ลงนาม และ OCR ไฟล์ PDF ทำงานบนเครื่องของคุณทั้งหมด",
      "office", "PDF"},
-    {"drivevault.browser", "BrowserPro", "DriveVault Browser Pro", "#06B6D4", false,
-     u"Web browser (Chromium) with an ad blocker, protection against ad-blocker detection, picture in picture and a video saver. Beta - no extensions yet. Everything stays on your PC.",
-     u"เว็บเบราว์เซอร์ (Chromium) พร้อมตัวบล็อกโฆษณา การป้องกันการตรวจจับตัวบล็อกโฆษณา ภาพซ้อนภาพ และตัวบันทึกวิดีโอ รุ่นทดลอง - ยังไม่มีส่วนขยาย ข้อมูลอยู่ในเครื่องของคุณทั้งหมด",
-     "other", "B"},
 };
 
 struct Registered {
@@ -119,7 +115,6 @@ QString slugForKey(const QString& key)
 {
     if (key.compare(QLatin1String("PdfPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-pdf-pro");
     if (key.compare(QLatin1String("VideoEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-video-editor-pro");
-    if (key.compare(QLatin1String("BrowserPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-browser-pro");
     if (key.compare(QLatin1String("ImageEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-image-editor-pro");
     if (key.compare(QLatin1String("AudioEditorPro"), Qt::CaseInsensitive) == 0) return QStringLiteral("drivevault-audio-editor-pro");
     return {};

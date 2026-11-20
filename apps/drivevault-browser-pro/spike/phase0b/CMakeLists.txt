@@ -1,7 +1,0 @@
-cmake_minimum_required(VERSION 3.28)
-project(BrowserSpike LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_AUTOMOC ON)
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Widgets WebEngineCore WebEngineWidgets)
-add_executable(spike main.cpp)
-target_link_libraries(spike PRIVATE Qt6::Widgets Qt6::WebEngineCore Qt6::WebEngineWidgets)
