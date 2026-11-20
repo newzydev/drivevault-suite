@@ -8,8 +8,7 @@ Rectangle {
     signal profileOptionsRequested()
 
     property bool privateMode: false
-    property bool lockedPreview: false
-    readonly property bool showBrowsingData: !privateMode && !lockedPreview && !ProfileSession.locked
+    readonly property bool showBrowsingData: !privateMode
     property bool guestSelected: false
     property bool shortcutsExpanded: true
     property bool iconsReady: false

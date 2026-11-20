@@ -666,10 +666,18 @@ ApplicationWindow {
 
     // ---- layout ------------------------------------------------------------------------------------------------------------
     ColumnLayout {
-        visible: !ProfileSession.locked
-        enabled: visible
+        enabled: !ProfileSession.locked
         anchors.fill: parent
         spacing: 0
+        layer.enabled: ProfileSession.locked
+        layer.smooth: true
+        layer.textureSize: Qt.size(Math.max(1, Math.ceil(width / 5)), Math.max(1, Math.ceil(height / 5)))
+        layer.effect: MultiEffect {
+            autoPaddingEnabled: false
+            blurEnabled: true
+            blur: 1
+            blurMax: 64
+        }
 
         Rectangle {
             visible: !win.isFull
@@ -1515,27 +1523,11 @@ ApplicationWindow {
         objectName: "profileLockScreen"
         anchors.fill: parent
         visible: ProfileSession.locked
-        color: Theme.background
+        color: "#7208101A"
         onVisibleChanged: {
             lockPin.clear()
             if (visible) lockPin.forceActiveFocus()
         }
-        NewTabPage {
-            id: lockBackdrop
-            anchors.fill: parent
-            lockedPreview: true
-            enabled: false
-            visible: false
-        }
-        MultiEffect {
-            anchors.fill: parent
-            source: lockBackdrop
-            autoPaddingEnabled: false
-            blurEnabled: true
-            blur: 0.65
-            blurMax: 24
-        }
-        Rectangle { anchors.fill: parent; color: "#8908101A" }
         Rectangle {
             anchors.centerIn: parent
             width: Math.min(parent.width - 40, 440)
