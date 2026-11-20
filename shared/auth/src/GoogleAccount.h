@@ -51,6 +51,7 @@ public:
 
 signals:
     void changed();
+    void authorizeUrl(const QUrl& url);   // the address that was handed to the browser (tests read the loopback port and state from it)
     void busyChanged();
 
 private:

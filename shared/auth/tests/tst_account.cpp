@@ -2,11 +2,14 @@
 #include "OAuthConfig.h"
 
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSignalSpy>
+#include <QTcpSocket>
 #include <QTemporaryDir>
+#include <QUrlQuery>
 #include <QTest>
 #include <qt_windows.h>
 #include <bcrypt.h>
@@ -100,6 +103,62 @@ private slots:
         account.cancelSignIn();                                // nothing to cancel: harmless
         QVERIFY(!account.busy());
         QVERIFY(account.error().isEmpty());
+    }
+
+    // The browser comes back to http://127.0.0.1:<port>/oauth/callback: the page "you can go back" must arrive COMPLETE (it was lost once:
+    // the listener was deleted with the socket that still held the page, and the browser showed "connection refused").
+    void theBrowserGetsTheCallbackPageInFull()
+    {
+        GoogleAccount account;
+        QUrl authorize;
+        connect(&account, &GoogleAccount::authorizeUrl, this, [&](const QUrl& url) { authorize = url; });
+        account.signIn();                                       // DV_ACCOUNT_DIR is set: no browser is opened, no Google call is made
+        if (account.error() == QLatin1String("unavailable"))
+            QSKIP("this build has no Google client embedded");
+        QVERIFY(account.busy());
+        QVERIFY(!authorize.isEmpty());
+        const QUrlQuery query(authorize);
+        const QUrl redirect(query.queryItemValue(QStringLiteral("redirect_uri"), QUrl::FullyDecoded));
+        const QString state = query.queryItemValue(QStringLiteral("state"), QUrl::FullyDecoded);
+        QCOMPARE(redirect.host(), QStringLiteral("127.0.0.1"));
+        QVERIFY(redirect.port() > 0);
+
+        // the listener lives in THIS thread, so the client side must not block: events keep running while it waits
+        auto get = [&](const QString& target) {
+            QTcpSocket socket;
+            QByteArray all;
+            connect(&socket, &QTcpSocket::readyRead, &socket, [&] { all += socket.readAll(); });
+            connect(&socket, &QTcpSocket::connected, &socket, [&] {
+                socket.write("GET " + target.toUtf8() + " HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n");
+            });
+            socket.connectToHost(QStringLiteral("127.0.0.1"), quint16(redirect.port()));
+            QElapsedTimer waited;
+            waited.start();
+            while (socket.state() != QAbstractSocket::UnconnectedState && waited.elapsed() < 5000)
+                QTest::qWait(20);
+            all += socket.readAll();
+            return all;
+        };
+
+        // a request with the wrong state is refused and the listener keeps waiting
+        const QByteArray refused = get(QStringLiteral("/oauth/callback?state=wrong&code=x"));
+        QVERIFY2(refused.startsWith("HTTP/1.1 400"), refused.left(60).constData());
+        QVERIFY(account.busy());
+
+        // the real answer: 200 and the whole page (Content-Length bytes, ending with </html>)
+        const QByteArray answer = get(QStringLiteral("/oauth/callback?state=") + state + QStringLiteral("&code=test"));
+        QVERIFY2(answer.startsWith("HTTP/1.1 200"), answer.left(60).constData());
+        const int split = int(answer.indexOf("\r\n\r\n"));
+        QVERIFY(split > 0);
+        const QByteArray head = answer.left(split), body = answer.mid(split + 4);
+        const int at = int(head.indexOf("Content-Length: "));
+        QVERIFY(at >= 0);
+        QCOMPARE(qsizetype(head.mid(at + 16).split('\r').first().toInt()), body.size());
+        QVERIFY(body.endsWith("</html>"));
+        QVERIFY(body.contains("DriveVault"));
+        QTRY_VERIFY_WITH_TIMEOUT(!account.busy(), 3000);        // the listener is closed, the sign-in is over (test mode: no Google call)
+        QCOMPARE(account.error(), QStringLiteral("test-callback"));
+        QVERIFY(!account.signedIn());
     }
 
     void theEmbeddedPairDecryptsAndAWrongKeyDoesNot()

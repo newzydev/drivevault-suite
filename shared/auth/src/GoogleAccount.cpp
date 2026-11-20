@@ -245,6 +245,7 @@ void GoogleAccount::signIn()
     connect(m_server, &QTcpServer::newConnection, this, [this] {
         while (m_server && m_server->hasPendingConnections()) {
             QTcpSocket* socket = m_server->nextPendingConnection();
+            socket->setParent(this);          // the listener is deleted as soon as the answer arrives; the page for the browser must still be sent (a child socket died with it: "connection refused" in the browser)
             connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
             QTimer::singleShot(5000, socket, &QTcpSocket::abort);
             connect(socket, &QTcpSocket::readyRead, socket, [this, socket] {
@@ -271,12 +272,15 @@ void GoogleAccount::signIn()
                 m_server->deleteLater();
                 m_server = nullptr;
                 if (code.isEmpty()) finish(problem == QLatin1String("access_denied") ? QStringLiteral("denied") : QStringLiteral("failed"));
+                else if (testMode()) finish(QStringLiteral("test-callback"));   // tests: the callback page is checked, Google is never called
                 else exchange(code);
             });
             if (socket->bytesAvailable()) emit socket->readyRead();
         }
     });
     emit busyChanged();
+    emit authorizeUrl(authorize);
+    if (testMode()) return;                  // tests play the browser themselves
     if (!QDesktopServices::openUrl(authorize)) finish(QStringLiteral("failed"));
 }
 
