@@ -6,9 +6,7 @@
 #include <QDialog>
 #include <QDesktopServices>
 #include <QFile>
-#include <QInputDialog>
 #include <QJsonDocument>
-#include <QMessageBox>
 #include <QPasswordDigestor>
 #include <QTemporaryDir>
 #include <QTest>
@@ -29,7 +27,7 @@ private slots:
             QSKIP("This build has Desktop credentials.");
         QTemporaryDir root;
         QVERIFY(root.isValid());
-        dv::br::ProfileSession session(root.path(), true);
+        dv::br::ProfileSession session(root.path());
         QVERIFY(session.start());
         session.signIn();
         QCOMPARE(session.signInError(), QStringLiteral("unavailable"));
@@ -43,7 +41,7 @@ private slots:
             QSKIP("No credentials were supplied to the build.");
         QTemporaryDir root;
         QVERIFY(root.isValid());
-        dv::br::ProfileSession session(root.path(), true);
+        dv::br::ProfileSession session(root.path());
         QVERIFY(session.start());          // no welcome dialog: the browser opens as a guest
         QVERIFY(!session.signedIn());
         QDesktopServices::setUrlHandler("https", this, "captureAuthorization");
@@ -82,38 +80,31 @@ private slots:
         QCOMPARE(file.write(protectedData), protectedData.size());
         file.close();
 
-        dv::br::ProfileSession session(root.path(), true);
-        int pinPrompts = 0;
-        bool hiddenAtLock = false;
-        QWindow browserWindow;
-        QTimer inputTimer;
-        inputTimer.setInterval(50);
-        connect(&inputTimer, &QTimer::timeout, this, [&] {
-            auto* dialog = QApplication::activeModalWidget();
-            if (auto* pin = qobject_cast<QInputDialog*>(dialog)) {
-                if (session.locked()) hiddenAtLock = !browserWindow.isVisible();
-                pin->setTextValue(++pinPrompts == 1 ? "654321" : "123456");
-                pin->accept();
-            } else if (auto* message = qobject_cast<QMessageBox*>(dialog)) {
-                message->accept();
-            }
-        });
-        inputTimer.start();
+        dv::br::ProfileSession session(root.path());
+                QWindow browserWindow;
         QVERIFY(session.start());
-        QCOMPARE(pinPrompts, 2);
-        QVERIFY(session.signedIn());
+        QVERIFY(session.locked());
+        session.enableLock();
+        session.unlock(QStringLiteral("654321"));
+        QVERIFY(session.locked());
+        QCOMPARE(session.profileError(), QStringLiteral("profile_bad_pin"));
+        QVERIFY(!QApplication::activeModalWidget());
+        session.unlock(QStringLiteral("123456"));
+        QVERIFY(!session.locked());
+QVERIFY(session.signedIn());
         QCOMPARE(session.email(), QStringLiteral("fixture@example.invalid"));
         QVERIFY(session.directory().startsWith(root.path() + "/accounts/"));
         QVERIFY(session.directory() != root.path());
 
         browserWindow.show();
-        session.enableLock();
         auto* idle = session.findChild<QTimer*>();
         QVERIFY(idle);
         QCOMPARE(idle->interval(), 10 * 60000);
         QVERIFY(QMetaObject::invokeMethod(idle, "timeout"));
-        QCOMPARE(pinPrompts, 3);
-        QVERIFY(hiddenAtLock);
+        QVERIFY(session.locked());
+        QVERIFY(!QApplication::activeModalWidget());
+        session.unlock(QStringLiteral("123456"));
+        QVERIFY(!session.locked());
         QVERIFY(browserWindow.isVisible());
     }
 };

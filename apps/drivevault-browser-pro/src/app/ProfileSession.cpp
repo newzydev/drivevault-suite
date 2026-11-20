@@ -6,23 +6,16 @@
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QDesktopServices>
-#include <QDialog>
 #include <QDir>
 #include <QEventLoop>
 #include <QFile>
 
 #include <QImage>
 #include <QImageReader>
-#include <QInputDialog>
 #include <QJsonDocument>
-#include <QLabel>
-#include <QLineEdit>
-#include <QMessageBox>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QPasswordDigestor>
-#include <QPointer>
-#include <QPushButton>
 #include <QRegularExpression>
 #include <QSaveFile>
 
@@ -30,8 +23,6 @@
 #include <QTcpSocket>
 #include <QTimer>
 #include <QUrlQuery>
-#include <QVBoxLayout>
-#include <QWindow>
 #include <qt_windows.h>
 #include <bcrypt.h>
 #include <wincrypt.h>
@@ -265,14 +256,9 @@ QJsonObject googleProfile(const QString& client, const QString& secret, ProfileS
 
 } // namespace
 
-ProfileSession::ProfileSession(QString root, bool english)
-    : m_root(std::move(root)), m_english(english)
+ProfileSession::ProfileSession(QString root)
+    : m_root(std::move(root))
 {
-}
-
-QString ProfileSession::trText(const char* en, const char* th) const
-{
-    return QString::fromUtf8(m_english ? en : th);
 }
 
 bool ProfileSession::signedIn() const { return m_account.contains("sub"); }
@@ -373,13 +359,14 @@ void ProfileSession::setInitialPin(const QString& pin, const QString& confirmati
 bool ProfileSession::start()
 {
     if (!load()) {
-        QMessageBox::warning(nullptr, "DriveVault Browser Pro",
-            trText("The saved profile could not be read.", "อ่านโปรไฟล์ที่บันทึกไว้ไม่ได้"));
-        return false;
+        m_locked = true;
+        m_profileError = QStringLiteral("profile_unreadable");
+    } else {
+        m_locked = signedIn();
     }
-    if (signedIn()) return unlock();
-    return true;   // not signed in: the browser opens at once as a guest; "Sign in" is on the home page and in the menu
+    return true;
 }
+
 
 void ProfileSession::signIn()
 {
@@ -410,43 +397,54 @@ void ProfileSession::cancelSignIn()
     emit signInCancelled();
 }
 
-bool ProfileSession::unlock()
+void ProfileSession::unlock(const QString& pin)
 {
-    const auto title = trText("Unlock DriveVault", "ปลดล็อก DriveVault");
-    for (;;) {
-        const auto remaining = m_account.value("retryAfter").toInteger() - QDateTime::currentSecsSinceEpoch();
-        if (remaining > 0) {
-            QMessageBox::information(nullptr, title,
-                trText("Try again in %1 seconds.", "ลองใหม่ในอีก %1 วินาที").arg(remaining));
-            return false;
-        }
-        bool ok = false;
-        const auto pin = QInputDialog::getText(nullptr, title,
-            trText("Enter your six-digit PIN for %1", "กรอก PIN 6 หลักสำหรับ %1").arg(email()),
-            QLineEdit::Password, {}, &ok);
-        if (!ok) return false;
+    if (!m_locked || !signedIn()) return;
+    const auto now = QDateTime::currentSecsSinceEpoch();
+    if (m_account.value("retryAfter").toInteger() > now) {
+        m_profileError = QStringLiteral("profile_retry");
+    } else {
+        const auto previous = m_account;
         if (validPin(pin) && pinMatches(pin, m_account)) {
             m_account.remove("failures");
             m_account.remove("retryAfter");
-            return save();
+            if (save()) {
+                m_profileError.clear();
+                m_locked = false;
+                resetTimer();
+                emit lockedChanged();
+                return;
+            }
+        } else {
+            const int failures = qBound(0, m_account.value("failures").toInt(), 34) + 1;
+            m_account.insert("failures", failures);
+            if (failures >= 5)
+                m_account.insert("retryAfter", now + qMin(900, 30 * (failures - 4)));
+            if (save()) {
+                m_profileError = failures >= 5 ? QStringLiteral("profile_retry") : QStringLiteral("profile_bad_pin");
+                emit profileChanged();
+                return;
+            }
         }
-        const int failures = m_account.value("failures").toInt() + 1;
-        m_account.insert("failures", failures);
-        if (failures >= 5)
-            m_account.insert("retryAfter", QDateTime::currentSecsSinceEpoch() + qMin(900, 30 * (failures - 4)));
-        if (!save()) return false;
-        QMessageBox::warning(nullptr, title, trText("Incorrect PIN.", "รหัส PIN ไม่ถูกต้อง"));
+        m_account = previous;
+        m_profileError = QStringLiteral("profile_save_failed");
     }
+    emit profileChanged();
+}
+
+int ProfileSession::idleMinutes() const
+{
+    return qBound(1, m_account.value("idle").toInt(10), 120);
 }
 
 void ProfileSession::resetTimer()
 {
-    m_timer->start(qBound(1, m_account.value("idle").toInt(10), 120) * 60000);
+    if (m_timer && !m_locked) m_timer->start(idleMinutes() * 60000);
 }
 
 void ProfileSession::enableLock()
 {
-    if (!signedIn()) return;
+    if (!signedIn() && !m_locked) return;
     m_timer = new QTimer(this);
     m_timer->setSingleShot(true);
     connect(m_timer, &QTimer::timeout, this, &ProfileSession::lock);
@@ -456,7 +454,7 @@ void ProfileSession::enableLock()
 
 bool ProfileSession::eventFilter(QObject*, QEvent* event)
 {
-    if (m_locked || !m_timer) return false;
+    if (m_locked) return event->type() == QEvent::Shortcut;
     switch (event->type()) {
     case QEvent::KeyPress: case QEvent::MouseButtonPress: case QEvent::MouseMove:
     case QEvent::Wheel: case QEvent::TouchBegin: case QEvent::TabletPress:
@@ -469,31 +467,11 @@ bool ProfileSession::eventFilter(QObject*, QEvent* event)
 
 void ProfileSession::lock()
 {
-    if (m_profileDialog) {
-        m_profileDialog->reject();
-        QTimer::singleShot(0, this, &ProfileSession::lock);
-        return;
-    }
+    m_profileError.clear();
     m_locked = true;
     emit lockedChanged();
-    const bool quitOnClose = qApp->quitOnLastWindowClosed();
-    qApp->setQuitOnLastWindowClosed(false);
-    QList<QPointer<QWindow>> visible;
-    for (auto* window : QGuiApplication::topLevelWindows()) {
-        if (window->isVisible()) { visible.append(window); window->hide(); }
-    }
-    const bool unlocked = unlock();
-    if (unlocked) {
-        for (const auto& window : visible)
-            if (window) window->show();
-        m_locked = false;
-        emit lockedChanged();
-        resetTimer();
-    } else {
-        qApp->quit();
-    }
-    qApp->setQuitOnLastWindowClosed(quitOnClose);
 }
+
 
 bool ProfileSession::signOut()
 {
@@ -502,48 +480,27 @@ bool ProfileSession::signOut()
     return writeProtected(m_root + QStringLiteral("/account.bin"), QByteArrayLiteral("{\"signedOut\":true}"));
 }
 
-int ProfileSession::execProfileDialog(QDialog& dialog)
+void ProfileSession::setIdleMinutes(int minutes)
 {
-    m_profileDialog = &dialog;
-    const int result = dialog.exec();
-    m_profileDialog = nullptr;
-    return result;
+    if (!signedIn() || m_locked || minutes < 1 || minutes > 120) return;
+    const auto previous = m_account;
+    m_account.insert("idle", minutes);
+    m_profileError.clear();
+    if (save()) resetTimer();
+    else {
+        m_account = previous;
+        m_profileError = QStringLiteral("profile_save_failed");
+    }
+    emit profileChanged();
 }
 
-void ProfileSession::showOptions()
+void ProfileSession::requestSignOut()
 {
     if (!signedIn() || m_locked) return;
-    QMessageBox options;
-    options.setWindowTitle(QStringLiteral("DriveVault Browser Pro"));
-    options.setTextFormat(Qt::PlainText);
-    options.setText(name() + '\n' + email());
-    auto* timeout = options.addButton(trText("Auto-lock time", "เวลาล็อกอัตโนมัติ"), QMessageBox::ActionRole);
-    auto* logout = options.addButton(trText("Sign out", "ออกจากระบบ"), QMessageBox::DestructiveRole);
-    options.addButton(QMessageBox::Close);
-    execProfileDialog(options);
-    if (options.clickedButton() == timeout) {
-        const int oldMinutes = m_account.value("idle").toInt(10);
-        QInputDialog setting;
-        setting.setWindowTitle(trText("Auto-lock", "ล็อกอัตโนมัติ"));
-        setting.setLabelText(trText("Idle minutes", "จำนวนนาทีที่ไม่ได้ใช้งาน"));
-        setting.setInputMode(QInputDialog::IntInput);
-        setting.setIntRange(1, 120);
-        setting.setIntValue(oldMinutes);
-        if (execProfileDialog(setting) == QDialog::Accepted) {
-            m_account.insert("idle", setting.intValue());
-            if (!save()) m_account.insert("idle", oldMinutes);
-            resetTimer();
-        }
-    } else if (options.clickedButton() == logout) {
-        QMessageBox confirm(QMessageBox::Question, trText("Sign out", "ออกจากระบบ"),
-            trText("Sign out and close Browser Pro?", "ออกจากระบบและปิด Browser Pro หรือไม่"), QMessageBox::Yes | QMessageBox::No);
-        if (execProfileDialog(confirm) == QMessageBox::Yes) {
-            if (signOut()) { qApp->quit(); return; }
-            QMessageBox warning(QMessageBox::Warning, "DriveVault Browser Pro",
-                trText("Could not sign out.", "ออกจากระบบไม่ได้"), QMessageBox::Ok);
-            execProfileDialog(warning);
-        }
-    }
+    if (signOut()) { qApp->quit(); return; }
+    m_profileError = QStringLiteral("profile_signout_failed");
+    emit profileChanged();
 }
+
 
 } // namespace dv::br

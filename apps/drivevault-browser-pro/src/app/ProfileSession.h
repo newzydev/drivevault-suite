@@ -4,7 +4,6 @@
 #include <QUrl>
 
 class QTimer;
-class QDialog;
 
 namespace dv::br {
 
@@ -18,8 +17,10 @@ class ProfileSession final : public QObject {
     Q_PROPERTY(bool signingIn READ signingIn NOTIFY signInChanged)
     Q_PROPERTY(bool settingPin READ settingPin NOTIFY signInChanged)
     Q_PROPERTY(QString signInError READ signInError NOTIFY signInChanged)
+    Q_PROPERTY(QString profileError READ profileError NOTIFY profileChanged)
+    Q_PROPERTY(int idleMinutes READ idleMinutes NOTIFY profileChanged)
 public:
-    ProfileSession(QString root, bool english);
+    explicit ProfileSession(QString root);
     bool start();
     QString directory() const;
     bool signedIn() const;
@@ -27,18 +28,23 @@ public:
     bool signingIn() const { return m_signingIn; }
     bool settingPin() const { return !m_pendingProfile.isEmpty(); }
     QString signInError() const { return m_signInError; }
+    QString profileError() const { return m_profileError; }
+    int idleMinutes() const;
     bool restartRequested() const { return m_restartRequested; }
     QString name() const;
     QString email() const;
     QUrl picture() const;
     void enableLock();
-    Q_INVOKABLE void showOptions();
+    Q_INVOKABLE void unlock(const QString& pin);
+    Q_INVOKABLE void setIdleMinutes(int minutes);
+    Q_INVOKABLE void requestSignOut();
     Q_INVOKABLE void signIn();
     Q_INVOKABLE void cancelSignIn();
     Q_INVOKABLE void setInitialPin(const QString& pin, const QString& confirmation);
 
 signals:
     void lockedChanged();
+    void profileChanged();
     void signInChanged();
     void signInCancelled();
 
@@ -49,22 +55,18 @@ private:
     bool load();
     bool save() const;
     bool authenticate();
-    bool unlock();
     void lock();
     void resetTimer();
-    int execProfileDialog(QDialog& dialog);
     bool signOut();
-    QString trText(const char* en, const char* th) const;
     const QString m_root;
-    const bool m_english;
     QJsonObject m_account;
     QJsonObject m_pendingProfile;
     QTimer* m_timer = nullptr;
-    QDialog* m_profileDialog = nullptr;
     bool m_locked = false;
     bool m_signingIn = false;
     bool m_cancelled = false;
     QString m_signInError;
+    QString m_profileError;
     bool m_restartRequested = false;
 };
 

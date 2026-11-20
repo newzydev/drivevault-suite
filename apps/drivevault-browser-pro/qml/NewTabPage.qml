@@ -5,6 +5,7 @@ import DriveVault.Browser.Backend
 
 Rectangle {
     id: page
+    signal profileOptionsRequested()
 
     property bool privateMode: false
     property bool guestSelected: false
@@ -120,7 +121,7 @@ Rectangle {
             implicitHeight: 36
             hoverEnabled: true
             Accessible.name: ProfileSession.name + ", " + ProfileSession.email
-            onClicked: ProfileSession.showOptions()
+            onClicked: page.profileOptionsRequested()
             HoverHandler { cursorShape: Qt.PointingHandCursor }
             background: Rectangle {
                 radius: 18

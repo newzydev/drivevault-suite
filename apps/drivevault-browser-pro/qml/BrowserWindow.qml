@@ -49,7 +49,8 @@ ApplicationWindow {
     minimumHeight: 420
     flags: Qt.Window | Qt.FramelessWindowHint
     color: Theme.background
-    title: (privateMode ? "[" + Tr.t("privateBadge") + "] " : "") + (curTitle !== "" && !curBlank ? curTitle + " - " : "") + Tr.t("app")
+    title: ProfileSession.locked ? Tr.t("app")
+        : (privateMode ? "[" + Tr.t("privateBadge") + "] " : "") + (curTitle !== "" && !curBlank ? curTitle + " - " : "") + Tr.t("app")
 
     function rememberNormalGeometry() {
         if (visibility === Window.Windowed)
@@ -124,6 +125,10 @@ ApplicationWindow {
         const v = currentView
         if (!v || pipView) return
         v.runJavaScript(Browser.pipOnScript, function (r) {
+            if (ProfileSession.locked) {
+                v.runJavaScript(Browser.pipOffScript)
+                return
+            }
             let info = null
             try { info = JSON.parse(r) } catch (e) { info = null }
             if (!info || !info.ok) { showNote(Tr.t("pip_none")); return }
@@ -335,6 +340,9 @@ ApplicationWindow {
 
     Component.onCompleted: {
         restoreWindow()
+        if (!ProfileSession.locked) initializeTabs()
+    }
+    function initializeTabs() {
         refreshBar()
         if (startUrls.length > 0) {
             for (let i = 0; i < startUrls.length; ++i) addTab(startUrls[i], i === 0)
@@ -342,6 +350,20 @@ ApplicationWindow {
         } else {
             const h = Browser.settings.homePage
             addTab(h !== "" && !privateMode ? Browser.resolve(h).toString() : "", true)
+        }
+    }
+    Connections {
+        target: ProfileSession
+        function onLockedChanged() {
+            if (!ProfileSession.locked) {
+                if (tabs.count === 0) win.initializeTabs()
+                return
+            }
+            win.bringBackVideo()
+            if (devLoader.item) devLoader.item.hide()
+            for (const popup of [mainMenu, settingsModal, profileOptions, tabSearch, tabMenu, mediaMenu, shieldMenu, pageMenu, reader, captureDialog, pdfDialog])
+                popup.close()
+            lockPin.forceActiveFocus()
         }
     }
     onClosing: {
@@ -353,7 +375,7 @@ ApplicationWindow {
             })
             const urls = []
             for (let i = 0; i < views.count; ++i) { const v = views.itemAt(i); if (v) urls.push(v.url.toString()) }
-            Browser.saveSession(urls)
+            if (tabs.count > 0) Browser.saveSession(urls)
         }
         bringBackVideo()
         // the pages are taken down one by one while the window and its model are still alive (a page that is still loading would otherwise call into a half destroyed window)
@@ -643,6 +665,8 @@ ApplicationWindow {
 
     // ---- layout ------------------------------------------------------------------------------------------------------------
     ColumnLayout {
+        visible: !ProfileSession.locked
+        enabled: visible
         anchors.fill: parent
         spacing: 0
 
@@ -1237,6 +1261,7 @@ ApplicationWindow {
                     privateMode: win.privateMode
                     onGo: text => win.navigate(text)
                     onContextRequested: position => pageMenu.popup(stage, position.x, position.y)
+                    onProfileOptionsRequested: profileOptions.open()
                 }
 
                 Rectangle {                           // find in page
@@ -1484,6 +1509,109 @@ ApplicationWindow {
         }
     }
 
+    Rectangle {
+        id: lockScreen
+        objectName: "profileLockScreen"
+        anchors.fill: parent
+        visible: ProfileSession.locked
+        color: Theme.background
+        onVisibleChanged: {
+            lockPin.clear()
+            if (visible) lockPin.forceActiveFocus()
+        }
+        ColumnLayout {
+            anchors.centerIn: parent
+            width: Math.min(parent.width - 40, 380)
+            spacing: 14
+            Text { text: Tr.t("profile_unlock"); color: Theme.text; font.pixelSize: 25; font.bold: true }
+            Text {
+                Layout.fillWidth: true
+                text: ProfileSession.email
+                textFormat: Text.PlainText
+                color: Theme.textSecondary
+                elide: Text.ElideRight
+            }
+            TextField {
+                id: lockPin
+                objectName: "profileLockPin"
+                Component.onCompleted: if (ProfileSession.locked) forceActiveFocus()
+                visible: ProfileSession.signedIn
+                Layout.fillWidth: true
+                placeholderText: Tr.t("ntp_pin")
+                Accessible.name: placeholderText
+                echoMode: TextInput.Password
+                maximumLength: 6
+                validator: RegularExpressionValidator { regularExpression: /[0-9]{0,6}/ }
+                inputMethodHints: Qt.ImhDigitsOnly | Qt.ImhSensitiveData
+                onAccepted: if (unlockButton.enabled) unlockButton.clicked()
+            }
+            Text {
+                Layout.fillWidth: true
+                visible: text !== ""
+                text: ProfileSession.profileError ? Tr.t(ProfileSession.profileError) : ""
+                color: Theme.error
+                wrapMode: Text.WordWrap
+            }
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                BButton { text: Tr.t("close"); onClicked: win.close() }
+                BButton {
+                    id: unlockButton
+                    visible: ProfileSession.signedIn
+                    enabled: lockPin.length === 6
+                    text: Tr.t("profile_unlock")
+                    variant: "primary"
+                    onClicked: {
+                        ProfileSession.unlock(lockPin.text)
+                        lockPin.clear()
+                        if (lockScreen.visible) lockPin.forceActiveFocus()
+                    }
+                }
+            }
+        }
+    }
+
+    CenterModal {
+        id: profileOptions
+        width: Math.min(440, parent.width - 40)
+        padding: 20
+        property bool confirmingSignOut: false
+        onAboutToShow: {
+            confirmingSignOut = false
+            idleSpin.value = ProfileSession.idleMinutes
+        }
+        contentItem: ColumnLayout {
+            spacing: 12
+            Text { Layout.fillWidth: true; text: ProfileSession.name; textFormat: Text.PlainText; color: Theme.text; font.pixelSize: 20; elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; text: ProfileSession.email; textFormat: Text.PlainText; color: Theme.textSecondary; elide: Text.ElideRight }
+            RowLayout {
+                Layout.fillWidth: true
+                Text { Layout.fillWidth: true; text: Tr.t("profile_idle"); color: Theme.text; wrapMode: Text.WordWrap }
+                SpinBox { id: idleSpin; from: 1; to: 120; onValueModified: ProfileSession.setIdleMinutes(value) }
+            }
+            Text {
+                Layout.fillWidth: true
+                visible: text !== ""
+                text: ProfileSession.profileError ? Tr.t(ProfileSession.profileError)
+                    : profileOptions.confirmingSignOut ? Tr.t("profile_signout_confirm") : ""
+                color: Theme.textSecondary
+                wrapMode: Text.WordWrap
+            }
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                BButton { text: Tr.t("close"); onClicked: profileOptions.close() }
+                BButton {
+                    text: Tr.t("profile_signout")
+                    variant: "danger"
+                    onClicked: {
+                        if (profileOptions.confirmingSignOut) ProfileSession.requestSignOut()
+                        else profileOptions.confirmingSignOut = true
+                    }
+                }
+            }
+        }
+    }
+
     CenterModal {
         id: settingsModal
         objectName: "settingsModal"
@@ -1567,7 +1695,7 @@ ApplicationWindow {
                     height: 52
                     hoverEnabled: true
                     Accessible.name: ProfileSession.name + ", " + ProfileSession.email
-                    onClicked: { mainMenu.close(); ProfileSession.showOptions() }
+                    onClicked: { mainMenu.close(); profileOptions.open() }
                     background: Rectangle {
                         radius: 8
                         color: profileRow.hovered || profileRow.visualFocus ? Theme.surfaceHover : Theme.surface

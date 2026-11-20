@@ -11,7 +11,7 @@ QtObject {
     property Component windowComponent: Component { BrowserWindow {} }
 
     function open(privateMode, url, first) {
-        if (ProfileSession.locked) return
+        if (ProfileSession.locked && !first) return
         const urls = (first && Browser.initialUrls.length > 0) ? Browser.initialUrls
                    : (first && !privateMode && Browser.settings.startup === "restore") ? Browser.loadSession()
                    : (url ? [url] : [])

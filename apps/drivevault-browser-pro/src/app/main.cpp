@@ -12,6 +12,7 @@
 #include <QIcon>
 #include <QImage>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -82,10 +83,8 @@ int main(int argc, char* argv[])
     QLockFile profileLock(profileRoot + QStringLiteral("/browser.lock"));
     profileLock.setStaleLockTime(0);
     if (!diagnostics && !profileLock.tryLock()) return 1;
-    dv::br::BrowserSettings localSettings(profileRoot + QStringLiteral("/settings.json"));
-    const QString language = parser.isSet(langOpt) ? parser.value(langOpt) : localSettings.language();
-    dv::br::ProfileSession session(profileRoot, language == QStringLiteral("en"));
-    if (!diagnostics && !session.start()) return 0;
+    dv::br::ProfileSession session(profileRoot);
+    if ((!diagnostics || QFileInfo::exists(profileRoot + QStringLiteral("/account.bin"))) && !session.start()) return 0;
     const QString dataDir = session.directory();
     QDir().mkpath(dataDir);
 
@@ -130,10 +129,10 @@ int main(int argc, char* argv[])
     QObject* root = engine.rootObjects().constFirst();
     session.enableLock();
 
-    if (parser.isSet(panelOpt))
+    if (!session.locked() && parser.isSet(panelOpt))
         QMetaObject::invokeMethod(root, "showPanel", Q_ARG(QVariant, parser.value(panelOpt)));
 
-    if (parser.isSet(updateOpt)) {
+    if (!session.locked() && parser.isSet(updateOpt)) {
         const QString file = parser.value(updateOpt);
         auto* lists = browser.adblock()->lists();
         auto finish = [&app, lists, file] {
@@ -153,7 +152,7 @@ int main(int argc, char* argv[])
     }
     const int waitMs = parser.isSet(waitOpt) ? qBound(500, parser.value(waitOpt).toInt(), 120000) : 0;
     const bool inspect = parser.isSet(selfTestOpt) || parser.isSet(probeOpt) || parser.isSet(surveyOpt) || parser.isSet(pipTestOpt) || parser.isSet(mediaTestOpt);
-    if (inspect) {
+    if (inspect && !session.locked()) {
         QObject* win = root->property("firstWindow").value<QObject*>();
         if (!win)
             return 3;

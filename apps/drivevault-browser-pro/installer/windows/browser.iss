@@ -1,6 +1,6 @@
 ﻿; DriveVault Browser Pro. The package script supplies the audited payload; Master Pro (the hub) is downloaded by the shared code below.
 #ifndef AppVersion
-  #define AppVersion "1.3.3"
+  #define AppVersion "1.3.4"
 #endif
 #if !Defined(StageDir) || !Defined(OutputDir) || !Defined(ArtworkDir)
   #error Build this installer with scripts\package.ps1
