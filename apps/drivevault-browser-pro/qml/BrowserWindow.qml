@@ -215,11 +215,11 @@ ApplicationWindow {
         })
     }
     function printPage(view) {
-        if (!view || view.url.toString() === "about:blank") return
+        if (!view || ProfileSession.locked || view.url.toString() === "about:blank") return
         const title = view.title
         view.printToPdf(pdf => {
             Qt.callLater(() => {
-                if (Browser.printPdf(pdf, title) < 0) win.showNote(Tr.t("print_failed"))
+                if (!ProfileSession.locked && Browser.printPdf(pdf, title) < 0) win.showNote(Tr.t("print_failed"))
             })
         })
     }
@@ -1559,6 +1559,37 @@ ApplicationWindow {
                 id: menuEntries
                 width: menuScroll.width
                 spacing: 1
+                AbstractButton {
+                    id: profileRow
+                    visible: ProfileSession.signedIn
+                    width: parent.width
+                    height: 52
+                    hoverEnabled: true
+                    Accessible.name: ProfileSession.name + ", " + ProfileSession.email
+                    onClicked: { mainMenu.close(); ProfileSession.showOptions() }
+                    background: Rectangle {
+                        radius: 8
+                        color: profileRow.hovered || profileRow.visualFocus ? Theme.surfaceHover : Theme.surface
+                    }
+                    contentItem: RowLayout {
+                        anchors.margins: 8
+                        spacing: 9
+                        Rectangle {
+                            Layout.preferredWidth: 32
+                            Layout.preferredHeight: 32
+                            radius: 16
+                            color: Theme.background
+                            Image { id: avatar; anchors.fill: parent; source: ProfileSession.picture; fillMode: Image.PreserveAspectFit }
+                            LineIcon { anchors.centerIn: parent; visible: avatar.status !== Image.Ready; kind: "globe"; color: win.accent }
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 1
+                            Text { Layout.fillWidth: true; text: ProfileSession.name; textFormat: Text.PlainText; color: Theme.text; elide: Text.ElideRight }
+                            Text { Layout.fillWidth: true; text: ProfileSession.email; textFormat: Text.PlainText; color: Theme.textSecondary; elide: Text.ElideRight }
+                        }
+                    }
+                }
                 Repeater {
                     model: [
                         { key: "newTab", icon: "plus", keys: "Ctrl+T", run: () => win.addTab("", true) },

@@ -2,7 +2,15 @@
 
 A Chrome-like web browser for Windows (Qt 6.8, Qt WebEngine / Chromium) with a built-in ad blocker. Accent colour cyan `#06B6D4`.
 
-**Status: version 1.0.0, published as the first stable release. The installer is built by `scripts\package.ps1` (not install-tested by an agent), and the program is listed in Master Pro.** Not done: extensions (on hold, see the plan), Google sign-in / sync (cancelled by the owner). The plan is `docs/Browser-Pro-Plan.md`; the first tests of the engine are in `docs/Phase0b-Results.md`.
+**Status: version 1.0.0 is the first published stable release.** The program is listed in Master Pro. The plan is `docs/Browser-Pro-Plan.md`.
+
+## Local profiles in 1.2.0
+
+Choose Google sign-in or guest mode from the welcome screen. Guest mode continues to use the existing local browser data. A signed-in profile stores its own browsing data under a directory keyed by Google's stable account ID. Google supplies the name, email and avatar. Browsing data stays on the PC. Sign-out keeps the local profile files so the same account can use them again.
+
+Use a Google OAuth **Desktop app** client. On first sign-in Browser Pro can import a text file with `GOOGLE_LOGIN_CLIENT_ID` and `GOOGLE_LOGIN_CLIENT_SECRET`, or read those names from the process environment. The authorization page opens in the system browser and returns through a loopback redirect with PKCE. OAuth tokens are used only during sign-in. Windows DPAPI protects the imported configuration and saved identity record.
+
+Set a six-digit PIN after the first Google sign-in. It is required on restart and after ten idle minutes by default. Open the profile row in the three-dot menu to adjust the delay from 1 to 120 minutes or sign out. The PIN locks the app interface; local browser files remain accessible to the Windows account that owns them.
 
 ## Changes in 1.1.1
 
@@ -30,7 +38,7 @@ The DriveVault title bar has a Thai / EN switch, a Settings button, minimize, ma
 **Picture in picture and saving videos (Phase 5):** the video of a page can be popped out into a small always-on-top window (button or Alt+P; the page moves with it and the video keeps playing; videos in the main frame of the page, not inside embedded frames). When a page loads a video / audio file or an HLS / DASH playlist a button with a count appears and the file can be saved (the bundled FFmpeg copies streams into an .mp4). YouTube and subscription streaming sites are never offered, DRM-protected streams are refused, and the browser's log-in cookies are not used. Tested on test pages and local servers only.
 
 ## Not available yet
-A test of the defence against a real ad block wall, hiding and scripts inside embedded frames, advanced filters beyond simple `:-abp-has`, picture in picture for cross-origin frames, H.264/AAC playback with this Qt build, extensions, and Google sign-in / sync (cancelled).
+A test of the defence against a real ad block wall, hiding and scripts inside embedded frames, advanced filters beyond simple `:-abp-has`, picture in picture for cross-origin frames, H.264/AAC playback with this Qt build, extensions, and Google Sync.
 Video encoded with H.264 / AAC does not play (the Qt binaries have no proprietary codecs).
 
 ## Build (developers)

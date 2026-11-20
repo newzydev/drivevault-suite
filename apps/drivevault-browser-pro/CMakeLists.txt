@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultBrowserPro
-    VERSION 1.1.1
+    VERSION 1.2.0
     DESCRIPTION "DriveVault Browser Pro - a web browser with a built-in ad blocker"
     LANGUAGES CXX)
 
@@ -47,6 +47,7 @@ target_link_libraries(browser_core PUBLIC Qt6::Core Qt6::Network)
 set_source_files_properties(qml/Theme.qml qml/Tr.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_executable(DriveVaultBrowserPro WIN32
     src/app/main.cpp src/app/BrowserApp.cpp src/app/BrowserApp.h src/app/DownloadModel.cpp src/app/DownloadModel.h
+    src/app/ProfileSession.cpp src/app/ProfileSession.h
     src/app/AdBlockInterceptor.cpp src/app/AdBlockInterceptor.h src/app/AdBlockController.cpp src/app/AdBlockController.h src/app/StandInHandler.cpp src/app/StandInHandler.h src/app/MediaController.cpp src/app/MediaController.h src/app.rc)
 qt_add_qml_module(DriveVaultBrowserPro
     URI DriveVault.Browser
@@ -74,7 +75,7 @@ qt_add_qml_module(DriveVaultBrowserPro
         resources/fonts/Inter-Variable.ttf
         resources/fonts/NotoSansThai-Variable.ttf)
 target_include_directories(DriveVaultBrowserPro PRIVATE src/app)
-target_link_libraries(DriveVaultBrowserPro PRIVATE browser_core browser_pdfium Qt6::Gui Qt6::Quick Qt6::QuickControls2 Qt6::QuickDialogs2 Qt6::WebEngineQuick Qt6::WebEngineCore Qt6::PrintSupport)
+target_link_libraries(DriveVaultBrowserPro PRIVATE browser_core browser_pdfium Qt6::Gui Qt6::Quick Qt6::QuickControls2 Qt6::QuickDialogs2 Qt6::WebEngineQuick Qt6::WebEngineCore Qt6::PrintSupport bcrypt crypt32)
 
 if(DB_BUILD_TESTS)
     enable_testing()

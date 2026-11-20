@@ -1,4 +1,5 @@
 #include "BrowserApp.h"
+#include "ProfileSession.h"
 #include "StandInHandler.h"
 #include "UrlUtil.h"
 
@@ -7,6 +8,7 @@
 #include <QDir>
 #include <QFontDatabase>
 #include <QApplication>
+#include <QLockFile>
 #include <QIcon>
 #include <QImage>
 #include <QFile>
@@ -62,9 +64,21 @@ int main(int argc, char* argv[])
     f.setPixelSize(13);
     app.setFont(f);
 
-    const QString dataDir = parser.isSet(dataDirOpt)
+    const QString profileRoot = parser.isSet(dataDirOpt)
         ? QDir(parser.value(dataDirOpt)).absolutePath()
         : QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/DriveVault/BrowserPro");
+    QDir().mkpath(profileRoot);
+    const bool diagnostics = parser.isSet(dataDirOpt) && (parser.isSet(shotOpt) || parser.isSet(selfTestOpt)
+        || parser.isSet(probeOpt) || parser.isSet(updateOpt) || parser.isSet(surveyOpt)
+        || parser.isSet(pipTestOpt) || parser.isSet(mediaTestOpt));
+    QLockFile profileLock(profileRoot + QStringLiteral("/browser.lock"));
+    profileLock.setStaleLockTime(0);
+    if (!diagnostics && !profileLock.tryLock()) return 1;
+    dv::br::BrowserSettings localSettings(profileRoot + QStringLiteral("/settings.json"));
+    const QString language = parser.isSet(langOpt) ? parser.value(langOpt) : localSettings.language();
+    dv::br::ProfileSession session(profileRoot, language == QStringLiteral("en"));
+    if (!diagnostics && !session.start()) return 0;
+    const QString dataDir = session.directory();
     QDir().mkpath(dataDir);
 
     // The ad blocker's request filter is made before the profile and the application object of the pages: it must outlive every profile that uses it.
@@ -93,6 +107,7 @@ int main(int argc, char* argv[])
     browser.setStartPrivate(parser.isSet(privateOpt));
 
     QQmlApplicationEngine engine;
+    qmlRegisterSingletonInstance("DriveVault.Browser.Backend", 1, 0, "ProfileSession", &session);
     qmlRegisterSingletonInstance("DriveVault.Browser.Backend", 1, 0, "Browser", &browser);
     qmlRegisterUncreatableType<dv::br::BrowserSettings>("DriveVault.Browser.Backend", 1, 0, "BrowserSettings", QStringLiteral("owned by Browser"));
     qmlRegisterUncreatableType<dv::br::BookmarkStore>("DriveVault.Browser.Backend", 1, 0, "BookmarkStore", QStringLiteral("owned by Browser"));
@@ -105,6 +120,7 @@ int main(int argc, char* argv[])
     if (engine.rootObjects().isEmpty())
         return 1;
     QObject* root = engine.rootObjects().constFirst();
+    session.enableLock();
 
     if (parser.isSet(panelOpt))
         QMetaObject::invokeMethod(root, "showPanel", Q_ARG(QVariant, parser.value(panelOpt)));
