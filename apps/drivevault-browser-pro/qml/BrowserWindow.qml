@@ -1085,19 +1085,11 @@ ApplicationWindow {
 
         // bookmarks bar
         Rectangle {
-            visible: !win.isFull && Browser.settings.showBookmarksBar
+            visible: !win.isFull && Browser.settings.showBookmarksBar && win.barItems.length > 0   // no bookmarks on the bar yet: no bar
             Layout.fillWidth: true
             Layout.preferredHeight: 32
             color: Theme.surface
             Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.borderSubtle }
-            Text {
-                visible: win.barItems.length === 0
-                anchors.verticalCenter: parent.verticalCenter
-                x: 12
-                text: Tr.t("bm_bar_empty")
-                color: Theme.textDisabled
-                font.pixelSize: 12
-            }
             Row {
                 id: barRow
                 objectName: "bookmarksBar"

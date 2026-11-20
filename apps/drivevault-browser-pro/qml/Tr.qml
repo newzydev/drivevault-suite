@@ -165,7 +165,6 @@ QtObject {
         "panel_no_bookmarks": ["No bookmarks yet. Press the star in the address bar.", "ยังไม่มีบุ๊กมาร์ก กดรูปดาวในแถบที่อยู่เว็บ"],
         "panel_no_downloads": ["No downloads in this session.", "ยังไม่มีการดาวน์โหลดในรอบนี้"],
         "bm_bar": ["Bookmarks bar", "แถบบุ๊กมาร์ก"],
-        "bm_bar_empty": ["Bookmarks you add appear here.", "บุ๊กมาร์กที่เพิ่มจะแสดงที่นี่"],
         "bm_other": ["Other bookmarks", "บุ๊กมาร์กอื่นๆ"],
         "bm_import": ["Import (HTML)…", "นำเข้า (HTML)…"],
         "bm_export": ["Export (HTML)…", "ส่งออก (HTML)…"],

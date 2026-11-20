@@ -1,3 +1,4 @@
+v1.5.2 (2026-11-20): The bookmarks bar is hidden until at least one bookmark is on it. The installer is unsigned.
 v1.5.1 (2026-11-20): Polish the account row at the top of the browser menu: round avatar, padding and clearer name / e-mail text. The installer is unsigned.
 v1.5.0 (2026-11-20): When a Google profile is signed in, Google's own sign-in page opens with that account's e-mail already filled in (normal windows only). The password is still typed on Google's page; this is not a single sign-on. The installer is unsigned.
 v1.4.0 (2026-11-20): Add icon-labeled lock actions and a temporary guest window that leaves the main profile locked.
