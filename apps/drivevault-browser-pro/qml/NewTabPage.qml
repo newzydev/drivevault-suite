@@ -8,11 +8,13 @@ Rectangle {
     signal profileOptionsRequested()
 
     property bool privateMode: false
+    property bool lockedPreview: false
+    readonly property bool showBrowsingData: !privateMode && !lockedPreview && !ProfileSession.locked
     property bool guestSelected: false
     property bool shortcutsExpanded: true
     property bool iconsReady: false
-    property var sites: privateMode ? [] : Browser.history.topSites(8)
-    readonly property var shortcutSites: privateMode ? [] : Browser.shortcuts.items
+    property var sites: showBrowsingData ? Browser.history.topSites(8) : []
+    readonly property var shortcutSites: showBrowsingData ? Browser.shortcuts.items : []
     readonly property var visibleSites: siteTabs.currentIndex === 0
         ? (shortcutsExpanded ? shortcutSites : []).concat([
             { title: Tr.t("ntp_add_shortcut"), action: "add", glyph: "plus" },
@@ -31,14 +33,15 @@ Rectangle {
     // The favicon provider needs the window's WebEngineView to be registered first.
     Timer {
         interval: 120
-        running: page.visible && !page.privateMode
+        running: page.visible && page.showBrowsingData
         onTriggered: page.iconsReady = true
     }
 
     Connections {
         target: Browser.history
-        function onChanged() { page.sites = page.privateMode ? [] : Browser.history.topSites(8) }
+        function onChanged() { page.sites = page.showBrowsingData ? Browser.history.topSites(8) : [] }
     }
+    onShowBrowsingDataChanged: sites = showBrowsingData ? Browser.history.topSites(8) : []
 
     function focusSearch() { box.forceActiveFocus() }
     function isDefaultShortcut(url) { return /^https:\/\/www\.google\.com\/?$/i.test(url) }
@@ -89,7 +92,7 @@ Rectangle {
         // Account button in the top right corner, of the new tab page.
     RowLayout {
         id: accountRow
-        visible: !page.privateMode
+        visible: page.showBrowsingData
         z: 1
         anchors.top: parent.top
         anchors.right: parent.right
@@ -155,7 +158,7 @@ Rectangle {
             : ProfileSession.signInError ? Tr.t("ntp_sign_in_" + ProfileSession.signInError) : ""
     }
     Rectangle {
-        visible: !page.privateMode && ProfileSession.settingPin
+        visible: page.showBrowsingData && ProfileSession.settingPin
         anchors.fill: parent
         z: 2
         color: "#A0091018"
@@ -310,7 +313,7 @@ TapHandler {
             }
 
                         ColumnLayout {
-                visible: !page.privateMode
+                visible: page.showBrowsingData
                 Layout.fillWidth: true
                 Layout.topMargin: 2
                 spacing: 14

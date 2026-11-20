@@ -1519,52 +1519,84 @@ ApplicationWindow {
             lockPin.clear()
             if (visible) lockPin.forceActiveFocus()
         }
-        ColumnLayout {
+        NewTabPage {
+            anchors.fill: parent
+            lockedPreview: true
+            enabled: false
+        }
+        Rectangle { anchors.fill: parent; color: "#8908101A" }
+        Rectangle {
             anchors.centerIn: parent
-            width: Math.min(parent.width - 40, 380)
-            spacing: 14
-            Text { text: Tr.t("profile_unlock"); color: Theme.text; font.pixelSize: 25; font.bold: true }
-            Text {
-                Layout.fillWidth: true
-                text: ProfileSession.email
-                textFormat: Text.PlainText
-                color: Theme.textSecondary
-                elide: Text.ElideRight
-            }
-            TextField {
-                id: lockPin
-                objectName: "profileLockPin"
-                Component.onCompleted: if (ProfileSession.locked) forceActiveFocus()
-                visible: ProfileSession.signedIn
-                Layout.fillWidth: true
-                placeholderText: Tr.t("ntp_pin")
-                Accessible.name: placeholderText
-                echoMode: TextInput.Password
-                maximumLength: 6
-                validator: RegularExpressionValidator { regularExpression: /[0-9]{0,6}/ }
-                inputMethodHints: Qt.ImhDigitsOnly | Qt.ImhSensitiveData
-                onAccepted: if (unlockButton.enabled) unlockButton.clicked()
-            }
-            Text {
-                Layout.fillWidth: true
-                visible: text !== ""
-                text: ProfileSession.profileError ? Tr.t(ProfileSession.profileError) : ""
-                color: Theme.error
-                wrapMode: Text.WordWrap
-            }
-            RowLayout {
-                Layout.alignment: Qt.AlignRight
-                BButton { text: Tr.t("close"); onClicked: win.close() }
-                BButton {
-                    id: unlockButton
+            width: Math.min(parent.width - 40, 440)
+            height: unlockForm.implicitHeight + 48
+            radius: 20
+            color: "#141F2A"
+            border.color: "#365263"
+            ColumnLayout {
+                id: unlockForm
+                anchors.fill: parent
+                anchors.margins: 24
+                spacing: 14
+                Rectangle {
+                    Layout.preferredWidth: 42
+                    Layout.preferredHeight: 42
+                    radius: 12
+                    color: "#173745"
+                    border.color: "#2B5362"
+                    LineIcon { anchors.centerIn: parent; kind: "lock"; size: 20; color: Theme.accent }
+                }
+                Text { text: Tr.t("profile_unlock"); color: Theme.text; font.pixelSize: 25; font.bold: true }
+                Text {
+                    Layout.fillWidth: true
+                    text: ProfileSession.email
+                    textFormat: Text.PlainText
+                    color: Theme.textSecondary
+                    elide: Text.ElideRight
+                }
+                TextField {
+                    id: lockPin
+                    objectName: "profileLockPin"
+                    Component.onCompleted: if (ProfileSession.locked) forceActiveFocus()
                     visible: ProfileSession.signedIn
-                    enabled: lockPin.length === 6
-                    text: Tr.t("profile_unlock")
-                    variant: "primary"
-                    onClicked: {
-                        ProfileSession.unlock(lockPin.text)
-                        lockPin.clear()
-                        if (lockScreen.visible) lockPin.forceActiveFocus()
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 44
+                    leftPadding: 12
+                    color: Theme.text
+                    placeholderTextColor: Theme.textSecondary
+                    background: Rectangle {
+                        radius: 9
+                        color: Theme.background
+                        border.color: lockPin.activeFocus ? Theme.accent : Theme.border
+                    }
+                    placeholderText: Tr.t("ntp_pin")
+                    Accessible.name: placeholderText
+                    echoMode: TextInput.Password
+                    maximumLength: 6
+                    validator: RegularExpressionValidator { regularExpression: /[0-9]{0,6}/ }
+                    inputMethodHints: Qt.ImhDigitsOnly | Qt.ImhSensitiveData
+                    onAccepted: if (unlockButton.enabled) unlockButton.clicked()
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: text !== ""
+                    text: ProfileSession.profileError ? Tr.t(ProfileSession.profileError) : ""
+                    color: Theme.error
+                    wrapMode: Text.WordWrap
+                }
+                RowLayout {
+                    Layout.alignment: Qt.AlignRight
+                    BButton { text: Tr.t("close"); onClicked: win.close() }
+                    BButton {
+                        id: unlockButton
+                        visible: ProfileSession.signedIn
+                        enabled: lockPin.length === 6
+                        text: Tr.t("profile_unlock")
+                        variant: "primary"
+                        onClicked: {
+                            ProfileSession.unlock(lockPin.text)
+                            lockPin.clear()
+                            if (lockScreen.visible) lockPin.forceActiveFocus()
+                        }
                     }
                 }
             }

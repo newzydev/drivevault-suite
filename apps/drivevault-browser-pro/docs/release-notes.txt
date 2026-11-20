@@ -1,3 +1,4 @@
+v1.3.5 (2026-11-20): Show the PIN unlock card over a protected preview of the New Tab page.
 v1.3.4 (2026-11-20): Show the profile lock screen, idle-lock setting and sign-out confirmation inside Browser Pro.
 v1.3.3 (2026-11-20): Guide users back to Browser Pro after Google OAuth and set the initial six-digit PIN within the New Tab page.
 v1.3.2 (2026-11-20): Accept only Google Desktop app JSON for bundled OAuth and show sign-in progress and errors inline.
