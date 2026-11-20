@@ -33,6 +33,7 @@ class BrowserApp : public QObject {
     Q_PROPERTY(QStringList initialUrls READ initialUrls CONSTANT)
     Q_PROPERTY(bool startPrivate READ startPrivate CONSTANT)
     Q_PROPERTY(QString pipOnScript READ pipOnScript CONSTANT)       // picture in picture: pop the video out / undo (resources/pip-on.js, pip-off.js)
+    Q_PROPERTY(QString googleCompatScript READ googleCompatScript CONSTANT)   // resources/google-compat.js: what Google's sign-in page is shown (accounts.google.com only)
     Q_PROPERTY(QString pipOffScript READ pipOffScript CONSTANT)
 public:
     BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, AdBlockInterceptor* interceptor, StandInHandler* standIns, QObject* parent = nullptr);
@@ -53,6 +54,7 @@ public:
     bool startPrivate() const { return m_startPrivate; }
     QString pipOnScript() const { return m_pipOn; }
     QString pipOffScript() const { return m_pipOff; }
+    QString googleCompatScript() const { return m_googleCompat; }
     void setStartPrivate(bool v) { m_startPrivate = v; }
 
     Q_INVOKABLE QUrl resolve(const QString& typed) const;                              // address bar text -> address
@@ -90,7 +92,7 @@ private:
     QStringList m_initialUrls;
     bool m_startPrivate = false;
     bool m_printing = false;
-    QString m_pipOn, m_pipOff;
+    QString m_pipOn, m_pipOff, m_googleCompat;
 };
 
 } // namespace dv::br

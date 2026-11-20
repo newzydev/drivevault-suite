@@ -257,10 +257,15 @@ ApplicationWindow {
     }
     function prepareScripts(view, url) {
         const src = Browser.adblock.scriptFor(url)
-        view.userScripts.collection = src === "" ? [] : [{
+        const scripts = src === "" ? [] : [{
             name: "dv-adblock", sourceCode: src,
             injectionPoint: WebEngineScript.DocumentCreation, worldId: WebEngineScript.MainWorld, runsOnSubFrames: false
         }]
+        // Google's sign-in page turns away an engine that does not look like Chrome: it is shown what Chrome shows (google-compat.js)
+        if (Browser.hostOf(url) === "accounts.google.com" && url.indexOf("https:") === 0)
+            scripts.push({ name: "dv-google", sourceCode: Browser.googleCompatScript,
+                           injectionPoint: WebEngineScript.DocumentCreation, worldId: WebEngineScript.MainWorld, runsOnSubFrames: false })
+        view.userScripts.collection = scripts
     }
     function showPanel(kind) {
         if (kind === "settings") settingsModal.open()

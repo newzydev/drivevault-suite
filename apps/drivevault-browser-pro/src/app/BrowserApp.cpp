@@ -54,6 +54,7 @@ BrowserApp::BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, 
     };
     m_pipOn = readResource("pip-on.js");
     m_pipOff = readResource("pip-off.js");
+    m_googleCompat = readResource("google-compat.js");
 }
 
 QString BrowserApp::version() const { return QString::fromLatin1(version::kVersion); }
