@@ -1,4 +1,5 @@
 set_source_files_properties(components/Theme.qml components/ThaiMetrics.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+dv_account_qml(DV_ACCOUNT_QML)                       # DvAccountChip of shared/auth, compiled into this module
 
 # Static QML module with the whole UI. Backend objects (AppSettings, Projects, ...) are registered
 # at runtime under "DriveVault.Backend" by the application.
@@ -18,6 +19,7 @@ qt_add_qml_module(dv_ui
         components/Logo.qml
         components/WindowButton.qml
         components/TitleBar.qml
+        ${DV_ACCOUNT_QML}
         components/AppButton.qml
         components/IconButton.qml
         components/AppToolTip.qml

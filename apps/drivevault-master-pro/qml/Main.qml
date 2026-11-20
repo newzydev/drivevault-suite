@@ -221,6 +221,24 @@ ApplicationWindow {
                 Image { source: "qrc:/qt/qml/DriveVault/Master/resources/icons/app.png"; Layout.preferredWidth: 34; Layout.preferredHeight: 34; sourceSize.width: 68; smooth: true }
                 Text { visible: win.width >= 1180; text: Tr.s("title"); font.pixelSize: 17; font.weight: Font.Bold; color: Theme.text }       // (no room for the name next to the tabs in a narrow window)
                 Item { Layout.fillWidth: true }
+                // the Google account of the suite (the same one in every DriveVault program)
+                DvAccountChip {
+                    account: Account
+                    accent: Theme.accent
+                    accentTextColor: Theme.readableOn(Theme.accent)
+                    textColor: Theme.text
+                    mutedColor: Theme.textSecondary
+                    surfaceColor: Theme.surface
+                    hoverColor: Theme.surfaceHover
+                    borderColor: Theme.border
+                    compact: win.width < 1100
+                    signInText: Tr.s("accountSignIn")
+                    waitingText: Tr.s("accountWaiting")
+                    signOutText: Tr.s("accountSignOut")
+                    signOutHint: Tr.s("accountSignOutHint")
+                    errorTexts: ({ unavailable: Tr.s("accountErrUnavailable"), failed: Tr.s("accountErrFailed"),
+                                   denied: Tr.s("accountErrDenied"), timeout: Tr.s("accountErrTimeout") })
+                }
                 // language: one small switch
                 Rectangle {
                     implicitHeight: 32

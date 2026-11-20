@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultPdfPro
-    VERSION 1.22.2
+    VERSION 1.23.0
     DESCRIPTION "DriveVault PDF Pro - read, merge, split, compress, edit, protect and redact PDF files"
     LANGUAGES CXX)
 
@@ -16,7 +16,7 @@ option(DP_BUILD_TESTS "Build tests" ON)
 # Build number: yyyymmddHHMM (UTC) of the configure step.
 string(TIMESTAMP DP_BUILD_NUMBER "%Y%m%d%H%M" UTC)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 QuickDialogs2 PrintSupport Test)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network Qml Quick QuickControls2 QuickDialogs2 PrintSupport Test)
 qt_standard_project_setup(REQUIRES 6.8)
 
 if(MSVC)
@@ -58,6 +58,9 @@ target_include_directories(qpdf SYSTEM INTERFACE "${DP_QPDF_DIR}/include")
 file(GLOB DP_QPDF_DLLS "${DP_QPDF_DIR}/bin/*.dll")
 file(COPY ${DP_QPDF_DLLS} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
+# The Google account of the suite (one file per Windows user, shared with the other programs): shared/auth
+add_subdirectory("${CMAKE_SOURCE_DIR}/../../shared/auth" "${CMAKE_BINARY_DIR}/dv_account")
+
 add_subdirectory(src/pdfengine)
 add_subdirectory(src/pdftools)
 add_subdirectory(src/ui)
@@ -87,5 +90,6 @@ add_subdirectory(src/app)
 
 if(DP_BUILD_TESTS)
     enable_testing()
+    dv_account_add_tests()
     add_subdirectory(tests)
 endif()

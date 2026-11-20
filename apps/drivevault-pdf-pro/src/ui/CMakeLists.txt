@@ -1,3 +1,4 @@
+dv_account_qml(DV_ACCOUNT_QML)                       # DvAccountChip of shared/auth, compiled into this module
 set_source_files_properties(
     components/Theme.qml components/Tr.qml components/ThaiMetrics.qml
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
@@ -28,6 +29,7 @@ qt_add_qml_module(dp_ui
         components/PComboBox.qml
         components/ConfirmDialog.qml
         components/LanguageSwitch.qml
+        ${DV_ACCOUNT_QML}
         components/PdfTitleBar.qml
         components/WindowButton.qml
         components/ToolEntry.qml

@@ -63,6 +63,28 @@ Rectangle {
             }
         }
 
+        // the Google account of the suite (the same one in every DriveVault program)
+        DvAccountChip {
+            objectName: "accountChip"
+            account: Account
+            accent: Theme.accent
+            accentTextColor: Theme.textOnAccent
+            textColor: Theme.text
+            mutedColor: Theme.textSecondary
+            surfaceColor: Theme.surface
+            hoverColor: Theme.surfaceHover
+            borderColor: Theme.border
+            compact: bar.width < 1100
+            signInText: qsTr("Sign in with Google")
+            waitingText: qsTr("Waiting for Google...")
+            signOutText: qsTr("Sign out")
+            signOutHint: qsTr("Signs you out of all DriveVault programs")
+            errorTexts: ({ unavailable: qsTr("Google sign-in is not available in this build."),
+                           failed: qsTr("Google sign-in did not finish. Try again."),
+                           denied: qsTr("Google sign-in was cancelled."),
+                           timeout: qsTr("Google sign-in took too long. Try again.") })
+        }
+
         // language: one small switch
         Rectangle {
             objectName: "languageSwitch"

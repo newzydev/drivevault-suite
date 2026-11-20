@@ -28,7 +28,7 @@ target_include_directories(tst_ui_flow PRIVATE unit)
 target_compile_definitions(tst_ui_flow PRIVATE DV_TEST_FFMPEG="${DV_FFMPEG_DIR}/bin/ffmpeg.exe")
 target_link_libraries(tst_ui_flow PRIVATE dv_appcore dv_ui dv_uiplugin Qt6::Quick Qt6::QuickControls2 Qt6::Test)
 add_test(NAME tst_ui_flow COMMAND tst_ui_flow)
-set_tests_properties(tst_ui_flow PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;DV_NO_AUDIO=1" TIMEOUT 180)
+set_tests_properties(tst_ui_flow PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;DV_NO_AUDIO=1;DV_ACCOUNT_DIR=${CMAKE_BINARY_DIR}/test-account" TIMEOUT 180)
 
 # ---- performance measurements (1080p) ----------------------------------------------------------------
 add_executable(tst_perf performance/tst_perf.cpp)

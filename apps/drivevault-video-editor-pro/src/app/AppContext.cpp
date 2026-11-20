@@ -55,6 +55,7 @@ void AppContext::registerQmlTypes()
     qmlRegisterSingletonInstance(uri, 1, 0, "Ai", &ai);
     qmlRegisterSingletonInstance(uri, 1, 0, "Mcp", &mcp);
     qmlRegisterSingletonInstance(uri, 1, 0, "Proxies", &proxies);
+    qmlRegisterSingletonInstance(uri, 1, 0, "Account", &account);
     qmlRegisterType<FrameView>(uri, 1, 0, "FrameView");
     qmlRegisterType<WaveformItem>(uri, 1, 0, "WaveformItem");
     qmlRegisterType<FrameStripItem>(uri, 1, 0, "FrameStripItem");

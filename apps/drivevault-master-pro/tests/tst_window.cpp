@@ -33,6 +33,7 @@ class TstWindow : public QObject {
         auto env = QProcessEnvironment::systemEnvironment();
         env.insert("QT_QPA_PLATFORM", "offscreen");
         env.insert("QT_QUICK_BACKEND", "software");
+        env.insert("DV_ACCOUNT_DIR", m_dir.filePath("account"));           // never the real Google account of the person running the tests
         p.setProcessEnvironment(env);
         p.start(QStringLiteral(MASTER_EXE_PATH), {"--registry-root", kRoot, "--data-dir", m_dir.filePath("data"), "--lang", lang,
                                                    "--screenshot", png, "--size", "1120x740", "--tab", tab});

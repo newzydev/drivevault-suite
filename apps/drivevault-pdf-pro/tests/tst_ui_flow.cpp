@@ -11,6 +11,7 @@
 #include "SpeechReader.h"
 #include "DocumentAssistant.h"
 #include "AccessibilityChecker.h"
+#include "GoogleAccount.h"
 #include "OverlayImageProvider.h"
 #include "PageListModel.h"
 #include "TestPdf.h"
@@ -65,6 +66,7 @@ class TstUiFlow : public QObject {
     dp::SpeechReader* m_speech = nullptr;
     dp::DocumentAssistant* m_assistant = nullptr;
     dp::AccessibilityChecker* m_access = nullptr;
+    dv::account::GoogleAccount* m_account = nullptr;      // the suite's Google account (DV_ACCOUNT_DIR keeps it away from the real one)
     QQmlApplicationEngine* m_engine = nullptr;
     QQuickWindow* m_window = nullptr;
     QString m_sixPath;
@@ -213,6 +215,8 @@ private slots:
         m_speech = new dp::SpeechReader;
         m_assistant = new dp::DocumentAssistant(m_doc);
         m_access = new dp::AccessibilityChecker(m_doc);
+        m_account = new dv::account::GoogleAccount;
+        qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Account", m_account);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Doc", m_doc);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Organizer", m_org);
         qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Compressor", m_cmp);
@@ -244,6 +248,7 @@ private slots:
         delete m_assistant;
         delete m_speech;
         delete m_access;
+        delete m_account;
         delete m_comparer;
         delete m_forms;
         delete m_edit;

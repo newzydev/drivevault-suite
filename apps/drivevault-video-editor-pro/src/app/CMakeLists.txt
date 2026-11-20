@@ -33,7 +33,7 @@ add_library(dv_appcore STATIC
     AppContext.cpp AppContext.h)
 target_include_directories(dv_appcore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dv_appcore PUBLIC
-    dv_core dv_settings dv_localization dv_project dv_platform dv_playback dv_export dv_ai dv_mcp dv_resources
+    dv_core dv_settings dv_localization dv_project dv_platform dv_playback dv_export dv_ai dv_mcp dv_resources dv_account
     Qt6::Gui Qt6::Qml)
 
 # ---- Executable ---------------------------------------------------------------------------------------

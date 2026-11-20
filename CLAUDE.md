@@ -10,10 +10,11 @@ A suite of native Windows desktop programs (C++20, Qt 6.8 / Qt Quick, CMake; no 
 
 | Folder | Program |
 |---|---|
-| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.16.2 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
-| `apps/drivevault-master-pro` | DriveVault Master Pro 1.38.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
-| `apps/drivevault-pdf-pro` | DriveVault PDF Pro 1.22.2 (plan in `apps/drivevault-pdf-pro/docs/PDF-Pro-Plan.md`). PDFium + qpdf, Thai OCR with ONNX Runtime. Accent colour red `#EF4444`. |
+| `apps/drivevault-video-editor-pro` | DriveVault Video Editor Pro 1.17.0 (FFmpeg, whisper.cpp for offline captions). Accent colour violet `#8B5CF6`. |
+| `apps/drivevault-master-pro` | DriveVault Master Pro 1.39.0 - the hub that lists / opens / installs / updates / uninstalls the programs. Accent colour amber `#F59E0B`. |
+| `apps/drivevault-pdf-pro` | DriveVault PDF Pro 1.23.0 (plan in `apps/drivevault-pdf-pro/docs/PDF-Pro-Plan.md`). PDFium + qpdf, Thai OCR with ONNX Runtime. Accent colour red `#EF4444`. |
 | `shared/scripts` | Build environment, signing, clean-machine check, installer artwork used by every app. |
+| `shared/auth` | The Google account of the suite (optional sign-in, one file per Windows user, the title-bar component `DvAccountChip`); see `shared/auth/CLAUDE.md`. |
 | `scripts` | Suite-level scripts: `build-all.ps1` (everything), `check-agent-files.ps1` (CLAUDE.md = AGENTS.md), `run-master-pro.bat` / `run-video-editor.bat` / `run-pdf-pro.bat` (open the Release build without installing: Qt on PATH, then start the exe; extra arguments are passed on - use these for the smoke start). |
 | `docs` | `suite-integration.md` (contract between programs and hub). |
 | `.tools` (not in git) | Portable toolchain: CMake, Ninja, Qt 6.8.3 msvc2022_64, Inno Setup, FFmpeg (LGPL shared), whisper.cpp + models, PDFium (BSD-3), qpdf (Apache-2.0), ONNX Runtime 1.24.4 (MIT), the OpenThai OCR Text model (`openthai-ocr`, Apache-2.0, 4 MB; PDF Pro ships it), the OpenThai ASR model (`openthai-asr`, OpenMDW-1.1, about 2.6 GB, never shipped), Python. |
@@ -64,6 +65,7 @@ The program installers (Video Editor, PDF Pro) do not carry Master Pro: each one
   `Software\DriveVault\MasterPro` for the hub. Every program installer checks GitHub (releases of `newzydev/drivevault-suite`, tag `drivevault-master-pro-v<x.y.z>`) for the newest Master Pro, downloads it (SHA-256 checked, retried) and silently runs it first when it is missing / older; offline or a failure never blocks the install of the program (`/NOMASTER` skips the step).
 - Inno Setup `AppId` values never change once released: Video Editor `{6E1B7A52-4C3D-4F7E-9A3B-D17E5A0C2F11}`, Master Pro `{B3A7C1D4-5E2F-4A86-9C10-7D2E8F4A6B35}`.
 - Setup exes carry a version resource with `CompanyName = DriveVault` and `ProductName = <program name>`.
+- Google account: `%LOCALAPPDATA%DriveVaultAccountccount.bin` (DPAPI, no token), shared by all programs, optional - see `docs/suite-integration.md` and `shared/auth/CLAUDE.md`. Tests and smoke starts set `DV_ACCOUNT_DIR`, never use the real account.
 - Release gates (run by each `package.ps1`): clean-machine import check, license audit (FFmpeg LGPL-only, no GPL-only Qt, every file has an owner), notices present. Do not bypass them.
 
 ## Licence texts

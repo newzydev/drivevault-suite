@@ -34,7 +34,7 @@ endif()
 qt_add_executable(dp_app WIN32 main.cpp app.rc)
 set_target_properties(dp_app PROPERTIES OUTPUT_NAME "DriveVaultPdfPro")
 target_link_libraries(dp_app PRIVATE
-    dp_appcore dp_ui dp_uiplugin dp_resources
+    dp_appcore dp_ui dp_uiplugin dp_resources dv_account
     Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
 
 install(TARGETS dp_app RUNTIME DESTINATION .)

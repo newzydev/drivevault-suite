@@ -12,6 +12,7 @@
 #include "project/ProjectManager.h"
 #include "project/RecentProjectsModel.h"
 #include "settings/SettingsManager.h"
+#include "GoogleAccount.h"
 
 #include <QObject>
 
@@ -38,6 +39,7 @@ public:
     AppController controller;
     SystemInfo systemInfo;
     WindowsIntegration windowsIntegration;
+    account::GoogleAccount account;     // the Google account of the whole suite (one shared file, see shared/auth)
 
     // Loads settings + recents and installs the stored UI language. Call once, before the UI exists.
     void load();

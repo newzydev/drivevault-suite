@@ -16,11 +16,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "DriveVault"
             VALUE "FileDescription", "DriveVault PDF Pro"
-            VALUE "FileVersion", "1.22.2.0"
+            VALUE "FileVersion", "1.23.0.0"
             VALUE "InternalName", "DriveVaultPdfPro"
             VALUE "OriginalFilename", "DriveVaultPdfPro.exe"
             VALUE "ProductName", "DriveVault PDF Pro"
-            VALUE "ProductVersion", "1.22.2"
+            VALUE "ProductVersion", "1.23.0"
         END
     END
     BLOCK "VarFileInfo"

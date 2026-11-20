@@ -1,4 +1,5 @@
 #include "DocumentController.h"
+#include "GoogleAccount.h"
 #include "PageImageProvider.h"
 #include "Compressor.h"
 #include "EditorModel.h"
@@ -115,6 +116,7 @@ int main(int argc, char* argv[])
     dp::SpeechReader speech;
     dp::DocumentAssistant assistant(&controller);
     dp::AccessibilityChecker access(&controller);
+    dv::account::GoogleAccount account;                        // the Google account of the whole suite (one shared file, see shared/auth)
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Doc", &controller);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Organizer", &organizer);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Compressor", &compressor);
@@ -125,6 +127,7 @@ int main(int argc, char* argv[])
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Speech", &speech);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Assistant", &assistant);
     qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Access", &access);
+    qmlRegisterSingletonInstance("DriveVault.PdfPro.Backend", 1, 0, "Account", &account);
 
     QQmlApplicationEngine engine;
     if (parser.isSet(screenshotOption))

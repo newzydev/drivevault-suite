@@ -96,3 +96,12 @@ The accent colour appears in the product icon, the installer artwork (`scripts\m
 4. Never delete the suite folder; remove only your own folder, shortcuts and keys. The hub removes the suite folder itself when it is the last one and the folder is empty.
 
 Master Pro knows the planned products (Image Editor Pro `ImageEditorPro` #3B82F6, Audio Editor Pro `AudioEditorPro` #10B981) as "Coming soon"; their registry keys must use these names to be recognised, other keys are listed generically.
+
+## Google account (shared by every program, since Master Pro 1.39.0 / Video Editor Pro 1.17.0 / PDF Pro 1.23.0)
+
+Signing in with Google is **optional** and one account serves the whole suite (code: `shared/auth`, rules: `shared/auth/CLAUDE.md`).
+- **File**: `%LOCALAPPDATA%\DriveVault\Account\account.bin`, one per Windows user, encrypted with Windows DPAPI (this user only, entropy `DriveVault.Account.v1`). JSON inside: `sub` (Google id), `name`, `email`, `avatar` (Base64 PNG, 128 px, may be missing). **No token is stored.** Uninstallers do not remove it.
+- **Rule for every program**: show it in the title bar (`DvAccountChip`), watch the folder (the library does it), never write the file by another route than `GoogleAccount::signIn / signOut`, never keep a copy elsewhere, and never lock a feature behind it without a new owner decision.
+- **Sync**: a program that signs in or out changes the file; every other program, running or started later, reloads it (folder watcher + a look every 2 s).
+- **Tests** set `DV_ACCOUNT_DIR` (plain `account.json` there) so they never touch the real account.
+- A new program adds `shared/auth` as in `shared/auth/CLAUDE.md`; the Google OAuth client is built in from a file outside the repository (`shared/scripts/make-oauth-header.ps1`).

@@ -1,6 +1,11 @@
 DriveVault Video Editor Pro - Release notes
 ==========================================
 
+Version 1.17.0 (2026-11-20)
+--------------
+  - New: "Sign in with Google" (optional) at the right of the title bar. It opens Google's page in your default browser; signed in, the bar shows your round picture and name, and a click gives your e-mail and "Sign out". The account is shared with Master Pro and PDF Pro: signing in or out in one shows in the others, also while they run (one encrypted file per Windows user, no token kept). Nothing is locked without it.
+  - Tested: tst_account, tst_language, tst_ui_flow, pictures of the title bar signed out and signed in. Not tested: a real sign-in with Google. The installer is unsigned and was not rebuilt.
+
 Version 1.16.2 (2026-11-19)
 --------------
   - Changed (installer): the installer no longer contains DriveVault Master Pro (the hub of the suite). When Master Pro is missing or older, the installer downloads the newest release from GitHub (checked with its SHA-256) and installs it first. Without an Internet connection the program is installed anyway and the last page says that Master Pro is not installed; an installed Master Pro is kept. The installer is much smaller. The program itself is unchanged.

@@ -4700,6 +4700,46 @@
 <context>
     <name>TitleBar</name>
     <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Sign in with Google</source>
+        <translation>เข้าสู่ระบบด้วย Google</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Waiting for Google...</source>
+        <translation>รอ Google...</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Sign out</source>
+        <translation>ออกจากระบบ</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Signs you out of all DriveVault programs</source>
+        <translation>ออกจากระบบของทุกโปรแกรม DriveVault</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Google sign-in is not available in this build.</source>
+        <translation>รุ่นนี้ยังไม่มีการตั้งค่าเข้าสู่ระบบด้วย Google</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Google sign-in did not finish. Try again.</source>
+        <translation>เข้าสู่ระบบด้วย Google ไม่สำเร็จ ลองใหม่อีกครั้ง</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Google sign-in was cancelled.</source>
+        <translation>ยกเลิกการเข้าสู่ระบบด้วย Google</translation>
+    </message>
+    <message>
+        <location filename="../../src/ui/components/TitleBar.qml" line="1"/>
+        <source>Google sign-in took too long. Try again.</source>
+        <translation>เข้าสู่ระบบด้วย Google ใช้เวลานานเกินไป ลองใหม่อีกครั้ง</translation>
+    </message>
+    <message>
         <location filename="../../src/ui/components/TitleBar.qml" line="117"/>
         <source>More options</source>
         <translation>ตัวเลือกเพิ่มเติม</translation>

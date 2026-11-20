@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultMasterPro
-    VERSION 1.38.1
+    VERSION 1.39.0
     DESCRIPTION "DriveVault Master Pro - installs, launches and updates the DriveVault programs"
     LANGUAGES CXX)
 
@@ -22,6 +22,10 @@ if(MSVC)
 endif()
 
 configure_file(src/Version.h.in ${CMAKE_BINARY_DIR}/generated/Version.h @ONLY)
+
+# ---- the Google account of the suite (shared with the other programs): shared/auth ---------------------------
+add_subdirectory("${CMAKE_SOURCE_DIR}/../../shared/auth" "${CMAKE_BINARY_DIR}/dv_account")
+dv_account_qml(DV_ACCOUNT_QML)
 
 # ---- backend (also used by the tests) ----------------------------------------------------------------------
 add_library(master_core STATIC src/Hub.cpp src/Hub.h src/WinUtil.cpp src/WinUtil.h src/Releases.cpp src/Releases.h
@@ -63,13 +67,15 @@ qt_add_qml_module(DriveVaultMasterPro
         qml/MMenu.qml
         qml/MMenuItem.qml
         qml/WindowButton.qml
+        ${DV_ACCOUNT_QML}
     RESOURCES
         resources/icons/app.png
         resources/fonts/Inter-Variable.ttf
         resources/fonts/NotoSansThai-Variable.ttf)
-target_link_libraries(DriveVaultMasterPro PRIVATE master_core Qt6::Quick Qt6::QuickControls2 Qt6::QuickDialogs2 Qt6::WebEngineQuick)
+target_link_libraries(DriveVaultMasterPro PRIVATE master_core dv_account Qt6::Quick Qt6::QuickControls2 Qt6::QuickDialogs2 Qt6::WebEngineQuick)
 
 if(DM_BUILD_TESTS)
     enable_testing()
+    dv_account_add_tests()
     add_subdirectory(tests)
 endif()

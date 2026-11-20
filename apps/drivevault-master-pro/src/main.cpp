@@ -1,3 +1,4 @@
+#include "GoogleAccount.h"
 #include "Hub.h"
 #include "ai/AiService.h"
 #include "ai/MarkdownModel.h"
@@ -89,8 +90,10 @@ int main(int argc, char* argv[])
     ai.browserBridge()->setStoragePath(hub.dataDir() + QStringLiteral("/browser"));
     if (parser.isSet(dataDir))                                 // a test / diagnostic run keeps its downloads in its own data folder, never in the real Downloads folder
         ai.browserBridge()->setDownloadsFolder(hub.dataDir() + QStringLiteral("/downloads"));
+    dv::account::GoogleAccount account;                       // the Google account of the whole suite (one shared file, see shared/auth)
     QQmlApplicationEngine engine;
     qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Hub", &hub);
+    qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Account", &account);
     qmlRegisterSingletonInstance("DriveVault.Master.Backend", 1, 0, "Ai", &ai);
     qmlRegisterType<dm::ai::MarkdownModel>("DriveVault.Master.Backend", 1, 0, "MarkdownModel");      // one per answer on the page (the blocks of its Markdown)
     engine.loadFromModule("DriveVault.Master", "Main");

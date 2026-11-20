@@ -1,6 +1,13 @@
 DriveVault Master Pro - release notes
 =====================================
 
+v1.39.0 (2026-11-20): Sign in with Google (optional) - the picture and name of the account in the title bar, one account for all DriveVault programs.
+  - New: a "Sign in with Google" button at the right of the title bar (before the language switch). It opens Google's page in your default browser (the embedded engine is not used: Google refuses it) and waits for the answer on this PC (3 minutes). Signed in, the bar shows your round picture and name; a click opens a card with your e-mail and "Sign out".
+  - One account for the whole suite: the identity (Google id, name, e-mail, a 128 px picture; NO token) is one file per Windows user, %LOCALAPPDATA%\DriveVault\Account\account.bin, encrypted with Windows DPAPI. Video Editor Pro and PDF Pro show it too; signing in or out in one program shows in the others within about two seconds, also while they are running. Sign out removes the file for all of them.
+  - Optional: nothing is locked, the programs work the same without signing in.
+  - The Google client id and secret are built into the program from a file that is not in the repository, encrypted; this only hides them from a casual look, it is not secret storage. The Google project may limit sign-in to listed test users.
+  - Tested: tst_account (9 checks: the shared file, damaged files, two instances following each other, the embedded-pair decryption), tst_window, pictures of the title bar signed out and signed in. NOT tested: a real sign-in with Google (needs the owner's browser and account). The installer was not rebuilt. The installer is unsigned.
+
 v1.38.1 (2026-11-20): DriveVault Browser Pro is no longer part of the suite and is removed from the program list.
   - Removed: the Browser Pro card, its update slug and the matching hub test. A Browser Pro that is still installed is no longer listed or updated by this hub. The built-in browser tab of Master Pro is unchanged. The installer is unsigned.
 

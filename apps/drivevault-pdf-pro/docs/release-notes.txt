@@ -2,6 +2,8 @@ DriveVault PDF Pro - release notes
 ==================================
 (Release notes for DriveVault PDF Pro. Installer publication is recorded separately.)
 
+v1.23.0 (2026-11-20): Sign in with Google (optional) - the picture and name of the account in the title bar, shared with the other DriveVault programs. It opens Google's page in your default browser; signed in, the bar shows your round picture and name, and a click gives your e-mail and "Sign out". Signing in or out in Master Pro or Video Editor Pro shows here too (and the other way round), also while the programs run; one encrypted file per Windows user, no token kept. Nothing is locked without it. Tested: tst_account and a picture of the title bar signed in; tst_ui_flow ran with the same 2 failures as before this change (theAiCardFloatsOverThePages, clickingALinkGoesToItsPageOrAsksBeforeOpeningAnAddress). Not tested: a real sign-in with Google. The installer is unsigned and was not rebuilt.
+
 v1.22.2 (2026-11-19): Smaller installer that downloads Master Pro
   - Changed (installer): the installer no longer contains DriveVault Master Pro (the hub of the suite). When Master Pro is missing or older, the installer downloads the newest release from GitHub (checked with its SHA-256) and installs it first. Without an Internet connection the program is installed anyway and the last page says that Master Pro is not installed (before, the installation stopped); an installed Master Pro is kept. The program itself is unchanged.
   - Note: the installer is not code-signed yet, so Windows SmartScreen may warn.

@@ -378,7 +378,15 @@ QtObject {
         "checking": ["Checking…", "กำลังตรวจ…"],
         "onlineUpdate": ["Download version %1 and update", "ดาวน์โหลดเวอร์ชัน %1 และอัปเดต"],
         "onlineInstall": ["Download version %1 and install", "ดาวน์โหลดเวอร์ชัน %1 และติดตั้ง"],
-        "onlineHint": ["Newest online: version %1", "รุ่นล่าสุดออนไลน์: เวอร์ชัน %1"]
+        "onlineHint": ["Newest online: version %1", "รุ่นล่าสุดออนไลน์: เวอร์ชัน %1"],
+        "accountSignIn": ["Sign in with Google", "เข้าสู่ระบบด้วย Google"],
+        "accountWaiting": ["Waiting for Google...", "รอ Google..."],
+        "accountSignOut": ["Sign out", "ออกจากระบบ"],
+        "accountSignOutHint": ["Signs you out of all DriveVault programs", "ออกจากระบบของทุกโปรแกรม DriveVault"],
+        "accountErrUnavailable": ["Google sign-in is not available in this build.", "รุ่นนี้ยังไม่มีการตั้งค่าเข้าสู่ระบบด้วย Google"],
+        "accountErrFailed": ["Google sign-in did not finish. Try again.", "เข้าสู่ระบบด้วย Google ไม่สำเร็จ ลองใหม่อีกครั้ง"],
+        "accountErrDenied": ["Google sign-in was cancelled.", "ยกเลิกการเข้าสู่ระบบด้วย Google"],
+        "accountErrTimeout": ["Google sign-in took too long. Try again.", "เข้าสู่ระบบด้วย Google ใช้เวลานานเกินไป ลองใหม่อีกครั้ง"]
     })
     function s(key) {
         const e = table[key]

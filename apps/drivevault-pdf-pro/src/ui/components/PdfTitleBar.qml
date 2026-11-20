@@ -60,6 +60,26 @@ Rectangle {
             }
         }
 
+        // the Google account of the suite (the same one in every DriveVault program)
+        DvAccountChip {
+            objectName: "accountChip"
+            account: Account
+            accent: Theme.accent
+            accentTextColor: Theme.textOnAccent
+            textColor: Theme.text
+            mutedColor: Theme.textSecondary
+            surfaceColor: Theme.surface
+            hoverColor: Theme.surfaceHover
+            borderColor: Theme.border
+            compact: bar.width < 1100
+            signInText: Tr.s("accountSignIn")
+            waitingText: Tr.s("accountWaiting")
+            signOutText: Tr.s("accountSignOut")
+            signOutHint: Tr.s("accountSignOutHint")
+            errorTexts: ({ unavailable: Tr.s("accountErrUnavailable"), failed: Tr.s("accountErrFailed"),
+                           denied: Tr.s("accountErrDenied"), timeout: Tr.s("accountErrTimeout") })
+        }
+
         LanguageSwitch {}
         PButton {
             objectName: "titleMenuButton"

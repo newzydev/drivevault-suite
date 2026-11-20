@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultVideoEditorPro
-    VERSION 1.16.2
+    VERSION 1.17.0
     DESCRIPTION "DriveVault Video Editor Pro - Professional Desktop Video Editor"
     LANGUAGES CXX)
 
@@ -16,7 +16,7 @@ option(DV_BUILD_TESTS "Build unit tests" ON)
 # Build number: yyyymmddHHMM (UTC) of the configure step.
 string(TIMESTAMP DV_BUILD_NUMBER "%Y%m%d%H%M" UTC)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 QuickDialogs2 Test LinguistTools)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network Qml Quick QuickControls2 QuickDialogs2 Test LinguistTools)
 qt_standard_project_setup(REQUIRES 6.8)
 
 if(MSVC)
@@ -38,6 +38,9 @@ else()
     message(STATUS "ONNX Runtime not found in ${DV_ONNX_DIR}: the OpenThai speech model is not built in")
 endif()
 
+# The Google account of the suite (one file per Windows user, shared with the other programs): shared/auth
+add_subdirectory("${CMAKE_SOURCE_DIR}/../../shared/auth" "${CMAKE_BINARY_DIR}/dv_account")
+
 add_subdirectory(src/core)
 add_subdirectory(src/settings)
 add_subdirectory(src/localization)
@@ -54,5 +57,6 @@ add_subdirectory(src/app)
 
 if(DV_BUILD_TESTS)
     enable_testing()
+    dv_account_add_tests()
     add_subdirectory(tests)
 endif()
