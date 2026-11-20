@@ -1,23 +1,64 @@
 #include "ProfileSession.h"
+#include "GoogleDesktopOAuth.h"
 
 #include <QApplication>
 #include <QCryptographicHash>
 #include <QDialog>
+#include <QDesktopServices>
 #include <QFile>
 #include <QInputDialog>
 #include <QJsonDocument>
 #include <QMessageBox>
 #include <QPasswordDigestor>
+#include <QPushButton>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QTimer>
+#include <QUrlQuery>
 #include <QWindow>
 #include <qt_windows.h>
 #include <wincrypt.h>
 
 class TstProfile : public QObject {
     Q_OBJECT
+    QUrl authorization;
+    Q_INVOKABLE void captureAuthorization(const QUrl& url) { authorization = url; }
 private slots:
+    void bundledLoginOpensAuthorizationWithoutImport()
+    {
+        if (!dv::br::desktopOAuth::ciphertext[0])
+            QSKIP("No credentials were supplied to the build.");
+        QTemporaryDir root;
+        QVERIFY(root.isValid());
+        if (qEnvironmentVariableIsSet("GOOGLE_LOGIN_CLIENT_ID") || qEnvironmentVariableIsSet("GOOGLE_LOGIN_CLIENT_SECRET"))
+            QSKIP("Environment overrides the bundled client.");
+        QDesktopServices::setUrlHandler("https", this, "captureAuthorization");
+        QTimer inputTimer;
+        bool choseLogin = false;
+        connect(&inputTimer, &QTimer::timeout, this, [&] {
+            auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+            if (!dialog) return;
+            auto* login = dialog->findChild<QPushButton*>("login");
+            if (login && !choseLogin) {
+                choseLogin = true;
+                login->click();
+            } else {
+                dialog->reject();
+            }
+        });
+        inputTimer.start(25);
+        dv::br::ProfileSession session(root.path(), true);
+        const bool started = session.start();
+        QDesktopServices::unsetUrlHandler("https");
+        QVERIFY(!started);
+        QVERIFY(choseLogin);
+        QVERIFY(authorization.host() == "accounts.google.com");
+        const QUrlQuery query(authorization);
+        QVERIFY(query.queryItemValue("client_id").endsWith(".apps.googleusercontent.com"));
+        QVERIFY(query.queryItemValue("code_challenge_method") == "S256");
+        QVERIFY(!query.hasQueryItem("client_secret"));
+    }
+
     void startupRequiresPinAndUsesSeparateDataDirectory()
     {
         QTemporaryDir root;

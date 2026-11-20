@@ -1,5 +1,6 @@
 #include "ProfileSession.h"
 
+#include "GoogleDesktopOAuth.h"
 #include <QApplication>
 #include <QBuffer>
 #include <QCryptographicHash>
@@ -36,6 +37,30 @@
 
 namespace dv::br {
 namespace {
+
+QJsonObject embeddedOAuth()
+{
+    auto keyBytes = QByteArray::fromBase64(desktopOAuth::key);
+    auto iv = QByteArray::fromBase64(desktopOAuth::iv);
+    auto encrypted = QByteArray::fromBase64(desktopOAuth::ciphertext);
+    if (keyBytes.size() != 32 || iv.size() != 16 || encrypted.isEmpty()) return {};
+
+    BCRYPT_ALG_HANDLE algorithm = nullptr;
+    if (BCryptOpenAlgorithmProvider(&algorithm, BCRYPT_AES_ALGORITHM, nullptr, 0) != 0) return {};
+    BCRYPT_KEY_HANDLE key = nullptr;
+    auto bytes = [](QByteArray& value) { return reinterpret_cast<PUCHAR>(value.data()); };
+    QByteArray plain(encrypted.size(), Qt::Uninitialized);
+    ULONG size = 0;
+    const bool ok = BCryptGenerateSymmetricKey(algorithm, &key, nullptr, 0, bytes(keyBytes), ULONG(keyBytes.size()), 0) == 0
+        && BCryptDecrypt(key, bytes(encrypted), ULONG(encrypted.size()), nullptr,
+                         bytes(iv), ULONG(iv.size()), bytes(plain), ULONG(plain.size()), &size, BCRYPT_BLOCK_PADDING) == 0;
+    if (key) BCryptDestroyKey(key);
+    BCryptCloseAlgorithmProvider(algorithm, 0);
+    const auto config = ok ? QJsonDocument::fromJson(QByteArrayView(plain).first(size).toByteArray()).object() : QJsonObject();
+    SecureZeroMemory(plain.data(), size_t(plain.size()));
+    SecureZeroMemory(keyBytes.data(), size_t(keyBytes.size()));
+    return config;
+}
 
 QByteArray randomBytes(int length)
 {
@@ -274,6 +299,11 @@ bool ProfileSession::authenticate()
 {
     QString client = qEnvironmentVariable("GOOGLE_LOGIN_CLIENT_ID").trimmed();
     QString secret = qEnvironmentVariable("GOOGLE_LOGIN_CLIENT_SECRET").trimmed();
+    if (client.isEmpty() && secret.isEmpty()) {
+        const auto builtIn = embeddedOAuth();
+        client = builtIn.value("GOOGLE_LOGIN_CLIENT_ID").toString();
+        secret = builtIn.value("GOOGLE_LOGIN_CLIENT_SECRET").toString();
+    }
     const QString configPath = m_root + QStringLiteral("/google-oauth.bin");
     if (client.isEmpty() && secret.isEmpty()) {
         QFile stored(configPath);

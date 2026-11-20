@@ -1,3 +1,4 @@
+v1.2.1 (2026-11-20): Embed the configured Google Desktop OAuth pair at build time so users can sign in without importing a credential file.
 v1.2.0 (2026-11-20): Sign in with Google to a local DriveVault profile, or browse as a guest. Account data is isolated per Google identity. A six-digit PIN protects startup and locks the browser after configurable inactivity.
 v1.1.1 (2026-11-20): Open the browser menu below the toolbar button with grouped commands, keyboard shortcut labels and inline zoom controls.
 v1.1.0 (2026-11-20): Edit or remove independent workspace shortcuts, reorder and search open tabs, clear cookies and reset permissions by website. Import bookmarks directly from a Chrome profile. Added Windows printing, a text reader, visible-page PNG capture, freezing and unloading for idle background tabs, picture in picture for same-origin frames and simple :-abp-has filters. The installer is unsigned.

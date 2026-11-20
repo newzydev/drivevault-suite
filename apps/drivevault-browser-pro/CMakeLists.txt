@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultBrowserPro
-    VERSION 1.2.0
+    VERSION 1.2.1
     DESCRIPTION "DriveVault Browser Pro - a web browser with a built-in ad blocker"
     LANGUAGES CXX)
 
@@ -30,6 +30,17 @@ if(MSVC)
 endif()
 
 configure_file(src/Version.h.in ${CMAKE_BINARY_DIR}/generated/Version.h @ONLY)
+set(oauth_header "${CMAKE_BINARY_DIR}/generated/GoogleDesktopOAuth.h")
+if(NOT EXISTS "${oauth_header}")
+    file(WRITE "${oauth_header}" [=[
+#pragma once
+namespace dv::br::desktopOAuth {
+inline constexpr char key[] = "";
+inline constexpr char iv[] = "";
+inline constexpr char ciphertext[] = "";
+}
+]=])
+endif()
 
 # ---- core (no WebEngine; also used by the tests) -------------------------------------------------------------------
 add_library(browser_core STATIC
@@ -74,7 +85,7 @@ qt_add_qml_module(DriveVaultBrowserPro
         resources/pip-off.js
         resources/fonts/Inter-Variable.ttf
         resources/fonts/NotoSansThai-Variable.ttf)
-target_include_directories(DriveVaultBrowserPro PRIVATE src/app)
+target_include_directories(DriveVaultBrowserPro PRIVATE src/app "${CMAKE_BINARY_DIR}/generated")
 target_link_libraries(DriveVaultBrowserPro PRIVATE browser_core browser_pdfium Qt6::Gui Qt6::Quick Qt6::QuickControls2 Qt6::QuickDialogs2 Qt6::WebEngineQuick Qt6::WebEngineCore Qt6::PrintSupport bcrypt crypt32)
 
 if(DB_BUILD_TESTS)
