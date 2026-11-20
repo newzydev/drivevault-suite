@@ -1530,49 +1530,67 @@ ApplicationWindow {
         }
         Rectangle {
             anchors.centerIn: parent
-            width: Math.min(parent.width - 40, 440)
-            height: unlockForm.implicitHeight + 48
-            radius: 20
+            width: Math.min(parent.width - 40, 360)
+            height: unlockForm.implicitHeight + 40
+            radius: 24
             color: "#141F2A"
             border.color: "#365263"
+            readonly property bool compact: win.height < 500
             ColumnLayout {
                 id: unlockForm
                 anchors.fill: parent
-                anchors.margins: 24
-                spacing: 14
-                Rectangle {
-                    Layout.preferredWidth: 42
-                    Layout.preferredHeight: 42
-                    radius: 12
-                    color: "#173745"
-                    border.color: "#2B5362"
-                    LineIcon { anchors.centerIn: parent; kind: "lock"; size: 20; color: Theme.accent }
+                anchors.margins: 20
+                spacing: 10
+                ProfileAvatar {
+                    visible: ProfileSession.signedIn
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: unlockForm.parent.compact ? 46 : 58
+                    Layout.preferredHeight: Layout.preferredWidth
                 }
-                Text { text: Tr.t("profile_unlock"); color: Theme.text; font.pixelSize: 25; font.bold: true }
                 Text {
                     Layout.fillWidth: true
-                    text: ProfileSession.email
+                    horizontalAlignment: Text.AlignHCenter
+                    text: ProfileSession.name || Tr.t("profile_unlock")
                     textFormat: Text.PlainText
-                    color: Theme.textSecondary
+                    color: Theme.text
+                    font.pixelSize: 22
+                    font.weight: Font.DemiBold
                     elide: Text.ElideRight
                 }
-                TextField {
+                Text {
+                    Layout.fillWidth: true
+                    visible: ProfileSession.signedIn
+                    horizontalAlignment: Text.AlignHCenter
+                    text: Tr.t("profile_pin_instruction")
+                    color: Theme.textSecondary
+                }
+                Row {
+                    Layout.alignment: Qt.AlignHCenter
+                    visible: ProfileSession.signedIn
+                    spacing: 12
+                    Accessible.name: Tr.t("profile_pin_progress", lockPin.length)
+                    Accessible.role: Accessible.StaticText
+                    Repeater {
+                        model: 6
+                        Rectangle {
+                            required property int index
+                            width: 11
+                            height: width
+                            radius: width / 2
+                            color: index < lockPin.length ? Theme.accent : "transparent"
+                            border.color: index <= lockPin.length ? Theme.accent : "#587080"
+                        }
+                    }
+                }
+                TextInput {
                     id: lockPin
                     objectName: "profileLockPin"
                     Component.onCompleted: if (ProfileSession.locked) forceActiveFocus()
                     visible: ProfileSession.signedIn
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 44
-                    leftPadding: 12
-                    color: Theme.text
-                    placeholderTextColor: Theme.textSecondary
-                    background: Rectangle {
-                        radius: 9
-                        color: Theme.background
-                        border.color: lockPin.activeFocus ? Theme.accent : Theme.border
-                    }
-                    placeholderText: Tr.t("ntp_pin")
-                    Accessible.name: placeholderText
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 1
+                    opacity: 0
+                    Accessible.name: Tr.t("ntp_pin")
                     echoMode: TextInput.Password
                     maximumLength: 6
                     validator: RegularExpressionValidator { regularExpression: /[0-9]{0,6}/ }
@@ -1582,12 +1600,46 @@ ApplicationWindow {
                 Text {
                     Layout.fillWidth: true
                     visible: text !== ""
+                    horizontalAlignment: Text.AlignHCenter
                     text: ProfileSession.profileError ? Tr.t(ProfileSession.profileError) : ""
                     color: Theme.error
                     wrapMode: Text.WordWrap
                 }
+                GridLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    visible: ProfileSession.signedIn
+                    columns: 3
+                    columnSpacing: 7
+                    rowSpacing: 6
+                    Repeater {
+                        model: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"]
+                        delegate: BButton {
+                            required property string modelData
+                            Layout.preferredWidth: 68
+                            Layout.preferredHeight: unlockForm.parent.compact ? 30 : 38
+                            opacity: modelData === "" ? 0 : 1
+                            enabled: modelData === "⌫" ? lockPin.length > 0 : modelData !== "" && lockPin.length < 6
+                            text: modelData
+                            Accessible.name: modelData === "⌫" ? Tr.t("profile_pin_delete") : modelData
+                            contentItem: Text {
+                                text: modelData
+                                color: Theme.text
+                                opacity: parent.enabled ? 1 : 0.5
+                                font.pixelSize: 18
+                                font.weight: Font.DemiBold
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            onClicked: {
+                                lockPin.text = modelData === "⌫" ? lockPin.text.slice(0, -1) : lockPin.text + modelData
+                                lockPin.forceActiveFocus()
+                                lockPin.cursorPosition = lockPin.length
+                            }
+                        }
+                    }
+                }
                 RowLayout {
-                    Layout.alignment: Qt.AlignRight
+                    Layout.alignment: Qt.AlignHCenter
                     BButton { text: Tr.t("close"); onClicked: win.close() }
                     BButton {
                         id: unlockButton
