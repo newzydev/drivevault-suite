@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(DriveVaultBrowserPro
-    VERSION 1.0.0
+    VERSION 1.1.0
     DESCRIPTION "DriveVault Browser Pro - a web browser with a built-in ad blocker"
     LANGUAGES CXX)
 
@@ -14,8 +14,16 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 option(DB_BUILD_TESTS "Build tests" ON)
 string(TIMESTAMP DB_BUILD_NUMBER "%Y%m%d%H%M" UTC)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network Qml Quick QuickControls2 QuickDialogs2 WebEngineQuick Test)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network Qml Quick QuickControls2 QuickDialogs2 WebEngineQuick PrintSupport Test)
 qt_standard_project_setup(REQUIRES 6.8)
+
+set(DB_PDFIUM_DIR "${CMAKE_SOURCE_DIR}/../../.tools/pdfium" CACHE PATH "PDFium build")
+add_library(browser_pdfium SHARED IMPORTED)
+set_target_properties(browser_pdfium PROPERTIES
+    IMPORTED_IMPLIB "${DB_PDFIUM_DIR}/lib/pdfium.dll.lib"
+    IMPORTED_LOCATION "${DB_PDFIUM_DIR}/bin/pdfium.dll"
+    INTERFACE_INCLUDE_DIRECTORIES "${DB_PDFIUM_DIR}/include")
+file(COPY "${DB_PDFIUM_DIR}/bin/pdfium.dll" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 if(MSVC)
     add_compile_options(/W4 /wd4702 /utf-8 /permissive- /Zc:__cplusplus)
@@ -66,7 +74,7 @@ qt_add_qml_module(DriveVaultBrowserPro
         resources/fonts/Inter-Variable.ttf
         resources/fonts/NotoSansThai-Variable.ttf)
 target_include_directories(DriveVaultBrowserPro PRIVATE src/app)
-target_link_libraries(DriveVaultBrowserPro PRIVATE browser_core Qt6::Gui Qt6::Quick Qt6::QuickControls2 Qt6::QuickDialogs2 Qt6::WebEngineQuick Qt6::WebEngineCore)
+target_link_libraries(DriveVaultBrowserPro PRIVATE browser_core browser_pdfium Qt6::Gui Qt6::Quick Qt6::QuickControls2 Qt6::QuickDialogs2 Qt6::WebEngineQuick Qt6::WebEngineCore Qt6::PrintSupport)
 
 if(DB_BUILD_TESTS)
     enable_testing()

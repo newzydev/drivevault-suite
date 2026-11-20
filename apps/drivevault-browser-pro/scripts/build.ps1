@@ -10,7 +10,8 @@ $ErrorActionPreference = 'Continue'
 
 $build = Join-Path $DvRoot "build\$($Config.ToLower())"
 if ($Clean -and (Test-Path $build)) { Remove-Item $build -Recurse -Force }
-cmake -S $DvRoot -B $build -G Ninja "-DCMAKE_BUILD_TYPE=$Config" "-DCMAKE_PREFIX_PATH=$($env:DV_QT_DIR)"
+$pdfiumPath = if ($env:DV_PDFIUM_DIR) { $env:DV_PDFIUM_DIR } else { Join-Path $SuiteRoot '.tools\pdfium' }
+cmake -S $DvRoot -B $build -G Ninja "-DCMAKE_BUILD_TYPE=$Config" "-DCMAKE_PREFIX_PATH=$($env:DV_QT_DIR)" "-DDB_PDFIUM_DIR=$pdfiumPath"
 if ($LASTEXITCODE) { throw "CMake configure failed" }
 cmake --build $build
 if ($LASTEXITCODE) { throw "Build failed" }

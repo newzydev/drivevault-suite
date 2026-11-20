@@ -4,6 +4,12 @@ A Chrome-like web browser for Windows (Qt 6.8, Qt WebEngine / Chromium) with a b
 
 **Status: version 1.0.0, published as the first stable release. The installer is built by `scripts\package.ps1` (not install-tested by an agent), and the program is listed in Master Pro.** Not done: extensions (on hold, see the plan), Google sign-in / sync (cancelled by the owner). The plan is `docs/Browser-Pro-Plan.md`; the first tests of the engine are in `docs/Phase0b-Results.md`.
 
+## Changes in 1.1.0
+
+Workspace shortcuts have their own storage and a three-dot menu to edit or remove them. Open tabs can be reordered and searched with Ctrl+Shift+A. Settings can clear cookies and reset saved permissions by website. The bookmarks panel can import a Chrome profile's Bookmarks file.
+
+The page menu can print through the Windows printer dialog, open a text reader, and capture the visible page to a PNG. Chromium can freeze idle background tabs after five minutes and unload unpinned tabs after a further 15 minutes when it recommends doing so. Selecting an unloaded tab reloads its page. Picture in picture can use video in same-origin frames. The ad blocker recognizes simple `:-abp-has` selectors.
+
 ## What works in 1.0.0 (Phases 1 - 6)
 Tabs (new, close, duplicate, pin, close others / to the right, reopen closed), address bar with suggestions from bookmarks and history and Google as the default search engine, back / forward / reload / home,
 bookmarks (star, bookmarks bar, panel, import / export as HTML), history (search, remove, clear), downloads (pause / resume / cancel, show in folder, warning for program files), find in page, zoom per site, full screen,
@@ -20,7 +26,7 @@ The DriveVault title bar has a Thai / EN switch, a Settings button, minimize, ma
 **Picture in picture and saving videos (Phase 5):** the video of a page can be popped out into a small always-on-top window (button or Alt+P; the page moves with it and the video keeps playing; videos in the main frame of the page, not inside embedded frames). When a page loads a video / audio file or an HLS / DASH playlist a button with a count appears and the file can be saved (the bundled FFmpeg copies streams into an .mp4). YouTube and subscription streaming sites are never offered, DRM-protected streams are refused, and the browser's log-in cookies are not used. Tested on test pages and local servers only.
 
 ## Not available yet
-A test of the defence against a real ad block wall, hiding and scripts inside embedded frames, filters that need page analysis, picture in picture for videos in embedded frames, tab dragging, import from Chrome, printing to a printer, clearing cookies, extensions, Google sign-in / sync (dropped by the owner).
+A test of the defence against a real ad block wall, hiding and scripts inside embedded frames, advanced filters beyond simple `:-abp-has`, picture in picture for cross-origin frames, H.264/AAC playback with this Qt build, extensions, and Google sign-in / sync (cancelled).
 Video encoded with H.264 / AAC does not play (the Qt binaries have no proprietary codecs).
 
 ## Build (developers)

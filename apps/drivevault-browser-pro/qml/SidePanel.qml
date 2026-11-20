@@ -162,6 +162,7 @@ Rectangle {
                 Layout.margins: 12
                 spacing: 8
                 BButton { text: Tr.t("bm_import"); onClicked: importDialog.open() }
+                BButton { text: Tr.t("bm_import_chrome"); onClicked: chromeImportDialog.open() }
                 BButton { text: Tr.t("bm_export"); enabled: bv.rows.length > 0; onClicked: exportDialog.open() }
             }
             Text {
@@ -230,6 +231,16 @@ Rectangle {
                 fileMode: FileDialog.OpenFile
                 nameFilters: ["HTML (*.html *.htm)"]
                 onAccepted: bv.note = Tr.t("bm_imported", Browser.bookmarks.importHtml(Browser.localPath(selectedFile)))
+            }
+            FileDialog {
+                id: chromeImportDialog
+                title: Tr.t("bm_pick_chrome_bookmarks")
+                currentFolder: Browser.chromeProfilesFolder()
+                fileMode: FileDialog.OpenFile
+                onAccepted: {
+                    const added = Browser.bookmarks.importChrome(Browser.localPath(selectedFile))
+                    bv.note = added < 0 ? Tr.t("bm_chrome_failed") : Tr.t("bm_imported", added)
+                }
             }
             FileDialog {
                 id: exportDialog

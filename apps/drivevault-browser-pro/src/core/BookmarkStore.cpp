@@ -9,6 +9,7 @@
 #include <QJsonObject>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QSet>
 #include <QUrl>
 #include <QUuid>
 #include <QVariantMap>
@@ -114,6 +115,28 @@ void BookmarkStore::rename(const QString& id, const QString& title)
         }
 }
 
+bool BookmarkStore::edit(const QString& id, const QString& title, const QString& url)
+{
+    if (!allowedUrl(url) || title.trimmed().isEmpty())
+        return false;
+    for (Item& item : m_items) {
+        if (item.id != id)
+            continue;
+        if (item.url != url && contains(url))
+            return false;
+        const Item original = item;
+        item.title = title.trimmed();
+        item.url = url;
+        if (!save()) {
+            item = original;
+            return false;
+        }
+        emit changed();
+        return true;
+    }
+    return false;
+}
+
 void BookmarkStore::move(const QString& id, const QString& folder)
 {
     for (Item& i : m_items)
@@ -123,6 +146,49 @@ void BookmarkStore::move(const QString& id, const QString& folder)
             emit changed();
             return;
         }
+}
+
+int BookmarkStore::importChrome(const QString& pathOrFileUrl)
+{
+    QFile file(localPathOf(pathOrFileUrl));
+    if (!file.open(QIODevice::ReadOnly) || file.size() > 32 * 1024 * 1024)
+        return -1;
+    const auto roots = QJsonDocument::fromJson(file.readAll()).object().value(QStringLiteral("roots")).toObject();
+    if (roots.isEmpty())
+        return -1;
+
+    const qsizetype originalSize = m_items.size();
+    QSet<QString> urls;
+    for (const Item& item : m_items)
+        urls.insert(item.url);
+    for (auto root = roots.begin(); root != roots.end(); ++root) {
+        const QString folder = root.key() == QStringLiteral("bookmark_bar") ? QStringLiteral("bar") : QStringLiteral("other");
+        QList<QJsonObject> pending{root.value().toObject()};
+        while (!pending.isEmpty()) {
+            const auto node = pending.takeLast();
+            const auto children = node.value(QStringLiteral("children")).toArray();
+            for (qsizetype i = children.size(); i > 0; --i)
+                pending.append(children.at(i - 1).toObject());
+            if (node.value(QStringLiteral("type")).toString() != QStringLiteral("url"))
+                continue;
+            const auto url = node.value(QStringLiteral("url")).toString();
+            if (!allowedUrl(url) || urls.contains(url))
+                continue;
+            urls.insert(url);
+            const auto title = node.value(QStringLiteral("name")).toString().trimmed();
+            m_items.append({QUuid::createUuid().toString(QUuid::WithoutBraces).left(8),
+                            title.isEmpty() ? url : title, url, folder, QDateTime::currentMSecsSinceEpoch()});
+        }
+    }
+    const int added = int(m_items.size() - originalSize);
+    if (added > 0) {
+        if (!save()) {
+            m_items.resize(originalSize);
+            return -1;
+        }
+        emit changed();
+    }
+    return added;
 }
 
 void BookmarkStore::load()

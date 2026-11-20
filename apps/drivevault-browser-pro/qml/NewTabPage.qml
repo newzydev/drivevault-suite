@@ -10,8 +10,7 @@ Rectangle {
     property bool shortcutsExpanded: true
     property bool iconsReady: false
     property var sites: privateMode ? [] : Browser.history.topSites(8)
-    readonly property var shortcutSites: privateMode ? [] : [{ title: "Google", url: "https://www.google.com/" }]
-        .concat(Browser.bookmarks.items.filter(b => !isDefaultShortcut(b.url)))
+    readonly property var shortcutSites: privateMode ? [] : Browser.shortcuts.items
     readonly property var visibleSites: siteTabs.currentIndex === 0
         ? (shortcutsExpanded ? shortcutSites : []).concat([
             { title: Tr.t("ntp_add_shortcut"), action: "add", glyph: "plus" },
@@ -41,6 +40,12 @@ Rectangle {
 
     function focusSearch() { box.forceActiveFocus() }
     function isDefaultShortcut(url) { return /^https:\/\/www\.google\.com\/?$/i.test(url) }
+    function openShortcutEditor(item) {
+        addShortcut.editId = item ? item.id : ""
+        shortcutName.text = item ? item.title : ""
+        shortcutUrl.text = item ? item.url : ""
+        addShortcut.open()
+    }
     function saveShortcut() {
         const input = shortcutUrl.text.trim()
         const candidate = /^https?:\/\//i.test(input) ? input : "https://" + input
@@ -50,7 +55,10 @@ Rectangle {
             return
         }
         const url = Browser.resolve(candidate).toString()
-        if (isDefaultShortcut(url) || Browser.bookmarks.add(shortcutName.text.trim(), url, "other") === "") {
+        const saved = addShortcut.editId
+            ? Browser.shortcuts.edit(addShortcut.editId, shortcutName.text, url)
+            : Browser.shortcuts.add(shortcutName.text, url, "other") !== ""
+        if (!saved) {
             addShortcut.errorText = Tr.t("ntp_duplicate_shortcut")
             return
         }
@@ -232,7 +240,7 @@ Rectangle {
                                 text: modelData.title || host
                                 Accessible.name: text
                                 onClicked: {
-                                    if (modelData.action === "add") addShortcut.open()
+                                    if (modelData.action === "add") page.openShortcutEditor(null)
                                     else if (modelData.action === "toggle") page.shortcutsExpanded = !page.shortcutsExpanded
                                     else page.go(modelData.url)
                                 }
@@ -308,6 +316,23 @@ Rectangle {
                                 ToolTip.visible: hovered && shortcutLabel.truncated
                                 ToolTip.delay: 700
                                 ToolTip.text: text
+
+                                IconButton {
+                                    anchors.top: parent.top
+                                    anchors.right: parent.right
+                                    z: 1
+                                    box: 24
+                                    kind: "menu"
+                                    visible: !!shortcut.modelData.id && siteTabs.currentIndex === 0
+                                        && (shortcut.hovered || shortcut.visualFocus || hovered || visualFocus
+                                            || (shortcutActions.visible && shortcutActions.target.id === shortcut.modelData.id))
+                                    tip: Tr.t("ntp_shortcut_actions", shortcut.text)
+                                    onClicked: {
+                                        shortcutActions.target = shortcut.modelData
+                                        const pos = mapToItem(page, width, height)
+                                        shortcutActions.popup(page, Math.max(0, pos.x - shortcutActions.width), pos.y)
+                                    }
+                                }
                             }
                         }
                     }
@@ -316,10 +341,26 @@ Rectangle {
         }
     }
 
+    Menu {
+        id: shortcutActions
+        property var target
+        width: 150
+        padding: 5
+        background: Rectangle { radius: 10; color: Theme.backgroundAlt; border.color: Theme.border }
+        delegate: MenuItem {
+            id: actionItem
+            contentItem: Text { text: actionItem.text; color: Theme.text; verticalAlignment: Text.AlignVCenter }
+            background: Rectangle { radius: 6; color: actionItem.highlighted ? Theme.surfaceHover : "transparent" }
+        }
+        Action { text: Tr.t("ntp_edit_shortcut"); onTriggered: page.openShortcutEditor(shortcutActions.target) }
+        Action { text: Tr.t("ntp_remove_shortcut"); onTriggered: Browser.shortcuts.remove(shortcutActions.target.id) }
+    }
+
     Popup {
         id: addShortcut
         objectName: "addShortcut"
         property string errorText: ""
+        property string editId: ""
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
@@ -328,16 +369,12 @@ Rectangle {
         padding: 22
         background: Rectangle { radius: 16; color: Theme.backgroundAlt; border.color: Theme.border }
         Overlay.modal: Rectangle { color: "#B000080F" }
-        onAboutToShow: {
-            shortcutName.clear()
-            shortcutUrl.clear()
-            errorText = ""
-        }
+        onAboutToShow: errorText = ""
         onOpened: shortcutName.forceActiveFocus()
 
         contentItem: ColumnLayout {
             spacing: 12
-            Text { text: Tr.t("ntp_add_shortcut"); color: Theme.text; font.pixelSize: 19; font.weight: Font.DemiBold }
+            Text { text: Tr.t(addShortcut.editId ? "ntp_edit_shortcut" : "ntp_add_shortcut"); color: Theme.text; font.pixelSize: 19; font.weight: Font.DemiBold }
             Text { text: Tr.t("ntp_shortcut_name"); color: Theme.textSecondary }
             ShortcutField {
                 id: shortcutName

@@ -45,7 +45,7 @@ private slots:
         QTest::newRow("abp snippet") << "example.com#$#abort-on-property-read cookieman" << 0;
         QTest::newRow("unknown scriptlet") << "example.com##+js(some-new-thing, a)" << 1;
         QTest::newRow("procedural has-text") << "example.com##div:has-text(Advert)" << 1;
-        QTest::newRow("procedural abp") << "example.com##div:-abp-has(.ad)" << 1;
+        QTest::newRow("procedural abp with nested operator") << "example.com##div:-abp-has(:-abp-contains(Ad))" << 1;
         QTest::newRow("html filter") << "example.com##^script:has-text(ads)" << 1;
         QTest::newRow("extended") << "example.com#?#div:has(.ad)" << 1;
         QTest::newRow("style with url") << "example.com#$#.x { background: url(http://evil.test/a.png) }" << 1;
@@ -74,6 +74,16 @@ private slots:
         QCOMPARE(canonicalScriptlet(QStringLiteral("set")), QStringLiteral("set-constant"));
         QVERIFY(canonicalScriptlet(QStringLiteral("nope")).isEmpty());
         QVERIFY(implementedScriptlets().size() >= 15);
+    }
+
+    void simpleAbpHasUsesNativeSelector()
+    {
+        CosmeticRule rule;
+        QCOMPARE(parseCosmetic(QStringLiteral("example.com##div:-abp-has(> .ad)"), rule), ParseKind::Cosmetic);
+        QCOMPARE(rule.selector, QStringLiteral("div:has(> .ad)"));
+        QCOMPARE(parseCosmetic(QStringLiteral("example.com#@#div:-abp-has(> .ad)"), rule), ParseKind::Cosmetic);
+        QVERIFY(rule.exception);
+        QCOMPARE(rule.selector, QStringLiteral("div:has(> .ad)"));
     }
 
     void aPageGetsItsOwnCosmeticRules()

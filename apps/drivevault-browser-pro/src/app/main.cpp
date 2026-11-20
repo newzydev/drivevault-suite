@@ -6,7 +6,7 @@
 #include <memory>
 #include <QDir>
 #include <QFontDatabase>
-#include <QGuiApplication>
+#include <QApplication>
 #include <QIcon>
 #include <QImage>
 #include <QFile>
@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     if (qEnvironmentVariableIsSet("DV_NO_AUDIO"))              // tests and smoke starts are silent (suite rule): a page that plays a sound is muted
         qputenv("QTWEBENGINE_CHROMIUM_FLAGS", qgetenv("QTWEBENGINE_CHROMIUM_FLAGS") + " --mute-audio");
     QtWebEngineQuick::initialize();                           // before the application object
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
     app.setOrganizationName(QStringLiteral("DriveVault"));
     app.setApplicationName(QStringLiteral("DriveVault Browser Pro"));
     app.setWindowIcon(QIcon(QStringLiteral(":/qt/qml/DriveVault/Browser/resources/icons/app.png")));

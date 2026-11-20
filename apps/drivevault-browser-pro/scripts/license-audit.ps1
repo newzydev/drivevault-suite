@@ -13,6 +13,7 @@ $required = @(
     'licenses\Qt\qtbase-6.8.3.spdx', 'licenses\Qt\qtdeclarative-6.8.3.spdx', 'licenses\Qt\qtwebengine-6.8.3.spdx', 'licenses\Qt\qtwebchannel-6.8.3.spdx',
     'DriveVaultBrowserPro.exe', 'QtWebEngineProcess.exe', 'product.json', 'ffmpeg\ffmpeg.exe',
     'docs\user-guide.en.html', 'docs\user-guide.th.html', 'docs\release-notes.txt'
+    'pdfium.dll', 'licenses\PDFium\distribution-LICENSE.txt'
 )
 foreach ($relative in $required) {
     $path = Join-Path $root $relative
@@ -38,6 +39,7 @@ foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -Force -File) {
         $id = $file.Name -replace '\.(meta\.json|txt)$', ''
         if ($id -in $listIds -and ($file.Name -eq "$id.txt" -or $file.Name -eq "$id.meta.json")) { $owner = 'EasyList authors (CC BY-SA 3.0 / GPL-3.0+)' }
     }
+    elseif ($path -eq 'pdfium.dll' -or $path -like 'licenses\PDFium\*') { $owner = 'PDFium and bundled dependencies' }
     elseif ($file.Name -match '^Qt6.*\.dll$') {
         if ($file.Name -like '*d.dll') { $problems.Add("Debug build file in the package: $path") }
         $owner = 'Qt'

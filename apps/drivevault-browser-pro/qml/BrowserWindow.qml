@@ -173,11 +173,13 @@ ApplicationWindow {
         addTab(u, true)
     }
     function togglePin(i) {
-        const cur = currentIndex
         const makePinned = !tabs.get(i).pinned
         tabs.setProperty(i, "pinned", makePinned)
         recount()
-        const target = makePinned ? pinnedCount - 1 : pinnedCount
+        moveTab(i, makePinned ? pinnedCount - 1 : pinnedCount)
+    }
+    function moveTab(i, target) {
+        const cur = currentIndex
         if (target !== i) {
             tabs.move(i, target, 1)
             if (cur === i) currentIndex = target
@@ -185,6 +187,41 @@ ApplicationWindow {
             else if (i > cur && target <= cur) currentIndex = cur + 1
         }
         refreshCurrent()
+    }
+    function tabsMatching(query) {
+        const term = query.trim().toLowerCase()
+        const results = []
+        for (let i = 0; i < tabs.count; ++i) {
+            const view = views.itemAt(i)
+            const title = tabs.get(i).title || Tr.t("untitled")
+            const url = view ? view.url.toString() : ""
+            if (title.toLowerCase().includes(term) || url.toLowerCase().includes(term))
+                results.push({ tabIndex: i, title: title, url: url })
+        }
+        return results
+    }
+    function openReader() {
+        const view = currentView
+        if (!view || curBlank) return
+        view.runJavaScript(`(() => {
+            const content = document.querySelector('article') || document.querySelector('[role="main"], main') || document.body;
+            return content ? content.innerText.trim().slice(0, 250000) : '';
+        })()`, text => {
+            if (view !== currentView) return
+            if (!text) { showNote(Tr.t("reader_empty")); return }
+            reader.heading = view.title || Tr.t("reader_mode")
+            reader.article = text
+            reader.open()
+        })
+    }
+    function printPage(view) {
+        if (!view || view.url.toString() === "about:blank") return
+        const title = view.title
+        view.printToPdf(pdf => {
+            Qt.callLater(() => {
+                if (Browser.printPdf(pdf, title) < 0) win.showNote(Tr.t("print_failed"))
+            })
+        })
     }
     function openUrl(url, newTab) {
         if (newTab || !currentView) addTab(url, true)
@@ -335,6 +372,10 @@ ApplicationWindow {
         check("a tab exists at start", base >= 1, base)
         addTab("about:blank", true)
         check("addTab makes a new current tab", tabs.count === base + 1 && currentIndex === base, tabs.count + "/" + currentIndex)
+        const addedView = currentView
+        moveTab(currentIndex, 0)
+        check("moving a tab preserves its WebEngineView and selection", currentIndex === 0 && currentView === addedView, currentIndex)
+        moveTab(currentIndex, base)
         togglePin(currentIndex)
         check("pinning moves the tab to the front and the selection follows", tabs.get(0).pinned === true && currentIndex === 0 && pinnedCount === 1, "pinned=" + pinnedCount + " current=" + currentIndex)
         closeTab(0)
@@ -346,6 +387,9 @@ ApplicationWindow {
         if (step === 1) {                                   // the local page has loaded by now
             check("page title reached the tab", currentView && currentView.title === "Smoke", currentView ? currentView.title : "no view")
             check("title reached the tab model", tabs.get(currentIndex).title === "Smoke", tabs.get(currentIndex).title)
+            const matches = tabsMatching("sMoKe")
+            check("tab search finds the current title without case sensitivity",
+                matches.length === 1 && matches[0].tabIndex === currentIndex, matches.length)
             check("history has the page", privateMode || Browser.history.search("page.html", 5).length >= 1, Browser.history.count)
             starButton.clicked()
             check("star adds a bookmark", Browser.bookmarks.contains(curUrl) && starred, curUrl)
@@ -511,6 +555,8 @@ ApplicationWindow {
 
     // ---- shortcuts ---------------------------------------------------------------------------------------------------------
     Shortcut { sequence: "Ctrl+T"; onActivated: win.addTab("", true) }
+    Shortcut { sequence: "Ctrl+Shift+A"; onActivated: tabSearch.open() }
+    Shortcut { sequence: "Ctrl+P"; onActivated: win.printPage(win.currentView) }
     Shortcut { sequence: "Ctrl+W"; onActivated: win.closeTab(win.currentIndex) }
     Shortcut { sequence: "Ctrl+Shift+T"; onActivated: win.reopenClosed() }
     Shortcut { sequence: "Ctrl+N"; onActivated: Browser.openWindow(false, "") }
@@ -803,6 +849,21 @@ ApplicationWindow {
                             }
                         }
                         HoverHandler { id: tabHover }
+                        DragHandler {
+                            id: tabDrag
+                            target: null
+                            acceptedButtons: Qt.LeftButton
+                            yAxis.enabled: false
+                            grabPermissions: PointerHandler.CanTakeOverFromItems
+                            cursorShape: Qt.ClosedHandCursor
+                            onActiveTranslationChanged: {
+                                if (!active) return
+                                const pos = tab.mapToItem(strip.contentItem, centroid.position)
+                                const target = strip.indexAt(pos.x, tab.height / 2)
+                                if (target >= 0 && tabs.get(target).pinned === tab.pinned)
+                                    win.moveTab(tab.index, target)
+                            }
+                        }
                         TapHandler { acceptedButtons: Qt.LeftButton; onTapped: win.currentIndex = tab.index }
                         TapHandler { acceptedButtons: Qt.MiddleButton; onTapped: win.closeTab(tab.index) }
                         TapHandler { acceptedButtons: Qt.RightButton; onTapped: { tabMenu.target = tab.index; tabMenu.popup() } }
@@ -817,6 +878,13 @@ ApplicationWindow {
                     onClicked: win.addTab("", true)
                 }
                 Item { Layout.fillWidth: true }
+                IconButton {
+                    kind: "search"
+                    box: 28
+                    Layout.alignment: Qt.AlignVCenter
+                    tip: Tr.t("tab_search")
+                    onClicked: tabSearch.open()
+                }
             }
         }
 
@@ -1076,6 +1144,7 @@ ApplicationWindow {
                         id: wv
                         required property int index
                         required property string startUrl
+                        required property bool pinned
                         property bool poppedOut: false                   // the page is in the picture-in-picture window (it must stay visible there)
                         anchors.fill: parent
                         visible: poppedOut || index === win.currentIndex
@@ -1083,6 +1152,21 @@ ApplicationWindow {
                         url: "about:blank"
                         backgroundColor: Theme.background
                         Component.onCompleted: if (startUrl !== "") url = startUrl
+                        onVisibleChanged: if (visible) lifecycleState = WebEngineView.LifecycleState.Active
+                        Timer {
+                            interval: 300000
+                            running: !wv.visible && !wv.loading
+                                && wv.lifecycleState === WebEngineView.LifecycleState.Active
+                                && wv.recommendedState !== WebEngineView.LifecycleState.Active
+                            onTriggered: wv.lifecycleState = WebEngineView.LifecycleState.Frozen
+                        }
+                        Timer {
+                            interval: 900000
+                            running: !wv.visible && !wv.pinned
+                                && wv.lifecycleState === WebEngineView.LifecycleState.Frozen
+                                && wv.recommendedState === WebEngineView.LifecycleState.Discarded
+                            onTriggered: wv.lifecycleState = WebEngineView.LifecycleState.Discarded
+                        }
 
                         settings.javascriptCanOpenWindows: true
                         settings.javascriptCanAccessClipboard: true
@@ -1122,6 +1206,7 @@ ApplicationWindow {
                                 win.addTab(request.requestedUrl.toString(), request.destination !== WebEngineNewWindowRequest.InNewBackgroundTab)
                         }
                         onFullScreenRequested: request => { request.accept(); win.setFull(request.toggleOn) }
+                        onPrintRequested: if (index === win.currentIndex) win.printPage(wv)
                         onFindTextFinished: result => {
                             if (index === win.currentIndex)
                                 win.findResult = result.numberOfMatches > 0 ? result.activeMatch + "/" + result.numberOfMatches : (findField.text !== "" ? Tr.t("findNone") : "")
@@ -1361,6 +1446,9 @@ ApplicationWindow {
         PageMenuItem { text: Tr.t("reload"); shortcutLabel: "Ctrl+R"; enabled: !!win.currentView; onTriggered: win.currentView.reload() }
         DSep { visible: !win.curBlank; height: visible ? implicitHeight : 0 }
         PageMenuItem { visible: !win.curBlank; enabled: visible; text: Tr.t("savePdf"); onTriggered: pdfDialog.open() }
+        PageMenuItem { visible: !win.curBlank; enabled: visible; text: Tr.t("print_page"); shortcutLabel: "Ctrl+P"; onTriggered: win.printPage(win.currentView) }
+        PageMenuItem { visible: !win.curBlank; enabled: visible; text: Tr.t("reader_mode"); onTriggered: win.openReader() }
+        PageMenuItem { visible: !win.curBlank; enabled: visible; text: Tr.t("page_capture"); onTriggered: captureDialog.open() }
         PageMenuItem { visible: !win.curBlank; enabled: visible; text: Tr.t("viewSource"); shortcutLabel: "Ctrl+U"; onTriggered: win.addTab("view-source:" + win.curUrl, true) }
         PageMenuItem { visible: !win.curBlank; enabled: visible; text: Tr.t("devtools"); shortcutLabel: "F12"; onTriggered: win.openDevTools() }
         DSep {}
@@ -1458,6 +1546,9 @@ ApplicationWindow {
                             { key: "zoomReset", run: () => win.zoomBy(0) },
                             { key: "fullscreen", run: () => win.setFull(true) },
                             { key: "savePdf", needsPage: true, run: () => pdfDialog.open() },
+                            { key: "print_page", needsPage: true, run: () => win.printPage(win.currentView) },
+                            { key: "reader_mode", needsPage: true, run: () => win.openReader() },
+                            { key: "page_capture", needsPage: true, run: () => captureDialog.open() },
                             { key: "viewSource", needsPage: true, run: () => win.addTab("view-source:" + win.curUrl, true) },
                             { key: "devtools", run: () => win.openDevTools() }
                         ]
@@ -1479,7 +1570,98 @@ ApplicationWindow {
         }
     }
 
-FileDialog {
+    Dialog {
+        id: reader
+        property string heading: ""
+        property string article: ""
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(780, parent.width - 40)
+        height: Math.min(760, parent.height - 40)
+        modal: true
+        title: heading
+        standardButtons: Dialog.Close
+        contentItem: ScrollView {
+            TextArea {
+                text: reader.article
+                textFormat: TextEdit.PlainText
+                readOnly: true
+                selectByMouse: true
+                wrapMode: TextEdit.Wrap
+                font.pixelSize: 17
+                color: Theme.text
+            }
+        }
+        background: Rectangle { radius: 14; color: Theme.backgroundAlt; border.color: Theme.border }
+    }
+
+    FileDialog {
+        id: captureDialog
+        title: Tr.t("page_capture")
+        fileMode: FileDialog.SaveFile
+        nameFilters: ["PNG (*.png)"]
+        defaultSuffix: "png"
+        onAccepted: {
+            const view = win.currentView
+            const path = Browser.localPath(selectedFile)
+            if (!view || !view.grabToImage(result => {
+                win.showNote(Tr.t(result.saveToFile(path) ? "page_captured" : "page_capture_failed"))
+            })) win.showNote(Tr.t("page_capture_failed"))
+        }
+    }
+
+    Popup {
+        id: tabSearch
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(520, parent.width - 48)
+        height: Math.min(380, parent.height - 48)
+        focus: true
+        modal: true
+        padding: 16
+        background: Rectangle { radius: 14; color: Theme.backgroundAlt; border.color: Theme.border }
+        Overlay.modal: Rectangle { color: "#9900080F" }
+        onOpened: {
+            tabQuery.clear()
+            tabResults.model = win.tabsMatching("")
+            tabQuery.forceActiveFocus()
+        }
+        function selectTab(index) {
+            close()
+            win.currentIndex = index
+        }
+        contentItem: ColumnLayout {
+            TextField {
+                id: tabQuery
+                Layout.fillWidth: true
+                placeholderText: Tr.t("tab_search")
+                Accessible.name: placeholderText
+                color: Theme.text
+                selectByMouse: true
+                background: Rectangle { radius: 8; color: Theme.surface; border.color: Theme.border }
+                onTextChanged: tabResults.model = win.tabsMatching(text)
+                onAccepted: if (tabResults.count > 0) tabSearch.selectTab(tabResults.model[0].tabIndex)
+            }
+            Text { visible: tabResults.count === 0; text: Tr.t("tab_no_results"); color: Theme.textSecondary }
+            ListView {
+                id: tabResults
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                spacing: 3
+                delegate: BButton {
+                    required property var modelData
+                    width: ListView.view.width
+                    text: modelData.title
+                    ToolTip.visible: hovered && modelData.url !== ""
+                    ToolTip.text: modelData.url
+                    onClicked: tabSearch.selectTab(modelData.tabIndex)
+                }
+            }
+        }
+    }
+
+    FileDialog {
         id: pdfDialog
         title: Tr.t("savePdf")
         fileMode: FileDialog.SaveFile

@@ -123,6 +123,33 @@ private slots:
         third.remove(id);
         QCOMPARE(third.count(), 0);
     }
+    void chromeBookmarksImportAndEdit()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString bookmarksPath = dir.filePath(QStringLiteral("bookmarks.json"));
+        const QString chromePath = dir.filePath(QStringLiteral("Bookmarks"));
+        QFile chrome(chromePath);
+        QVERIFY(chrome.open(QIODevice::WriteOnly));
+        chrome.write("{\"roots\":{\"bookmark_bar\":{\"children\":[{\"type\":\"folder\",\"children\":["
+                     "{\"type\":\"url\",\"name\":\"One\",\"url\":\"https://one.test/\"}]}]},"
+                     "\"other\":{\"children\":[{\"type\":\"url\",\"name\":\"Two\",\"url\":\"https://two.test/\"},"
+                     "{\"type\":\"url\",\"url\":\"javascript:alert(1)\"}]}}}");
+        chrome.close();
+
+        BookmarkStore store(bookmarksPath);
+        QCOMPARE(store.importChrome(chromePath), 2);
+        QCOMPARE(store.importChrome(chromePath), 0);
+        const auto item = store.items().first().toMap();
+        QCOMPARE(item.value(QStringLiteral("folder")).toString(), QStringLiteral("bar"));
+        const auto id = item.value(QStringLiteral("id")).toString();
+        QVERIFY(!store.edit(id, QStringLiteral("Duplicate"), QStringLiteral("https://two.test/")));
+        QVERIFY(store.edit(id, QStringLiteral("Edited"), QStringLiteral("https://edited.test/")));
+        BookmarkStore reloaded(bookmarksPath);
+        QCOMPARE(reloaded.items().first().toMap().value(QStringLiteral("title")).toString(), QStringLiteral("Edited"));
+        QVERIFY(reloaded.contains(QStringLiteral("https://edited.test/")));
+    }
+
     void bookmarksExportAndImportAsHtml()
     {
         QTemporaryDir dir;

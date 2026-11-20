@@ -3,7 +3,7 @@ DriveVault Browser Pro - Third-party notices
 
 DriveVault Browser Pro itself is proprietary software (see LICENSE.txt). It includes:
 
-1. Qt 6.8 (Core, Gui, Qml, Quick, Quick Controls 2, Quick Dialogs 2, Quick Layouts, Quick Templates 2, Network, WebEngine (Core, Quick), WebChannel, Positioning and plug-ins)
+1. Qt 6.8 (Core, Gui, Widgets, Print Support, Qml, Quick, Quick Controls 2, Quick Dialogs 2, Quick Layouts, Quick Templates 2, Network, WebEngine (Core, Quick), WebChannel, Positioning and plug-ins)
    GNU Lesser General Public License v3 (LGPL-3.0)                              licenses\LGPL-3.0.txt
    The Qt libraries are used as shared libraries (DLLs) and are not modified: you may replace them with another build of the same Qt version.
    LGPL-3.0 incorporates the GNU GPL v3 terms by reference: licenses\GPL-3.0.txt.
@@ -14,6 +14,10 @@ DriveVault Browser Pro itself is proprietary software (see LICENSE.txt). It incl
    Qt WebEngine is LGPL-3.0 (licenses\LGPL-3.0.txt). The list of the components with their licences and the source code are published by The Qt Company:
    https://code.qt.io/cgit/qt/qtwebengine-chromium.git/ (a written offer for the source is available from DriveVault on request).
    Because this build of Chromium has no proprietary codecs, some video formats (H.264, AAC) do not play on some websites.
+
+   Printing uses PDFium, Chromium build 8138 (BSD 3-Clause), from bblanchon/pdfium-binaries.
+   The distribution licence and bundled dependency notices are in licenses\PDFium.
+   Source: https://pdfium.googlesource.com/pdfium/
 
 3. FFmpeg 8.1 (LGPL-3.0 shared build, no GPL and no non-free parts) - the FFmpeg developers          licenses\FFmpeg-LICENSE.txt, licenses\LGPL-3.0.txt
    Used only by the video saver, as a separate program (ffmpeg\ffmpeg.exe with its DLLs in the same folder), to join the pieces of an HLS / DASH stream that has

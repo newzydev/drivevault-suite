@@ -28,6 +28,12 @@ $toolsRoot = if ($env:DV_TOOLS_DIR) { $env:DV_TOOLS_DIR } else { Join-Path $Suit
 $qtVersion = & (Join-Path $env:DV_QT_DIR 'bin\qmake.exe') -query QT_VERSION
 if ($LASTEXITCODE -or $qtVersion -ne '6.8.3') { throw 'Qt version does not match the audited build (6.8.3).' }
 $ffmpegDir = if ($env:DV_FFMPEG_DIR) { $env:DV_FFMPEG_DIR } else { Join-Path $toolsRoot 'ffmpeg' }
+$pdfiumDir = if ($env:DV_PDFIUM_DIR) { $env:DV_PDFIUM_DIR } else { Join-Path $SuiteRoot '.tools\pdfium' }
+if (-not (Select-String -LiteralPath (Join-Path $pdfiumDir 'VERSION') -Pattern '^BUILD=8138$') -or
+    (Get-Content -LiteralPath (Join-Path $pdfiumDir 'args.gn') -Raw) -notmatch 'pdf_enable_v8 = false' -or
+    (Get-Content -LiteralPath (Join-Path $pdfiumDir 'args.gn') -Raw) -notmatch 'pdf_enable_xfa = false') {
+    throw 'PDFium build does not match the audited build and configuration.'
+}
 $listsDir = if ($env:DV_FILTERS_DIR) { $env:DV_FILTERS_DIR } else { Join-Path $toolsRoot 'browser-test-data\filters' }
 
 New-Item -ItemType Directory -Path $dist -Force | Out-Null
@@ -41,6 +47,11 @@ if (Test-Path -LiteralPath $stage) {
 }
 New-Item -ItemType Directory -Path $stage | Out-Null
 Copy-Item -LiteralPath $exe -Destination $stage
+$pdfiumBinary = Join-Path $buildBin 'pdfium.dll'
+if ((Get-FileHash -LiteralPath $pdfiumBinary).Hash -ne (Get-FileHash -LiteralPath (Join-Path $pdfiumDir 'bin\pdfium.dll')).Hash) {
+    throw 'The build uses a different PDFium DLL.'
+}
+Copy-Item -LiteralPath $pdfiumBinary -Destination $stage
 
 # ---- Qt + Qt WebEngine (Chromium) ----
 # The "tls" plug-in stays (downloads of the lists and videos use https); the program forces the Basic Quick Controls style.
@@ -94,6 +105,10 @@ $lic = Join-Path $stage 'licenses'
 $qtLic = Join-Path $lic 'Qt'
 $docs = Join-Path $stage 'docs'
 New-Item -ItemType Directory -Path $lic, $qtLic, $docs -Force | Out-Null
+$pdfiumLic = Join-Path $lic 'PDFium'
+New-Item -ItemType Directory -Path $pdfiumLic -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $pdfiumDir 'LICENSE') -Destination (Join-Path $pdfiumLic 'distribution-LICENSE.txt')
+Copy-Item -Path (Join-Path $pdfiumDir 'licenses\*') -Destination $pdfiumLic -Recurse
 Copy-Item -LiteralPath (Join-Path $DvRoot 'LICENSE.txt') -Destination $lic
 Copy-Item -LiteralPath (Join-Path $DvRoot 'docs\THIRD-PARTY-NOTICES.txt') -Destination $lic
 Copy-Item -Path (Join-Path $DvRoot 'resources\fonts\OFL-*.txt') -Destination $lic

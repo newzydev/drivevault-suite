@@ -21,8 +21,10 @@ public:
     Q_INVOKABLE void removeUrl(const QString& url);
     Q_INVOKABLE bool contains(const QString& url) const;
     Q_INVOKABLE void rename(const QString& id, const QString& title);
+    Q_INVOKABLE bool edit(const QString& id, const QString& title, const QString& url);
     Q_INVOKABLE void move(const QString& id, const QString& folder);
     Q_INVOKABLE int importHtml(const QString& pathOrFileUrl);          // number of bookmarks added
+    Q_INVOKABLE int importChrome(const QString& pathOrFileUrl);
     Q_INVOKABLE bool exportHtml(const QString& pathOrFileUrl) const;
     int count() const { return int(m_items.size()); }
 

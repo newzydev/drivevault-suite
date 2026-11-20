@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Dialogs
 import QtQuick.Controls
 import QtQuick.Layouts
 import DriveVault.Browser.Backend
@@ -293,7 +294,48 @@ component Choice: ComboBox {
                             onClicked: { Browser.clearBrowsingData(true, true); settings.note = Tr.t("set_cleared") }
                         }
                         Text { Layout.fillWidth: true; text: Tr.t("set_clear_note"); color: Theme.textSecondary; font.pixelSize: 11; wrapMode: Text.WordWrap }
+                        BButton {
+                            text: Tr.t("set_clear_cookies")
+                            onClicked: clearCookiesDialog.open()
+                        }
                         Text { visible: settings.note !== ""; text: settings.note; color: Theme.success; font.pixelSize: 12 }
+                        MessageDialog {
+                            id: clearCookiesDialog
+                            title: Tr.t("set_clear_cookies")
+                            text: Tr.t("set_clear_cookies_confirm")
+                            buttons: MessageDialog.Yes | MessageDialog.No
+                            onButtonClicked: button => {
+                                if (button !== MessageDialog.Yes) return
+                                Browser.clearCookies()
+                                settings.note = Tr.t("set_clear_cookies_started")
+                            }
+                        }
+                        SectionTitle { text: Tr.t("set_site_permissions") }
+                        ColumnLayout {
+                            id: sitePermissions
+                            Layout.fillWidth: true
+                            property var origins: []
+                            onVisibleChanged: if (visible) origins = Browser.permissionOrigins()
+                            Text {
+                                visible: sitePermissions.origins.length === 0
+                                text: Tr.t("set_no_permissions")
+                                color: Theme.textSecondary
+                            }
+                            Repeater {
+                                model: sitePermissions.origins
+                                delegate: SettingRow {
+                                    required property string modelData
+                                    label: modelData
+                                    BButton {
+                                        text: Tr.t("set_reset_permissions")
+                                        onClicked: {
+                                            Browser.resetPermissions(modelData)
+                                            sitePermissions.origins = Browser.permissionOrigins()
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     ColumnLayout {

@@ -119,9 +119,17 @@ ParseKind parseCosmetic(const QString& rawLine, CosmeticRule& out)
     splitDomains(line.left(at), &r.inc, &r.exc, &bad);
     if (bad)
         return ParseKind::Unsupported;
-    const QString body = line.mid(at + int(qstrlen(sep.text))).trimmed();
+    QString body = line.mid(at + int(qstrlen(sep.text))).trimmed();
     if (body.isEmpty())
         return ParseKind::Unsupported;
+    // The simple extended :has form has an equivalent native Chromium selector.
+    if (sep.kind == 0) {
+        static const QRegularExpression simpleHas(QStringLiteral(
+            R"(^([a-zA-Z0-9_.#>+~* -]+):-abp-has\(([a-zA-Z0-9_.#>+~* -]+)\)$)"));
+        const auto match = simpleHas.match(body);
+        if (match.hasMatch())
+            body = match.captured(1) + QStringLiteral(":has(") + match.captured(2) + QLatin1Char(')');
+    }
 
     if (sep.kind == 0 && body.startsWith(QLatin1String("+js(")) && body.endsWith(QLatin1Char(')'))) {
         QString name;

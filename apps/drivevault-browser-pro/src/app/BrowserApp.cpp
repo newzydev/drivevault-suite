@@ -12,21 +12,38 @@
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QPainter>
+#include <QPrintDialog>
+#include <QPrinter>
 #include <QSaveFile>
+#include <QScopedValueRollback>
 #include <QSet>
 #include <QVariantMap>
+#include <QtWebEngineCore/QWebEngineCookieStore>
+#include <QtWebEngineCore/QWebEnginePermission>
 #include <QtWebEngineCore/qtwebenginecoreglobal.h>
 #include <QtWebEngineQuick/QQuickWebEngineProfile>
+#include <fpdfview.h>
 
 namespace dv::br {
 
 BrowserApp::BrowserApp(const QString& dataDir, QQuickWebEngineProfile* profile, AdBlockInterceptor* interceptor, StandInHandler* standIns, QObject* parent)
     : QObject(parent), m_dataDir(dataDir), m_profile(profile),
       m_settings(dataDir + QStringLiteral("/settings.json")), m_bookmarks(dataDir + QStringLiteral("/bookmarks.json")),
+      m_shortcuts(dataDir + QStringLiteral("/shortcuts.json")),
       m_history(dataDir + QStringLiteral("/history.jsonl")),
       m_adblock(&m_settings, interceptor, standIns, dataDir, QCoreApplication::applicationDirPath() + QStringLiteral("/filters")),
       m_media(interceptor, &m_downloads)
 {
+    if (!QFileInfo::exists(dataDir + QStringLiteral("/shortcuts.json"))) {
+        m_shortcuts.add(QStringLiteral("Google"), QStringLiteral("https://www.google.com/"), QStringLiteral("other"));
+        for (const QVariant& entry : m_bookmarks.items()) {
+            const QVariantMap item = entry.toMap();
+            const QString url = item.value(QStringLiteral("url")).toString();
+            if (url.compare(QStringLiteral("https://www.google.com"), Qt::CaseInsensitive) != 0)
+                m_shortcuts.add(item.value(QStringLiteral("title")).toString(), url, QStringLiteral("other"));
+        }
+    }
     m_media.setUserAgent(profile ? profile->httpUserAgent() : QString());
     QFile library(QStringLiteral(":/qt/qml/DriveVault/Browser/resources/adblock-page.js"));       // the script that runs inside pages (hiding, scriptlets)
     if (library.open(QIODevice::ReadOnly))
@@ -135,6 +152,96 @@ void BrowserApp::clearBrowsingData(bool history, bool cache)
         m_history.clear();
     if (cache && m_profile)
         m_profile->clearHttpCache();
+}
+
+int BrowserApp::printPdf(const QByteArray& pdf, const QString& title)
+{
+    if (pdf.isEmpty())
+        return -1;
+    if (m_printing)
+        return 0;
+    const QScopedValueRollback printing(m_printing, true);
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setDocName(title);
+    QPrintDialog dialog(&printer);
+    dialog.setOption(QAbstractPrintDialog::PrintPageRange, false);
+    if (dialog.exec() != QDialog::Accepted)
+        return 0;
+
+    FPDF_InitLibrary();
+    const auto document = FPDF_LoadMemDocument64(pdf.constData(), size_t(pdf.size()), nullptr);
+    QPainter painter;
+    const int pageCount = document ? FPDF_GetPageCount(document) : 0;
+    bool ok = pageCount > 0 && painter.begin(&printer);
+    for (int i = 0; ok && i < pageCount; ++i) {
+        if (i > 0 && !printer.newPage()) {
+            ok = false;
+            break;
+        }
+        const auto page = FPDF_LoadPage(document, i);
+        const QSizeF size(page ? FPDF_GetPageWidthF(page) : 0, page ? FPDF_GetPageHeightF(page) : 0);
+        if (size.isEmpty()) {
+            if (page) FPDF_ClosePage(page);
+            ok = false;
+            break;
+        }
+        const QRectF area = printer.pageRect(QPrinter::DevicePixel);
+        const QSizeF fitted = size.scaled(area.size(), Qt::KeepAspectRatio);
+        const QSize pixels = fitted.toSize().scaled(QSize(3508, 3508), Qt::KeepAspectRatio).boundedTo(fitted.toSize());
+        QImage image(pixels, QImage::Format_RGB32);
+        const auto bitmap = image.isNull() ? nullptr
+            : FPDFBitmap_CreateEx(image.width(), image.height(), FPDFBitmap_BGRx, image.bits(), int(image.bytesPerLine()));
+        if (bitmap) {
+            image.fill(Qt::white);
+            FPDF_RenderPageBitmap(bitmap, page, 0, 0, image.width(), image.height(), 0, FPDF_PRINTING | FPDF_ANNOT);
+            FPDFBitmap_Destroy(bitmap);
+            painter.drawImage(QRectF(QPointF((area.width() - fitted.width()) / 2, (area.height() - fitted.height()) / 2), fitted), image);
+        } else {
+            ok = false;
+        }
+        FPDF_ClosePage(page);
+    }
+    if (!ok && painter.isActive())
+        printer.abort();
+    if (painter.isActive() && !painter.end())
+        ok = false;
+    if (document)
+        FPDF_CloseDocument(document);
+    FPDF_DestroyLibrary();
+    return ok ? 1 : -1;
+}
+
+void BrowserApp::clearCookies()
+{
+    m_profile->cookieStore()->deleteAllCookies();
+}
+
+QUrl BrowserApp::chromeProfilesFolder() const
+{
+    const QString localData = qEnvironmentVariable("LOCALAPPDATA");
+    if (localData.isEmpty())
+        return {};
+    const QString folder = localData + QStringLiteral("/Google/Chrome/User Data");
+    return QFileInfo(folder).isDir() ? QUrl::fromLocalFile(folder) : QUrl();
+}
+
+QStringList BrowserApp::permissionOrigins() const
+{
+    QSet<QString> origins;
+    for (const auto& permission : m_profile->listAllPermissions()) {
+        if (permission.state() == QWebEnginePermission::State::Granted
+            || permission.state() == QWebEnginePermission::State::Denied)
+            origins.insert(permission.origin().toString());
+    }
+    QStringList result = origins.values();
+    result.sort(Qt::CaseInsensitive);
+    return result;
+}
+
+void BrowserApp::resetPermissions(const QUrl& origin)
+{
+    for (const auto& permission : m_profile->listPermissionsForOrigin(origin))
+        permission.reset();
 }
 
 } // namespace dv::br

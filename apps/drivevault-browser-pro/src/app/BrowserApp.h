@@ -21,6 +21,7 @@ class BrowserApp : public QObject {
     Q_OBJECT
     Q_PROPERTY(dv::br::BrowserSettings* settings READ settings CONSTANT)
     Q_PROPERTY(dv::br::BookmarkStore* bookmarks READ bookmarks CONSTANT)
+    Q_PROPERTY(dv::br::BookmarkStore* shortcuts READ shortcuts CONSTANT)
     Q_PROPERTY(dv::br::HistoryStore* history READ history CONSTANT)
     Q_PROPERTY(dv::br::DownloadModel* downloads READ downloads CONSTANT)
     Q_PROPERTY(dv::br::AdBlockController* adblock READ adblock CONSTANT)
@@ -38,6 +39,7 @@ public:
 
     BrowserSettings* settings() { return &m_settings; }
     BookmarkStore* bookmarks() { return &m_bookmarks; }
+    BookmarkStore* shortcuts() { return &m_shortcuts; }
     HistoryStore* history() { return &m_history; }
     DownloadModel* downloads() { return &m_downloads; }
     AdBlockController* adblock() { return &m_adblock; }
@@ -65,6 +67,11 @@ public:
     Q_INVOKABLE void saveSession(const QStringList& urls) const;
     Q_INVOKABLE void copyText(const QString& text) const;
     Q_INVOKABLE void clearBrowsingData(bool history, bool cache);                      // history + the page cache (cookies are not cleared yet)
+    Q_INVOKABLE void clearCookies();
+    Q_INVOKABLE QStringList permissionOrigins() const;
+    Q_INVOKABLE void resetPermissions(const QUrl& origin);
+    Q_INVOKABLE QUrl chromeProfilesFolder() const;
+    Q_INVOKABLE int printPdf(const QByteArray& pdf, const QString& title);
 
 signals:
     void windowRequested(bool privateMode, const QString& url);
@@ -74,12 +81,14 @@ private:
     QQuickWebEngineProfile* m_profile;
     BrowserSettings m_settings;
     BookmarkStore m_bookmarks;
+    BookmarkStore m_shortcuts;
     HistoryStore m_history;
     AdBlockController m_adblock;
     DownloadModel m_downloads;
     MediaController m_media;
     QStringList m_initialUrls;
     bool m_startPrivate = false;
+    bool m_printing = false;
     QString m_pipOn, m_pipOff;
 };
 
