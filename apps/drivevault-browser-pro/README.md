@@ -6,7 +6,7 @@ A Chrome-like web browser for Windows (Qt 6.8, Qt WebEngine / Chromium) with a b
 
 ## Local profiles in 1.2.0
 
-The browser opens on its Home tab. Use "Sign in with Google" or "Continue as guest" on the page. After sign-in Browser Pro reopens automatically with the account profile. Guest mode continues to use the existing local browser data. A signed-in profile stores its own browsing data under a directory keyed by Google's stable account ID. Google supplies the name, email and avatar. Browsing data stays on the PC. Sign-out keeps the local profile files so the same account can use them again.
+The browser opens on its New Tab page. Use "Sign in with Google" or "Continue as guest" on the page. After sign-in Browser Pro reopens automatically with the account profile. Guest mode continues to use the existing local browser data. A signed-in profile stores its own browsing data under a directory keyed by Google's stable account ID. Google supplies the name, email and avatar. Browsing data stays on the PC. Sign-out keeps the local profile files so the same account can use them again.
 
 Use a Google OAuth **Desktop app** client. Starting in 1.2.1, build.ps1 embeds the client pair from `DV_GOOGLE_OAUTH_FILE` or the suite parent folder's `GOOGLE_LOGIN_CLIENT_ID.txt`. End users of this build can sign in directly. The generated header stays under the ignored build directory. The ciphertext and key are both in the executable, so this obscures plain-text strings and provides no secrecy from reverse engineering. The authorization page opens in the system browser and returns through a loopback redirect with PKCE. OAuth tokens are used only during sign-in. Windows DPAPI protects the imported configuration and saved identity record.
 

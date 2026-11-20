@@ -67,7 +67,25 @@ Rectangle {
         addShortcut.close()
     }
 
-    // Account button in the top right corner, like the home page of Google.
+    Image {
+        anchors.fill: parent
+        visible: !page.privateMode
+        source: "qrc:/qt/qml/DriveVault/Browser/resources/workspace/coast.jpg"
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        visible: !page.privateMode
+        gradient: Gradient {
+            GradientStop { position: 0; color: "#BC08101A" }
+            GradientStop { position: 0.55; color: "#5008101A" }
+            GradientStop { position: 1; color: "#9008101A" }
+        }
+    }
+
+        // Account button in the top right corner, of the new tab page.
     RowLayout {
         id: accountRow
         visible: !page.privateMode
@@ -119,7 +137,8 @@ Rectangle {
             }
         }
     }
-    TapHandler {
+
+TapHandler {
         acceptedButtons: Qt.RightButton
         onTapped: point => page.contextRequested(point.position)
     }
@@ -134,10 +153,10 @@ Rectangle {
 
         ColumnLayout {
             id: dashboard
-            width: Math.min(640, Math.max(0, workspace.width - 40))
+            width: Math.min(700, Math.max(0, workspace.width - 40))
             x: (workspace.width - width) / 2
-            y: Math.min(150, Math.max(70, workspace.height * 0.22))
-            spacing: 28
+            y: Math.min(128, Math.max(20, workspace.height * 0.18))
+            spacing: 22
 
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter
@@ -158,7 +177,7 @@ Rectangle {
                     Layout.fillWidth: true
                     text: Tr.t("app")
                     color: Theme.text
-                    font.pixelSize: dashboard.width < 440 ? 24 : 44
+                    font.pixelSize: dashboard.width < 440 ? 22 : 36
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
                 }
@@ -168,24 +187,24 @@ Rectangle {
                 id: box
                 objectName: "ntpSearch"
                 Layout.fillWidth: true
-                Layout.preferredHeight: 52
+                Layout.preferredHeight: 54
                 placeholderText: Tr.t("ntp_search")
-                placeholderTextColor: Theme.textSecondary
-                color: Theme.text
-                font.pixelSize: 16
-                leftPadding: 52
-                rightPadding: 24
+                placeholderTextColor: page.privateMode ? Theme.textSecondary : "#496171"
+                color: page.privateMode ? Theme.text : "#142633"
+                font.pixelSize: 15
+                leftPadding: 46
+                rightPadding: 22
                 selectByMouse: true
-                HoverHandler { id: boxHover; cursorShape: Qt.IBeamCursor }
                 background: Rectangle {
                     radius: height / 2
-                    color: box.activeFocus || boxHover.hovered ? Theme.surfaceHover : Theme.surface
+                    color: page.privateMode ? "#F219242F" : "#F4F9FD"
                     border.width: box.activeFocus ? 2 : 1
-                    border.color: box.activeFocus ? page.accent : Theme.border
-                    LineIcon { x: 20; anchors.verticalCenter: parent.verticalCenter; kind: "search"; color: Theme.textSecondary }
+                    border.color: box.activeFocus ? page.accent : "#8EA9BA"
+                    LineIcon { x: 18; anchors.verticalCenter: parent.verticalCenter; kind: "search"; color: page.privateMode ? page.accent : "#22637B" }
                 }
                 onAccepted: { if (text.trim() !== "") { page.go(text); text = "" } }
             }
+
             Text {
                 visible: page.privateMode
                 Layout.fillWidth: true
@@ -224,8 +243,8 @@ Rectangle {
                         spacing: 3
                         background: Rectangle {
                             radius: height / 2
-                            color: Theme.surface
-                            border.color: Theme.border
+                            color: "#B00B151E"
+                            border.color: "#507790A1"
                         }
                         WorkspaceTab { text: Tr.t("ntp_shortcuts") }
                         WorkspaceTab { text: Tr.t("ntp_top") }
@@ -238,7 +257,7 @@ Rectangle {
                     topPadding: 12
                     bottomPadding: 12
                     text: Tr.t("ntp_history_empty")
-                    color: Theme.textSecondary
+                    color: Theme.text
                     font.pixelSize: 13
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
@@ -282,8 +301,8 @@ Rectangle {
                                 HoverHandler { cursorShape: Qt.PointingHandCursor }
                                 background: Rectangle {
                                     radius: 12
-                                    color: shortcut.down ? Theme.border
-                                        : shortcut.hovered ? Theme.surface : "transparent"
+                                    color: shortcut.down ? "#60577A8B"
+                                        : shortcut.hovered ? "#40819BAC" : "transparent"
                                     border.width: shortcut.visualFocus ? 1 : 0
                                     border.color: page.accent
                                 }
@@ -294,8 +313,8 @@ Rectangle {
                                         width: 44
                                         height: 44
                                         radius: width / 2
-                                        color: Theme.surface
-                                        border.color: Theme.border
+                                        color: "#E0182A36"
+                                        border.color: "#6979919F"
                                         WorkspaceIcon {
                                             id: siteIcon
                                             anchors.centerIn: parent
@@ -344,6 +363,8 @@ Rectangle {
                                         font.pixelSize: 12
                                         elide: Text.ElideRight
                                         horizontalAlignment: Text.AlignHCenter
+                                        style: Text.Outline
+                                        styleColor: "#A0001016"
                                     }
                                 }
                                 ToolTip.visible: hovered && shortcutLabel.truncated
@@ -498,14 +519,14 @@ Rectangle {
         HoverHandler { cursorShape: Qt.PointingHandCursor }
         background: Rectangle {
             radius: height / 2
-            color: tab.checked ? Theme.surfaceHover : tab.hovered ? Theme.surface : "transparent"
+            color: tab.checked ? "#285266" : tab.hovered ? "#223542" : "transparent"
             border.width: tab.checked || tab.visualFocus ? 1 : 0
-            border.color: tab.visualFocus ? page.accent : Theme.border
+            border.color: tab.visualFocus ? page.accent : "#527C8B"
         }
         contentItem: Text {
             text: tab.text
             font: tab.font
-            color: tab.checked ? Theme.text : Theme.textSecondary
+            color: tab.checked ? "#B4F0FA" : Theme.textSecondary
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight

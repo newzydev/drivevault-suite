@@ -1,3 +1,4 @@
+v1.3.1 (2026-11-20): Restore the original New Tab layout and wallpaper with the guest and Google sign-in buttons in the upper right.
 v1.3.0 (2026-11-20): The browser now opens on a Home tab with a centred search field, shortcuts, Google sign-in and guest mode. After successful sign-in it reopens with the selected account profile. The installer is unsigned.
 v1.2.1 (2026-11-20): Embed the configured Google Desktop OAuth pair at build time so users can sign in without importing a credential file.
 v1.2.0 (2026-11-20): Sign in with Google to a local DriveVault profile, or browse as a guest. Account data is isolated per Google identity. A six-digit PIN protects startup and locks the browser after configurable inactivity.

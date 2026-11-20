@@ -194,7 +194,7 @@ ApplicationWindow {
         for (let i = 0; i < tabs.count; ++i) {
             const view = views.itemAt(i)
             const label = tabs.get(i).title
-            const title = label && label !== "about:blank" ? label : Tr.t("ntp_home")
+            const title = label && label !== "about:blank" ? label : Tr.t("untitled")
             const url = view ? view.url.toString() : ""
             if (title.toLowerCase().includes(term) || url.toLowerCase().includes(term))
                 results.push({ tabIndex: i, title: title, url: url })
@@ -839,7 +839,7 @@ ApplicationWindow {
                                 Text {
                                     visible: !tab.pinned
                                     Layout.fillWidth: true
-                                    text: tab.title !== "" && tab.title !== "about:blank" ? tab.title : Tr.t("ntp_home")
+                                    text: tab.title !== "" && tab.title !== "about:blank" ? tab.title : Tr.t("untitled")
                                     color: tab.current ? Theme.text : Theme.textSecondary
                                     font.pixelSize: 12
                                     elide: Text.ElideRight
