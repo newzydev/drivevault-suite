@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
+import QtQuick.Effects
 import QtQuick.Layouts
 import QtWebEngine
 import DriveVault.Browser.Backend
@@ -1520,9 +1521,19 @@ ApplicationWindow {
             if (visible) lockPin.forceActiveFocus()
         }
         NewTabPage {
+            id: lockBackdrop
             anchors.fill: parent
             lockedPreview: true
             enabled: false
+            visible: false
+        }
+        MultiEffect {
+            anchors.fill: parent
+            source: lockBackdrop
+            autoPaddingEnabled: false
+            blurEnabled: true
+            blur: 0.65
+            blurMax: 24
         }
         Rectangle { anchors.fill: parent; color: "#8908101A" }
         Rectangle {

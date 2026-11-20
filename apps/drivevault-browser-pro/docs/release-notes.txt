@@ -1,3 +1,4 @@
+v1.3.7 (2026-11-20): Blur the New Tab backdrop behind the PIN unlock card.
 v1.3.6 (2026-11-20): Show the account name and rounded avatar on New Tab, and style profile settings and idle controls to match the browser theme.
 v1.3.5 (2026-11-20): Show the PIN unlock card over a protected preview of the New Tab page.
 v1.3.4 (2026-11-20): Show the profile lock screen, idle-lock setting and sign-out confirmation inside Browser Pro.
