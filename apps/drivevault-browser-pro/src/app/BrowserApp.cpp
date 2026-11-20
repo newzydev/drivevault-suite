@@ -66,6 +66,7 @@ QString BrowserApp::engineInfo() const
 QUrl BrowserApp::resolve(const QString& typed) const { return resolveInput(typed, m_settings.searchEngine()); }
 QString BrowserApp::prettyUrl(const QString& url) const { return dv::br::prettyUrl(url); }
 QString BrowserApp::hostOf(const QString& url) const { return dv::br::hostOf(url); }
+QUrl BrowserApp::googleSignInUrl(const QUrl& url, const QString& email) const { return dv::br::googleSignInUrl(url, email); }
 
 bool BrowserApp::hasIconPixels(QObject* grabResult) const
 {

@@ -7,6 +7,7 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QUrlQuery>
 #include <QVariantMap>
 
 using namespace dv::br;
@@ -59,6 +60,24 @@ private slots:
         QCOMPARE(prettyUrl(QStringLiteral("about:blank")), QString());
         QCOMPARE(prettyUrl(QStringLiteral("file:///C:/x.html")), QStringLiteral("file:///C:/x.html"));
         QCOMPARE(hostOf(QStringLiteral("https://dev.example.com:8080/x")), QStringLiteral("dev.example.com"));
+    }
+
+    void aGoogleSignInPageGetsTheProfileAddress()
+    {
+        const QString mail = QStringLiteral("a.b@gmail.com");
+        const QUrl hinted = googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com/ServiceLogin?hl=th&continue=https://www.google.com/")), mail);
+        QVERIFY(hinted.isValid());
+        QCOMPARE(QUrlQuery(hinted).queryItemValue(QStringLiteral("Email")), mail);
+        QCOMPARE(QUrlQuery(hinted).queryItemValue(QStringLiteral("login_hint")), mail);
+        QCOMPARE(QUrlQuery(hinted).queryItemValue(QStringLiteral("hl")), QStringLiteral("th"));
+        QVERIFY(googleSignInUrl(hinted, mail).isEmpty());                                                          // already named: no loop
+        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com/ServiceLogin?Email=x@y.z")), mail).isEmpty());
+        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("http://accounts.google.com/ServiceLogin")), mail).isEmpty());   // not https
+        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com.evil.example/ServiceLogin")), mail).isEmpty());
+        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com/o/oauth2/v2/auth")), mail).isEmpty());
+        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://www.google.com/")), mail).isEmpty());
+        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com/ServiceLogin")), QString()).isEmpty());
+        QVERIFY(googleSignInUrl(QUrl(QStringLiteral("https://accounts.google.com/ServiceLogin")), QStringLiteral("bad&x=1@y.z")).isEmpty());
     }
 
     // ---- downloads -----------------------------------------------------------------------------------------------------

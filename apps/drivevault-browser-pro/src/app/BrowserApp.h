@@ -58,6 +58,7 @@ public:
     Q_INVOKABLE QUrl resolve(const QString& typed) const;                              // address bar text -> address
     Q_INVOKABLE QString prettyUrl(const QString& url) const;
     Q_INVOKABLE QString hostOf(const QString& url) const;
+    Q_INVOKABLE QUrl googleSignInUrl(const QUrl& url, const QString& email) const;   // empty when the address needs no change
     Q_INVOKABLE bool hasIconPixels(QObject* grabResult) const;
     Q_INVOKABLE QVariantList suggest(const QString& text, int limit = 6) const;        // bookmarks and history that match: [{title, url, kind}]
     Q_INVOKABLE QString localPath(const QUrl& url) const;

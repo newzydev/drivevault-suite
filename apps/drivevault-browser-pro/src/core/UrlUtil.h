@@ -25,6 +25,10 @@ QUrl resolveInput(const QString& input, const QString& engineId);
 QString prettyUrl(const QString& url);
 QString hostOf(const QString& url);
 
+// A Google sign-in page (accounts.google.com ServiceLogin / AccountChooser, https) without an account named gets the signed-in profile's
+// e-mail as "Email" and "login_hint", so the page opens with the address filled in. Returns an empty URL when nothing has to change.
+QUrl googleSignInUrl(const QUrl& url, const QString& email);
+
 // Downloads
 QString safeFileName(const QString& name);                          // Windows-safe, never empty
 QString uniqueFileName(const QString& dir, const QString& name);    // "name (1).ext" when "name.ext" exists in dir

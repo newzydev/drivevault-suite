@@ -1,3 +1,4 @@
+v1.5.0 (2026-11-20): When a Google profile is signed in, Google's own sign-in page opens with that account's e-mail already filled in (normal windows only). The password is still typed on Google's page; this is not a single sign-on. The installer is unsigned.
 v1.4.0 (2026-11-20): Add icon-labeled lock actions and a temporary guest window that leaves the main profile locked.
 v1.3.9 (2026-11-20): Center the account avatar and name on the lock card and add a numeric keypad with six masked progress indicators.
 v1.3.8 (2026-11-20): Keep the current browser view behind the PIN card and obscure it with a strong blur while locked.

@@ -4,6 +4,7 @@
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QSet>
+#include <QUrlQuery>
 
 namespace dv::br {
 
@@ -59,6 +60,25 @@ QUrl resolveInput(const QString& input, const QString& engineId)
 QString hostOf(const QString& url)
 {
     return QUrl(url).host();
+}
+
+QUrl googleSignInUrl(const QUrl& url, const QString& email)
+{
+    static const QRegularExpression address(QStringLiteral(R"(^[^\s@<>"'&=?#%]+@[^\s@<>"'&=?#%]+$)"));
+    if (url.scheme() != QLatin1String("https") || url.host() != QLatin1String("accounts.google.com") || !address.match(email).hasMatch())
+        return {};
+    const QString path = url.path();
+    if (path.compare(QLatin1String("/ServiceLogin"), Qt::CaseInsensitive) != 0 && path.compare(QLatin1String("/AccountChooser"), Qt::CaseInsensitive) != 0)
+        return {};
+    QUrlQuery query(url);
+    for (const char* name : {"Email", "login_hint", "identifier"})
+        if (query.hasQueryItem(QString::fromLatin1(name)))
+            return {};
+    query.addQueryItem(QStringLiteral("Email"), email);
+    query.addQueryItem(QStringLiteral("login_hint"), email);
+    QUrl result = url;
+    result.setQuery(query);
+    return result;
 }
 
 QString prettyUrl(const QString& url)

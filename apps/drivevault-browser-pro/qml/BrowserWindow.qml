@@ -1229,7 +1229,17 @@ ApplicationWindow {
                         }
 
                         // the hiding rules and scriptlets of the page that is about to open go in BEFORE it is created (a script of the page can then not run first)
-                        onNavigationRequested: request => { if (request.isMainFrame) win.prepareScripts(wv, request.url.toString()) }
+                        onNavigationRequested: request => {
+                            if (!request.isMainFrame) return
+                            // signed in to a Google profile: Google's own sign-in page opens with that account's address filled in
+                            const hinted = win.privateMode || !ProfileSession.signedIn ? "" : Browser.googleSignInUrl(request.url, ProfileSession.email).toString()
+                            if (hinted !== "") {
+                                request.action = WebEngineNavigationRequest.IgnoreRequest
+                                wv.url = hinted
+                                return
+                            }
+                            win.prepareScripts(wv, request.url.toString())
+                        }
                         onTitleChanged: tabs.setProperty(index, "title", title)
                         onIconChanged: tabs.setProperty(index, "icon", icon.toString())
                         onLoadingChanged: loadRequest => {
