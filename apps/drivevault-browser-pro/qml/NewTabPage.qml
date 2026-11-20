@@ -120,28 +120,36 @@ Rectangle {
         AbstractButton {
             id: avatarButton
             visible: ProfileSession.signedIn
-            implicitWidth: 36
-            implicitHeight: 36
+            implicitWidth: Math.min(250, Math.max(110, accountName.implicitWidth + 76))
+            implicitHeight: 44
+            leftPadding: 5
+            rightPadding: 12
             hoverEnabled: true
             Accessible.name: ProfileSession.name + ", " + ProfileSession.email
             onClicked: page.profileOptionsRequested()
             HoverHandler { cursorShape: Qt.PointingHandCursor }
             background: Rectangle {
-                radius: 18
-                color: Theme.surface
+                radius: 22
+                color: avatarButton.hovered || avatarButton.visualFocus ? "#213745" : "#192834"
                 border.width: 1
                 border.color: avatarButton.hovered || avatarButton.visualFocus ? page.accent : Theme.border
             }
-            contentItem: Item {
-                Image {
-                    id: avatarImage
-                    anchors.fill: parent
-                    anchors.margins: 2
-                    source: ProfileSession.picture
-                    fillMode: Image.PreserveAspectCrop
+            contentItem: RowLayout {
+                spacing: 8
+                ProfileAvatar { Layout.preferredWidth: 34; Layout.preferredHeight: 34 }
+                Text {
+                    id: accountName
+                    Layout.fillWidth: true
+                    text: ProfileSession.name || ProfileSession.email
+                    textFormat: Text.PlainText
+                    color: Theme.text
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
                 }
-                LineIcon { anchors.centerIn: parent; visible: avatarImage.status !== Image.Ready; kind: "globe"; color: page.accent }
+                Label { text: "⌄"; color: Theme.textSecondary }
             }
+            ToolTip.visible: hovered && accountName.truncated
+            ToolTip.text: accountName.text
         }
     }
     Text {

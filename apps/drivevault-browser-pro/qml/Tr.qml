@@ -113,6 +113,8 @@ QtObject {
         "profile_save_failed": ["Could not save the profile.", "บันทึกโปรไฟล์ไม่ได้"],
         "profile_signout_failed": ["Could not sign out.", "ออกจากระบบไม่ได้"],
         "profile_idle": ["Lock after inactivity (minutes)", "ล็อกเมื่อไม่ได้ใช้งาน (นาที)"],
+        "profile_idle_less": ["Decrease auto-lock time", "ลดเวลาล็อกอัตโนมัติ"],
+        "profile_idle_more": ["Increase auto-lock time", "เพิ่มเวลาล็อกอัตโนมัติ"],
         "profile_signout": ["Sign out", "ออกจากระบบ"],
         "profile_signout_confirm": ["Press Sign out again to confirm and close Browser Pro.", "กดออกจากระบบอีกครั้งเพื่อยืนยันและปิด Browser Pro"],
         "ntp_pin": ["PIN", "รหัส PIN"],

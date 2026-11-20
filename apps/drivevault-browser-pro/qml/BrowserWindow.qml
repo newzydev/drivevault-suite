@@ -1608,18 +1608,63 @@ ApplicationWindow {
         width: Math.min(440, parent.width - 40)
         padding: 20
         property bool confirmingSignOut: false
-        onAboutToShow: {
-            confirmingSignOut = false
-            idleSpin.value = ProfileSession.idleMinutes
-        }
+        onAboutToShow: confirmingSignOut = false
         contentItem: ColumnLayout {
-            spacing: 12
-            Text { Layout.fillWidth: true; text: ProfileSession.name; textFormat: Text.PlainText; color: Theme.text; font.pixelSize: 20; elide: Text.ElideRight }
-            Text { Layout.fillWidth: true; text: ProfileSession.email; textFormat: Text.PlainText; color: Theme.textSecondary; elide: Text.ElideRight }
+            spacing: 16
             RowLayout {
                 Layout.fillWidth: true
+                spacing: 12
+                ProfileAvatar { Layout.preferredWidth: 52; Layout.preferredHeight: 52 }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 3
+                    Text {
+                        Layout.fillWidth: true
+                        text: ProfileSession.name || ProfileSession.email
+                        textFormat: Text.PlainText
+                        color: Theme.text
+                        font.pixelSize: 20
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: ProfileSession.email
+                        textFormat: Text.PlainText
+                        color: Theme.textSecondary
+                        elide: Text.ElideRight
+                    }
+                }
+            }
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.border }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
                 Text { Layout.fillWidth: true; text: Tr.t("profile_idle"); color: Theme.text; wrapMode: Text.WordWrap }
-                SpinBox { id: idleSpin; from: 1; to: 120; onValueModified: ProfileSession.setIdleMinutes(value) }
+                RowLayout {
+                    spacing: 4
+                    BButton {
+                        implicitWidth: 34
+                        text: "−"
+                        Accessible.name: Tr.t("profile_idle_less")
+                        enabled: ProfileSession.idleMinutes > 1
+                        onClicked: ProfileSession.setIdleMinutes(ProfileSession.idleMinutes - 1)
+                    }
+                    Text {
+                        Layout.preferredWidth: 44
+                        horizontalAlignment: Text.AlignHCenter
+                        text: Number(ProfileSession.idleMinutes).toLocaleString(Qt.locale(Tr.lang === "th" ? "th_TH" : "en_US"), "f", 0)
+                        color: Theme.text
+                        font.weight: Font.DemiBold
+                    }
+                    BButton {
+                        implicitWidth: 34
+                        text: "+"
+                        Accessible.name: Tr.t("profile_idle_more")
+                        enabled: ProfileSession.idleMinutes < 120
+                        onClicked: ProfileSession.setIdleMinutes(ProfileSession.idleMinutes + 1)
+                    }
+                }
             }
             Text {
                 Layout.fillWidth: true
