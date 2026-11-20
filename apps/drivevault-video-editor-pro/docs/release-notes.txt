@@ -3,7 +3,8 @@ DriveVault Video Editor Pro - Release notes
 Version 1.18.0 (2026-11-20)
 --------------
   - New: the recent projects on the Home screen belong to the signed-in Google account. Another account sees its own list; signing out shows the shared list (recent-projects.json as before). The first time an account is used it starts from a COPY of the shared list (which stays as it is). Signing in or out in another DriveVault program switches the list too.
-  - Tested: tst_projectmanager recentProjectsFollowTheAccount, tst_account (scope key), tst_ui_flow. Not tested: a real sign-in. The installer is unsigned and was not rebuilt.
+  - Changed: the captions engine is whisper.cpp v1.8.2 (was b5454; same speech model, ggml-base). Real speech was transcribed with it in tst_ai captionsFromRealSpeech.
+  - Tested: tst_projectmanager recentProjectsFollowTheAccount, tst_account (scope key), tst_ui_flow, tst_ai. Not tested: a real sign-in. The installer is unsigned.
 
 
 Version 1.17.0 (2026-11-20)

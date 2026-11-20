@@ -85,7 +85,7 @@ $whisperDir = Join-Path $SuiteRoot '.tools\whisper\bin\Release'
 if (Test-Path (Join-Path $whisperDir 'whisper-cli.exe')) {
     $aiStage = Join-Path $stage 'ai\whisper'
     New-Item -ItemType Directory -Force $aiStage | Out-Null
-    foreach ($pattern in 'whisper-cli.exe', 'whisper.dll', 'ggml.dll', 'ggml-base.dll', 'ggml-cpu-*.dll') {
+    foreach ($pattern in 'whisper-cli.exe', 'whisper.dll', 'ggml.dll', 'ggml-base.dll', 'ggml-cpu*.dll') {
         Copy-Item (Join-Path $whisperDir $pattern) $aiStage
     }
     Copy-Item (Join-Path $DvRoot 'third_party\whisper.cpp-LICENSE.txt') (Join-Path $lic 'whisper.cpp-LICENSE.txt')

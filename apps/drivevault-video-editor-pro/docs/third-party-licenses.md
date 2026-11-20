@@ -45,7 +45,7 @@ Every component above must be re-checked, with exact versions, at the Phase 6 au
 
 | Component | Version | Use | License | Notes |
 |---|---|---|---|---|
-| whisper.cpp / ggml (prebuilt `whisper-cli.exe` + DLLs, CPU) | release b5454 | Speech to text, started as a separate process | MIT | Shipped in `aiwhisper`; license text in `licenseswhisper.cpp-LICENSE.txt`. |
+| whisper.cpp / ggml (prebuilt `whisper-cli.exe` + DLLs, CPU) | release v1.8.2 (prebuilt `whisper-bin-x64`; before 1.18.0: b5454) | Speech to text, started as a separate process | MIT | Shipped in `aiwhisper`; license text in `licenseswhisper.cpp-LICENSE.txt`. |
 | ONNX Runtime (CPU, `onnxruntime.dll`) | 1.24.4 | Runs the OpenThai speech model inside the program | MIT | Shipped next to the exe (about 14 MB); licence text in `licenses\onnxruntime-LICENSE.txt`. |
 | OpenThai 2.0 ASR Streaming (ONNX export, fp32) | iapp/OpenThai2.0-ASR-Streaming-ONNX | Thai speech recognition (FastConformer + RNN-T, built on NVIDIA Nemotron ASR Streaming) | OpenMDW-1.1 | **Not shipped.** About 2.6 GB, downloaded by the installer (a task on the Ready page; checked against a pinned SHA-256) into `ai\openthai` next to the program, or later by the user (Download button in Settings > AI) into `<data>\models\openthai-asr`; keep its `LICENSE` file with any copy. |
 | OpenAI Whisper models (ggml conversions) | base (installed in `ai\models`); tiny / small on request | Speech recognition models | MIT | `base` ships in the installer (about 142 MB), licence text in `licenses\whisper-model-LICENSE.txt`; tiny / small are downloaded or imported by the user. |
